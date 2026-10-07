@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lộ trình Thi đấu lớp 9</title>
+<meta name="description" content="Lộ trình học lập trình thi đấu C++ cho học sinh lớp 9: 10 chuyên đề, 32 chủ đề từ độ phức tạp, số học, tổ hợp đến quy hoạch động và đồ thị, kèm minh họa từng bước và bài tập tiếng Việt.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="home">
+
+<section class="home-hero oli-plain">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow"><span>Học sinh lớp 9</span><span>C++</span><span>16 tuần + mở rộng</span></p>
+      <h1 class="home-title">Từ vòng lặp đầu tiên đến <em>đề thi cấp tỉnh</em></h1>
+      <p class="home-lead">Lộ trình lập trình thi đấu đi từ độ phức tạp, số học, tổ hợp, qua cộng dồn, chặt nhị phân, quay lui, tham lam, đến quy hoạch động và đồ thị. Mỗi chủ đề có lý thuyết đầy đủ, minh họa từng bước, code C++ mẫu và bài tập chọn lọc, ưu tiên đề tiếng Việt.</p>
+      <div class="hero-actions">
+        <a class="btn" id="cta-start" href="topics/complexity.html">Bắt đầu từ bài 1.1</a>
+        <a class="btn ghost" href="#lo-trinh">Xem bản đồ lộ trình</a>
+      </div>
+      <div class="hero-stats" aria-label="Thống kê lộ trình">
+        <div><b id="st-stages">10</b><span>chuyên đề</span></div>
+        <div><b id="st-topics">32</b><span>chủ đề</span></div>
+        <div><b id="st-ex">—</b><span>bài tập có đường dẫn</span></div>
+        <div><b id="st-done">0</b><span>bài bạn đã học</span></div>
+      </div>
+    </div>
+
+    <figure class="lab oli" id="lab" aria-labelledby="lab-title">
+      <h2 class="lab-title" id="lab-title">Nhìn n, đoán thuật toán</h2>
+      <p class="lab-note">Máy chấm làm khoảng 10⁸ phép tính mỗi giây. Kéo n xem cách nào còn kịp!</p>
+      <div class="lab-n">
+        <label for="lab-range">Giới hạn đề bài</label>
+        <output id="lab-out" for="lab-range">n = 10⁵</output>
+      </div>
+      <input type="range" id="lab-range" min="0" max="12" step="1" value="5" aria-describedby="lab-verdict">
+      <div class="lab-rows" id="lab-rows"></div>
+      <div class="lab-axis" aria-hidden="true"><span></span><div class="scale" id="lab-scale"></div><span></span></div>
+      <p class="lab-verdict" id="lab-verdict" aria-live="polite"></p>
+    </figure>
+  </div>
+</section>
+
+<section class="home-section" id="lo-trinh" aria-labelledby="rm-title">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Bản đồ lộ trình</span>
+      <h2 id="rm-title">10 tuyến, 32 trạm dừng</h2>
+      <p>Mỗi chuyên đề là một tuyến màu, mỗi chủ đề là một trạm. Đi lần lượt từ trên xuống; tám tuyến đầu bám theo giáo án 16 tuần, hai tuyến cuối dành cho phần mở rộng và ôn thi chuyên Tin. Bấm ô vuông bên phải mỗi trạm để đánh dấu đã học (lưu trên máy của bạn).</p>
+    </div>
+
+    <div class="rm-tools">
+      <label class="search" for="rm-q">
+        <span class="sr-only">Tìm chủ đề</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="rm-q" type="search" placeholder="Tìm: sàng, nhị phân, BFS, cái túi…" autocomplete="off">
+      </label>
+      <div class="seg" role="group" aria-label="Lọc theo mức độ" id="rm-level">
+        <button type="button" data-level="0" aria-pressed="true">Tất cả</button>
+        <button type="button" data-level="1" aria-pressed="false">Cơ bản</button>
+        <button type="button" data-level="2" aria-pressed="false">Vận dụng</button>
+        <button type="button" data-level="3" aria-pressed="false">Nâng cao</button>
+      </div>
+      <label class="toggle" for="rm-hide"><input type="checkbox" id="rm-hide"> Ẩn bài đã học</label>
+    </div>
+
+    <nav class="line-strip" id="line-strip" aria-label="Các chuyên đề"></nav>
+    <ol class="metro" id="metro"></ol>
+    <p class="metro-empty" id="metro-empty" hidden>Không có chủ đề nào khớp bộ lọc. Thử từ khóa khác hoặc chọn “Tất cả”.</p>
+  </div>
+</section>
+
+<section class="home-section oli-plain" id="tuan" aria-labelledby="wk-title">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Giáo án 16 tuần</span>
+      <h2 id="wk-title">Mỗi tuần một buổi, 135 phút</h2>
+      <p>16 buổi chia thành 8 chuyên đề, xen 2 buổi thi thử. Một buổi gồm khởi động 10 phút, lý thuyết 35 phút, cài đặt mẫu 25 phút, luyện tập 50 phút và tổng kết 15 phút.</p>
+    </div>
+    <div class="table-wrap">
+      <table class="weeks-table">
+        <thead><tr><th>Tuần</th><th>Chuyên đề</th><th>Nội dung chính</th><th>Bài đọc trên trang</th></tr></thead>
+        <tbody>
+          <tr style="--line:var(--l1)"><td>1</td><td><span class="dot-line"></span>CĐ1. Độ phức tạp</td><td>Big-O, ước lượng 10⁸ phép/giây, kiểu dữ liệu, tràn số, nhập xuất nhanh</td><td><a href="topics/complexity.html">1.1</a> · <a href="topics/cpp-contest-basics.html">1.2</a> · <a href="topics/brute-force-formula.html">1.3</a></td></tr>
+          <tr style="--line:var(--l2)"><td>2</td><td><span class="dot-line"></span>CĐ2. Số học (1)</td><td>Chia hết, đếm ước, kiểm tra nguyên tố O(√n), phân tích thừa số</td><td><a href="topics/divisors-primes.html">2.1</a></td></tr>
+          <tr style="--line:var(--l2)"><td>3</td><td><span class="dot-line"></span>CĐ2. Số học (2)</td><td>Sàng Eratosthenes, ƯCLN/BCNN, Euclid</td><td><a href="topics/sieve.html">2.2</a> · <a href="topics/gcd-lcm.html">2.3</a></td></tr>
+          <tr style="--line:var(--l2)"><td>4</td><td><span class="dot-line"></span>CĐ2. Số học (3)</td><td>Đồng dư, phép toán modulo, lũy thừa nhanh</td><td><a href="topics/modular-power.html">2.4</a></td></tr>
+          <tr style="--line:var(--l3)"><td>5</td><td><span class="dot-line"></span>CĐ3. Tổ hợp</td><td>Quy tắc cộng/nhân, hoán vị, chỉnh hợp, tổ hợp, tam giác Pascal</td><td><a href="topics/counting.html">3.1</a> · <a href="topics/binomial.html">3.2</a></td></tr>
+          <tr style="--line:var(--l4)"><td>6</td><td><span class="dot-line"></span>CĐ4. Mảng cộng dồn</td><td>Prefix sum 1D/2D, mảng hiệu</td><td><a href="topics/prefix-sum.html">4.1</a> · <a href="topics/difference-array.html">4.2</a></td></tr>
+          <tr style="--line:var(--l4)"><td>7</td><td><span class="dot-line"></span>CĐ4. Sắp xếp, hai con trỏ</td><td>sort, so sánh tùy biến, hai con trỏ, cửa sổ trượt</td><td><a href="topics/sorting.html">4.3</a> · <a href="topics/two-pointers.html">4.4</a></td></tr>
+          <tr class="exam"><td>8</td><td>Thi thử giữa kỳ</td><td>4 bài trong 150 phút, chuyên đề 1–4, chữa đề</td><td><a href="#phong-thi">Chiến thuật</a></td></tr>
+          <tr style="--line:var(--l5)"><td>9</td><td><span class="dot-line"></span>CĐ5. Tìm kiếm nhị phân</td><td>Chặt nhị phân trên mảng và trên kết quả</td><td><a href="topics/binary-search.html">5.1</a> · <a href="topics/binary-search-answer.html">5.2</a></td></tr>
+          <tr style="--line:var(--l6)"><td>10</td><td><span class="dot-line"></span>CĐ6. Đệ quy, quay lui</td><td>Đệ quy, sinh nhị phân, sinh hoán vị, tổ hợp</td><td><a href="topics/recursion.html">6.1</a> · <a href="topics/backtracking.html">6.2</a></td></tr>
+          <tr style="--line:var(--l6)"><td>11</td><td><span class="dot-line"></span>CĐ6. Tham lam</td><td>Chọn hoạt động, đổi tiền, chứng minh bằng hoán đổi</td><td><a href="topics/greedy.html">6.3</a></td></tr>
+          <tr style="--line:var(--l7)"><td>12</td><td><span class="dot-line"></span>CĐ7. QHĐ (1)</td><td>Fibonacci, leo cầu thang, đếm đường đi trên lưới</td><td><a href="topics/dp-intro.html">7.1</a> · <a href="topics/dp-grid.html">7.2</a></td></tr>
+          <tr style="--line:var(--l7)"><td>13</td><td><span class="dot-line"></span>CĐ7. QHĐ (2)</td><td>Dãy con tăng dài nhất, cái túi 0/1</td><td><a href="topics/lis.html">7.3</a> · <a href="topics/knapsack.html">7.4</a></td></tr>
+          <tr style="--line:var(--l8)"><td>14</td><td><span class="dot-line"></span>CĐ8. Đồ thị (1)</td><td>Biểu diễn đồ thị, DFS, đếm thành phần liên thông</td><td><a href="topics/graph-dfs.html">8.1</a></td></tr>
+          <tr style="--line:var(--l8)"><td>15</td><td><span class="dot-line"></span>CĐ8. Đồ thị (2)</td><td>BFS, đường đi ngắn nhất trên lưới, loang</td><td><a href="topics/bfs.html">8.2</a> · <a href="topics/flood-fill.html">8.3</a></td></tr>
+          <tr class="exam"><td>16</td><td>Thi thử cuối kỳ</td><td>5 bài trong 180 phút, toàn khóa</td><td><a href="#phong-thi">Chiến thuật</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:var(--fs-sm)">Đánh giá: bài về nhà 30%, thi thử giữa kỳ 30%, thi thử cuối kỳ 40%; chấm tự động bằng Themis hoặc nền tảng chấm trực tuyến. Chuyên đề 9 học song song khi cần; chuyên đề 10 dành cho học sinh ôn thi vào lớp 10 chuyên Tin.</p>
+  </div>
+</section>
+
+<section class="home-section" id="cau-truc" aria-labelledby="an-title">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Cách đọc một bài</span>
+      <h2 id="an-title">Mọi chủ đề đi theo cùng một trình tự</h2>
+      <p>Đọc theo thứ tự dưới đây. Đừng bỏ qua phần “Vì sao cần”: hiểu cách làm chậm chạy chậm thế nào thì mới thấy thuật toán mới nhanh ở đâu.</p>
+    </div>
+    <ol class="anatomy">
+      <li><b>Mô tả</b><span>Thuật toán là gì, nói bằng lời đơn giản và một ví dụ đời thường.</span></li>
+      <li><b>Ý nghĩa</b><span>Nó giải quyết loại bài nào, xuất hiện ở đâu trong đề thi.</span></li>
+      <li><b>Vì sao cần</b><span>So sánh cách làm ngây thơ với cách mới, bằng số phép tính cụ thể.</span></li>
+      <li><b>Các bước thuật toán</b><span>Tuần tự từng bước, kèm mã giả.</span></li>
+      <li><b>Cách hoạt động</b><span>Giải thích chi tiết vì sao đúng, vì sao nhanh.</span></li>
+      <li><b>Minh họa trực quan</b><span>Trình chiếu từng bước trên ví dụ nhỏ, bấm “Sau” để đi tiếp.</span></li>
+      <li><b>Cài đặt C++</b><span>Code mẫu có chú thích, sao chép được.</span></li>
+      <li><b>Độ phức tạp</b><span>Thời gian, bộ nhớ và giới hạn n phù hợp.</span></li>
+      <li><b>Biến thể nâng cao</b><span>Các dạng mở rộng hay gặp trong đề.</span></li>
+      <li><b>Lỗi thường gặp</b><span>Những chỗ học sinh hay mất điểm.</span></li>
+      <li><b>Tự kiểm tra</b><span>Câu hỏi nhanh, bấm để xem đáp án.</span></li>
+      <li><b>Bài tập</b><span>Ít nhất 5 bài có đường dẫn, xếp từ dễ đến khó.</span></li>
+    </ol>
+  </div>
+</section>
+
+<section class="home-section oli-plain" id="phong-thi" aria-labelledby="tc-title">
+  <div class="wrap two-col">
+    <div class="section-head">
+      <span class="kicker">Chiến thuật phòng thi</span>
+      <h2 id="tc-title">Sáu việc làm trong mọi kỳ thi</h2>
+      <p>Dạy trong buổi thi thử giữa kỳ và cuối kỳ. Điểm số thường mất vì tràn số và sai tên file hơn là vì không biết thuật toán.</p>
+      <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Chưa nghĩ ra lời giải đầy đủ thì cứ viết thuật toán trâu để ăn điểm subtask nhỏ. Điểm 40 chắc chắn hơn điểm 0 vì tham.</p></div>
+    </div>
+    <ol class="tactics">
+      <li><div><b>Đọc hết đề trong 10–15 phút đầu</b><span>Xếp bài từ dễ đến khó, làm bài dễ trước để lấy điểm chắc.</span></div></li>
+      <li><div><b>Nhìn giới hạn n để chọn thuật toán</b><span>Dùng bảng tra ở chủ đề 1.1: n ≤ 20 nghĩ tới quay lui, n ≤ 10⁶ nghĩ tới O(n log n).</span></div></li>
+      <li><div><b>Viết lời giải trâu trước</b><span>Lấy điểm subtask nhỏ và dùng nó để đối chiếu với lời giải chính.</span></div></li>
+      <li><div><b>Tự sinh test biên</b><span>n = 1, n lớn nhất, mọi phần tử bằng nhau, có số âm, có số 0.</span></div></li>
+      <li><div><b>Đối chiếu chéo</b><span>Còn thời gian thì so lời giải chính với lời giải trâu trên test ngẫu nhiên.</span></div></li>
+      <li><div><b>Kiểm tra trước khi nộp</b><span>Tên file, <code>freopen</code>, <code>long long</code>, xóa dòng in gỡ lỗi.</span></div></li>
+    </ol>
+  </div>
+</section>
+
+<section class="home-section" id="luyen-bai" aria-labelledby="jd-title">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Nơi luyện bài</span>
+      <h2 id="jd-title">Các trang chấm bài nên có tài khoản</h2>
+      <p>Bài tập trong từng chủ đề lấy từ các trang dưới đây. Đề tiếng Việt được gắn nhãn <span class="lang-tag vi">VI</span>; đề tiếng Anh thì đọc kèm phần tóm tắt tiếng Việt trong bài.</p>
+    </div>
+    <div class="judges">
+      <a href="https://oj.vnoi.info" target="_blank" rel="noopener"><span class="tag">Tiếng Việt</span><b>VNOJ</b><span>Kho bài của VNOI, có nhiều đề học sinh giỏi các tỉnh và Free Contest.</span></a>
+      <a href="https://lqdoj.edu.vn" target="_blank" rel="noopener"><span class="tag">Tiếng Việt</span><b>LQDOJ</b><span>Trang chấm của THPT chuyên Lê Quý Đôn (Đà Nẵng), rất nhiều bài vừa sức THCS.</span></a>
+      <a href="https://marisaoj.com" target="_blank" rel="noopener"><span class="tag">Tiếng Việt</span><b>MarisaOJ</b><span>Bài tập xếp theo chủ đề, phù hợp người mới bắt đầu luyện thuật toán.</span></a>
+      <a href="https://wiki.vnoi.info" target="_blank" rel="noopener"><span class="tag">Tiếng Việt</span><b>VNOI Wiki</b><span>Bài viết thuật toán tiếng Việt, mỗi bài có danh sách bài luyện tập.</span></a>
+      <a href="https://cses.fi/problemset/" target="_blank" rel="noopener"><span class="tag">Tiếng Anh</span><b>CSES Problem Set</b><span>Bộ bài kinh điển xếp theo chủ đề, đề ngắn và rõ.</span></a>
+      <a href="https://codeforces.com" target="_blank" rel="noopener"><span class="tag">Tiếng Anh</span><b>Codeforces</b><span>Kỳ thi định kỳ; bắt đầu từ Div. 4 và Div. 3.</span></a>
+      <a href="https://atcoder.jp" target="_blank" rel="noopener"><span class="tag">Tiếng Anh</span><b>AtCoder</b><span>Kỳ ABC hằng tuần; bộ Educational DP Contest để luyện quy hoạch động.</span></a>
+      <a href="https://freecontest.net" target="_blank" rel="noopener"><span class="tag">Tiếng Việt</span><b>Free Contest</b><span>Kỳ thi trực tuyến tiếng Việt cho học sinh, đề lưu lại trên VNOJ.</span></a>
+    </div>
+    <p class="muted" style="font-size:var(--fs-sm);margin-top:1.5rem">Sách tham khảo: “Tài liệu giáo khoa chuyên Tin” (Hồ Sĩ Đàm chủ biên); “Giải thuật và lập trình” (Lê Minh Hoàng); “Competitive Programmer’s Handbook” (Antti Laaksonen, miễn phí).</p>
+  </div>
+</section>
+
+<script src="data/roadmap.js"></script>
+<script src="data/status.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/home.js"></script>
+</body>
+</html>

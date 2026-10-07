@@ -1,0 +1,12 @@
+{
+  "id": "20261007T112830Z-orchestrator-cce9",
+  "agent": "orchestrator",
+  "task": "Dựng nền móng và điều phối 32 agent soạn chủ đề",
+  "topic": null,
+  "status": "active",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:28:30Z",
+  "heartbeat_at": "2026-10-07T11:28:30Z",
+  "ended_at": null,
+  "summary": null
+}

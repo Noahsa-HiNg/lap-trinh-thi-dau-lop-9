@@ -1,0 +1,17 @@
+# Khóa là trạng thái tạm thời của các agent đang chạy
+.agents/locks/*.lock
+.agents/locks/*.stale.*
+# File tạm do ghi nguyên tử
+**/.*.tmp
+# Hệ điều hành / trình soạn thảo
+*:Zone.Identifier
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+# Bản biên dịch khi thử code mẫu
+*.out
+a.exe
+/tmp/

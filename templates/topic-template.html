@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 1. Đổi TÊN CHỦ ĐỀ trong <title> và description -->
+<title>TÊN CHỦ ĐỀ · Thi đấu lớp 9</title>
+<meta name="description" content="Một câu mô tả nội dung bài học.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<!-- (Tùy chọn) CSS riêng NGẮN cho trang này. Chỉ dùng token màu var(--…), không dùng mã màu cứng. -->
+</head>
+<!-- 2. data-topic PHẢI trùng slug trong data/roadmap.js và tên file topics/<slug>.html -->
+<body data-page="topic" data-topic="SLUG">
+
+<!--
+  QUY ƯỚC (đọc kỹ AGENTS.md):
+  - Chỉ viết nội dung bên trong <main id="lesson">. Thanh trên, đầu bài, mục lục, nút "đã học",
+    chuyển bài trước/sau và chân trang do assets/js/main.js tự dựng từ data/roadmap.js.
+  - Mỗi phần là <section id="..."> có đúng một <h2> ở đầu. Các id BẮT BUỘC (validate.py kiểm tra):
+      gioi-thieu, y-nghia, tai-sao, thuat-toan, hoat-dong, truc-quan, cai-dat,
+      do-phuc-tap, bien-the, loi-thuong-gap, kiem-tra, bai-tap, tham-khao, tom-tat
+    Được thêm section khác (ví dụ "chung-minh", "vi-du-mau") xen giữa nếu cần.
+  - Trong <pre><code> PHẢI thoát ký tự: < thành &lt;  > thành &gt;  & thành &amp;
+    (ví dụ: #include &lt;bits/stdc++.h&gt;). validate.py sẽ báo lỗi nếu quên.
+  - Chủ đề gồm nhiều thuật toán (ví dụ Dijkstra + Floyd): dùng <h3> trong từng section cho từng thuật toán.
+-->
+
+<main id="lesson" class="lesson">
+
+  <!-- Mục tiêu bài học (không đánh số, không vào mục lục) -->
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Mục tiêu 1, viết bằng động từ cụ thể: cài đặt được…, giải thích được…</li>
+      <li>Mục tiêu 2</li>
+      <li>Mục tiêu 3</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Một đoạn mở đầu nói thuật toán là gì bằng lời đơn giản.</p>
+
+    <!-- Ví dụ đời thường -->
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> một ví dụ đời thường quen thuộc với học sinh lớp 9.</p></div>
+    </div>
+
+    <!-- Định nghĩa chính thức. data-label đổi nhãn (mặc định "Định nghĩa") -->
+    <div class="definition" data-label="Định nghĩa">
+      <p>Phát biểu chính xác khái niệm / bài toán.</p>
+    </div>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Thuật toán giải quyết loại bài nào; dấu hiệu nhận biết trong đề thi.</p>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề có cụm từ… và giới hạn n ≤ …</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p>Đặt một bài toán cụ thể, giải bằng cách ngây thơ, đếm số phép tính; rồi so với cách mới.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p>Mô tả. Độ phức tạp <span class="bigo">O(n²)</span>, với n = 10⁵ là 10¹⁰ phép tính, quá 1 giây.</p></div>
+      <div class="good-side"><h4>Dùng thuật toán</h4><p>Mô tả. Độ phức tạp <span class="bigo">O(n)</span>, chỉ 10⁵ phép tính.</p></div>
+    </div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Mô tả bước 1.</div></li>
+      <li><div><strong>Lặp.</strong> Mô tả bước 2.</div></li>
+      <li><div><strong>Kết thúc.</strong> Mô tả bước 3.</div></li>
+    </ol>
+    <!-- Mã giả: <b> cho từ khóa, <i> cho chú thích -->
+    <pre class="pseudo"><b>hàm</b> TenHam(a, n):
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> n:
+        ...            <i>// chú thích</i>
+    <b>trả về</b> kết quả</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Giải thích chi tiết: mỗi bước làm gì, vì sao thuật toán đúng (lập luận đơn giản), vì sao nhanh.</p>
+    <h3>Vì sao đúng</h3>
+    <p>…</p>
+    <h3>Vì sao nhanh</h3>
+    <p>…</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Một câu dặn dò viết tay.</p></div>
+    <!-- Công thức: <span class="math">…</span> hoặc khối <div class="math-block">…</div>; phân số: <span class="frac"><span>tử</span><span>mẫu</span></span> -->
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Giới thiệu ví dụ cụ thể: dữ liệu vào, mục tiêu.</p>
+
+    <!-- TRÌNH CHIẾU TỪNG BƯỚC: mỗi .frame là một khung hình, data-caption là lời giải thích (cho phép HTML đơn giản, nhớ thoát dấu "). -->
+    <div class="stepper" data-title="Ví dụ: tên minh họa">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Mô tả trạng thái.">
+        <!-- Mảng: data-i = chỉ số hiện phía trên; data-ptr = nhãn con trỏ phía dưới (màu đỏ) -->
+        <div class="arr">
+          <span class="cell" data-i="0" data-ptr="i">3</span>
+          <span class="cell is-cmp" data-i="1">8</span>
+          <span class="cell is-active" data-i="2">1</span>
+          <span class="cell is-ok" data-i="3">9</span>
+          <span class="cell is-bad" data-i="4">4</span>
+          <span class="cell is-dim" data-i="5" data-ptr="j">7</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Có thể dùng caption bằng phần tử .frame-caption thay cho data-caption.">
+        <!-- Lưới 2D: --cols = số cột; .h ô tiêu đề; is-wall / is-start / is-end / is-path / is-active / is-ok … -->
+        <div class="grid-viz" style="--cols:5">
+          <span class="g is-start">S</span><span class="g">1</span><span class="g is-wall"></span><span class="g">5</span><span class="g">6</span>
+          <span class="g">1</span><span class="g is-path">2</span><span class="g is-wall"></span><span class="g">4</span><span class="g">5</span>
+          <span class="g">2</span><span class="g is-path">3</span><span class="g is-path">4</span><span class="g is-active">5</span><span class="g is-end">T</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; Biểu đồ cột (sắp xếp…): --v là giá trị, .bars có --max.">
+        <div class="bars" style="--max:9">
+          <span class="bar" style="--v:3" data-v="3"></span>
+          <span class="bar is-cmp" style="--v:8" data-v="8"></span>
+          <span class="bar is-cmp" style="--v:1" data-v="1"></span>
+          <span class="bar is-ok" style="--v:9" data-v="9"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; Bảng vết (trace) cũng đặt được trong khung hình.">
+        <table class="trace">
+          <thead><tr><th>Bước</th><th>i</th><th>j</th><th>Kết quả</th></tr></thead>
+          <tbody><tr><td>1</td><td>0</td><td>5</td><td>…</td></tr><tr class="hl"><td>2</td><td>1</td><td>5</td><td>…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SƠ ĐỒ SVG (đồ thị, cây đệ quy…). Chỉ dùng class có sẵn để màu đổi theo nền sáng/tối:
+         .node .edge (+ is-active / is-ok / is-bad / is-cmp / is-dim), text, .label-sm, .label-pen, .fill-soft … -->
+    <figure class="diagram">
+      <svg viewBox="0 0 320 140" width="320" role="img" aria-label="Đồ thị 4 đỉnh">
+        <line class="edge" x1="50" y1="70" x2="140" y2="30"/>
+        <line class="edge is-active" x1="50" y1="70" x2="140" y2="110"/>
+        <line class="edge" x1="140" y1="30" x2="260" y2="70"/>
+        <line class="edge is-ok" x1="140" y1="110" x2="260" y2="70"/>
+        <circle class="node is-active" cx="50" cy="70" r="18"/><text x="50" y="75" text-anchor="middle">1</text>
+        <circle class="node" cx="140" cy="30" r="18"/><text x="140" y="35" text-anchor="middle">2</text>
+        <circle class="node is-ok" cx="140" cy="110" r="18"/><text x="140" y="115" text-anchor="middle">3</text>
+        <circle class="node" cx="260" cy="70" r="18"/><text x="260" y="75" text-anchor="middle">4</text>
+        <text class="label-pen" x="190" y="128">đường đi ngắn nhất</text>
+      </svg>
+      <figcaption>Hình 1. Chú thích hình.</figcaption>
+    </figure>
+
+    <!-- Khung minh họa tĩnh có tiêu đề + chú giải -->
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Khung minh họa tĩnh</p></div>
+      <div class="viz-body">
+        <div class="arr"><span class="arr-label">S</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">3</span><span class="cell is-active" data-i="2">11</span></div>
+      </div>
+      <div class="viz-legend"><span><i class="is-active"></i>đang xét</span><span><i class="is-cmp"></i>đang so sánh</span><span><i class="is-ok"></i>đã xong</span><span><i class="is-bad"></i>bị loại</span></div>
+      <div class="viz-caption"><p>Chú thích cho khung minh họa.</p></div>
+    </div>
+
+    <!-- (KHUYẾN KHÍCH) WIDGET TƯƠNG TÁC riêng: tạo assets/js/viz/SLUG.js và nạp ở cuối trang.
+         Trong file JS: CP.mount('#viz-SLUG', function (root) { … }); chỉ dùng class/biến CSS có sẵn. -->
+    <div class="playground" id="viz-SLUG">
+      <div class="viz-head"><p class="viz-title">Tự tay thử</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="SLUG-input">Dãy số <input type="text" id="SLUG-input" value="5 2 9 1"></label>
+          <button type="button">Chạy</button>
+        </div>
+        <div class="out">Kết quả hiện ở đây.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Giải thích ngắn trước khi đưa code.</p>
+    <figure class="code">
+      <figcaption><span class="fn">ten_bai.cpp</span> Mô tả ngắn</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n; cin &gt;&gt; n;          // chú thích tiếng Việt
+    cout &lt;&lt; n &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+
+    <!-- Ví dụ nhập / xuất -->
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5
+3 1 4 1 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">14</code></pre></div>
+    </div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thao tác</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Tiền xử lý</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Mỗi truy vấn</td><td><span class="bigo">O(1)</span></td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p>Với giới hạn n ≤ …, số phép tính khoảng …, chạy kịp trong 1 giây.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+    <h3>Biến thể 1</h3>
+    <p>…</p>
+    <h3>Biến thể 2 (nâng cao)</h3>
+    <p>…</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Lỗi 1</p><p>Mô tả lỗi và cách sửa.</p></div>
+    <div class="callout warn"><p class="callout-title">Lỗi 2</p><p>…</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo</p><p>…</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <!-- Mỗi .quiz một câu; đáp án đúng có data-correct; .quiz-explain hiện sau khi chọn -->
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Nội dung câu hỏi?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Phương án sai</button>
+        <button type="button" class="quiz-opt" data-correct>B. Phương án đúng</button>
+        <button type="button" class="quiz-opt">C. Phương án sai</button>
+      </div>
+      <p class="quiz-explain">Giải thích vì sao B đúng.</p>
+    </div>
+    <!-- Câu hỏi tự luận: dùng <details class="solution"> -->
+    <p><strong>Câu 4.</strong> Câu hỏi tự luận / bài tính tay.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>…</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Ưu tiên đề tiếng Việt (VNOJ, LQDOJ, MarisaOJ…); đề tiếng Anh có tóm tắt tiếng Việt.</p>
+    <ol class="exercises">
+      <!-- Mỗi bài: tiêu đề có link THẬT (đã kiểm tra), .judge = tên trang chấm,
+           .lang-tag.vi = đề tiếng Việt (hoặc .lang-tag không có .vi = tiếng Anh), .level level-1/2/3 -->
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/MA_BAI">MÃ BÀI – Tên bài</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Tóm tắt đề bằng tiếng Việt, 1–2 câu.</p>
+        <p class="ex-skill"><b>Luyện:</b> kỹ năng chính của bài.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Hướng giải ngắn gọn, không đưa code đầy đủ.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/0000">Tên bài tiếng Anh</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Tóm tắt đề bằng tiếng Việt.</p>
+        <p class="ex-skill"><b>Luyện:</b> …</p>
+        <details class="hint"><summary>Gợi ý</summary><p>…</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/">VNOI Wiki – Tên bài viết</a> (tiếng Việt)</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Ý chính 1.</li>
+        <li>Ý chính 2.</li>
+        <li>Độ phức tạp: …</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<!-- (Tùy chọn) widget riêng: <script src="../assets/js/viz/SLUG.js"></script> -->
+</body>
+</html>
