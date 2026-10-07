@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quy tắc đếm &amp; nguyên lý bù trừ · Thi đấu lớp 9</title>
+<meta name="description" content="Quy tắc cộng, quy tắc nhân, hoán vị, chỉnh hợp, tổ hợp, hoán vị lặp, đếm phần bù, nguyên lý bù trừ và nguyên lý Dirichlet cho lập trình thi đấu.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="counting">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Phân biệt được khi nào dùng quy tắc cộng, khi nào dùng quy tắc nhân.</li>
+      <li>Nhận ra bài toán là hoán vị, chỉnh hợp hay tổ hợp bằng hai câu hỏi: “có thứ tự không?” và “có lặp không?”.</li>
+      <li>Giải thích được vì sao công thức tổ hợp phải chia cho k!, và tự tính được 870 và 435 cho lớp 30 bạn.</li>
+      <li>Dùng được kỹ thuật đếm phần bù và nguyên lý bù trừ cho 2 tập, 3 tập, và tổng quát bằng duyệt tập con.</li>
+      <li>Biết lấy modulo khi đáp số quá lớn và kiểm tra công thức của mình bằng chương trình duyệt trâu với n nhỏ.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Rất nhiều đề thi hỏi “có bao nhiêu cách…”. Nếu chỉ biết liệt kê từng cách rồi đếm, chương trình sẽ chạy hàng năm trời khi số cách lên tới tỉ tỉ. Bài này dạy em những <strong>quy tắc đếm</strong> (counting rules): cách tính số cách bằng phép cộng, phép nhân, phép chia, mà không cần liệt kê.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> sáng nay em mở tủ quần áo. Có 3 chiếc áo và 2 chiếc quần. Mỗi bộ đồ gồm 1 áo và 1 quần. Em có bao nhiêu bộ đồ khác nhau? Với mỗi chiếc áo, em ghép được với cả 2 chiếc quần, nên có 3 · 2 = 6 bộ. Còn nếu hôm nay em chỉ mặc <em>một</em> món, hoặc 1 trong 3 áo khoác, hoặc 1 trong 2 áo mưa, thì có 3 + 2 = 5 lựa chọn. Vậy: <strong>nhân</strong> khi làm nhiều bước nối tiếp, <strong>cộng</strong> khi chọn một trong các trường hợp tách rời.</p></div>
+    </div>
+
+    <div class="definition" data-label="Hai quy tắc nền tảng">
+      <p><strong>Quy tắc cộng</strong> (rule of sum): nếu một việc được làm theo trường hợp 1 <em>hoặc</em> trường hợp 2, hai trường hợp <strong>không trùng nhau</strong>, trường hợp 1 có m cách, trường hợp 2 có n cách, thì có tất cả <span class="math">m + n</span> cách.</p>
+      <p><strong>Quy tắc nhân</strong> (rule of product): nếu một việc gồm bước 1 <em>rồi</em> bước 2, bước 1 có m cách, và <strong>với mỗi</strong> cách làm bước 1 thì bước 2 luôn có n cách, thì có tất cả <span class="math">m · n</span> cách.</p>
+    </div>
+
+    <p>Từ hai quy tắc này, ta dựng được cả một “hộp công cụ”:</p>
+    <table>
+      <thead><tr><th>Công cụ</th><th>Dùng khi</th><th>Công thức</th><th>Ví dụ</th></tr></thead>
+      <tbody>
+        <tr><td>Hoán vị (permutation)</td><td>Xếp <em>tất cả</em> n vật thành một hàng</td><td><span class="math">n! = 1 · 2 · … · n</span></td><td>Xếp 5 bạn vào 5 ghế: 120 cách</td></tr>
+        <tr><td>Chỉnh hợp (arrangement)</td><td>Chọn k trong n vật, <strong>có</strong> thứ tự</td><td><span class="math">A(n, k) = n!/(n−k)!</span></td><td>Chọn lớp trưởng và lớp phó trong 30 bạn: 870</td></tr>
+        <tr><td>Tổ hợp (combination)</td><td>Chọn k trong n vật, <strong>không</strong> thứ tự</td><td><span class="math">C(n, k) = n!/(k!(n−k)!)</span></td><td>Chọn 2 bạn trực nhật trong 30 bạn: 435</td></tr>
+        <tr><td>Hoán vị lặp</td><td>Xếp n vật có những vật giống hệt nhau</td><td><span class="math">n!/(c₁! · c₂! · …)</span></td><td>Xếp chữ của “BANANA”: 60 cách</td></tr>
+        <tr><td>Đếm phần bù</td><td>Đếm cái “xấu” dễ hơn cái “tốt”</td><td>Tốt = Tổng − Xấu</td><td>Mật khẩu 4 số có chữ số lặp: 4 960</td></tr>
+        <tr><td>Bù trừ (inclusion–exclusion)</td><td>Đếm hợp của các tập chồng lên nhau</td><td><span class="math">|A ∪ B| = |A| + |B| − |A ∩ B|</span></td><td>Số từ 1 đến 100 chia hết cho 2 hoặc 3: 67</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Quy tắc đếm giúp em:</p>
+    <ul>
+      <li><strong>Trả lời ngay bằng công thức</strong> những bài “đếm số cách chọn, số cách xếp, số mật khẩu, số xâu, số cặp”, kể cả khi n lên tới 10⁹ hay 10¹⁸.</li>
+      <li><strong>Ước lượng số trường hợp</strong> trước khi viết thuật toán duyệt. Ví dụ 2²⁰ ≈ 10⁶ tập con thì duyệt kịp, còn 12! ≈ 4,8 · 10⁸ hoán vị đã sát giới hạn 1 giây. Kỹ năng này cần cho bài <a href="backtracking.html">quay lui</a>.</li>
+      <li><strong>Đặt nền cho quy hoạch động đếm</strong> ở bài <a href="dp-intro.html">quy hoạch động nhập môn</a>: mọi truy hồi “số cách” đều ghép từ quy tắc cộng và quy tắc nhân.</li>
+      <li><strong>Đếm số thỏa điều kiện chia hết</strong> trên đoạn rất dài bằng nguyên lý bù trừ, không cần vòng lặp.</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề hỏi “có bao nhiêu cách”, “đếm số lượng”, “bao nhiêu xâu / dãy / mật khẩu”, thường kèm câu “in kết quả theo modulo 10⁹ + 7”. Giới hạn rất lớn (n ≤ 10⁶, n ≤ 10¹⁸) mà vẫn hỏi số lượng là dấu hiệu chắc chắn phải có công thức. Cụm “chia hết cho ít nhất một trong…”, “không chia hết cho số nào trong…” gợi ý nguyên lý bù trừ. Cụm “ít nhất một…” thường gợi ý đếm phần bù.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần quy tắc đếm</h2>
+    <p><strong>Bài toán mở đầu.</strong> Lớp 9A có 30 bạn. (a) Cô chủ nhiệm cần chọn 1 lớp trưởng và 1 lớp phó, hai người khác nhau. Có bao nhiêu cách? (b) Cô cần chọn 2 bạn trực nhật. Có bao nhiêu cách?</p>
+    <p>Cách ngây thơ là hai vòng lặp lồng nhau thử mọi cặp (i, j): đếm cặp i ≠ j được 870, cặp i &lt; j được 435. Với 30 bạn, máy chạy tức thì. Nhưng hãy đổi đề một chút:</p>
+    <ul>
+      <li>Chọn một đội 20 người trong 40 người. Số cách là C(40, 20) = 137 846 528 820, khoảng 1,4 · 10¹¹. Liệt kê từng đội mất vài phút, trong khi đề chỉ cho 1 giây.</li>
+      <li>Đếm các số từ 1 đến n = 10¹⁸ chia hết cho 2 hoặc 3. Vòng lặp chạy 10¹⁸ lần: với tốc độ khoảng 10⁸ phép tính mỗi giây, máy cần hơn 300 năm.</li>
+    </ul>
+    <div class="versus">
+      <div class="bad-side"><h4>Liệt kê rồi đếm</h4><p>Thử từng cách một. Số phép tính bằng đúng số cách cần đếm: C(40, 20) ≈ 1,4 · 10¹¹ đội, hoặc 10¹⁸ số. <span class="bigo">O(số cách)</span>, quá chậm.</p></div>
+      <div class="good-side"><h4>Dùng quy tắc đếm</h4><p>C(40, 20) tính bằng 20 phép nhân và 20 phép chia. Số chia hết cho 2 hoặc 3 tính bằng 3 phép chia: n/2 + n/3 − n/6. <span class="bigo">O(k)</span> hoặc <span class="bigo">O(1)</span>, xong trong tích tắc.</p></div>
+    </div>
+    <p>Quay lại bài lớp 9A. Câu (a): chọn lớp trưởng có 30 cách, <em>sau đó</em> chọn lớp phó trong 29 bạn còn lại có 29 cách. Theo quy tắc nhân: 30 · 29 = 870. Câu (b): nếu cũng làm như vậy ta được 870, nhưng cặp (An, Bình) và cặp (Bình, An) là <em>cùng một</em> nhóm trực nhật, bị đếm hai lần. Vậy đáp số là 870 : 2 = 435. Sự khác nhau giữa “có thứ tự” và “không thứ tự” chính là chìa khóa của cả bài học.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước giải một bài đếm</h2>
+
+    <h3>Quy tắc cộng và quy tắc nhân</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Mô tả một “cách”.</strong> Ví dụ một mật khẩu là một dãy 4 chữ số.</div></li>
+      <li><div><strong>Hỏi: chia trường hợp hay làm từng bước?</strong> Nếu mỗi cách thuộc đúng một trong vài trường hợp tách rời, đếm từng trường hợp rồi <em>cộng</em>. Nếu mỗi cách được tạo ra qua nhiều bước nối tiếp, đếm số lựa chọn ở mỗi bước rồi <em>nhân</em>.</div></li>
+      <li><div><strong>Kiểm tra điều kiện.</strong> Cộng thì các trường hợp không được trùng nhau. Nhân thì <em>số lượng</em> lựa chọn ở bước sau phải như nhau, dù bước trước chọn gì.</div></li>
+    </ol>
+    <p>Ví dụ: mật khẩu 4 chữ số có 10 · 10 · 10 · 10 = 10 000 cách. Mật khẩu 4 chữ số <em>đôi một khác nhau</em> có 10 · 9 · 8 · 7 = 5 040 cách: chữ số thứ hai có 9 lựa chọn, dù chữ số đầu là gì.</p>
+
+    <h3>Hoán vị, chỉnh hợp, tổ hợp</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Đổi chỗ thử.</strong> Lấy một cách chọn, đổi thứ tự hai phần tử. Nếu được một cách <em>khác</em> (lớp trưởng An, lớp phó Bình khác với lớp trưởng Bình, lớp phó An) thì bài có thứ tự. Nếu vẫn là cách cũ (nhóm trực nhật {An, Bình}) thì không thứ tự.</div></li>
+      <li><div><strong>Chọn công thức.</strong> Lấy tất cả n vật và có thứ tự: hoán vị n!. Lấy k vật, có thứ tự: chỉnh hợp A(n, k). Lấy k vật, không thứ tự: tổ hợp C(n, k). Được lấy lại một vật nhiều lần và có thứ tự: n<sup>k</sup> (quy tắc nhân).</div></li>
+      <li><div><strong>Tính an toàn.</strong> Không tính n! rồi chia, vì n! tràn số rất nhanh. Tính A(n, k) bằng tích k thừa số; tính C(n, k) bằng cách nhân và chia xen kẽ, hoặc lấy modulo theo bài <a href="binomial.html">hệ số nhị thức</a>.</div></li>
+    </ol>
+<pre class="pseudo"><b>hàm</b> ChinhHop(n, k):
+    r ← 1
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> k − 1:
+        r ← r · (n − i)                 <i>// n · (n−1) · … · (n−k+1)</i>
+    <b>trả về</b> r
+
+<b>hàm</b> ToHop(n, k):
+    <b>nếu</b> k &gt; n − k: k ← n − k          <i>// C(n, k) = C(n, n−k)</i>
+    r ← 1
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> k:
+        r ← r · (n − k + i) / i         <i>// luôn chia hết, r = C(n−k+i, i)</i>
+    <b>trả về</b> r</pre>
+
+    <h3>Đếm phần bù</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Đếm tổng số cách</strong>, không quan tâm điều kiện.</div></li>
+      <li><div><strong>Đếm số cách “xấu”</strong>, tức là vi phạm điều kiện. Thường điều kiện “ít nhất một” có phần bù là “không có cái nào”, rất dễ đếm.</div></li>
+      <li><div><strong>Lấy hiệu:</strong> số cách tốt = tổng − xấu.</div></li>
+    </ol>
+
+    <h3>Nguyên lý bù trừ</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Đặt tên các tập.</strong> Ví dụ A₁ là tập các số chia hết cho a₁, A₂ chia hết cho a₂… Ta cần |A₁ ∪ A₂ ∪ … ∪ A<sub>k</sub>|.</div></li>
+      <li><div><strong>Duyệt mọi tập con khác rỗng</strong> S của {1, 2, …, k}. Có 2<sup>k</sup> − 1 tập con, biểu diễn bằng số nhị phân (mask).</div></li>
+      <li><div><strong>Tính giao</strong> của các tập trong S. Với bài chia hết, giao là các số chia hết cho BCNN của các a<sub>i</sub> trong S, có n / BCNN số.</div></li>
+      <li><div><strong>Cộng hoặc trừ.</strong> S có lẻ phần tử thì cộng, chẵn phần tử thì trừ.</div></li>
+    </ol>
+<pre class="pseudo"><b>hàm</b> DemHop(n, a[0..k−1]):         <i>// số x ≤ n chia hết cho ít nhất một a[i]</i>
+    dem ← 0
+    <b>với</b> mask <b>từ</b> 1 <b>đến</b> 2^k − 1:
+        l ← BCNN của các a[i] có bit i của mask bằng 1
+        <b>nếu</b> l &gt; n: <b>bỏ qua</b>               <i>// không có bội nào ≤ n</i>
+        <b>nếu</b> mask có lẻ bit 1: dem ← dem + n / l
+        <b>ngược lại</b>:             dem ← dem − n / l
+    <b>trả về</b> dem</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Vì sao quy tắc nhân đúng</h3>
+    <p>Vẽ mọi cách thành một <strong>cây lựa chọn</strong> (Hình 1): gốc tách thành m nhánh (bước 1), mỗi nhánh tách thành n nhánh con (bước 2). Mỗi lá là đúng một cách làm trọn vẹn. Có m nhóm, mỗi nhóm n lá, nên có m · n lá. Nếu các nhánh có số nhánh con khác nhau thì phải cộng từng nhóm thay vì nhân.</p>
+
+    <h3>Vì sao A(n, k) = n!/(n − k)!</h3>
+    <p>Xếp k người vào k vị trí có thứ tự, lấy từ n người. Vị trí 1 có n lựa chọn. Vị trí 2 có n − 1 lựa chọn (đã dùng 1 người). Vị trí k có n − k + 1 lựa chọn. Theo quy tắc nhân:</p>
+    <div class="math-block">A(n, k) = n · (n − 1) · … · (n − k + 1) = <span class="frac"><span>n!</span><span>(n − k)!</span></span></div>
+    <p>Chia n! cho (n − k)! là triệt tiêu các thừa số từ 1 đến n − k, còn lại đúng k thừa số lớn nhất. Khi k = n ta được hoán vị n! (quy ước 0! = 1).</p>
+
+    <h3>Vì sao tổ hợp phải chia cho k!</h3>
+    <p>Đây là ý quan trọng nhất của bài. Hãy đếm số chỉnh hợp A(n, k) theo <em>hai bước</em> khác:</p>
+    <ol>
+      <li>Bước 1: chọn ra <em>nhóm</em> k người, không quan tâm thứ tự. Có C(n, k) cách (đây là số ta cần tìm).</li>
+      <li>Bước 2: xếp thứ tự k người trong nhóm vừa chọn. Đó là một hoán vị của k người, có k! cách.</li>
+    </ol>
+    <p>Mỗi chỉnh hợp được tạo ra đúng một lần theo cách này, nên theo quy tắc nhân A(n, k) = C(n, k) · k!. Suy ra:</p>
+    <div class="math-block">C(n, k) = <span class="frac"><span>A(n, k)</span><span>k!</span></span> = <span class="frac"><span>n!</span><span>k! · (n − k)!</span></span></div>
+    <p>Với lớp 30 bạn và k = 2: C(30, 2) = 870 / 2! = 435. Mỗi nhóm 2 bạn có 2! = 2 thứ tự, nên khi đếm có thứ tự, mỗi nhóm bị đếm 2 lần. Chọn 3 bạn thì mỗi nhóm có 3! = 6 thứ tự: A(30, 3) = 30 · 29 · 28 = 24 360, còn C(30, 3) = 24 360 / 6 = 4 060.</p>
+    <p>Hai tính chất hay dùng: <span class="math">C(n, k) = C(n, n − k)</span> (chọn k người đi cũng là chọn n − k người ở lại) và <span class="math">C(n, 0) = C(n, n) = 1</span>.</p>
+
+    <p><strong>Vì sao “nhân rồi chia ngay” không bị lẻ?</strong> Sau vòng thứ i của ToHop, r = C(n − k + i, i) là số nguyên, vì C(m, i) = C(m − 1, i − 1) · m / i. Nhờ chia ngay, r luôn nhỏ, nên tính được C(60, 30) ≈ 1,18 · 10¹⁷ bằng <code>long long</code>, dù 60! có 82 chữ số.</p>
+
+    <h3>Hoán vị lặp</h3>
+    <p>Có bao nhiêu cách xếp các chữ cái của từ BANANA? Mẹo: tạm “sơn màu” để các chữ giống nhau trở thành khác nhau: B, A₁, N₁, A₂, N₂, A₃. Khi đó có 6! = 720 cách xếp. Bây giờ xóa màu đi. Ba chữ A₁, A₂, A₃ đổi chỗ cho nhau theo 3! = 6 cách mà từ không đổi; hai chữ N đổi chỗ theo 2! = 2 cách. Vậy mỗi từ thật bị đếm 6 · 2 = 12 lần:</p>
+    <div class="math-block">số cách = <span class="frac"><span>6!</span><span>3! · 2! · 1!</span></span> = <span class="frac"><span>720</span><span>12</span></span> = 60</div>
+    <p>Tổng quát: n vật gồm c₁ vật loại 1, c₂ vật loại 2, …, thì số cách xếp là n! / (c₁! · c₂! · …). Thật ra C(n, k) chính là hoán vị lặp của k chữ “chọn” và n − k chữ “không chọn”.</p>
+
+    <h3>Đếm phần bù</h3>
+    <p>Có bao nhiêu mật khẩu 4 chữ số có <em>ít nhất một</em> chữ số lặp lại? Đếm trực tiếp phải chia rất nhiều trường hợp. Đếm phần bù nhanh hơn: tổng 10 000, trừ đi số mật khẩu <em>không</em> lặp là 5 040, còn <strong>4 960</strong>. Phép trừ đúng vì Tổng = Tốt + Xấu theo quy tắc cộng.</p>
+
+    <h3>Nguyên lý bù trừ: vì sao đúng</h3>
+    <p>Với hai tập: khi tính |A| + |B|, phần tử nằm trong cả A và B bị đếm hai lần, nên trừ |A ∩ B| một lần:</p>
+    <div class="math-block">|A ∪ B| = |A| + |B| − |A ∩ B|</div>
+    <p>Với ba tập:</p>
+    <div class="math-block">|A ∪ B ∪ C| = |A| + |B| + |C| − |A ∩ B| − |A ∩ C| − |B ∩ C| + |A ∩ B ∩ C|</div>
+    <p>Vì sao phải cộng lại |A ∩ B ∩ C|? Xét một phần tử x thuộc cả ba tập. Ở tổng thứ nhất x được cộng 3 lần. Ở tổng thứ hai x bị trừ 3 lần (nó thuộc cả ba giao đôi). Đến đây x được đếm 3 − 3 = 0 lần, tức là bị mất. Cộng |A ∩ B ∩ C| để trả x về đúng 1 lần.</p>
+    <p>Tổng quát, nếu x thuộc đúng m tập (m ≥ 1) thì trong công thức đầy đủ, x được đếm</p>
+    <div class="math-block">C(m, 1) − C(m, 2) + C(m, 3) − … ± C(m, m) = 1 lần</div>
+    <p>Đẳng thức này đúng vì 1 − C(m,1) + C(m,2) − … = (1 − 1)<sup>m</sup> = 0 (khai triển nhị thức, xem bài <a href="binomial.html">hệ số nhị thức</a>). Phần tử không thuộc tập nào thì không xuất hiện ở số hạng nào. Vậy mỗi phần tử của hợp được đếm đúng một lần: công thức đúng.</p>
+    <p>Với bài chia hết: tập các số trong [1, n] chia hết cho cả a và b là tập các số chia hết cho BCNN(a, b), có ⌊n / BCNN(a, b)⌋ phần tử. Chú ý: BCNN, không phải tích a · b.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Mỗi công thức chỉ cần vài phép tính, không phụ thuộc vào số cách cần đếm. Bù trừ với k tập có 2<sup>k</sup> − 1 số hạng, mỗi số hạng tốn O(k) để tính BCNN, tổng O(2<sup>k</sup> · k). Với k = 20: khoảng 2 · 10⁷ phép tính, chạy dưới 0,1 giây, dù n lên tới 10¹⁸.</p>
+
+    <h3>Nguyên lý Dirichlet (chuồng bồ câu)</h3>
+    <p>Nguyên lý Dirichlet (pigeonhole principle) không đếm chính xác mà khẳng định <em>chắc chắn tồn tại</em>: nhốt n + 1 con chim vào n cái chuồng thì có ít nhất một chuồng chứa từ 2 con trở lên. Tổng quát hơn, chia N vật vào k hộp thì có một hộp chứa ít nhất ⌈N / k⌉ vật. Ví dụ: lớp 30 bạn thì chắc chắn có 3 bạn sinh cùng tháng, vì ⌈30 / 12⌉ = 3. Trong lập trình, nó hay dùng để chứng minh đáp án luôn tồn tại. Ví dụ: trong n số nguyên bất kỳ luôn có một đoạn liên tiếp có tổng chia hết cho n, vì n + 1 tổng cộng dồn S₀, S₁, …, S<sub>n</sub> chỉ có n số dư khác nhau khi chia cho n, nên có hai tổng cùng số dư.</p>
+
+    <h3>Số quá lớn: lấy modulo</h3>
+    <p>2¹⁰⁰⁰⁰⁰⁰ có hơn 300 nghìn chữ số, còn (10⁶)! có hơn 5 triệu chữ số, nên đề thường yêu cầu in phần dư khi chia cho 10⁹ + 7. Phép cộng, trừ, nhân đều lấy dư từng bước được: <span class="math">(a · b) mod p = ((a mod p) · (b mod p)) mod p</span>. Phép <strong>chia thì không</strong>: phải nhân với nghịch đảo modulo, tính bằng <a href="modular-power.html">lũy thừa nhanh</a>. Chi tiết tính C(n, k) theo modulo nằm ở bài <a href="binomial.html">hệ số nhị thức</a>.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi áp công thức, hãy tự hỏi to: “Mình đang chia trường hợp hay đang làm từng bước? Đổi chỗ hai thứ thì có ra cách mới không?”. Trả lời đúng hai câu này là xong một nửa bài.</p></div>
+  </section>
+
+    <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+
+    <h3>Cây lựa chọn của quy tắc nhân</h3>
+    <p>Quay lại tủ quần áo: 3 áo, 2 quần. Mỗi đường đi từ gốc xuống lá là một bộ đồ. Đếm lá chính là đếm số cách.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 420 220" width="420" role="img" aria-label="Cây lựa chọn: 3 áo, mỗi áo tách thành 2 quần, tổng cộng 6 lá">
+        <line class="edge" x1="210" y1="30" x2="70" y2="100"/>
+        <line class="edge" x1="210" y1="30" x2="210" y2="100"/>
+        <line class="edge" x1="210" y1="30" x2="350" y2="100"/>
+        <line class="edge is-active" x1="70" y1="100" x2="35" y2="170"/>
+        <line class="edge is-active" x1="70" y1="100" x2="105" y2="170"/>
+        <line class="edge" x1="210" y1="100" x2="175" y2="170"/>
+        <line class="edge" x1="210" y1="100" x2="245" y2="170"/>
+        <line class="edge" x1="350" y1="100" x2="315" y2="170"/>
+        <line class="edge" x1="350" y1="100" x2="385" y2="170"/>
+        <circle class="node" cx="210" cy="30" r="18"/><text x="210" y="35" text-anchor="middle">*</text>
+        <circle class="node is-active" cx="70" cy="100" r="18"/><text x="70" y="105" text-anchor="middle">Á1</text>
+        <circle class="node" cx="210" cy="100" r="18"/><text x="210" y="105" text-anchor="middle">Á2</text>
+        <circle class="node" cx="350" cy="100" r="18"/><text x="350" y="105" text-anchor="middle">Á3</text>
+        <circle class="node is-ok" cx="35" cy="170" r="16"/><text x="35" y="175" text-anchor="middle">Q1</text>
+        <circle class="node is-ok" cx="105" cy="170" r="16"/><text x="105" y="175" text-anchor="middle">Q2</text>
+        <circle class="node is-ok" cx="175" cy="170" r="16"/><text x="175" y="175" text-anchor="middle">Q1</text>
+        <circle class="node is-ok" cx="245" cy="170" r="16"/><text x="245" y="175" text-anchor="middle">Q2</text>
+        <circle class="node is-ok" cx="315" cy="170" r="16"/><text x="315" y="175" text-anchor="middle">Q1</text>
+        <circle class="node is-ok" cx="385" cy="170" r="16"/><text x="385" y="175" text-anchor="middle">Q2</text>
+        <text class="label-sm" x="10" y="70">bước 1: 3 cách</text>
+        <text class="label-sm" x="10" y="140">bước 2: 2 cách</text>
+        <text class="label-pen" x="210" y="210" text-anchor="middle">3 · 2 = 6 lá = 6 bộ đồ</text>
+      </svg>
+      <figcaption>Hình 1. Mỗi áo (Á1, Á2, Á3) đều ghép được với cả 2 quần (Q1, Q2). Vì số nhánh con ở mọi nút tầng 1 bằng nhau nên ta được phép nhân.</figcaption>
+    </figure>
+
+    <h3>Chỉnh hợp và tổ hợp: thấy tận mắt phép chia 2!</h3>
+    <p>Chạy tay với 4 bạn A, B, C, D. Đầu tiên đếm các cách chọn <em>có thứ tự</em> (lớp trưởng, lớp phó), sau đó gộp các cách chỉ khác nhau về thứ tự.</p>
+    <div class="stepper" data-title="Từ chỉnh hợp chập 2 đến tổ hợp chập 2 của {A, B, C, D}">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Có 4 bạn A, B, C, D. Ta chọn người thứ nhất (lớp trưởng, theo hàng) rồi người thứ hai (lớp phó, theo cột). Đường chéo bị tô đen vì một bạn không giữ hai chức.">
+<div class="grid-viz" style="--cols:5">
+<span class="g h">1 \ 2</span><span class="g h">A</span><span class="g h">B</span><span class="g h">C</span><span class="g h">D</span>
+<span class="g h">A</span><span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+<span class="g h">B</span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+<span class="g h">C</span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span>
+<span class="g h">D</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span>
+</div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Chọn A làm lớp trưởng. Lớp phó còn 3 lựa chọn: B, C, D. Ta được AB, AC, AD.">
+<div class="grid-viz" style="--cols:5">
+<span class="g h">1 \ 2</span><span class="g h">A</span><span class="g h">B</span><span class="g h">C</span><span class="g h">D</span>
+<span class="g h">A</span><span class="g is-wall"></span><span class="g is-active">AB</span><span class="g is-active">AC</span><span class="g is-active">AD</span>
+<span class="g h">B</span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+<span class="g h">C</span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span>
+<span class="g h">D</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span>
+</div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; Làm tương tự cho B, C, D. Mỗi hàng có đúng 3 ô, có 4 hàng: theo quy tắc nhân, A(4, 2) = 4 · 3 = 12 chỉnh hợp.">
+<div class="grid-viz" style="--cols:5">
+<span class="g h">1 \ 2</span><span class="g h">A</span><span class="g h">B</span><span class="g h">C</span><span class="g h">D</span>
+<span class="g h">A</span><span class="g is-wall"></span><span class="g is-active">AB</span><span class="g is-active">AC</span><span class="g is-active">AD</span>
+<span class="g h">B</span><span class="g is-active">BA</span><span class="g is-wall"></span><span class="g is-active">BC</span><span class="g is-active">BD</span>
+<span class="g h">C</span><span class="g is-active">CA</span><span class="g is-active">CB</span><span class="g is-wall"></span><span class="g is-active">CD</span>
+<span class="g h">D</span><span class="g is-active">DA</span><span class="g is-active">DB</span><span class="g is-active">DC</span><span class="g is-wall"></span>
+</div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; Nếu chỉ cần chọn 2 bạn trực nhật thì AB và BA là &lt;i&gt;cùng một nhóm&lt;/i&gt; {A, B}. Hai ô đối xứng qua đường chéo luôn là cùng một nhóm.">
+<div class="grid-viz" style="--cols:5">
+<span class="g h">1 \ 2</span><span class="g h">A</span><span class="g h">B</span><span class="g h">C</span><span class="g h">D</span>
+<span class="g h">A</span><span class="g is-wall"></span><span class="g is-cmp">AB</span><span class="g">AC</span><span class="g">AD</span>
+<span class="g h">B</span><span class="g is-cmp">BA</span><span class="g is-wall"></span><span class="g">BC</span><span class="g">BD</span>
+<span class="g h">C</span><span class="g">CA</span><span class="g">CB</span><span class="g is-wall"></span><span class="g">CD</span>
+<span class="g h">D</span><span class="g">DA</span><span class="g">DB</span><span class="g">DC</span><span class="g is-wall"></span>
+</div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; Mỗi nhóm 2 bạn xuất hiện đúng 2! = 2 lần. Giữ lại nửa trên đường chéo, bỏ nửa dưới (làm mờ): 12 : 2 = 6.">
+<div class="grid-viz" style="--cols:5">
+<span class="g h">1 \ 2</span><span class="g h">A</span><span class="g h">B</span><span class="g h">C</span><span class="g h">D</span>
+<span class="g h">A</span><span class="g is-wall"></span><span class="g is-ok">AB</span><span class="g is-ok">AC</span><span class="g is-ok">AD</span>
+<span class="g h">B</span><span class="g is-dim">BA</span><span class="g is-wall"></span><span class="g is-ok">BC</span><span class="g is-ok">BD</span>
+<span class="g h">C</span><span class="g is-dim">CA</span><span class="g is-dim">CB</span><span class="g is-wall"></span><span class="g is-ok">CD</span>
+<span class="g h">D</span><span class="g is-dim">DA</span><span class="g is-dim">DB</span><span class="g is-dim">DC</span><span class="g is-wall"></span>
+</div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 6.&lt;/b&gt; Kết quả: C(4, 2) = A(4, 2) / 2! = 6 nhóm. Chọn 3 bạn thì mỗi nhóm có 3! = 6 thứ tự, nên C(4, 3) = A(4, 3) / 3! = 24 / 6 = 4.">
+<div class="arr"><span class="arr-label">C(4,2)</span><span class="cell is-ok" data-i="1">{A,B}</span><span class="cell is-ok" data-i="2">{A,C}</span><span class="cell is-ok" data-i="3">{A,D}</span><span class="cell is-ok" data-i="4">{B,C}</span><span class="cell is-ok" data-i="5">{B,D}</span><span class="cell is-ok" data-i="6">{C,D}</span></div>
+<div class="arr"><span class="arr-label">C(4,3)</span><span class="cell is-cmp" data-i="1">{A,B,C}</span><span class="cell is-cmp" data-i="2">{A,B,D}</span><span class="cell is-cmp" data-i="3">{A,C,D}</span><span class="cell is-cmp" data-i="4">{B,C,D}</span></div>
+      </div>
+    </div>
+    <h3>Bù trừ hai tập, chạy tay trên đoạn [1, 20]</h3>
+    <p>Mỗi ô là một số. Theo dõi xem số nào bị đếm hai lần và vì sao phải trừ.</p>
+    <div class="stepper" data-title="Bù trừ hai tập: bội của 2 hoặc 3 trong [1, 20]">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Đếm các số từ 1 đến 20 chia hết cho 2 hoặc 3. Tổng cộng có 20 số.">
+<div class="arr"><span class="cell">1</span><span class="cell">2</span><span class="cell">3</span><span class="cell">4</span><span class="cell">5</span><span class="cell">6</span><span class="cell">7</span><span class="cell">8</span><span class="cell">9</span><span class="cell">10</span></div>
+<div class="arr"><span class="cell">11</span><span class="cell">12</span><span class="cell">13</span><span class="cell">14</span><span class="cell">15</span><span class="cell">16</span><span class="cell">17</span><span class="cell">18</span><span class="cell">19</span><span class="cell">20</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Tập A = bội của 2 (các ô được tô): |A| = ⌊20/2⌋ = 10 số.">
+<div class="arr"><span class="cell">1</span><span class="cell is-active">2</span><span class="cell">3</span><span class="cell is-active">4</span><span class="cell">5</span><span class="cell is-active">6</span><span class="cell">7</span><span class="cell is-active">8</span><span class="cell">9</span><span class="cell is-active">10</span></div>
+<div class="arr"><span class="cell">11</span><span class="cell is-active">12</span><span class="cell">13</span><span class="cell is-active">14</span><span class="cell">15</span><span class="cell is-active">16</span><span class="cell">17</span><span class="cell is-active">18</span><span class="cell">19</span><span class="cell is-active">20</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; Tập B = bội của 3: |B| = ⌊20/3⌋ = 6 số. Các ô 6, 12, 18 (tô kiểu “lỗi”) thuộc cả A và B nên đã bị đếm 2 lần. Cộng thẳng 10 + 6 = 16 là thừa.">
+<div class="arr"><span class="cell">1</span><span class="cell is-active">2</span><span class="cell is-cmp">3</span><span class="cell is-active">4</span><span class="cell">5</span><span class="cell is-bad">6</span><span class="cell">7</span><span class="cell is-active">8</span><span class="cell is-cmp">9</span><span class="cell is-active">10</span></div>
+<div class="arr"><span class="cell">11</span><span class="cell is-bad">12</span><span class="cell">13</span><span class="cell is-active">14</span><span class="cell is-cmp">15</span><span class="cell is-active">16</span><span class="cell">17</span><span class="cell is-bad">18</span><span class="cell">19</span><span class="cell is-active">20</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; A ∩ B là bội của BCNN(2, 3) = 6: có ⌊20/6⌋ = 3 số. Trừ đi một lần: |A ∪ B| = 10 + 6 − 3 = 13 số được giữ lại.">
+<div class="arr"><span class="cell is-dim">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span><span class="cell is-dim">5</span><span class="cell is-ok">6</span><span class="cell is-dim">7</span><span class="cell is-ok">8</span><span class="cell is-ok">9</span><span class="cell is-ok">10</span></div>
+<div class="arr"><span class="cell is-dim">11</span><span class="cell is-ok">12</span><span class="cell is-dim">13</span><span class="cell is-ok">14</span><span class="cell is-ok">15</span><span class="cell is-ok">16</span><span class="cell is-dim">17</span><span class="cell is-ok">18</span><span class="cell is-dim">19</span><span class="cell is-ok">20</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; Phần bù: số &lt;i&gt;không&lt;/i&gt; chia hết cho 2 lẫn 3 là 20 − 13 = 7, đúng là 1, 5, 7, 11, 13, 17, 19.">
+<div class="arr"><span class="cell is-active">1</span><span class="cell is-dim">2</span><span class="cell is-dim">3</span><span class="cell is-dim">4</span><span class="cell is-active">5</span><span class="cell is-dim">6</span><span class="cell is-active">7</span><span class="cell is-dim">8</span><span class="cell is-dim">9</span><span class="cell is-dim">10</span></div>
+<div class="arr"><span class="cell is-active">11</span><span class="cell is-dim">12</span><span class="cell is-active">13</span><span class="cell is-dim">14</span><span class="cell is-dim">15</span><span class="cell is-dim">16</span><span class="cell is-active">17</span><span class="cell is-dim">18</span><span class="cell is-active">19</span><span class="cell is-dim">20</span></div>
+      </div>
+    </div>
+    <h3>Sơ đồ Venn ba tập</h3>
+    <p>Với n = 100 và ba số 2, 3, 5, mỗi vùng trong sơ đồ ghi số lượng số rơi vào <em>đúng</em> vùng đó. Cộng 7 vùng bên trong: 27 + 14 + 7 + 13 + 7 + 3 + 3 = 74. Công thức bù trừ cho cùng kết quả: (50 + 33 + 20) − (16 + 10 + 6) + 3 = 103 − 32 + 3 = 74.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 390 280" width="390" role="img" aria-label="Sơ đồ Venn ba tập: bội của 2, bội của 3, bội của 5 trong đoạn từ 1 đến 100, kèm số phần tử mỗi vùng">
+        <circle class="edge stroke-accent" cx="150" cy="105" r="70"/>
+        <circle class="edge stroke-pen" cx="240" cy="105" r="70"/>
+        <circle class="edge" cx="195" cy="180" r="70"/>
+        <text x="110" y="95" text-anchor="middle">27</text>
+        <text x="280" y="95" text-anchor="middle">14</text>
+        <text x="195" y="230" text-anchor="middle">7</text>
+        <text x="195" y="82" text-anchor="middle">13</text>
+        <text x="148" y="165" text-anchor="middle">7</text>
+        <text x="242" y="165" text-anchor="middle">3</text>
+        <text x="195" y="135" text-anchor="middle">3</text>
+        <text class="label-sm" x="70" y="25">bội của 2: 50</text>
+        <text class="label-sm" x="250" y="25">bội của 3: 33</text>
+        <text class="label-sm" x="275" y="250">bội của 5: 20</text>
+        <text class="label-pen" x="10" y="272">ngoài cả ba: 26</text>
+      </svg>
+      <figcaption>Hình 2. Vùng giữa (3 số: 30, 60, 90) nằm trong cả ba hình tròn. Nó được cộng 3 lần, bị trừ 3 lần, nên phải cộng lại 1 lần.</figcaption>
+    </figure>
+
+    <h3>Bảng vết: duyệt tập con bằng mask</h3>
+    <p>Chạy thuật toán DemHop với n = 30, a = (2, 3, 5). Bit 0 ứng với số 2, bit 1 ứng với số 3, bit 2 ứng với số 5.</p>
+    <table class="trace">
+      <thead><tr><th>mask (nhị phân)</th><th>Tập con</th><th>BCNN l</th><th>⌊30 / l⌋</th><th>Dấu</th><th>dem</th></tr></thead>
+      <tbody>
+        <tr><td>001</td><td>{2}</td><td>2</td><td>15</td><td>+</td><td>15</td></tr>
+        <tr><td>010</td><td>{3}</td><td>3</td><td>10</td><td>+</td><td>25</td></tr>
+        <tr><td>011</td><td>{2, 3}</td><td>6</td><td>5</td><td>−</td><td>20</td></tr>
+        <tr><td>100</td><td>{5}</td><td>5</td><td>6</td><td>+</td><td>26</td></tr>
+        <tr><td>101</td><td>{2, 5}</td><td>10</td><td>3</td><td>−</td><td>23</td></tr>
+        <tr><td>110</td><td>{3, 5}</td><td>15</td><td>2</td><td>−</td><td>21</td></tr>
+        <tr class="hl"><td>111</td><td>{2, 3, 5}</td><td>30</td><td>1</td><td>+</td><td>22</td></tr>
+      </tbody>
+    </table>
+    <p>Có 22 số trong [1, 30] chia hết cho 2, 3 hoặc 5, nên có 30 − 22 = 8 số không chia hết cho số nào: 1, 7, 11, 13, 17, 19, 23, 29.</p>
+
+    <div class="playground" id="viz-counting">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: máy tính đếm</p></div>
+      <div class="playground-body">
+        <p>Phần 1: nhập n, k để tính n!, A(n, k), C(n, k), n<sup>k</sup> (số nguyên lớn, không tràn). Nếu n ≤ 8, bấm “Liệt kê” để xem từng cách bằng các chữ cái A, B, C…</p>
+        <p>Phần 2: nhập N và các số a<sub>i</sub> (tối đa 12 số) để đếm số x ≤ N chia hết cho ít nhất một a<sub>i</sub> bằng bù trừ. Nếu N ≤ 10⁶ máy sẽ đếm trâu để đối chiếu.</p>
+        <noscript><p>Cần bật JavaScript để dùng công cụ này.</p></noscript>
+      </div>
+    </div>
+  </section>
+
+
+    <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+
+    <h3>Chương trình 1: tính hoán vị, chỉnh hợp, tổ hợp</h3>
+    <p>Chương trình đọc n, k và in n!, A(n, k), C(n, k). Hàm <code>toHop</code> dùng cách nhân rồi chia ngay đã giải thích ở trên, nên không bao giờ phải tính n! đầy đủ. Hàm <code>giaiThua</code> chỉ gọi khi n ≤ 20, vì 20! = 2 432 902 008 176 640 000 vẫn vừa <code>long long</code> (tối đa khoảng 9,2 · 10¹⁸), còn 21! thì đã tràn.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_co_ban.cpp</span> Ba công thức đếm cơ bản, số chính xác</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Tính n! (chỉ đúng khi n &lt;= 20, vì 21! đã vượt long long)
+long long giaiThua(int n) {
+    long long r = 1;
+    for (int i = 2; i &lt;= n; i++) r *= i;
+    return r;
+}
+
+// Chỉnh hợp A(n, k) = n * (n-1) * ... * (n-k+1): đúng k thừa số
+long long chinhHop(int n, int k) {
+    if (k &lt; 0 || k &gt; n) return 0;
+    long long r = 1;
+    for (int i = 0; i &lt; k; i++) r *= (n - i);
+    return r;
+}
+
+// Tổ hợp C(n, k): nhân và chia xen kẽ để số không phình to.
+// Sau bước i, r = C(n-k+i, i) luôn là số nguyên nên phép chia luôn chia hết.
+long long toHop(int n, int k) {
+    if (k &lt; 0 || k &gt; n) return 0;
+    k = min(k, n - k);                 // C(n, k) = C(n, n-k), chọn k nhỏ cho nhanh
+    long long r = 1;
+    for (int i = 1; i &lt;= k; i++) {
+        r = r * (n - k + i) / i;
+    }
+    return r;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, k;
+    cin &gt;&gt; n &gt;&gt; k;                     // ví dụ: 30 2
+    if (n &lt;= 20) cout &lt;&lt; "P(" &lt;&lt; n &lt;&lt; ") = " &lt;&lt; giaiThua(n) &lt;&lt; '\n';
+    cout &lt;&lt; "A(" &lt;&lt; n &lt;&lt; ", " &lt;&lt; k &lt;&lt; ") = " &lt;&lt; chinhHop(n, k) &lt;&lt; '\n';
+    cout &lt;&lt; "C(" &lt;&lt; n &lt;&lt; ", " &lt;&lt; k &lt;&lt; ") = " &lt;&lt; toHop(n, k) &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">30 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">A(30, 2) = 870
+C(30, 2) = 435</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">P(5) = 120
+A(5, 3) = 60
+C(5, 3) = 10</code></pre></div>
+    </div>
+
+    <h3>Chương trình 2: nguyên lý bù trừ tổng quát</h3>
+    <p>Đếm số x trong [1, n] chia hết cho ít nhất một trong k số a<sub>i</sub>, tức bài <a href="https://lqdoj.edu.vn/problem/cses2185">Prime Multiples</a> (khi các a<sub>i</sub> là số nguyên tố thì BCNN là tích). Điểm tinh tế: BCNN có thể vượt 10¹⁸ và tràn số. Ta kiểm tra <code>t &gt; n / a[i]</code> <em>trước</em> khi nhân. Nếu đúng thì t · a[i] &gt; n, tập giao không có phần tử nào, bỏ qua luôn.</p>
+    <figure class="code">
+      <figcaption><span class="fn">bu_tru.cpp</span> Duyệt mọi tập con bằng mask, cộng lẻ trừ chẵn</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Đếm số x trong [1, n] chia hết cho ÍT NHẤT MỘT số trong a[0..k-1]
+// bằng nguyên lý bù trừ: duyệt mọi tập con khác rỗng.
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    long long n;
+    int k;
+    cin &gt;&gt; n &gt;&gt; k;
+    vector&lt;long long&gt; a(k);
+    for (auto &amp;x : a) cin &gt;&gt; x;
+
+    long long dem = 0;
+    for (int mask = 1; mask &lt; (1 &lt;&lt; k); mask++) {
+        long long l = 1;               // BCNN của các số được chọn
+        bool vuot = false;             // BCNN đã vượt n chưa?
+        for (int i = 0; i &lt; k; i++) {
+            if (mask &gt;&gt; i &amp; 1) {
+                long long g = __gcd(l, a[i]);
+                long long t = l / g;   // l * a[i] / g = t * a[i]
+                if (t &gt; n / a[i]) { vuot = true; break; }  // t * a[i] &gt; n
+                l = t * a[i];
+            }
+        }
+        if (vuot) continue;            // không có bội nào trong [1, n]
+        int sl = __builtin_popcount(mask);
+        if (sl % 2 == 1) dem += n / l; // tập con lẻ phần tử: cộng
+        else             dem -= n / l; // tập con chẵn phần tử: trừ
+    }
+    cout &lt;&lt; dem &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">30 3
+2 3 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">22</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">20 2
+2 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">12</code></pre></div>
+    </div>
+
+    <h3>Chương trình 3: kiểm tra công thức bằng duyệt trâu</h3>
+    <p>Mỗi khi tìm ra một công thức đếm, hãy viết thêm chương trình duyệt trâu với n nhỏ để so sánh. Chương trình dưới đây liệt kê mọi tập con bằng mask (đếm tổ hợp) và mọi hoán vị bằng <code>next_permutation</code> (đếm chỉnh hợp), rồi so với công thức cho mọi n ≤ 8.</p>
+    <figure class="code">
+      <figcaption><span class="fn">kiem_tra.cpp</span> Duyệt trâu đối chiếu A(n, k) và C(n, k)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Kiểm tra công thức A(n,k), C(n,k) bằng cách liệt kê trâu với n nhỏ.
+long long A(int n, int k) { long long r = 1; for (int i = 0; i &lt; k; i++) r *= n - i; return r; }
+long long C(int n, int k) { long long r = 1; for (int i = 1; i &lt;= k; i++) r = r * (n - k + i) / i; return r; }
+
+int main() {
+    bool ok = true;
+    for (int n = 1; n &lt;= 8; n++) {
+        for (int k = 0; k &lt;= n; k++) {
+            // Đếm trâu tổ hợp: các mask có đúng k bit 1
+            long long toHop = 0;
+            for (int m = 0; m &lt; (1 &lt;&lt; n); m++)
+                if (__builtin_popcount(m) == k) toHop++;
+            // Đếm trâu chỉnh hợp: mỗi tập k phần tử có k! thứ tự,
+            // liệt kê bằng next_permutation trên mảng 0..n-1, lấy k phần tử đầu,
+            // và chỉ đếm khi phần còn lại tăng dần (để mỗi dãy k phần tử đếm đúng 1 lần)
+            vector&lt;int&gt; p(n);
+            iota(p.begin(), p.end(), 0);
+            long long chinhHop = 0;
+            do {
+                if (is_sorted(p.begin() + k, p.end())) chinhHop++;
+            } while (next_permutation(p.begin(), p.end()));
+            if (toHop != C(n, k) || chinhHop != A(n, k)) {
+                ok = false;
+                cout &lt;&lt; "SAI ở n = " &lt;&lt; n &lt;&lt; ", k = " &lt;&lt; k &lt;&lt; '\n';
+            }
+        }
+    }
+    cout &lt;&lt; (ok ? "Tất cả công thức đều đúng với n &lt;= 8" : "Có lỗi!") &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">(không có input)</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">Tất cả công thức đều đúng với n &lt;= 8</code></pre></div>
+    </div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Việc cần làm</th><th>Thời gian</th><th>Bộ nhớ</th><th>Ghi chú</th></tr></thead>
+      <tbody>
+        <tr><td>n! (số chính xác)</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(1)</span></td><td>chỉ n ≤ 20 với <code>long long</code></td></tr>
+        <tr><td>A(n, k)</td><td><span class="bigo">O(k)</span></td><td><span class="bigo">O(1)</span></td><td>tích k thừa số</td></tr>
+        <tr><td>C(n, k) nhân chia xen kẽ</td><td><span class="bigo">O(min(k, n − k))</span></td><td><span class="bigo">O(1)</span></td><td>chính xác khi kết quả · n vừa <code>long long</code>, ví dụ n ≤ 60</td></tr>
+        <tr><td>2<sup>n</sup> mod p, n<sup>k</sup> mod p</td><td><span class="bigo">O(log k)</span></td><td><span class="bigo">O(1)</span></td><td><a href="modular-power.html">lũy thừa nhanh</a></td></tr>
+        <tr><td>Hoán vị lặp mod p</td><td><span class="bigo">O(n + 26 log p)</span></td><td><span class="bigo">O(n)</span></td><td>bảng giai thừa + nghịch đảo</td></tr>
+        <tr><td>Bù trừ 2 hoặc 3 tập</td><td><span class="bigo">O(1)</span></td><td><span class="bigo">O(1)</span></td><td>vài phép chia</td></tr>
+        <tr><td>Bù trừ k tập (duyệt mask)</td><td><span class="bigo">O(2<sup>k</sup> · k)</span></td><td><span class="bigo">O(k)</span></td><td>k ≤ 20 là thoải mái</td></tr>
+        <tr><td>Duyệt trâu để kiểm tra</td><td><span class="bigo">O(n! · n)</span> hoặc <span class="bigo">O(2<sup>n</sup>)</span></td><td><span class="bigo">O(n)</span></td><td>chỉ dùng với n ≤ 10</td></tr>
+      </tbody>
+    </table>
+    <p>Ví dụ số phép tính: bài Prime Multiples có k = 20, nên 2²⁰ − 1 = 1 048 575 tập con, mỗi tập con tốn tối đa 20 bước, tổng khoảng 2 · 10⁷ phép tính, chạy chừng 0,05 giây. Nếu k = 30 thì 2³⁰ · 30 ≈ 3,2 · 10¹⁰, quá chậm. Duyệt trâu 8! = 40 320 hoán vị thì tức thì, nhưng 13! ≈ 6,2 · 10⁹ đã không kịp.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Chỉnh hợp lặp: n<sup>k</sup> và xâu nhị phân</h3>
+    <p>Mỗi vị trí chọn tự do một trong n giá trị, được lặp lại: theo quy tắc nhân có n<sup>k</sup> cách. Số xâu nhị phân độ dài n, cũng là số tập con của tập n phần tử, bằng 2<sup>n</sup>. Khi n tới 10⁶, nhân dần và lấy mod sau mỗi bước, hoặc dùng <a href="modular-power.html">lũy thừa nhanh</a>.</p>
+
+    <h3>Hoán vị lặp theo modulo</h3>
+    <p>Đếm số xâu khác nhau tạo từ các ký tự của xâu s (bài Creating Strings II): đáp số là n! / (c<sub>a</sub>! · c<sub>b</sub>! · … · c<sub>z</sub>!), với c<sub>x</sub> là số lần ký tự x xuất hiện. Vì phải lấy mod 10⁹ + 7 nên “chia cho c!” được thay bằng “nhân với nghịch đảo của c!”. Theo định lý Fermat nhỏ, nghịch đảo của x modulo số nguyên tố p là x<sup>p−2</sup> mod p.</p>
+    <figure class="code">
+      <figcaption><span class="fn">hoan_vi_lap.cpp</span> Số hoán vị khác nhau của một xâu, mod 1e9+7</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const long long MOD = 1e9 + 7;
+
+// Lũy thừa nhanh: a^b mod MOD (xem bài modular-power)
+long long power(long long a, long long b) {
+    long long r = 1; a %= MOD;
+    while (b &gt; 0) {
+        if (b &amp; 1) r = r * a % MOD;
+        a = a * a % MOD;
+        b &gt;&gt;= 1;
+    }
+    return r;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    string s;
+    cin &gt;&gt; s;
+    int n = s.size();
+    vector&lt;long long&gt; cnt(26, 0);
+    for (char ch : s) cnt[ch - 'a']++;
+
+    vector&lt;long long&gt; f(n + 1, 1);              // f[i] = i! mod MOD
+    for (int i = 1; i &lt;= n; i++) f[i] = f[i - 1] * i % MOD;
+
+    long long ans = f[n];
+    for (int c = 0; c &lt; 26; c++) {
+        // chia cho cnt[c]! = nhân với nghịch đảo (cnt[c]!)^(MOD-2)
+        ans = ans * power(f[cnt[c]], MOD - 2) % MOD;
+    }
+    cout &lt;&lt; ans &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">aabac</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">20</code></pre></div>
+    </div>
+    <p>Kiểm tra tay: “aabac” có n = 5, ba chữ a, một b, một c, nên 5! / 3! = 120 / 6 = 20.</p>
+
+    <h3>Đếm trên đoạn [L, R]</h3>
+    <p>Gần như mọi bài “đếm số trong đoạn [L, R]” đều giải bằng mẹo: viết hàm f(x) đếm trong [1, x], rồi lấy f(R) − f(L − 1). Kết hợp với bù trừ hai tập:</p>
+    <figure class="code">
+      <figcaption><span class="fn">doan.cpp</span> Hàm đếm bội của a hoặc b</figcaption>
+<pre><code class="language-cpp">// f(x) = số bội của a hoặc b trong [1, x]
+long long f(long long x, long long a, long long b) {
+    long long l = a / __gcd(a, b) * b;      // BCNN: chia trước rồi mới nhân để đỡ tràn
+    return x / a + x / b - x / l;
+}
+// Số bội của a hoặc b trong đoạn [L, R]:
+// f(R, a, b) - f(L - 1, a, b)</code></pre>
+    </figure>
+    <p>Ví dụ L = 5, R = 11, a = 4, b = 6: f(11) = 2 + 1 − 0 = 3 (các số 4, 6, 8), f(4) = 1 + 0 − 0 = 1 (số 4), đáp số 3 − 1 = 2 (các số 6, 8).</p>
+
+    <h3>Nâng cao: hoán vị không có điểm cố định</h3>
+    <p>Có bao nhiêu cách bỏ n lá thư vào n phong bì để <em>không</em> lá nào đúng địa chỉ? Gọi A<sub>i</sub> là tập các hoán vị mà thư i vào đúng chỗ. Giao của j tập bất kỳ có (n − j)! hoán vị (j thư đã cố định, các thư còn lại tự do), và có C(n, j) cách chọn j tập. Theo bù trừ, số cách cần tìm là</p>
+    <div class="math-block">D(n) = n! − C(n,1)(n−1)! + C(n,2)(n−2)! − … = n! · (1 − 1/1! + 1/2! − … ± 1/n!)</div>
+    <p>Với n = 4: 24 − 24 + 12 − 4 + 1 = 9. Dãy D(n) bắt đầu 0, 1, 2, 9, 44, 265, … Đoạn code ngắn tính D(n) chính xác với n ≤ 20:</p>
+    <figure class="code">
+      <figcaption><span class="fn">derange.cpp</span> Bù trừ cho hoán vị không điểm cố định</figcaption>
+<pre><code class="language-cpp">// Số hoán vị của n phần tử mà không phần tử nào đứng đúng chỗ cũ (n &lt;= 20)
+long long derange(int n) {
+    long long f = 1;                 // f = n! / i!, bắt đầu với i = n
+    for (int i = 2; i &lt;= n; i++) f *= i;
+    long long kq = 0, t = f;         // t = n! / i!
+    for (int i = 0; i &lt;= n; i++) {
+        if (i &gt; 0) t /= i;           // n!/i! = (n!/(i-1)!) / i
+        kq += (i % 2 == 0 ? t : -t); // dấu (-1)^i
+    }
+    return kq;                       // derange(4) = 9
+}</code></pre>
+    </figure>
+    <p>Có thể tính D(n) bằng truy hồi D(n) = (n − 1)(D(n − 1) + D(n − 2)), xem thêm <a href="dp-intro.html">quy hoạch động nhập môn</a>.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Nhầm chỉnh hợp với tổ hợp</p><p>Chọn 2 bạn trực nhật mà dùng 30 · 29 = 870 là sai, vì nhóm {An, Bình} bị đếm hai lần. Ngược lại, chọn lớp trưởng và lớp phó mà dùng C(30, 2) = 435 cũng sai. Cách sửa: luôn thử “đổi chỗ hai người, có ra cách mới không?” trước khi chọn công thức.</p></div>
+    <div class="callout danger"><p class="callout-title">Tính giai thừa trực tiếp rồi chia</p><p><code>fact(25) / (fact(5) * fact(20))</code> cho kết quả rác vì 25! ≈ 1,55 · 10²⁵ đã tràn <code>long long</code>, dù C(25, 5) = 53 130 rất nhỏ. Cách sửa: tính C bằng nhân chia xen kẽ, hoặc dùng tam giác Pascal, hoặc lấy modulo kèm nghịch đảo.</p></div>
+    <div class="callout danger"><p class="callout-title">Chia khi đang lấy modulo</p><p>Viết <code>fact[n] / fact[k] % MOD</code> sau khi các giai thừa đã bị lấy dư là sai: (a mod p) / (b mod p) không bằng (a / b) mod p. Ví dụ với p = 7: 10 / 5 = 2, nhưng (10 mod 7) / (5 mod 7) = 3 / 5 = 0. Phải nhân với nghịch đảo modulo, xem <a href="binomial.html">hệ số nhị thức</a>.</p></div>
+    <div class="callout warn"><p class="callout-title">Dùng tích thay cho BCNN</p><p>Số chia hết cho cả 4 và 6 là số chia hết cho 12, không phải 24. Trong [1, 24] có 2 số như vậy (12 và 24), nếu dùng 24 em chỉ đếm được 1. Chỉ khi các số đôi một nguyên tố cùng nhau (ví dụ các số nguyên tố khác nhau) thì BCNN mới bằng tích.</p></div>
+    <div class="callout warn"><p class="callout-title">BCNN bị tràn số</p><p>Với n ≤ 10¹⁸, BCNN của vài số cỡ 10⁹ đã vượt 10¹⁸, và phép nhân <code>l * a[i]</code> có thể vượt 9,2 · 10¹⁸ rồi ra số âm. Cách sửa: tính <code>t = l / gcd(l, a[i])</code>, rồi kiểm tra <code>t &gt; n / a[i]</code> trước khi nhân. Nếu đúng thì bỏ qua tập con đó vì nó không đóng góp gì.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo</p><p>Thử mọi công thức với n = 1, 2, 3 bằng tay và bằng duyệt trâu. Lỗi “lệch một” (quên k = 0, đếm cả tập rỗng) lộ ra ngay.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Một câu lạc bộ có 10 bạn. Cần chọn 1 chủ nhiệm, 1 phó chủ nhiệm và 1 thư ký (ba người khác nhau). Có bao nhiêu cách?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 120</button>
+        <button type="button" class="quiz-opt" data-correct>B. 720</button>
+        <button type="button" class="quiz-opt">C. 1 000</button>
+        <button type="button" class="quiz-opt">D. 30</button>
+      </div>
+      <p class="quiz-explain">Ba chức vụ khác nhau nên có thứ tự: A(10, 3) = 10 · 9 · 8 = 720. 120 = C(10, 3) là chọn nhóm chưa phân chức; 1 000 = 10³ cho phép một người giữ nhiều chức.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Trong một giải đấu vòng tròn, mỗi cặp trong 8 đội gặp nhau đúng một trận. Có bao nhiêu trận?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 56</button>
+        <button type="button" class="quiz-opt">B. 64</button>
+        <button type="button" class="quiz-opt" data-correct>C. 28</button>
+        <button type="button" class="quiz-opt">D. 16</button>
+      </div>
+      <p class="quiz-explain">Một trận là một cặp không thứ tự: C(8, 2) = 8 · 7 / 2 = 28. Đá lượt đi và về mới là A(8, 2) = 56.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Có bao nhiêu số từ 1 đến 100 chia hết cho 4 hoặc 6?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 41</button>
+        <button type="button" class="quiz-opt" data-correct>B. 33</button>
+        <button type="button" class="quiz-opt">C. 37</button>
+        <button type="button" class="quiz-opt">D. 29</button>
+      </div>
+      <p class="quiz-explain">⌊100/4⌋ + ⌊100/6⌋ − ⌊100/12⌋ = 25 + 16 − 8 = 33. Đáp án 41 là quên trừ phần giao; đáp án 37 là trừ ⌊100/24⌋ = 4 (dùng tích thay cho BCNN).</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Số cách xếp các chữ cái của từ “LALALA” thành một dãy là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 720</button>
+        <button type="button" class="quiz-opt">B. 36</button>
+        <button type="button" class="quiz-opt" data-correct>C. 20</button>
+        <button type="button" class="quiz-opt">D. 2</button>
+      </div>
+      <p class="quiz-explain">Hoán vị lặp: 6! / (3! · 3!) = 720 / 36 = 20. Cũng chính là C(6, 3): chọn 3 trong 6 vị trí để đặt chữ L.</p>
+    </div>
+
+    <p><strong>Câu 5.</strong> Có bao nhiêu xâu nhị phân độ dài 8 có ít nhất một chữ số 0?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Đếm phần bù. Tổng số xâu là 2⁸ = 256. Xâu “xấu” (không có chữ số 0 nào) chỉ có một: 11111111. Đáp số 256 − 1 = 255.</p></details>
+
+    <p><strong>Câu 6.</strong> Trong lớp 9A có 30 bạn: 18 bạn thích bóng đá, 15 bạn thích cầu lông, 8 bạn thích cả hai môn. Có bao nhiêu bạn không thích môn nào trong hai môn đó?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Số bạn thích ít nhất một môn: 18 + 15 − 8 = 25. Số bạn không thích môn nào: 30 − 25 = 5. Đây là bù trừ hai tập rồi đếm phần bù.</p></details>
+
+    <p><strong>Câu 7.</strong> Một lớp có 30 học sinh. Chứng minh có ít nhất 3 bạn sinh cùng một tháng. Có chắc chắn có 4 bạn sinh cùng tháng không?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Nếu mỗi tháng có tối đa 2 bạn thì cả lớp có tối đa 24 bạn, mâu thuẫn; vậy có tháng có ít nhất ⌈30/12⌉ = 3 bạn. Còn 4 bạn thì không chắc: có thể 6 tháng mỗi tháng 3 bạn và 6 tháng mỗi tháng 2 bạn (6 · 3 + 6 · 2 = 30), không tháng nào có 4 bạn.</p></details>
+
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó, đề tiếng Việt trên LQDOJ. Các bài mã <code>cses…</code> là bản dịch bộ bài <a href="https://cses.fi/problemset/">CSES</a>.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/k03">K03 – Bắt tay hợp tác</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Có n người (n ≤ 10⁹), mỗi người bắt tay đúng một lần với từng người còn lại. Tính số cái bắt tay, nhiều test.</p>
+        <p class="ex-skill"><b>Luyện:</b> tổ hợp chập 2, tránh tràn số.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Một cái bắt tay là một cặp không thứ tự, đáp số C(n, 2) = n(n − 1)/2. Dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1617">CSES 1617 – Xâu nhị phân (Bit Strings)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đếm số xâu bit độ dài n (n ≤ 10⁶), in theo modulo 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> quy tắc nhân, lấy modulo từng bước.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mỗi vị trí có 2 lựa chọn nên đáp số là 2<sup>n</sup>. Nhân 2 liên tiếp n lần, lấy mod sau mỗi lần nhân.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/sach200b15">SACH200B15 – Đếm bội số</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho L, R, a, b (R ≤ 10⁹). Đếm các số trong [L, R] là bội của a hoặc của b.</p>
+        <p class="ex-skill"><b>Luyện:</b> bù trừ hai tập, mẹo f(R) − f(L − 1), BCNN.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>f(x) = ⌊x/a⌋ + ⌊x/b⌋ − ⌊x/BCNN(a, b)⌋. Đáp số f(R) − f(L − 1). Nhớ dùng BCNN, không dùng a · b.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1072">CSES 1072 – Hai quân mã (Two Knights)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Với mỗi k từ 1 đến n (n ≤ 10⁴), đếm số cách đặt 2 quân mã lên bàn cờ k × k sao cho chúng không ăn nhau.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm phần bù, tổ hợp chập 2, quan sát hình học.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tổng số cặp ô là C(k², 2). Mỗi cặp mã ăn nhau là hai góc đối của một hình chữ nhật 2 × 3 hoặc 3 × 2; đếm chúng rồi trừ. Kiểm tra: k = 3 ra 28.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1715">CSES 1715 – Tạo xâu II (Creating Strings II)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho xâu độ dài n ≤ 10⁶ gồm chữ thường. Đếm số xâu khác nhau tạo được bằng cách xếp lại các ký tự, modulo 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> hoán vị lặp, giai thừa và nghịch đảo modulo.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đáp số n! chia cho tích các c! (c là số lần xuất hiện của từng chữ). Phép chia thay bằng nhân với nghịch đảo, tính bằng lũy thừa nhanh mũ p − 2. Với “aabac”: 5!/3! = 20.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/strperm">STRPERM – Số hoán vị</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho xâu dài không quá 100 ký tự a–z. Đếm số hoán vị khác nhau của xâu, đáp số chính xác (có thể vượt 10¹⁸, không lấy modulo).</p>
+        <p class="ex-skill"><b>Luyện:</b> hoán vị lặp, tính toán với số lớn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đáp số là tích các C(m, c): chọn vị trí cho chữ a, rồi cho chữ b trong các vị trí còn lại… Chỉ cần cài số lớn với hai phép: nhân và chia cho số nhỏ.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/incex">INCEX – Đếm số chia hết</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 18 số a<sub>i</sub> (≤ 10⁹) và đoạn [l, r] với r ≤ 10¹⁸. Đếm các số trong đoạn không chia hết cho a<sub>i</sub> nào.</p>
+        <p class="ex-skill"><b>Luyện:</b> bù trừ tổng quát bằng mask, phần bù, f(r) − f(l − 1), chống tràn BCNN.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Dùng chương trình bù trừ ở trên cho [1, x], lấy phần bù, rồi tính f(r) − f(l − 1). Các a<sub>i</sub> không nhất thiết nguyên tố nên phải dùng BCNN và chống tràn.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses2185">CSES 2185 – Bội số nguyên tố (Prime Multiples)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 10¹⁸ và k ≤ 20 số nguyên tố phân biệt. Đếm các số trong [1, n] chia hết cho ít nhất một số đã cho.</p>
+        <p class="ex-skill"><b>Luyện:</b> nguyên lý bù trừ, duyệt 2<sup>k</sup> tập con, chống tràn tích.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Các số là nguyên tố khác nhau nên BCNN là tích. Nhân dần và dừng ngay khi tích vượt n (kiểm tra bằng phép chia). Tập con lẻ phần tử cộng, chẵn phần tử trừ.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/algebra/pie">VNOI Wiki – Bao hàm loại trừ</a> (tiếng Việt, có danh sách bài luyện tập)</li>
+      <li><a href="https://wiki.vnoi.info/algo/algebra/nCk">VNOI Wiki – Cách tính nCk</a> (tiếng Việt)</li>
+      <li><a href="https://vi.wikipedia.org/wiki/T%E1%BB%95_h%E1%BB%A3p">Wikipedia – Tổ hợp</a> (tiếng Việt)</li>
+      <li><a href="https://vi.wikipedia.org/wiki/Nguy%C3%AAn_l%C3%BD_chu%E1%BB%93ng_b%E1%BB%93_c%C3%A2u">Wikipedia – Nguyên lý chuồng bồ câu (Dirichlet)</a> (tiếng Việt)</li>
+      <li><a href="https://cp-algorithms.com/combinatorics/inclusion-exclusion.html">CP-Algorithms – The Inclusion-Exclusion Principle</a> (tiếng Anh, nâng cao)</li>
+      <li><a href="https://cses.fi/problemset/">CSES Problem Set</a>, mục Mathematics (tiếng Anh)</li>
+      <li>Sách giáo khoa Toán 10 (Chương trình 2018), chương Đại số tổ hợp: quy tắc cộng, quy tắc nhân, hoán vị, chỉnh hợp, tổ hợp.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Chia trường hợp rời nhau thì <strong>cộng</strong>; làm nhiều bước nối tiếp thì <strong>nhân</strong>.</li>
+        <li>Hoán vị n!; chỉnh hợp A(n, k) = n(n−1)…(n−k+1) khi có thứ tự; tổ hợp C(n, k) = A(n, k) / k! khi không thứ tự. Lớp 30 bạn: 870 và 435.</li>
+        <li>Được lặp và có thứ tự: n<sup>k</sup>. Có vật giống nhau: n! / (c₁! c₂! …).</li>
+        <li>“Ít nhất một” thì thử đếm phần bù: tốt = tổng − xấu.</li>
+        <li>|A ∪ B| = |A| + |B| − |A ∩ B|; tổng quát: duyệt mọi tập con, lẻ cộng chẵn trừ, <span class="bigo">O(2<sup>k</sup> · k)</span>. Giao của các tập bội là bội của BCNN.</li>
+        <li>Dirichlet: N vật vào k hộp thì có hộp chứa ít nhất ⌈N / k⌉ vật.</li>
+        <li>Không tính n! rồi chia; số lớn thì lấy modulo và thay phép chia bằng nhân nghịch đảo.</li>
+        <li>Luôn kiểm tra công thức bằng duyệt trâu với n nhỏ.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/counting.js"></script>
+</body>
+</html>

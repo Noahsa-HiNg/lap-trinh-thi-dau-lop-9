@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mảng cộng dồn · Thi đấu lớp 9</title>
+<meta name="description" content="Mảng cộng dồn (prefix sum): tính tổng đoạn trong O(1), cộng dồn 2 chiều, đếm đoạn con có tổng bằng k hoặc chia hết cho k, đoạn con tổng lớn nhất.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+.ps-pair { display: flex; flex-wrap: wrap; gap: 1.2rem; justify-content: center; align-items: flex-start; }
+.ps-pair .grid-viz { margin: 0.5rem 0; }
+.ps-view { overflow-x: auto; }
+</style>
+</head>
+<body data-page="topic" data-topic="prefix-sum">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li><span>Xây dựng được mảng cộng dồn <span class="math">S</span> trong <span class="bigo">O(n)</span> và trả lời mỗi truy vấn tổng đoạn bằng đúng một phép trừ.</span></li>
+      <li><span>Giải thích được vì sao <span class="math">S[r] − S[l−1]</span> đúng bằng tổng đoạn <span class="math">[l, r]</span>, và vì sao cần <span class="math">S[0] = 0</span>.</span></li>
+      <li><span>Dựng được mảng cộng dồn hai chiều và tính tổng một hình chữ nhật bất kỳ bằng nguyên lý bao hàm – loại trừ.</span></li>
+      <li><span>Đếm được số đoạn con có tổng bằng <span class="math">k</span> hoặc chia hết cho <span class="math">k</span> bằng cách đếm các giá trị tiền tố.</span></li>
+      <li><span>Nhận ra được bài toán cần cộng dồn qua đề và tránh các lỗi tràn số, lệch chỉ số, số dư âm.</span></li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Mảng cộng dồn (prefix sum) là một mảng phụ, trong đó ô thứ <span class="math">i</span> lưu tổng của tất cả các phần tử từ đầu dãy đến vị trí <span class="math">i</span>. Chỉ cần tính mảng này một lần, sau đó em hỏi tổng của đoạn nào cũng có ngay đáp án bằng một phép trừ.</p>
+
+    <p>Đây là kỹ thuật ngắn nhất nhưng được dùng nhiều nhất trong lập trình thi đấu. Code chỉ có hai dòng, nhưng nó biến rất nhiều lời giải chậm <span class="bigo">O(n·q)</span> hoặc <span class="bigo">O(n²)</span> thành lời giải nhanh <span class="bigo">O(n + q)</span>.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> em đi xe buýt trên một tuyến đường dài. Trên mỗi cột cây số ghi khoảng cách từ bến đầu đến cột đó. Muốn biết từ cột "km 12" đến cột "km 47" dài bao nhiêu, em không cần đo lại từng đoạn nhỏ, chỉ cần lấy 47 − 12 = 35 km. Các con số trên cột cây số chính là mảng cộng dồn của độ dài từng đoạn đường.</p></div>
+    </div>
+
+    <p>Một ví dụ khác: sổ tiết kiệm ghi số dư sau mỗi ngày. Muốn biết từ ngày 5 đến ngày 9 em gửi thêm được bao nhiêu tiền, em lấy số dư cuối ngày 9 trừ số dư cuối ngày 4. Số dư chính là tổng cộng dồn của các khoản gửi vào.</p>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Cho dãy <span class="math">a[1], a[2], …, a[n]</span>. Mảng cộng dồn <span class="math">S[0..n]</span> được định nghĩa:</p>
+      <div class="math-block">S[0] = 0, &nbsp;&nbsp; S[i] = a[1] + a[2] + … + a[i] = S[i−1] + a[i] &nbsp;(1 ≤ i ≤ n).</div>
+      <p>Khi đó, với mọi <span class="math">1 ≤ l ≤ r ≤ n</span>: tổng đoạn <span class="math">a[l] + a[l+1] + … + a[r] = S[r] − S[l−1]</span>.</p>
+    </div>
+
+    <p>Ví dụ với dãy <span class="math">a = (3, 1, 4, 1, 5, 9)</span> ta có <span class="math">S = (0, 3, 4, 8, 9, 14, 23)</span>. Tổng đoạn <span class="math">[2, 5]</span> là <span class="math">1 + 4 + 1 + 5 = 11</span>, và đúng là <span class="math">S[5] − S[1] = 14 − 3 = 11</span>.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Mảng cộng dồn giải quyết nhóm bài "<strong>hỏi tổng nhiều lần trên một dãy không đổi</strong>". Ngoài ra, nó còn là chìa khóa cho nhiều bài đếm đoạn con. Một số dạng hay gặp:</p>
+    <ul>
+      <li><strong>Truy vấn tổng đoạn:</strong> cho dãy và <span class="math">q</span> câu hỏi "tổng từ vị trí <span class="math">l</span> đến <span class="math">r</span> là bao nhiêu?".</li>
+      <li><strong>Đếm trong đoạn:</strong> có bao nhiêu số chẵn, bao nhiêu số nguyên tố, bao nhiêu chữ 'a' trong đoạn <span class="math">[l, r]</span>. Ta biến dãy thành dãy 0/1 rồi cộng dồn.</li>
+      <li><strong>Tổng trên bảng:</strong> tổng các ô trong một hình chữ nhật của bảng số, đếm số cây trong một khu rừng hình chữ nhật.</li>
+      <li><strong>Đếm đoạn con:</strong> có bao nhiêu đoạn con có tổng bằng <span class="math">k</span>, có tổng chia hết cho <span class="math">k</span>, có số chữ 0 bằng số chữ 1.</li>
+      <li><strong>Tối ưu đoạn con:</strong> đoạn con có tổng lớn nhất, đoạn con dài nhất có trung bình ≥ x.</li>
+      <li><strong>Đi kèm kỹ thuật khác:</strong> kết hợp với <a href="sieve.html">sàng Eratosthenes</a>, <a href="binary-search.html">tìm kiếm nhị phân</a>, <a href="two-pointers.html">hai con trỏ</a>, và là phép ngược của <a href="difference-array.html">mảng hiệu</a>.</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề có cụm "tổng các phần tử từ vị trí <span class="math">l</span> đến <span class="math">r</span>", "<span class="math">q</span> truy vấn", "đếm số đoạn con liên tiếp có tổng…", "hình chữ nhật con", và giới hạn kiểu <span class="math">n, q ≤ 10⁵</span> hoặc <span class="math">2·10⁵</span>. Dãy <strong>không bị thay đổi</strong> giữa các truy vấn (nếu có cập nhật xen kẽ thì cần cấu trúc khác như cây Fenwick).</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho dãy <span class="math">n</span> số nguyên và <span class="math">q</span> câu hỏi. Câu hỏi thứ <span class="math">j</span> cho hai số <span class="math">l, r</span>, em cần in ra <span class="math">a[l] + a[l+1] + … + a[r]</span>. Giới hạn: <span class="math">n, q ≤ 2·10⁵</span>, <span class="math">|a[i]| ≤ 10⁹</span>.</p>
+
+    <p><strong>Cách ngây thơ:</strong> với mỗi câu hỏi, chạy một vòng <code>for</code> từ <span class="math">l</span> đến <span class="math">r</span> và cộng lại. Một câu hỏi tốn tối đa <span class="math">n</span> phép cộng. Trường hợp xấu nhất (mọi câu hỏi đều là <span class="math">[1, n]</span>) cần <span class="math">n · q = 2·10⁵ · 2·10⁵ = 4·10¹⁰</span> phép cộng. Máy chấm làm khoảng <span class="math">10⁸</span> phép tính mỗi giây, nên cần khoảng 400 giây. Quá xa so với giới hạn 1 giây.</p>
+
+    <p><strong>Nhận xét:</strong> cách ngây thơ cộng đi cộng lại cùng một phần tử rất nhiều lần. Nếu câu 1 hỏi <span class="math">[1, 100000]</span> và câu 2 hỏi <span class="math">[2, 100000]</span>, hai đoạn chung nhau 99 999 phần tử, mà ta lại cộng lại từ đầu. Ý tưởng: <strong>trả trước</strong> một lần công sức (tính sẵn mọi tổng tiền tố), để mỗi câu hỏi sau đó gần như miễn phí.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p>Mỗi truy vấn cộng lại từ <span class="math">l</span> đến <span class="math">r</span>. Độ phức tạp <span class="bigo">O(n·q)</span>. Với <span class="math">n = q = 2·10⁵</span> là <span class="math">4·10¹⁰</span> phép tính, chạy hàng trăm giây.</p></div>
+      <div class="good-side"><h4>Dùng mảng cộng dồn</h4><p>Tính <span class="math">S</span> một lần (<span class="math">n</span> phép cộng), mỗi truy vấn một phép trừ. Độ phức tạp <span class="bigo">O(n + q)</span>, chỉ <span class="math">4·10⁵</span> phép tính, chạy dưới 0,01 giây.</p></div>
+    </div>
+
+    <p><strong>Với bảng hai chiều</strong> lợi ích còn lớn hơn. Bảng <span class="math">1000 × 1000</span> và <span class="math">10⁵</span> câu hỏi tổng hình chữ nhật: cách ngây thơ mỗi câu duyệt tới <span class="math">10⁶</span> ô, tổng cộng <span class="math">10¹¹</span> phép tính. Dùng cộng dồn 2D: dựng bảng tốn <span class="math">10⁶</span> phép, mỗi câu hỏi 3 phép cộng trừ, tổng khoảng <span class="math">1,3·10⁶</span>.</p>
+
+    <p><strong>Với bài đếm đoạn con</strong> (ví dụ đếm đoạn có tổng bằng <span class="math">k</span>): có <span class="math">n(n+1)/2</span> đoạn con. Với <span class="math">n = 2·10⁵</span> là khoảng <span class="math">2·10¹⁰</span> đoạn, không thể xét hết. Cộng dồn kết hợp bảng đếm cho lời giải <span class="bigo">O(n log n)</span>.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>Cộng dồn một chiều</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Tạo mảng <span class="math">S</span> có <span class="math">n + 1</span> phần tử kiểu <code>long long</code>, đặt <span class="math">S[0] = 0</span>.</div></li>
+      <li><div><strong>Cộng dồn.</strong> Với <span class="math">i</span> từ 1 đến <span class="math">n</span>: <span class="math">S[i] = S[i−1] + a[i]</span>. Mỗi ô dựa vào ô ngay trước nó, nên chỉ cần một phép cộng.</div></li>
+      <li><div><strong>Trả lời truy vấn.</strong> Với mỗi câu hỏi <span class="math">(l, r)</span>, in ra <span class="math">S[r] − S[l−1]</span>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> XayCongDon(a, n):
+    S[0] ← 0
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> n:
+        S[i] ← S[i−1] + a[i]      <i>// tổng đến i = tổng đến i−1 + a[i]</i>
+    <b>trả về</b> S
+
+<b>hàm</b> TongDoan(S, l, r):
+    <b>trả về</b> S[r] − S[l−1]       <i>// một phép trừ, O(1)</i></pre>
+
+    <h3>Cộng dồn hai chiều</h3>
+    <p>Cho bảng <span class="math">a</span> có <span class="math">m</span> hàng, <span class="math">n</span> cột. Gọi <span class="math">S[i][j]</span> là tổng các ô trong hình chữ nhật có góc trên trái <span class="math">(1, 1)</span> và góc dưới phải <span class="math">(i, j)</span>.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Tạo bảng <span class="math">S</span> kích thước <span class="math">(m+1) × (n+1)</span>, hàng 0 và cột 0 đều bằng 0.</div></li>
+      <li><div><strong>Cộng dồn.</strong> Duyệt <span class="math">i</span> từ 1 đến <span class="math">m</span>, <span class="math">j</span> từ 1 đến <span class="math">n</span>: <span class="math">S[i][j] = a[i][j] + S[i−1][j] + S[i][j−1] − S[i−1][j−1]</span>.</div></li>
+      <li><div><strong>Truy vấn.</strong> Tổng hình chữ nhật góc <span class="math">(x1, y1)</span> đến <span class="math">(x2, y2)</span> bằng <span class="math">S[x2][y2] − S[x1−1][y2] − S[x2][y1−1] + S[x1−1][y1−1]</span>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>với</b> i <b>từ</b> 1 <b>đến</b> m:
+    <b>với</b> j <b>từ</b> 1 <b>đến</b> n:
+        S[i][j] ← a[i][j] + S[i−1][j] + S[i][j−1] − S[i−1][j−1]
+                                  <i>// trừ phần bị cộng hai lần</i>
+
+<b>hàm</b> TongHCN(x1, y1, x2, y2):
+    <b>trả về</b> S[x2][y2] − S[x1−1][y2] − S[x2][y1−1] + S[x1−1][y1−1]
+                                  <i>// cộng lại góc bị trừ hai lần</i></pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Vì sao S[i] = S[i−1] + a[i]</h3>
+    <p>Theo định nghĩa, <span class="math">S[i−1] = a[1] + … + a[i−1]</span>. Cộng thêm <span class="math">a[i]</span> vào hai vế ta được đúng <span class="math">a[1] + … + a[i] = S[i]</span>. Vậy mỗi ô mới chỉ cần ô ngay trước nó, không phải cộng lại từ đầu. Nhờ đó, dựng cả mảng chỉ tốn <span class="math">n</span> phép cộng.</p>
+
+    <h3>Vì sao tổng đoạn bằng S[r] − S[l−1]: phép triệt tiêu</h3>
+    <p>Viết hai tổng ra và đặt thẳng hàng:</p>
+    <div class="math-block">S[r] &nbsp;&nbsp;&nbsp;&nbsp;= a[1] + a[2] + … + a[l−1] + a[l] + … + a[r]<br>S[l−1] = a[1] + a[2] + … + a[l−1]</div>
+    <p>Khi trừ, các số hạng <span class="math">a[1]</span> đến <span class="math">a[l−1]</span> có mặt ở cả hai dòng nên <strong>triệt tiêu</strong> hết. Phần còn lại là <span class="math">a[l] + … + a[r]</span>, đúng là tổng đoạn cần tìm. Lập luận này đúng với mọi số nguyên, kể cả số âm, vì nó chỉ dùng tính chất của phép cộng.</p>
+
+    <p>Hình dung bằng cột cây số: <span class="math">S[r]</span> là quãng đường từ bến đến điểm <span class="math">r</span>, <span class="math">S[l−1]</span> là quãng đường từ bến đến ngay trước điểm <span class="math">l</span>. Hiệu hai quãng là đoạn đường từ <span class="math">l</span> đến <span class="math">r</span>.</p>
+
+    <h3>Vì sao cần S[0] = 0</h3>
+    <p>Khi <span class="math">l = 1</span>, công thức cần <span class="math">S[0]</span>. Tổng của "không phần tử nào" bằng 0, nên đặt <span class="math">S[0] = 0</span> là hợp lý, và công thức <span class="math">S[r] − S[0] = S[r]</span> cho đúng tổng <span class="math">[1, r]</span>. Nhờ ô phụ này, em không phải viết <code>if (l == 1)</code> riêng. Đây là lý do ta thường đánh chỉ số mảng từ 1.</p>
+
+    <h3>Vì sao công thức 2D đúng: bao hàm – loại trừ</h3>
+    <p>Hình chữ nhật <span class="math">(1,1)–(i,j)</span> gồm ô <span class="math">(i, j)</span>, phần phía trên <span class="math">(1,1)–(i−1,j)</span> và phần bên trái <span class="math">(1,1)–(i,j−1)</span>. Nhưng hai phần này <strong>chồng lên nhau</strong> ở góc <span class="math">(1,1)–(i−1,j−1)</span>, nên khi cộng <span class="math">S[i−1][j] + S[i][j−1]</span> phần góc bị tính hai lần. Trừ đi <span class="math">S[i−1][j−1]</span> một lần là vừa đủ.</p>
+    <p>Khi truy vấn thì ngược lại: lấy cả khối lớn <span class="math">S[x2][y2]</span>, bỏ dải phía trên (<span class="math">S[x1−1][y2]</span>) và dải bên trái (<span class="math">S[x2][y1−1]</span>). Góc trên trái <span class="math">S[x1−1][y1−1]</span> nằm trong cả hai dải nên bị trừ hai lần; ta cộng nó lại một lần. Đây chính là <a href="counting.html">nguyên lý bù trừ</a>: <span class="math">|A ∪ B| = |A| + |B| − |A ∩ B|</span>.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Công việc chia làm hai giai đoạn. Giai đoạn tiền xử lý duyệt mảng đúng một lần: <span class="math">n</span> phép cộng. Giai đoạn trả lời: mỗi truy vấn đúng một phép trừ, không phụ thuộc đoạn dài hay ngắn. Tổng cộng <span class="math">n + q</span> phép tính thay vì <span class="math">n · q</span>. Đây là ý tưởng <strong>tiền xử lý</strong> (precomputation): bỏ công sức một lần để dùng lại rất nhiều lần.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Mỗi khi thấy mình viết một vòng <code>for</code> để cộng một đoạn nằm <em>bên trong</em> một vòng lặp khác, em hãy dừng lại và hỏi: "Có thể thay vòng này bằng một phép trừ hai tổng tiền tố không?"</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Ví dụ 1 dùng dãy <span class="math">a = (3, 1, 4, 1, 5, 9)</span>. Em hãy bấm qua từng khung hình: mỗi bước chỉ thêm một ô vào <span class="math">S</span>, sau đó hai truy vấn được trả lời bằng một phép trừ.</p>
+
+    <div class="stepper" data-title="Ví dụ 1: dựng S cho a = (3, 1, 4, 1, 5, 9) rồi tính tổng [2, 5]">
+      <div class="frame" data-caption="&lt;b&gt;Bước 0.&lt;/b&gt; Hàng trên là dãy a (ô 0 bỏ trống), hàng dưới là S. Đặt S[0] = 0: tổng của không phần tử nào.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">·</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">1</span><span class="cell" data-i="3">4</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">5</span><span class="cell" data-i="6">9</span></div>
+        <div class="arr"><span class="arr-label">S</span><span class="cell is-active" data-i="0">0</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; S[1] = S[0] + a[1] = 0 + 3 = &lt;b&gt;3&lt;/b&gt;. Chỉ dùng ô S[0] vừa tính và a[1].">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">·</span><span class="cell is-active" data-i="1">3</span><span class="cell" data-i="2">1</span><span class="cell" data-i="3">4</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">5</span><span class="cell" data-i="6">9</span></div>
+        <div class="arr"><span class="arr-label">S</span><span class="cell is-cmp" data-i="0">0</span><span class="cell is-active" data-i="1">3</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; S[2] = S[1] + a[2] = 3 + 1 = &lt;b&gt;4&lt;/b&gt;. Chỉ dùng ô S[1] vừa tính và a[2].">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">·</span><span class="cell is-ok" data-i="1">3</span><span class="cell is-active" data-i="2">1</span><span class="cell" data-i="3">4</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">5</span><span class="cell" data-i="6">9</span></div>
+        <div class="arr"><span class="arr-label">S</span><span class="cell" data-i="0">0</span><span class="cell is-cmp" data-i="1">3</span><span class="cell is-active" data-i="2">4</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; S[3] = S[2] + a[3] = 4 + 4 = &lt;b&gt;8&lt;/b&gt;. Chỉ dùng ô S[2] vừa tính và a[3].">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">·</span><span class="cell is-ok" data-i="1">3</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-active" data-i="3">4</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">5</span><span class="cell" data-i="6">9</span></div>
+        <div class="arr"><span class="arr-label">S</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">3</span><span class="cell is-cmp" data-i="2">4</span><span class="cell is-active" data-i="3">8</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; S[4] = S[3] + a[4] = 8 + 1 = &lt;b&gt;9&lt;/b&gt;. Chỉ dùng ô S[3] vừa tính và a[4].">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">·</span><span class="cell is-ok" data-i="1">3</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">4</span><span class="cell is-active" data-i="4">1</span><span class="cell" data-i="5">5</span><span class="cell" data-i="6">9</span></div>
+        <div class="arr"><span class="arr-label">S</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">4</span><span class="cell is-cmp" data-i="3">8</span><span class="cell is-active" data-i="4">9</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; S[5] = S[4] + a[5] = 9 + 5 = &lt;b&gt;14&lt;/b&gt;. Chỉ dùng ô S[4] vừa tính và a[5].">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">·</span><span class="cell is-ok" data-i="1">3</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">4</span><span class="cell is-ok" data-i="4">1</span><span class="cell is-active" data-i="5">5</span><span class="cell" data-i="6">9</span></div>
+        <div class="arr"><span class="arr-label">S</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">4</span><span class="cell" data-i="3">8</span><span class="cell is-cmp" data-i="4">9</span><span class="cell is-active" data-i="5">14</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 6.&lt;/b&gt; S[6] = S[5] + a[6] = 14 + 9 = &lt;b&gt;23&lt;/b&gt;. Chỉ dùng ô S[5] vừa tính và a[6].">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">·</span><span class="cell is-ok" data-i="1">3</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">4</span><span class="cell is-ok" data-i="4">1</span><span class="cell is-ok" data-i="5">5</span><span class="cell is-active" data-i="6">9</span></div>
+        <div class="arr"><span class="arr-label">S</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">4</span><span class="cell" data-i="3">8</span><span class="cell" data-i="4">9</span><span class="cell is-cmp" data-i="5">14</span><span class="cell is-active" data-i="6">23</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Truy vấn [2, 5].&lt;/b&gt; Tổng a[2..5] = 1 + 4 + 1 + 5 = 11. Bằng cộng dồn: S[5] − S[1] = 14 − 3 = &lt;b&gt;11&lt;/b&gt;. Chỉ một phép trừ, dù đoạn dài bao nhiêu.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">·</span><span class="cell is-dim" data-i="1">3</span><span class="cell is-active" data-i="2">1</span><span class="cell is-active" data-i="3">4</span><span class="cell is-active" data-i="4">1</span><span class="cell is-active" data-i="5">5</span><span class="cell is-dim" data-i="6">9</span></div>
+        <div class="arr"><span class="arr-label">S</span><span class="cell is-dim" data-i="0">0</span><span class="cell is-bad" data-i="1" data-ptr="S[l−1]">3</span><span class="cell is-dim" data-i="2">4</span><span class="cell is-dim" data-i="3">8</span><span class="cell is-dim" data-i="4">9</span><span class="cell is-ok" data-i="5" data-ptr="S[r]">14</span><span class="cell is-dim" data-i="6">23</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Truy vấn [1, 6].&lt;/b&gt; Khi l = 1 ta dùng S[0] = 0: S[6] − S[0] = 23 − 0 = &lt;b&gt;23&lt;/b&gt;. Không cần xét riêng trường hợp l = 1.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">·</span><span class="cell is-active" data-i="1">3</span><span class="cell is-active" data-i="2">1</span><span class="cell is-active" data-i="3">4</span><span class="cell is-active" data-i="4">1</span><span class="cell is-active" data-i="5">5</span><span class="cell is-active" data-i="6">9</span></div>
+        <div class="arr"><span class="arr-label">S</span><span class="cell is-bad" data-i="0" data-ptr="S[l−1]">0</span><span class="cell is-dim" data-i="1">3</span><span class="cell is-dim" data-i="2">4</span><span class="cell is-dim" data-i="3">8</span><span class="cell is-dim" data-i="4">9</span><span class="cell is-dim" data-i="5">14</span><span class="cell is-ok" data-i="6" data-ptr="S[r]">23</span></div>
+      </div>
+    </div>
+
+    <div class="viz-legend"><span><i class="is-active"></i>đang tính / đoạn được hỏi</span><span><i class="is-cmp"></i>ô dùng để tính</span><span><i class="is-ok"></i>đã xong / S[r]</span><span><i class="is-bad"></i>S[l−1] bị trừ</span></div>
+
+    <p>Ví dụ 2 là bảng 3 hàng, 4 cột. Bên trái là bảng <span class="math">a</span>, bên phải là bảng <span class="math">S</span> (có thêm hàng 0, cột 0). Mỗi ô của <span class="math">S</span> dùng ba ô đã tính: ô phía trên, ô bên trái và ô chéo trên trái.</p>
+
+    <div class="stepper" data-title="Ví dụ 2: cộng dồn 2D trên bảng 3 × 4">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Bảng a có 3 hàng, 4 cột. Bảng S có thêm hàng 0 và cột 0 toàn số 0 để công thức không bị tràn ra ngoài.">
+        <div class="ps-pair"><div class="grid-viz" style="--cols:5"><span class="g h">a</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">1</span><span class="g">1</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g h">2</span><span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g">8</span><span class="g h">3</span><span class="g">9</span><span class="g">1</span><span class="g">2</span><span class="g">3</span></div><div class="grid-viz" style="--cols:6"><span class="g h">S</span><span class="g h">0</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g h">1</span><span class="g">0</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g h">2</span><span class="g">0</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g h">3</span><span class="g">0</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g">?</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Hàng 1: phía trên là hàng 0 (toàn 0), nên S[1][j] chỉ là cộng dồn một chiều của hàng 1: 1, 3, 6, 10.">
+        <div class="ps-pair"><div class="grid-viz" style="--cols:5"><span class="g h">a</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">1</span><span class="g is-ok">1</span><span class="g is-ok">2</span><span class="g is-ok">3</span><span class="g is-ok">4</span><span class="g h">2</span><span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g">8</span><span class="g h">3</span><span class="g">9</span><span class="g">1</span><span class="g">2</span><span class="g">3</span></div><div class="grid-viz" style="--cols:6"><span class="g h">S</span><span class="g h">0</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g h">1</span><span class="g">0</span><span class="g is-ok">1</span><span class="g is-ok">3</span><span class="g is-ok">6</span><span class="g is-ok">10</span><span class="g h">2</span><span class="g">0</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g h">3</span><span class="g">0</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g">?</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; S[2][1] = a[2][1] + S[1][1] + S[2][0] − S[1][0] = 5 + 1 + 0 − 0 = &lt;b&gt;6&lt;/b&gt;.">
+        <div class="ps-pair"><div class="grid-viz" style="--cols:5"><span class="g h">a</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">1</span><span class="g">1</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g h">2</span><span class="g is-active">5</span><span class="g">6</span><span class="g">7</span><span class="g">8</span><span class="g h">3</span><span class="g">9</span><span class="g">1</span><span class="g">2</span><span class="g">3</span></div><div class="grid-viz" style="--cols:6"><span class="g h">S</span><span class="g h">0</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g h">1</span><span class="g is-bad">0</span><span class="g is-cmp">1</span><span class="g">3</span><span class="g">6</span><span class="g">10</span><span class="g h">2</span><span class="g is-cmp">0</span><span class="g is-active">6</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g h">3</span><span class="g">0</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g">?</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; S[2][2] = a[2][2] + S[1][2] + S[2][1] − S[1][1] = 6 + 3 + 6 − 1 = &lt;b&gt;14&lt;/b&gt;. Ô S[1][1] (ô bị trừ) nằm trong cả S[1][2] lẫn S[2][1] nên phải trừ một lần.">
+        <div class="ps-pair"><div class="grid-viz" style="--cols:5"><span class="g h">a</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">1</span><span class="g">1</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g h">2</span><span class="g">5</span><span class="g is-active">6</span><span class="g">7</span><span class="g">8</span><span class="g h">3</span><span class="g">9</span><span class="g">1</span><span class="g">2</span><span class="g">3</span></div><div class="grid-viz" style="--cols:6"><span class="g h">S</span><span class="g h">0</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g h">1</span><span class="g">0</span><span class="g is-bad">1</span><span class="g is-cmp">3</span><span class="g">6</span><span class="g">10</span><span class="g h">2</span><span class="g">0</span><span class="g is-cmp">6</span><span class="g is-active">14</span><span class="g">?</span><span class="g">?</span><span class="g h">3</span><span class="g">0</span><span class="g">?</span><span class="g">?</span><span class="g">?</span><span class="g">?</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; Làm tiếp theo thứ tự hàng, mỗi ô một công thức. S[3][3] = 2 + S[2][3] + S[3][2] − S[2][2] = 2 + 24 + 24 − 14 = &lt;b&gt;36&lt;/b&gt;.">
+        <div class="ps-pair"><div class="grid-viz" style="--cols:5"><span class="g h">a</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">1</span><span class="g">1</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g h">2</span><span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g">8</span><span class="g h">3</span><span class="g">9</span><span class="g">1</span><span class="g is-active">2</span><span class="g">3</span></div><div class="grid-viz" style="--cols:6"><span class="g h">S</span><span class="g h">0</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g h">1</span><span class="g">0</span><span class="g">1</span><span class="g">3</span><span class="g">6</span><span class="g">10</span><span class="g h">2</span><span class="g">0</span><span class="g">6</span><span class="g is-bad">14</span><span class="g is-cmp">24</span><span class="g">36</span><span class="g h">3</span><span class="g">0</span><span class="g">15</span><span class="g is-cmp">24</span><span class="g is-active">36</span><span class="g">?</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 6.&lt;/b&gt; Bảng S đầy đủ. Ô cuối S[3][4] = 51 là tổng cả bảng: 10 + 26 + 15 = 51.">
+        <div class="ps-pair"><div class="grid-viz" style="--cols:5"><span class="g h">a</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">1</span><span class="g">1</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g h">2</span><span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g">8</span><span class="g h">3</span><span class="g">9</span><span class="g">1</span><span class="g">2</span><span class="g">3</span></div><div class="grid-viz" style="--cols:6"><span class="g h">S</span><span class="g h">0</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g h">1</span><span class="g">0</span><span class="g">1</span><span class="g">3</span><span class="g">6</span><span class="g">10</span><span class="g h">2</span><span class="g">0</span><span class="g">6</span><span class="g">14</span><span class="g">24</span><span class="g">36</span><span class="g h">3</span><span class="g">0</span><span class="g">15</span><span class="g">24</span><span class="g">36</span><span class="g is-ok">51</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 7.&lt;/b&gt; Truy vấn hình chữ nhật (2,2)–(3,3): S[3][3] − S[1][3] − S[3][1] + S[1][1] = 36 − 6 − 15 + 1 = &lt;b&gt;16&lt;/b&gt;. Kiểm tra: 6 + 7 + 1 + 2 = 16.">
+        <div class="ps-pair"><div class="grid-viz" style="--cols:5"><span class="g h">a</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">1</span><span class="g">1</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g h">2</span><span class="g">5</span><span class="g is-active">6</span><span class="g is-active">7</span><span class="g">8</span><span class="g h">3</span><span class="g">9</span><span class="g is-active">1</span><span class="g is-active">2</span><span class="g">3</span></div><div class="grid-viz" style="--cols:6"><span class="g h">S</span><span class="g h">0</span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g h">1</span><span class="g">0</span><span class="g is-cmp">1</span><span class="g">3</span><span class="g is-bad">6</span><span class="g">10</span><span class="g h">2</span><span class="g">0</span><span class="g">6</span><span class="g">14</span><span class="g">24</span><span class="g">36</span><span class="g h">3</span><span class="g">0</span><span class="g is-bad">15</span><span class="g">24</span><span class="g is-ok">36</span><span class="g">51</span></div></div>
+      </div>
+    </div>
+
+    <p>Hình dưới đây vẽ lại phép tính của Bước 7 cho một hình chữ nhật bất kỳ. Phần cần tìm là hình chữ nhật góc dưới phải. Ta lấy cả khối lớn, bỏ dải trên, bỏ dải trái, rồi trả lại phần góc đã bị bỏ hai lần.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 780 200" width="780" role="img" aria-label="Tổng hình chữ nhật bằng bốn giá trị S theo bao hàm loại trừ">
+        <g transform="translate(10,40)">
+          <rect class="node is-ok" x="0" y="0" width="120" height="120"/>
+          <text x="60" y="145" text-anchor="middle">S[x2][y2]</text>
+        </g>
+        <text x="152" y="105" text-anchor="middle">−</text>
+        <g transform="translate(170,40)">
+          <rect class="node is-dim" x="0" y="0" width="120" height="120"/>
+          <rect class="node is-bad" x="0" y="0" width="120" height="50"/>
+          <text x="60" y="145" text-anchor="middle">S[x1−1][y2]</text>
+        </g>
+        <text x="312" y="105" text-anchor="middle">−</text>
+        <g transform="translate(330,40)">
+          <rect class="node is-dim" x="0" y="0" width="120" height="120"/>
+          <rect class="node is-bad" x="0" y="0" width="45" height="120"/>
+          <text x="60" y="145" text-anchor="middle">S[x2][y1−1]</text>
+        </g>
+        <text x="472" y="105" text-anchor="middle">+</text>
+        <g transform="translate(490,40)">
+          <rect class="node is-dim" x="0" y="0" width="120" height="120"/>
+          <rect class="node is-cmp" x="0" y="0" width="45" height="50"/>
+          <text x="60" y="145" text-anchor="middle">S[x1−1][y1−1]</text>
+        </g>
+        <text x="632" y="105" text-anchor="middle">=</text>
+        <g transform="translate(650,40)">
+          <rect class="node is-dim" x="0" y="0" width="120" height="120"/>
+          <rect class="node is-active" x="45" y="50" width="75" height="70"/>
+          <text x="82" y="90" text-anchor="middle" class="label-sm">cần tìm</text>
+          <text x="60" y="145" text-anchor="middle">(x1,y1)–(x2,y2)</text>
+        </g>
+        <text class="label-pen" x="390" y="22" text-anchor="middle">góc trên trái bị trừ hai lần nên cộng lại một lần</text>
+      </svg>
+      <figcaption>Hình 1. Bao hàm – loại trừ trên bảng: bốn giá trị của S cho tổng của một hình chữ nhật bất kỳ.</figcaption>
+    </figure>
+
+    <p>Bảng sau so sánh số phép tính cụ thể cho dãy 6 phần tử trên, với ba truy vấn:</p>
+    <table class="trace">
+      <thead><tr><th>Truy vấn</th><th>Cách ngây thơ</th><th>Số phép cộng</th><th>Cộng dồn</th><th>Số phép trừ</th></tr></thead>
+      <tbody>
+        <tr><td>[2, 5]</td><td>1 + 4 + 1 + 5 = 11</td><td>3</td><td>14 − 3 = 11</td><td>1</td></tr>
+        <tr><td>[1, 6]</td><td>3 + 1 + 4 + 1 + 5 + 9 = 23</td><td>5</td><td>23 − 0 = 23</td><td>1</td></tr>
+        <tr class="hl"><td>[4, 6]</td><td>1 + 5 + 9 = 15</td><td>2</td><td>23 − 8 = 15</td><td>1</td></tr>
+      </tbody>
+    </table>
+    <p>Với 6 phần tử thì chênh lệch còn nhỏ. Nhưng đoạn dài <span class="math">10⁵</span> phần tử thì cách ngây thơ tốn gần <span class="math">10⁵</span> phép cộng cho một câu hỏi, còn cộng dồn vẫn chỉ 1 phép trừ.</p>
+
+    <div class="playground" id="viz-prefix-sum">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: tổng đoạn bằng một phép trừ</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="ps-input">Dãy a <input type="text" id="ps-input" value="3 1 4 1 5 9 2 6"></label>
+          <label for="ps-l">l <input type="number" id="ps-l" value="2" min="1"></label>
+          <label for="ps-r">r <input type="number" id="ps-r" value="5" min="1"></label>
+          <button type="button" data-act="run">Tính</button>
+          <button type="button" class="ghost" data-act="rand">Dãy ngẫu nhiên</button>
+        </div>
+        <div class="ps-view"></div>
+        <div class="out" aria-live="polite">Nhập dãy (tối đa 12 số nguyên), chọn l, r rồi bấm Tính.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Chương trình dưới đây giải đúng bài mở đầu (giống bài <em>Static Range Sum Queries</em> của CSES). Dòng đầu là <span class="math">n</span> và <span class="math">q</span>, dòng hai là dãy, sau đó là <span class="math">q</span> dòng mỗi dòng một cặp <span class="math">l, r</span>. Em để ý: ta không cần giữ lại mảng <span class="math">a</span>, chỉ cần <span class="math">S</span>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">tong_doan.cpp</span> Truy vấn tổng đoạn bằng mảng cộng dồn</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, q;
+    cin &gt;&gt; n &gt;&gt; q;
+
+    // S[i] = a[1] + a[2] + ... + a[i], S[0] = 0
+    // Dùng long long vì tổng có thể vượt 2^31 - 1
+    vector&lt;long long&gt; S(n + 1, 0);
+    for (int i = 1; i &lt;= n; i++) {
+        long long x;
+        cin &gt;&gt; x;
+        S[i] = S[i - 1] + x;   // tổng đến i = tổng đến i-1 cộng thêm a[i]
+    }
+
+    // Mỗi truy vấn chỉ cần một phép trừ
+    while (q--) {
+        int l, r;
+        cin &gt;&gt; l &gt;&gt; r;
+        cout &lt;&lt; S[r] - S[l - 1] &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8 4
+3 1 4 1 5 9 2 6
+2 5
+1 8
+4 6
+3 3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">11
+31
+15
+4</code></pre></div>
+    </div>
+    <p>Kiểm tra tay: <span class="math">S = (0, 3, 4, 8, 9, 14, 23, 25, 31)</span>. Truy vấn <span class="math">[4, 6]</span> cho <span class="math">S[6] − S[3] = 23 − 8 = 15 = 1 + 5 + 9</span>. Truy vấn <span class="math">[3, 3]</span> cho <span class="math">S[3] − S[2] = 8 − 4 = 4 = a[3]</span>: đoạn một phần tử cũng đúng.</p>
+
+    <h3>Cài đặt cộng dồn 2D</h3>
+    <p>Dòng đầu gồm số hàng <span class="math">m</span>, số cột <span class="math">n</span>, số truy vấn <span class="math">q</span>; tiếp theo là bảng; mỗi truy vấn cho <span class="math">x1 y1 x2 y2</span> (hàng, cột của góc trên trái rồi góc dưới phải).</p>
+    <figure class="code">
+      <figcaption><span class="fn">tong_hcn.cpp</span> Tổng hình chữ nhật bằng cộng dồn 2D</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int m, n, q;
+    cin &gt;&gt; m &gt;&gt; n &gt;&gt; q;
+
+    // S[i][j] = tổng hình chữ nhật từ (1,1) đến (i,j); hàng 0 và cột 0 bằng 0
+    vector&lt;vector&lt;long long&gt;&gt; S(m + 1, vector&lt;long long&gt;(n + 1, 0));
+    for (int i = 1; i &lt;= m; i++)
+        for (int j = 1; j &lt;= n; j++) {
+            long long x;
+            cin &gt;&gt; x;
+            S[i][j] = x + S[i - 1][j] + S[i][j - 1] - S[i - 1][j - 1];
+        }
+
+    while (q--) {
+        int x1, y1, x2, y2;          // góc trên trái (x1,y1), góc dưới phải (x2,y2)
+        cin &gt;&gt; x1 &gt;&gt; y1 &gt;&gt; x2 &gt;&gt; y2;
+        long long tong = S[x2][y2] - S[x1 - 1][y2] - S[x2][y1 - 1] + S[x1 - 1][y1 - 1];
+        cout &lt;&lt; tong &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3 4 3
+1 2 3 4
+5 6 7 8
+9 1 2 3
+2 2 3 3
+1 1 3 4
+1 3 2 4</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">16
+51
+22</code></pre></div>
+    </div>
+    <p>Truy vấn thứ ba: <span class="math">S[2][4] − S[0][4] − S[2][2] + S[0][2] = 36 − 0 − 14 + 0 = 22</span>, đúng bằng <span class="math">3 + 4 + 7 + 8</span>.</p>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thao tác</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Dựng mảng cộng dồn 1D</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Một truy vấn tổng đoạn</td><td><span class="bigo">O(1)</span></td><td>—</td></tr>
+        <tr><td>Dựng bảng cộng dồn 2D <span class="math">m × n</span></td><td><span class="bigo">O(m·n)</span></td><td><span class="bigo">O(m·n)</span></td></tr>
+        <tr><td>Một truy vấn tổng hình chữ nhật</td><td><span class="bigo">O(1)</span></td><td>—</td></tr>
+        <tr><td>Đếm đoạn con tổng bằng k (dùng <code>map</code>)</td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Đếm đoạn con tổng chia hết cho k (mảng đếm số dư)</td><td><span class="bigo">O(n + k)</span></td><td><span class="bigo">O(k)</span></td></tr>
+        <tr><td>Đoạn con tổng lớn nhất (min tiền tố)</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Ví dụ số phép tính.</strong> Với <span class="math">n = q = 2·10⁵</span>: dựng <span class="math">S</span> mất <span class="math">2·10⁵</span> phép cộng, trả lời mất <span class="math">2·10⁵</span> phép trừ. Tổng <span class="math">4·10⁵</span>, nhanh hơn cách ngây thơ (<span class="math">4·10¹⁰</span>) khoảng <span class="math">10⁵</span> lần. Phần tốn thời gian nhất lúc này thực ra là <strong>đọc dữ liệu</strong>, nên nhớ dùng <code>ios::sync_with_stdio(false); cin.tie(nullptr);</code>.</p>
+    <p><strong>Giới hạn bộ nhớ.</strong> Mảng <code>long long</code> <span class="math">10⁶</span> phần tử chiếm 8 MB, thoải mái. Bảng 2D <span class="math">1000 × 1000</span> kiểu <code>long long</code> chiếm 8 MB; <span class="math">2000 × 2000</span> chiếm 32 MB, vẫn ổn với giới hạn 256 MB. Nhưng <span class="math">5000 × 5000</span> chiếm 200 MB, gần chạm giới hạn: khi đó nếu tổng không vượt <span class="math">2·10⁹</span> thì nên dùng <code>int</code> (100 MB).</p>
+    <p><strong>Khi nào không dùng được.</strong> Nếu dãy bị sửa xen kẽ với câu hỏi (đổi <span class="math">a[i]</span> rồi lại hỏi tổng), mỗi lần sửa phải dựng lại <span class="math">S</span> mất <span class="math">O(n)</span>. Khi đó cần cây Fenwick hoặc cây phân đoạn, sẽ học ở các chuyên đề sau.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Chỉ số từ 0 hay từ 1</h3>
+    <p>Nếu em lưu dãy từ chỉ số 0 (<span class="math">a[0..n−1]</span>, như <code>vector</code> đọc bình thường), hãy định nghĩa <span class="math">S[i]</span> là tổng của <span class="math">i</span> phần tử <strong>đầu tiên</strong>: <span class="math">S[0] = 0</span>, <span class="math">S[i+1] = S[i] + a[i]</span>. Khi đó tổng đoạn <span class="math">a[l..r]</span> (chỉ số từ 0) là <span class="math">S[r+1] − S[l]</span>. Cách này vẫn giữ được ô <span class="math">S[0] = 0</span>, chỉ là công thức dịch đi một đơn vị.</p>
+    <p>Lời khuyên: trong một bài, chọn <strong>một</strong> quy ước và giữ nguyên. Với học sinh mới học, đánh chỉ số từ 1 cho cả <span class="math">a</span> và <span class="math">S</span> là ít nhầm nhất, vì công thức trùng với đề bài. Thư viện <a href="stl.html">STL</a> cũng có hàm <code>partial_sum</code> trong <code>&lt;numeric&gt;</code> tính cộng dồn sẵn, nhưng em nên tự viết vòng <code>for</code> để chủ động kiểu dữ liệu.</p>
+
+    <h3>2. Đếm phần tử thỏa điều kiện trong đoạn</h3>
+    <p>Câu hỏi "trong đoạn <span class="math">[l, r]</span> có bao nhiêu số chẵn?" thực chất là câu hỏi tổng. Ta tạo dãy <span class="math">b[i] = 1</span> nếu <span class="math">a[i]</span> thỏa điều kiện, ngược lại <span class="math">b[i] = 0</span>. Tổng của <span class="math">b</span> trên đoạn chính là số phần tử thỏa điều kiện. Vậy chỉ cần cộng dồn <span class="math">b</span>.</p>
+    <p>Ví dụ hay gặp: có <span class="math">10⁵</span> câu hỏi "trong <span class="math">[l, r]</span> có bao nhiêu số nguyên tố?" với <span class="math">r ≤ 10⁶</span>. Ta dùng <a href="sieve.html">sàng Eratosthenes</a> đánh dấu số nguyên tố đến <span class="math">10⁶</span>, rồi cộng dồn: <span class="math">C[x]</span> là số số nguyên tố không vượt quá <span class="math">x</span>. Đáp án là <span class="math">C[r] − C[l−1]</span>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_nguyen_to.cpp</span> Sàng kết hợp cộng dồn trên mảng 0/1</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    const int MAXV = 1000000;
+    vector&lt;bool&gt; laNT(MAXV + 1, true);
+    laNT[0] = laNT[1] = false;
+    for (int i = 2; (long long)i * i &lt;= MAXV; i++)
+        if (laNT[i])
+            for (int j = i * i; j &lt;= MAXV; j += i) laNT[j] = false;
+
+    // C[x] = số số nguyên tố trong [1, x]: cộng dồn trên mảng 0/1
+    vector&lt;int&gt; C(MAXV + 1, 0);
+    for (int x = 1; x &lt;= MAXV; x++) C[x] = C[x - 1] + (laNT[x] ? 1 : 0);
+
+    int q;
+    cin &gt;&gt; q;
+    while (q--) {
+        int l, r;
+        cin &gt;&gt; l &gt;&gt; r;
+        cout &lt;&lt; C[r] - C[l - 1] &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+1 10
+10 20
+1 1000000</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">4
+4
+78498</code></pre></div>
+    </div>
+    <p>Trong <span class="math">[1, 10]</span> có 2, 3, 5, 7; trong <span class="math">[10, 20]</span> có 11, 13, 17, 19. Cách này cũng dùng cho xâu: đếm số chữ <code>'a'</code> trong đoạn, đếm số ô có cây trong hình chữ nhật (cộng dồn 2D trên bảng 0/1).</p>
+
+    <h3>3. Đếm đoạn con có tổng bằng k</h3>
+    <p><strong>Bài toán.</strong> Cho dãy <span class="math">n ≤ 2·10⁵</span> số nguyên (có thể âm) và số <span class="math">k</span>. Đếm số cặp <span class="math">(l, r)</span> với <span class="math">l ≤ r</span> mà <span class="math">a[l] + … + a[r] = k</span>. Xét hết các cặp mất <span class="math">O(n²)</span>, khoảng <span class="math">2·10¹⁰</span> cặp, quá chậm.</p>
+    <p><strong>Ý tưởng.</strong> Tổng đoạn bằng <span class="math">k</span> nghĩa là <span class="math">S[r] − S[l−1] = k</span>, tức là <span class="math">S[l−1] = S[r] − k</span>. Vậy với mỗi vị trí cuối <span class="math">r</span>, số đoạn hợp lệ kết thúc tại <span class="math">r</span> bằng <strong>số chỉ số <span class="math">j &lt; r</span> có <span class="math">S[j] = S[r] − k</span></strong>. Ta đi từ trái sang phải và dùng một bảng đếm (<code>map</code>) ghi lại mỗi giá trị tiền tố đã xuất hiện bao nhiêu lần.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> <code>dem[0] = 1</code> (ứng với <span class="math">S[0] = 0</span>), <code>S = 0</code>, <code>ketQua = 0</code>.</div></li>
+      <li><div><strong>Duyệt r từ 1 đến n.</strong> Cộng <span class="math">a[r]</span> vào <code>S</code>. Cộng <code>dem[S − k]</code> vào <code>ketQua</code>.</div></li>
+      <li><div><strong>Ghi nhận.</strong> Tăng <code>dem[S]</code> thêm 1, <strong>sau</strong> khi đã đếm, để không ghép <span class="math">S[r]</span> với chính nó.</div></li>
+    </ol>
+    <p>Chạy tay với <span class="math">a = (1, 2, −1, 3, −2, 2)</span>, <span class="math">k = 3</span>. Mảng cộng dồn là <span class="math">S = (0, 1, 3, 2, 5, 3, 5)</span>.</p>
+    <table class="trace">
+      <thead><tr><th>r</th><th>a[r]</th><th>S[r]</th><th>Cần S[j] = S[r] − 3</th><th>Số lần đã gặp</th><th>Kết quả</th><th>Bảng đếm sau bước</th></tr></thead>
+      <tbody>
+        <tr><td>—</td><td>—</td><td>0</td><td>—</td><td>—</td><td>0</td><td>{0:1}</td></tr>
+        <tr><td>1</td><td>1</td><td>1</td><td>−2</td><td>0</td><td>0</td><td>{0:1, 1:1}</td></tr>
+        <tr class="hl"><td>2</td><td>2</td><td>3</td><td>0</td><td>1</td><td>1</td><td>{0:1, 1:1, 3:1}</td></tr>
+        <tr><td>3</td><td>−1</td><td>2</td><td>−1</td><td>0</td><td>1</td><td>{0:1, 1:1, 2:1, 3:1}</td></tr>
+        <tr class="hl"><td>4</td><td>3</td><td>5</td><td>2</td><td>1</td><td>2</td><td>{…, 5:1}</td></tr>
+        <tr class="hl"><td>5</td><td>−2</td><td>3</td><td>0</td><td>1</td><td>3</td><td>{…, 3:2}</td></tr>
+        <tr class="hl"><td>6</td><td>2</td><td>5</td><td>2</td><td>1</td><td>4</td><td>{…, 5:2}</td></tr>
+      </tbody>
+    </table>
+    <p>Bốn đoạn tìm được là <span class="math">[1, 2]</span> (1 + 2), <span class="math">[4, 4]</span> (3), <span class="math">[1, 5]</span> (1 + 2 − 1 + 3 − 2) và <span class="math">[4, 6]</span> (3 − 2 + 2). Đáp án 4.</p>
+    <figure class="code">
+      <figcaption><span class="fn">doan_tong_k.cpp</span> Đếm đoạn con có tổng bằng k</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    long long k;
+    cin &gt;&gt; n &gt;&gt; k;
+
+    map&lt;long long, long long&gt; dem;  // dem[v] = số chỉ số j đã gặp có S[j] = v
+    dem[0] = 1;                     // S[0] = 0: đoạn bắt đầu từ vị trí 1
+    long long S = 0, ketQua = 0;
+
+    for (int r = 1; r &lt;= n; r++) {
+        long long x;
+        cin &gt;&gt; x;
+        S += x;                     // S lúc này là S[r]
+        // Cần S[l-1] = S[r] - k với l-1 &lt; r: đếm trong các tiền tố đã gặp
+        auto it = dem.find(S - k);
+        if (it != dem.end()) ketQua += it-&gt;second;
+        dem[S]++;                   // thêm S[r] để các r sau dùng
+    }
+    cout &lt;&lt; ketQua &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">6 3
+1 2 -1 3 -2 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">4</code></pre></div>
+    </div>
+    <div class="callout tip"><p class="callout-title">Khi mọi số đều dương</p><p>Nếu mọi <span class="math">a[i] &gt; 0</span> thì <span class="math">S</span> tăng dần, không có hai tiền tố bằng nhau, và bài này giải được bằng <a href="two-pointers.html">hai con trỏ</a> trong <span class="bigo">O(n)</span>. Khi có số âm, chỉ có cách đếm bằng <code>map</code> là đúng.</p></div>
+
+    <h3>4. Đếm đoạn con có tổng chia hết cho k</h3>
+    <p>Tổng đoạn chia hết cho <span class="math">k</span> khi và chỉ khi <span class="math">S[r] − S[l−1]</span> chia hết cho <span class="math">k</span>, tức là <strong><span class="math">S[r]</span> và <span class="math">S[l−1]</span> có cùng số dư khi chia cho <span class="math">k</span></strong> (xem <a href="modular-power.html">đồng dư</a>). Vậy ta chỉ cần đếm, với mỗi số dư <span class="math">d</span>, có bao nhiêu tiền tố <span class="math">S[0], S[1], …, S[n]</span> cho số dư <span class="math">d</span>. Nếu có <span class="math">c</span> tiền tố cùng số dư thì chúng tạo ra <span class="math">c(c−1)/2</span> đoạn hợp lệ. Cách cộng dần như code dưới cho cùng kết quả.</p>
+    <p>Chạy tay với <span class="math">a = (2, −3, 5, −1, 4)</span>, <span class="math">k = 3</span>: <span class="math">S = (0, 2, −1, 4, 3, 7)</span>. Số dư <strong>đúng</strong> (trong <span class="math">[0, 2]</span>) là <span class="math">(0, 2, 2, 1, 0, 1)</span>. Số dư 0 có 2 tiền tố, số dư 1 có 2, số dư 2 có 2, nên đáp án là <span class="math">1 + 1 + 1 = 3</span>: các đoạn <span class="math">[1, 4]</span> (tổng 3), <span class="math">[2, 2]</span> (tổng −3), <span class="math">[4, 5]</span> (tổng 3).</p>
+    <div class="callout warn"><p class="callout-title">Bẫy số dư âm</p><p>Trong C++, <code>-1 % 3</code> cho <strong>−1</strong>, không phải 2. Nếu dùng thẳng <code>S % k</code>, tiền tố <span class="math">S[2] = −1</span> sẽ có "số dư" −1, khác với số dư 2 của <span class="math">S[1] = 2</span>, và chương trình bỏ sót đoạn <span class="math">[2, 2]</span>, in ra 2 thay vì 3. Luôn viết <code>((S % k) + k) % k</code>.</p></div>
+    <figure class="code">
+      <figcaption><span class="fn">doan_chia_het.cpp</span> Đếm đoạn con có tổng chia hết cho k</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    long long k;
+    cin &gt;&gt; n &gt;&gt; k;
+
+    vector&lt;long long&gt; dem(k, 0);    // dem[d] = số tiền tố có số dư d
+    dem[0] = 1;                     // S[0] = 0 có số dư 0
+    long long S = 0, ketQua = 0;
+
+    for (int i = 1; i &lt;= n; i++) {
+        long long x;
+        cin &gt;&gt; x;
+        S += x;
+        long long d = ((S % k) + k) % k;   // số dư luôn trong [0, k-1], kể cả khi S âm
+        ketQua += dem[d];                  // ghép với mọi tiền tố trước có cùng số dư
+        dem[d]++;
+    }
+    cout &lt;&lt; ketQua &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 3
+2 -3 5 -1 4</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">3</code></pre></div>
+    </div>
+
+    <h3>5. Đoạn con có tổng lớn nhất</h3>
+    <p>Muốn <span class="math">S[r] − S[l−1]</span> lớn nhất với một <span class="math">r</span> cố định, ta chọn <span class="math">S[l−1]</span> <strong>nhỏ nhất</strong> trong các tiền tố đứng trước <span class="math">r</span>. Vậy chỉ cần đi từ trái sang phải, giữ biến <code>minTruoc</code> là giá trị nhỏ nhất của <span class="math">S[0..r−1]</span>. Ví dụ <span class="math">a = (−2, 3, −1, 4, −6, 2)</span>, <span class="math">S = (0, −2, 1, 0, 4, −2, 0)</span>. Tại <span class="math">r = 4</span>: <span class="math">S[4] = 4</span>, min tiền tố trước đó là <span class="math">S[1] = −2</span>, cho tổng <span class="math">4 − (−2) = 6</span> ứng với đoạn <span class="math">[2, 4] = 3 − 1 + 4</span>. Đây là đáp án lớn nhất.</p>
+    <figure class="code">
+      <figcaption><span class="fn">doan_lon_nhat.cpp</span> Đoạn con (khác rỗng) có tổng lớn nhất</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    cin &gt;&gt; n;
+    long long S = 0;            // S[r]
+    long long minTruoc = 0;     // min của S[0..r-1], ban đầu chỉ có S[0] = 0
+    long long best = LLONG_MIN;
+
+    for (int r = 1; r &lt;= n; r++) {
+        long long x;
+        cin &gt;&gt; x;
+        S += x;
+        best = max(best, S - minTruoc);   // đoạn tốt nhất kết thúc tại r
+        minTruoc = min(minTruoc, S);      // cập nhật sau, để l-1 &lt; r
+    }
+    cout &lt;&lt; best &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">6
+-2 3 -1 4 -6 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">6</code></pre></div>
+    </div>
+    <p>Thứ tự hai dòng trong vòng lặp rất quan trọng: tính <code>best</code> trước rồi mới cập nhật <code>minTruoc</code>, để đoạn luôn có ít nhất một phần tử. Với dãy toàn số âm như <span class="math">(−5, −2, −7)</span>, chương trình in ra −2, đúng là phần tử lớn nhất. Cách nghĩ này tương đương thuật toán Kadane mà em sẽ gặp ở <a href="dp-intro.html">quy hoạch động</a>.</p>
+
+    <h3>6. Quan hệ ngược với mảng hiệu</h3>
+    <p><a href="difference-array.html">Mảng hiệu</a> <span class="math">D[i] = a[i] − a[i−1]</span> (với <span class="math">a[0] = 0</span>) là phép <strong>ngược</strong> của cộng dồn. Cộng dồn mảng hiệu thì được lại dãy ban đầu, còn lấy hiệu của mảng cộng dồn thì cũng được lại dãy ban đầu: <span class="math">S[i] − S[i−1] = a[i]</span>.</p>
+    <table>
+      <thead><tr><th>i</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead>
+      <tbody>
+        <tr><td>a</td><td>3</td><td>1</td><td>4</td><td>1</td><td>5</td><td>9</td></tr>
+        <tr><td>S (cộng dồn của a)</td><td>3</td><td>4</td><td>8</td><td>9</td><td>14</td><td>23</td></tr>
+        <tr><td>D (hiệu của a)</td><td>3</td><td>−2</td><td>3</td><td>−3</td><td>4</td><td>4</td></tr>
+        <tr><td>cộng dồn của D</td><td>3</td><td>1</td><td>4</td><td>1</td><td>5</td><td>9</td></tr>
+      </tbody>
+    </table>
+    <p>Hai kỹ thuật bổ sung cho nhau: cộng dồn giúp <strong>hỏi</strong> tổng đoạn nhanh, mảng hiệu giúp <strong>cộng</strong> một giá trị vào cả đoạn nhanh. Nhiều bài dùng cả hai: trước tiên dùng mảng hiệu để thực hiện các lệnh cộng đoạn, cộng dồn để ra dãy thật, rồi cộng dồn thêm lần nữa để trả lời câu hỏi tổng.</p>
+
+    <h3>7. Nâng cao: phép toán khác và nhiều chiều hơn</h3>
+    <ul>
+      <li><strong>Cộng dồn XOR.</strong> Đặt <span class="math">X[i] = a[1] ⊕ … ⊕ a[i]</span>. Vì <span class="math">x ⊕ x = 0</span> nên XOR đoạn <span class="math">[l, r]</span> là <span class="math">X[r] ⊕ X[l−1]</span>. Ý tưởng triệt tiêu y hệt phép cộng.</li>
+      <li><strong>Không dùng được cho max, min.</strong> Không có phép "trừ" cho max: biết max của <span class="math">[1, r]</span> và <span class="math">[1, l−1]</span> không suy ra được max của <span class="math">[l, r]</span>. Những bài đó cần bảng thưa (sparse table) hoặc cây phân đoạn.</li>
+      <li><strong>Ba chiều.</strong> Trong không gian, công thức bao hàm – loại trừ có 8 số hạng: <span class="math">S[i][j][t] = a[i][j][t] + S[i−1][j][t] + S[i][j−1][t] + S[i][j][t−1] − S[i−1][j−1][t] − S[i−1][j][t−1] − S[i][j−1][t−1] + S[i−1][j−1][t−1]</span>. Bài MAXCUB trong phần bài tập dùng đúng ý này.</li>
+      <li><strong>Trung bình đoạn.</strong> Hỏi "có đoạn dài ít nhất <span class="math">L</span> với trung bình ≥ x không?" thì trừ <span class="math">x</span> vào mọi phần tử rồi hỏi "có đoạn có tổng ≥ 0 không?", dùng min tiền tố như biến thể 5. Kết hợp với <a href="binary-search-answer.html">chặt nhị phân kết quả</a> sẽ tìm được trung bình lớn nhất.</li>
+    </ul>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Lỗi 1. Tràn số khi dùng int</p><p>Với <span class="math">n = 2·10⁵</span> và <span class="math">a[i] ≤ 10⁹</span>, tổng có thể lên tới <span class="math">2·10¹⁴</span>, vượt xa giới hạn khoảng <span class="math">2,1·10⁹</span> của <code>int</code>. Chương trình vẫn chạy nhưng in ra số âm vô lý. <strong>Cách sửa:</strong> khai báo <span class="math">S</span> là <code>long long</code>. Kể cả khi từng <span class="math">a[i]</span> nhỏ, hãy ước lượng tổng lớn nhất là <span class="math">n · max|a[i]|</span> trước khi chọn kiểu.</p></div>
+    <div class="callout danger"><p class="callout-title">Lỗi 2. Lệch một chỉ số: dùng S[l] thay cho S[l−1]</p><p>Viết <code>S[r] - S[l]</code> sẽ làm mất phần tử <span class="math">a[l]</span>. Với ví dụ <span class="math">a = (3, 1, 4, 1, 5, 9)</span>, đoạn <span class="math">[2, 5]</span> sẽ ra <span class="math">14 − 4 = 10</span> thay vì 11. <strong>Cách sửa:</strong> nhớ câu "trừ đi phần <em>đứng trước</em> <span class="math">l</span>", và luôn thử lại với đoạn một phần tử <span class="math">[l, l]</span>: kết quả phải bằng <span class="math">a[l]</span>.</p></div>
+    <div class="callout danger"><p class="callout-title">Lỗi 3. Không có ô S[0]</p><p>Nếu mảng <span class="math">S</span> bắt đầu từ chỉ số 0 với <span class="math">S[0] = a[0]</span>, thì truy vấn bắt đầu từ đầu dãy sẽ phải truy cập <code>S[-1]</code>, ra ngoài mảng. <strong>Cách sửa:</strong> dùng mảng <span class="math">n + 1</span> ô với <span class="math">S[0] = 0</span> như bài này.</p></div>
+    <div class="callout warn"><p class="callout-title">Lỗi 4. Công thức 2D thiếu dấu hoặc nhầm hàng với cột</p><p>Quên <code>- S[i-1][j-1]</code> khi dựng, hoặc quên <code>+ S[x1-1][y1-1]</code> khi truy vấn, sẽ cho kết quả sai một lượng đúng bằng phần góc. Cũng rất hay nhầm <span class="math">x</span> là cột trong khi đề coi <span class="math">x</span> là hàng. <strong>Cách sửa:</strong> vẽ 4 hình chữ nhật như Hình 1 và kiểm tra bằng ví dụ nhỏ, ví dụ truy vấn đúng một ô.</p></div>
+    <div class="callout warn"><p class="callout-title">Lỗi 5. Quên dem[0] = 1 hoặc cập nhật bảng đếm quá sớm</p><p>Thiếu <code>dem[0] = 1</code> thì bỏ sót mọi đoạn bắt đầu từ vị trí 1 (ở ví dụ biến thể 3 sẽ ra 2 thay vì 4). Tăng <code>dem[S]</code> trước khi đếm thì với <span class="math">k = 0</span> mỗi vị trí bị ghép với chính nó, tức là đếm thêm đoạn rỗng. <strong>Cách sửa:</strong> đếm trước, ghi nhận sau.</p></div>
+    <div class="callout warn"><p class="callout-title">Lỗi 6. Số dư âm</p><p>Trong C++, <code>(-7) % 3 == -1</code>. Dùng số dư âm làm chỉ số mảng sẽ truy cập ra ngoài mảng; dùng làm khóa <code>map</code> thì đếm thiếu. <strong>Cách sửa:</strong> <code>((x % k) + k) % k</code>.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo</p><p>Mảng lớn (<span class="math">10⁶</span> phần tử trở lên) nên khai báo toàn cục hoặc dùng <code>vector</code>, không khai báo mảng tĩnh trong <code>main</code> để tránh tràn ngăn xếp. Nếu đề không đảm bảo <span class="math">l ≤ r</span>, hãy <code>if (l &gt; r) swap(l, r);</code>. Khi đếm bằng bảng băm, <code>map</code> an toàn hơn <code>unordered_map</code> vì không bị dữ liệu "bẫy" làm chậm.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Cho a = (2, 7, 1, 8, 2, 8). Giá trị S[4] là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 16</button>
+        <button type="button" class="quiz-opt" data-correct>B. 18</button>
+        <button type="button" class="quiz-opt">C. 10</button>
+        <button type="button" class="quiz-opt">D. 28</button>
+      </div>
+      <p class="quiz-explain">S[4] = 2 + 7 + 1 + 8 = 18. Đáp án A (16) là tổng của a[2..4], còn 28 là tổng cả dãy S[6].</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Với S[0] = 0 và chỉ số từ 1, tổng a[l] + … + a[r] bằng</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. S[r] − S[l]</button>
+        <button type="button" class="quiz-opt" data-correct>B. S[r] − S[l−1]</button>
+        <button type="button" class="quiz-opt">C. S[r+1] − S[l−1]</button>
+        <button type="button" class="quiz-opt">D. S[r] + S[l−1]</button>
+      </div>
+      <p class="quiz-explain">S[r] chứa a[1..r], S[l−1] chứa a[1..l−1]. Trừ đi thì phần a[1..l−1] triệt tiêu, còn lại đúng a[l..r]. Phương án A làm mất a[l].</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Khi dựng S[i][j] = a[i][j] + S[i−1][j] + S[i][j−1] − S[i−1][j−1], vì sao phải trừ S[i−1][j−1]?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Để kết quả không bị tràn số.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Vì phần góc trên trái nằm trong cả S[i−1][j] lẫn S[i][j−1], bị cộng hai lần.</button>
+        <button type="button" class="quiz-opt">C. Vì ô (i−1, j−1) không thuộc hình chữ nhật (1,1)–(i,j).</button>
+      </div>
+      <p class="quiz-explain">Đây là bao hàm – loại trừ. Ô (i−1, j−1) vẫn thuộc hình chữ nhật, nhưng nó đã được tính hai lần nên ta bớt đi một lần.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Trong C++, biểu thức (-7) % 3 cho kết quả nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 2</button>
+        <button type="button" class="quiz-opt" data-correct>B. −1</button>
+        <button type="button" class="quiz-opt">C. 1</button>
+      </div>
+      <p class="quiz-explain">C++ làm tròn phép chia về 0: −7 / 3 = −2, nên −7 % 3 = −7 − 3·(−2) = −1. Muốn số dư trong [0, 2] thì viết ((−7 % 3) + 3) % 3 = 2.</p>
+    </div>
+
+    <p><strong>Câu 5.</strong> Biết mảng cộng dồn S = (0, 4, 6, 6, 11, 10). Hãy tìm lại dãy a.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>a[i] = S[i] − S[i−1], nên a = (4 − 0, 6 − 4, 6 − 6, 11 − 6, 10 − 11) = (4, 2, 0, 5, −1). Đây chính là "lấy mảng hiệu của S".</p></details>
+
+    <p><strong>Câu 6.</strong> Dãy a = (1, −1, 1, −1) có bao nhiêu đoạn con có tổng bằng 0?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>S = (0, 1, 0, 1, 0). Giá trị 0 xuất hiện 3 lần (S[0], S[2], S[4]), giá trị 1 xuất hiện 2 lần (S[1], S[3]). Mỗi cặp tiền tố bằng nhau cho một đoạn có tổng 0: 3·2/2 + 2·1/2 = 3 + 1 = 4. Đó là các đoạn [1, 2], [2, 3], [3, 4], [1, 4].</p></details>
+
+    <p><strong>Câu 7.</strong> Với bảng ở Ví dụ 2, dùng bảng S để tính tổng hình chữ nhật (1, 2)–(2, 3).</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>S[2][3] − S[0][3] − S[2][1] + S[0][1] = 24 − 0 − 6 + 0 = 18. Kiểm tra trực tiếp: 2 + 3 + 6 + 7 = 18.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Các bài xếp từ dễ đến khó. Nhiều bài CSES có bản dịch tiếng Việt trên LQDOJ; em có thể nộp ở đó hoặc ở trang gốc <a href="https://cses.fi/problemset/">CSES</a>.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1646">Truy vấn tổng mảng tĩnh (CSES Static Range Sum Queries)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho dãy n số nguyên và q truy vấn, mỗi truy vấn hỏi tổng đoạn [a, b].</p>
+        <p class="ex-skill"><b>Luyện:</b> dựng mảng cộng dồn, công thức S[b] − S[a−1], dùng long long.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đúng bài mở đầu của trang này. Kiểm tra lại kiểu dữ liệu của S và tốc độ nhập xuất.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1652">Truy vấn Khu rừng (CSES Forest Queries)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Bản đồ khu rừng n × n, mỗi ô trống hoặc có cây. Trả lời q câu hỏi: trong một hình chữ nhật có bao nhiêu cây?</p>
+        <p class="ex-skill"><b>Luyện:</b> cộng dồn 2D trên bảng 0/1, bao hàm – loại trừ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đặt a[i][j] = 1 nếu ô có cây. Dựng S[i][j] theo công thức 2D, mỗi câu hỏi dùng 4 giá trị của S.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/contest/816/problem/B">Karen and Coffee</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có n công thức pha cà phê, mỗi công thức khuyên một khoảng nhiệt độ [l, r]. Một nhiệt độ là "chấp nhận được" nếu có ít nhất k công thức khuyên. Trả lời q câu hỏi: trong [a, b] có bao nhiêu nhiệt độ nguyên chấp nhận được?</p>
+        <p class="ex-skill"><b>Luyện:</b> kết hợp mảng hiệu và cộng dồn trên mảng 0/1.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Dùng mảng hiệu để biết mỗi nhiệt độ được bao nhiêu công thức khuyên. Đánh dấu 1 nếu số đó ≥ k, rồi cộng dồn dãy 0/1 để trả lời câu hỏi.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/vboard">VBOARD – Bàn cờ</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Bàn cờ N × N (N ≤ 500) có ghi số trên mỗi ô, ô (1, 1) màu trắng. Với mỗi hình chữ nhật được hỏi, in giá trị tuyệt đối của hiệu giữa tổng ô trắng và tổng ô đen.</p>
+        <p class="ex-skill"><b>Luyện:</b> biến đổi dữ liệu trước khi cộng dồn 2D.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Ô (i, j) trắng khi i + j chẵn. Đổi dấu các ô đen, khi đó tổng hình chữ nhật chính là (tổng trắng − tổng đen). Lấy trị tuyệt đối khi in.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1643">Tổng đoạn con lớn nhất (CSES Maximum Subarray Sum)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Tìm tổng lớn nhất của một đoạn con liên tiếp khác rỗng.</p>
+        <p class="ex-skill"><b>Luyện:</b> giữ min tiền tố khi duyệt.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Với mỗi r, đáp án tốt nhất kết thúc tại r là S[r] trừ tiền tố nhỏ nhất đứng trước r. Cẩn thận dãy toàn số âm.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1661">Tổng đoạn con II (CSES Subarray Sums II)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho dãy n ≤ 2·10⁵ số nguyên (có thể âm) và số x. Đếm số đoạn con có tổng bằng x.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm tiền tố bằng map.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đoạn [l, r] hợp lệ khi S[l−1] = S[r] − x. Đi từ trái sang phải, cộng số lần đã gặp giá trị S[r] − x. Nhớ dem[0] = 1 và kết quả có thể lớn, dùng long long.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1662">Tính chia hết của đoạn con (CSES Subarray Divisibility)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Đếm số đoạn con có tổng chia hết cho n (n là độ dài dãy), các phần tử có thể âm.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm số dư của tiền tố, xử lý số dư âm.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Hai tiền tố cùng số dư cho một đoạn chia hết. Dùng mảng đếm kích thước n và công thức ((S % n) + n) % n.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/contest/1398/problem/C">Good Subarrays</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho dãy chữ số (dưới dạng xâu). Đếm số đoạn con có tổng các phần tử bằng độ dài đoạn. Có nhiều bộ test.</p>
+        <p class="ex-skill"><b>Luyện:</b> biến đổi điều kiện về dạng "tổng bằng 0".</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tổng bằng độ dài nghĩa là tổng của (a[i] − 1) trên đoạn bằng 0. Trừ 1 vào mọi phần tử rồi đếm đoạn có tổng 0 như biến thể 3.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nkseq">NKSEQ – Dãy số</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Dãy n ≤ 10⁵ số viết trên vòng tròn. Vị trí cắt j là "tốt" nếu sau khi cắt tại j, mọi tổng tiền tố của dãy mới đều dương. Đếm số vị trí tốt.</p>
+        <p class="ex-skill"><b>Luyện:</b> cộng dồn trên dãy vòng, min tiền tố và min hậu tố.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Các tổng tiền tố khi cắt tại j là S[t] − S[j−1] với t = j..n, và S[n] − S[j−1] + S[t] với t = 1..j−1. Tính trước min của S trên mỗi hậu tố và mỗi tiền tố để kiểm tra mỗi j trong O(1).</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/maxcub">MAXCUB – Khối lập phương lớn nhất</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Khối lập phương n × n × n (n ≤ 30), mỗi khối đơn vị chứa một số nguyên. Tìm khối lập phương con có tổng lớn nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> cộng dồn 3 chiều, bao hàm – loại trừ 8 số hạng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Dựng S ba chiều (công thức ở biến thể 7). Duyệt mọi góc và mọi cạnh khối con, mỗi khối tính tổng trong O(1). Số khối khoảng n⁴/4, chưa tới 2,2·10⁵ với n = 30.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/data-structures/prefix-sum-and-difference-array">VNOI Wiki – Mảng cộng dồn và mảng hiệu</a> (tiếng Việt, có danh sách bài luyện tập)</li>
+      <li><a href="https://vi.wikipedia.org/wiki/T%E1%BB%95ng_ti%E1%BB%81n_t%E1%BB%91">Wikipedia – Tổng tiền tố</a> (tiếng Việt)</li>
+      <li><a href="https://oj.vnoi.info/tags/?tag_id=prefix_sum">VNOJ – Danh sách bài có nhãn prefix sum</a> (tiếng Việt)</li>
+      <li><a href="https://usaco.guide/silver/prefix-sums">USACO Guide – Introduction to Prefix Sums</a> (tiếng Anh)</li>
+      <li><a href="https://usaco.guide/silver/more-prefix-sums">USACO Guide – More on Prefix Sums</a> (tiếng Anh: cộng dồn 2D, đếm đoạn con theo số dư)</li>
+      <li><a href="https://cses.fi/problemset/">CSES Problem Set</a> (mục Range Queries và Sorting and Searching)</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>S[0] = 0, S[i] = S[i−1] + a[i]; tổng đoạn [l, r] = S[r] − S[l−1]. Dựng O(n), mỗi truy vấn O(1).</li>
+        <li>Phần a[1..l−1] có mặt trong cả S[r] và S[l−1] nên triệt tiêu; ô S[0] = 0 giúp khỏi xét riêng l = 1.</li>
+        <li>Luôn dùng long long cho S; kiểm tra công thức bằng đoạn một phần tử.</li>
+        <li>Đếm phần tử thỏa điều kiện trong đoạn: biến thành dãy 0/1 rồi cộng dồn (hay đi cùng sàng nguyên tố).</li>
+        <li>2D: S[i][j] = a[i][j] + S[i−1][j] + S[i][j−1] − S[i−1][j−1]; tổng hình chữ nhật = S[x2][y2] − S[x1−1][y2] − S[x2][y1−1] + S[x1−1][y1−1].</li>
+        <li>Đoạn tổng bằng k: đếm số j &lt; r có S[j] = S[r] − k bằng map, dem[0] = 1, đếm trước rồi mới ghi nhận.</li>
+        <li>Đoạn chia hết cho k: hai tiền tố cùng số dư; nhớ ((S % k) + k) % k. Đoạn tổng lớn nhất: S[r] − min tiền tố trước r.</li>
+        <li>Cộng dồn và mảng hiệu là hai phép ngược nhau; dãy bị cập nhật xen kẽ truy vấn thì cần cấu trúc khác.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/prefix-sum.js"></script>
+</body>
+</html>

@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sàng Eratosthenes · Thi đấu lớp 9</title>
+<meta name="description" content="Sàng Eratosthenes tìm mọi số nguyên tố tới 10^7 trong O(N log log N), mảng cộng dồn đếm nguyên tố trong đoạn, sàng ước nguyên tố nhỏ nhất, sàng trên đoạn [L, R], sàng điều hòa và sàng tuyến tính.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  /* Số đã bị gạch: thêm nét gạch ngang cho giống gạch trên giấy */
+  .grid-viz .g.is-bad, .grid-viz .g.is-dim { text-decoration: line-through; }
+</style>
+</head>
+<body data-page="topic" data-topic="sieve">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Chạy tay được sàng Eratosthenes trên bảng số 1..50 và giải thích được vì sao chỉ cần gạch bội từ i·i và dừng khi i·i &gt; N.</li>
+      <li>Cài đặt được sàng tới N = 10⁷ trong khoảng 0,1 giây, biết chọn vector&lt;bool&gt; để tiết kiệm bộ nhớ.</li>
+      <li>Kết hợp sàng với mảng cộng dồn để trả lời “có bao nhiêu số nguyên tố trong đoạn [L, R]” trong O(1).</li>
+      <li>Dựng được bảng ước nguyên tố nhỏ nhất (SPF) và phân tích một số ra thừa số nguyên tố trong O(log n).</li>
+      <li>Biết các mở rộng: sàng trên đoạn [L, R] với R tới 10¹², sàng ước/tổng ước kiểu điều hòa, sàng tuyến tính.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Sàng Eratosthenes (Sieve of Eratosthenes) là cách tìm <b>tất cả</b> số nguyên tố từ 1 đến N cùng một lúc. Thay vì hỏi từng số “em có phải số nguyên tố không?”, ta viết hết các số ra rồi lần lượt <b>gạch bỏ bội</b> của 2, của 3, của 5… Số nào còn sống sót đến cuối cùng chính là số nguyên tố.</p>
+
+    <p>Thuật toán mang tên nhà toán học Hy Lạp Eratosthenes, sống khoảng thế kỷ thứ 3 trước Công nguyên. Hơn 2 000 năm sau, nó vẫn là công cụ số một của dân lập trình thi đấu mỗi khi đề bài cần nhiều số nguyên tố.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> cả lớp 50 bạn đứng thành hàng, mỗi bạn cầm một tấm thẻ ghi số từ 1 đến 50. Cô giáo nói: “Bạn số 2 ở lại, mọi bạn cầm bội của 2 ngồi xuống.” Rồi: “Bạn số 3 ở lại, bội của 3 ngồi xuống.” Bạn số 4 đã ngồi rồi nên cô bỏ qua. Cô tiếp tục với 5, với 7. Cuối cùng những bạn còn đứng (trừ bạn số 1) đều cầm số nguyên tố. Cô không cần hỏi riêng bạn nào cả. Cái “sàng” lọc cả hàng một lượt.</p></div>
+    </div>
+
+    <p>Nhắc lại: số nguyên tố là số tự nhiên lớn hơn 1 chỉ có đúng hai ước là 1 và chính nó. Ví dụ 2, 3, 5, 7, 11. Số lớn hơn 1 mà không nguyên tố gọi là hợp số, ví dụ 4 = 2·2, 15 = 3·5. Bài <a href="divisors-primes.html">Ước số &amp; số nguyên tố</a> đã dạy em kiểm tra <b>một</b> số trong <span class="bigo">O(√n)</span>. Bài này dạy em xử lý <b>cả triệu số</b> một lúc.</p>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p><b>Bài toán:</b> cho số nguyên dương N. Với mỗi x từ 0 đến N, xác định x có phải số nguyên tố hay không, tức là dựng mảng <code>isPrime[0..N]</code>.</p>
+      <p><b>Sàng Eratosthenes:</b> ban đầu coi mọi số từ 2 đến N là nguyên tố. Duyệt i = 2, 3, 4, … chừng nào <span class="math">i·i ≤ N</span>. Nếu i chưa bị gạch thì i là số nguyên tố, và ta gạch mọi bội <span class="math">i·i, i·i + i, i·i + 2i, …</span> không vượt quá N. Khi kết thúc, các số chưa bị gạch là số nguyên tố.</p>
+    </div>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Sàng là bước <b>tiền xử lý</b> (precompute): tốn một chút thời gian lúc đầu, sau đó mọi câu hỏi về tính nguyên tố của số ≤ N chỉ còn là đọc một ô mảng. Trong đề thi học sinh giỏi THCS, sàng xuất hiện rất thường xuyên ở bài 1, bài 2 và cả bài 3. Các dạng hay gặp:</p>
+    <ul>
+      <li><b>Nhiều truy vấn kiểm tra nguyên tố:</b> cho 10⁶ số, mỗi số ≤ 10⁷, hỏi số nào nguyên tố.</li>
+      <li><b>Đếm hoặc tính tổng số nguyên tố trong đoạn [L, R]</b>, nhiều đoạn khác nhau: sàng kết hợp với <a href="prefix-sum.html">mảng cộng dồn</a>.</li>
+      <li><b>Liệt kê số nguyên tố</b> để dùng tiếp: tổng các số nguyên tố liên tiếp, số siêu nguyên tố, cặp số nguyên tố sinh đôi (p, p + 2), giả thuyết Goldbach.</li>
+      <li><b>Phân tích thừa số nguyên tố thật nhanh</b> cho rất nhiều số: sàng ước nguyên tố nhỏ nhất (SPF).</li>
+      <li><b>Đếm ước, tính tổng ước</b> của mọi số từ 1 đến N: sàng điều hòa.</li>
+      <li><b>Số nguyên tố trong đoạn rất xa</b>, ví dụ [10¹², 10¹² + 10⁶]: sàng trên đoạn.</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề nói về số nguyên tố (hoặc ước, thừa số nguyên tố) <b>và</b> có <b>nhiều</b> số cần xử lý, giá trị lớn nhất cỡ N ≤ 10⁶ hoặc 10⁷. Nếu chỉ có một vài số nhưng mỗi số tới 10¹², hãy dùng cách thử chia <span class="bigo">O(√n)</span> thay vì sàng.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><b>Bài toán mở đầu.</b> Có Q = 10⁶ câu hỏi. Mỗi câu cho một số x ≤ 10⁷ và hỏi x có phải số nguyên tố không. (Đây chính là bài FPRIME trong phần bài tập.)</p>
+
+    <p><b>Cách ngây thơ:</b> với mỗi câu hỏi, thử chia x cho d = 2, 3, …, √x. Nếu x là số nguyên tố gần 10⁷, ta phải thử khoảng √10⁷ ≈ 3 162 phép chia. Với 10⁶ câu hỏi, trường hợp xấu nhất là khoảng <b>3·10⁹</b> phép chia, chạy mất nhiều giây.</p>
+
+    <p>Thử một cách ngây thơ khác: tự kiểm tra trước <b>mọi</b> số từ 2 đến 10⁷ bằng thử chia, rồi lưu kết quả. Thầy đã đếm bằng máy: cách này tốn đúng <b>1 746 210 133</b> phép chia lấy dư (gần 1,75 tỉ), chạy khoảng 6 giây. Vẫn quá chậm.</p>
+
+    <p><b>Sàng Eratosthenes</b> cho N = 10⁷ chỉ tốn <b>22 850 051</b> lần gạch (gần 2,3·10⁷), mỗi lần gạch chỉ là gán một ô mảng, chạy khoảng 0,1 giây. Sau đó mỗi câu hỏi trả lời ngay bằng một lần đọc mảng.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Thử chia từng số</h4><p>Mỗi số tốn tới √x phép chia. Kiểm tra mọi số tới 10⁷ tốn khoảng 1,75·10⁹ phép chia lấy dư, mà phép chia lấy dư lại là phép tính chậm. Độ phức tạp cỡ <span class="bigo">O(N√N)</span> (thực tế nhỏ hơn một chút vì hợp số dừng sớm).</p></div>
+      <div class="good-side"><h4>Sàng Eratosthenes</h4><p>Chỉ gạch bội của các số nguyên tố p ≤ √N. Với N = 10⁷ là khoảng 2,3·10⁷ phép gán, nhanh hơn gần <b>80 lần</b>. Độ phức tạp <span class="bigo">O(N log log N)</span>; mỗi truy vấn sau đó <span class="bigo">O(1)</span>.</p></div>
+    </div>
+
+    <p>Bí quyết nằm ở chỗ: cách ngây thơ đi từ <b>số</b> tìm <b>ước</b> (phải đoán, thử nhiều lần thất bại), còn sàng đi từ <b>ước</b> sinh ra <b>bội</b> (mỗi bước nhảy đều trúng một hợp số, không phí phép tính nào).</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <h3>Sàng Eratosthenes cơ bản</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Tạo mảng <code>isPrime[0..N]</code>, gán tất cả bằng <code>true</code>. Riêng <code>isPrime[0] = isPrime[1] = false</code>.</div></li>
+      <li><div><strong>Duyệt i.</strong> Cho i chạy từ 2 trở lên, chừng nào <span class="math">i·i ≤ N</span>.</div></li>
+      <li><div><strong>Bỏ qua hợp số.</strong> Nếu <code>isPrime[i] = false</code> thì i đã bị gạch, tức là hợp số: sang i tiếp theo.</div></li>
+      <li><div><strong>Gạch bội.</strong> Nếu <code>isPrime[i] = true</code> thì i là số nguyên tố. Cho j chạy <span class="math">i·i, i·i + i, i·i + 2i, …</span> tới khi vượt N, gán <code>isPrime[j] = false</code>.</div></li>
+      <li><div><strong>Kết thúc.</strong> Mọi x có <code>isPrime[x] = true</code> là số nguyên tố. Muốn có danh sách thì duyệt x từ 2 đến N một lần.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Sang(N):
+    isPrime[0..N] ← true
+    isPrime[0] ← false; isPrime[1] ← false
+    i ← 2
+    <b>khi</b> i * i ≤ N:
+        <b>nếu</b> isPrime[i]:                  <i>// i là số nguyên tố</i>
+            j ← i * i                       <i>// bội nhỏ hơn đã bị gạch rồi</i>
+            <b>khi</b> j ≤ N:
+                isPrime[j] ← false
+                j ← j + i
+        i ← i + 1
+    <b>trả về</b> isPrime</pre>
+
+    <h3>Đếm số nguyên tố trong đoạn bằng cộng dồn</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Sàng</strong> tới N như trên.</div></li>
+      <li><div><strong>Cộng dồn.</strong> <code>cnt[0] = 0</code>, <code>cnt[x] = cnt[x−1] + (isPrime[x] ? 1 : 0)</code>. Vậy <code>cnt[x]</code> là số số nguyên tố trong [1, x].</div></li>
+      <li><div><strong>Trả lời.</strong> Số số nguyên tố trong [L, R] là <code>cnt[R] − cnt[L−1]</code>.</div></li>
+    </ol>
+
+    <h3>Sàng ước nguyên tố nhỏ nhất (SPF)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> <code>spf[x] = 0</code> với mọi x (0 nghĩa là “chưa biết”).</div></li>
+      <li><div><strong>Duyệt i</strong> từ 2 đến N. Nếu <code>spf[i] = 0</code> thì i nguyên tố: gán <code>spf[i] = i</code>, rồi với mỗi bội j = i·i, i·i + i, … ≤ N mà <code>spf[j] = 0</code>, gán <code>spf[j] = i</code>.</div></li>
+      <li><div><strong>Phân tích x.</strong> Chừng nào x &gt; 1: lấy p = <code>spf[x]</code>, ghi nhận p, chia x cho p. Lặp lại.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> PhanTich(x):              <i>// cần bảng spf dựng sẵn</i>
+    <b>khi</b> x &gt; 1:
+        p ← spf[x]
+        e ← 0
+        <b>khi</b> x <b>chia hết cho</b> p:
+            x ← x / p; e ← e + 1
+        ghi nhận thừa số p mũ e
+    </pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Hãy đi chậm qua từng câu hỏi mà một bạn học sinh giỏi chắc chắn sẽ hỏi.</p>
+
+    <h3>Vì sao số chưa bị gạch là số nguyên tố?</h3>
+    <p>Ta chỉ gạch các số dạng <span class="math">i·k</span> với k ≥ i ≥ 2, nên số bị gạch luôn có ước i nằm giữa 1 và chính nó: đó chắc chắn là hợp số. Không bao giờ gạch nhầm số nguyên tố.</p>
+    <p>Ngược lại, lấy một hợp số x bất kỳ ≤ N. Gọi p là <b>ước nguyên tố nhỏ nhất</b> của x. Viết x = p·m. Mọi ước nguyên tố của m đều là ước của x nên ≥ p, do đó m ≥ p. Suy ra:</p>
+    <ul>
+      <li><span class="math">p·p ≤ p·m = x ≤ N</span>, nên vòng lặp i chắc chắn đi tới i = p (vì p·p ≤ N).</li>
+      <li>p là số nguyên tố nên không bị số nào gạch; tới lượt i = p, p vẫn “sống”, ta gạch các bội của p.</li>
+      <li>x = p·m với m ≥ p, nên x ≥ p·p, x nằm trong dãy p·p, p·p + p, …: x bị gạch.</li>
+    </ul>
+    <p>Vậy <b>mọi hợp số đều bị gạch</b>, mọi số nguyên tố đều sống sót. Thuật toán đúng.</p>
+
+    <h3>Vì sao bắt đầu gạch từ i·i?</h3>
+    <p>Xét i = 7. Các bội nhỏ hơn 49 là 14, 21, 28, 35, 42, tức là 7·2, 7·3, 7·4, 7·5, 7·6. Mỗi số đó có một thừa số nhỏ hơn 7 (là 2, 3, 4, 5, 6), nên đã có ước nguyên tố nhỏ hơn 7 và <b>đã bị gạch</b> ở lượt của 2, 3 hoặc 5. Tổng quát: bội <span class="math">i·k</span> với k &lt; i có ước nguyên tố của k, nhỏ hơn i, nên đã bị gạch trước đó. Bắt đầu từ i·i là không bỏ sót gì mà lại tiết kiệm.</p>
+
+    <table>
+      <thead><tr><th>Bội của 7</th><th>Viết lại</th><th>Đã bị gạch ở lượt</th></tr></thead>
+      <tbody>
+        <tr><td>14</td><td>7·2</td><td>i = 2</td></tr>
+        <tr><td>21</td><td>7·3</td><td>i = 3</td></tr>
+        <tr><td>28</td><td>7·4 = 7·2·2</td><td>i = 2</td></tr>
+        <tr><td>35</td><td>7·5</td><td>i = 5</td></tr>
+        <tr><td>42</td><td>7·6 = 7·2·3</td><td>i = 2 (và cả i = 3)</td></tr>
+        <tr><td><b>49</b></td><td><b>7·7</b></td><td><b>chưa, lượt i = 7 mới gạch</b></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Vì sao chỉ cần i ≤ √N?</h3>
+    <p>Nếu i·i &gt; N thì số đầu tiên cần gạch là i·i đã vượt N: vòng gạch không làm gì. Nói cách khác, mọi hợp số ≤ N có ước nguyên tố nhỏ nhất ≤ √N (đã chứng minh ở trên), nên chỉ cần các số nguyên tố ≤ √N. Với N = 10⁷, √N ≈ 3 162: vòng ngoài chỉ chạy tới 3 162, chỉ có 446 số nguyên tố trong số đó thực sự đi gạch.</p>
+
+    <h3>Vì sao nhanh: tổng N/p</h3>
+    <p>Lượt của số nguyên tố p gạch khoảng <span class="math">N/p</span> số (chính xác là ít hơn vì bắt đầu từ p·p). Tổng số lần gạch khoảng:</p>
+    <div class="math-block">N/2 + N/3 + N/5 + N/7 + N/11 + … = N · (1/2 + 1/3 + 1/5 + 1/7 + …)</div>
+    <p>Tổng nghịch đảo các số nguyên tố ≤ x tăng <b>cực kỳ chậm</b>: nó xấp xỉ <span class="math">ln ln x + 0,26</span> (định lý Mertens). Ví dụ với các số nguyên tố ≤ 3 162: ln ln 3 162 + 0,26 ≈ 2,35. Nên số lần gạch khoảng 2,35·10⁷, khớp với con số 22 850 051 thầy đếm được. Vì thế độ phức tạp là <span class="bigo">O(N log log N)</span>.</p>
+    <table>
+      <thead><tr><th>N</th><th>ln ln N</th><th>Số lần gạch thực tế</th><th>Số lần gạch / N</th></tr></thead>
+      <tbody>
+        <tr><td>100</td><td>1,53</td><td>104</td><td>1,04</td></tr>
+        <tr><td>1 000</td><td>1,93</td><td>1 411</td><td>1,41</td></tr>
+        <tr><td>10⁶</td><td>2,63</td><td>2 122 048</td><td>2,12</td></tr>
+        <tr><td>10⁷</td><td>2,78</td><td>22 850 051</td><td>2,29</td></tr>
+      </tbody>
+    </table>
+    <p>Từ 10⁶ lên 10⁷, N tăng 10 lần nhưng “số lần gạch trên mỗi số” chỉ tăng từ 2,12 lên 2,29. Em có thể coi sàng gần như <b>tuyến tính</b>: mỗi số bị gạch trung bình chưa tới 3 lần.</p>
+
+    <h3>Vì sao chỉ gạch bội của số nguyên tố?</h3>
+    <p>Nếu i là hợp số, ví dụ i = 4, thì mọi bội của 4 cũng là bội của 2 và đã bị gạch. Gạch lại chỉ phí thời gian. Bỏ dòng kiểm tra <code>if (isPrime[i])</code> thuật toán vẫn đúng nhưng chậm hơn: với N = 50, gạch bội của mọi i từ 2 (kể cả hợp số, bắt đầu từ 2i) tốn 108 lần gạch, gấp hơn 2 lần con số 45 của sàng chuẩn.</p>
+
+    <h3>Bộ nhớ: vector&lt;bool&gt;</h3>
+    <p>Mảng <code>bool isPrime[10000001]</code> tốn 10⁷ byte ≈ 10 MB. Kiểu <code>vector&lt;bool&gt;</code> trong C++ nén mỗi phần tử còn <b>1 bit</b>, nên chỉ tốn 1,25 MB. Ngoài ra, khi mảng nhỏ, nó vừa bộ nhớ đệm (cache) của CPU hơn, nên sàng 10⁷ bằng <code>vector&lt;bool&gt;</code> thường còn nhanh hơn. <code>bitset&lt;10000001&gt;</code> cũng 1 bit mỗi số nhưng kích thước phải là hằng số lúc biên dịch.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi gõ code, em hãy tự lấy giấy kẻ bảng 1..30 và sàng bằng bút chì. Làm tay một lần, em sẽ tự thấy vì sao bắt đầu từ i·i và vì sao dừng ở √N.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <h3>Ví dụ 1: sàng các số từ 1 đến 50</h3>
+    <p>Bấm nút để xem từng lượt. Ô <b>xanh lam đậm</b> là số nguyên tố i đang đi gạch, ô <b>đỏ</b> là các bội vừa bị gạch ở lượt này, ô <b>mờ gạch ngang</b> là số đã bị gạch từ trước, ô <b>xanh lá</b> là số nguyên tố đã chắc chắn.</p>
+    <div class="stepper" data-title="Ví dụ: sàng các số từ 1 đến 50">
+      <div class="frame" data-caption="&lt;b&gt;Bắt đầu.&lt;/b&gt; Viết các số từ 1 đến 50. Số 1 không phải số nguyên tố nên mờ đi ngay. Mọi số từ 2 đến 50 đều đang “chưa bị gạch”.">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g is-dim">1</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g">8</span><span class="g">9</span><span class="g">10</span>
+          <span class="g">11</span><span class="g">12</span><span class="g">13</span><span class="g">14</span><span class="g">15</span><span class="g">16</span><span class="g">17</span><span class="g">18</span><span class="g">19</span><span class="g">20</span>
+          <span class="g">21</span><span class="g">22</span><span class="g">23</span><span class="g">24</span><span class="g">25</span><span class="g">26</span><span class="g">27</span><span class="g">28</span><span class="g">29</span><span class="g">30</span>
+          <span class="g">31</span><span class="g">32</span><span class="g">33</span><span class="g">34</span><span class="g">35</span><span class="g">36</span><span class="g">37</span><span class="g">38</span><span class="g">39</span><span class="g">40</span>
+          <span class="g">41</span><span class="g">42</span><span class="g">43</span><span class="g">44</span><span class="g">45</span><span class="g">46</span><span class="g">47</span><span class="g">48</span><span class="g">49</span><span class="g">50</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 2.&lt;/b&gt; Số 2 chưa bị gạch nên 2 là số nguyên tố. Gạch các bội 4, 6, 8, …, 50 (bắt đầu từ 2·2 = 4). Lượt này gạch &lt;b&gt;24&lt;/b&gt; số.">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g is-dim">1</span><span class="g is-active">2</span><span class="g">3</span><span class="g is-bad">4</span><span class="g">5</span><span class="g is-bad">6</span><span class="g">7</span><span class="g is-bad">8</span><span class="g">9</span><span class="g is-bad">10</span>
+          <span class="g">11</span><span class="g is-bad">12</span><span class="g">13</span><span class="g is-bad">14</span><span class="g">15</span><span class="g is-bad">16</span><span class="g">17</span><span class="g is-bad">18</span><span class="g">19</span><span class="g is-bad">20</span>
+          <span class="g">21</span><span class="g is-bad">22</span><span class="g">23</span><span class="g is-bad">24</span><span class="g">25</span><span class="g is-bad">26</span><span class="g">27</span><span class="g is-bad">28</span><span class="g">29</span><span class="g is-bad">30</span>
+          <span class="g">31</span><span class="g is-bad">32</span><span class="g">33</span><span class="g is-bad">34</span><span class="g">35</span><span class="g is-bad">36</span><span class="g">37</span><span class="g is-bad">38</span><span class="g">39</span><span class="g is-bad">40</span>
+          <span class="g">41</span><span class="g is-bad">42</span><span class="g">43</span><span class="g is-bad">44</span><span class="g">45</span><span class="g is-bad">46</span><span class="g">47</span><span class="g is-bad">48</span><span class="g">49</span><span class="g is-bad">50</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 3.&lt;/b&gt; Số 3 chưa bị gạch nên 3 nguyên tố. Gạch từ 3·3 = 9: 9, 12, 15, …, 48, tổng &lt;b&gt;14&lt;/b&gt; lần. Có 7 số (12, 18, 24, 30, 36, 42, 48) đã bị gạch từ lượt 2, bị gạch lần thứ hai.">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g is-dim">1</span><span class="g is-ok">2</span><span class="g is-active">3</span><span class="g is-dim">4</span><span class="g">5</span><span class="g is-dim">6</span><span class="g">7</span><span class="g is-dim">8</span><span class="g is-bad">9</span><span class="g is-dim">10</span>
+          <span class="g">11</span><span class="g is-bad">12</span><span class="g">13</span><span class="g is-dim">14</span><span class="g is-bad">15</span><span class="g is-dim">16</span><span class="g">17</span><span class="g is-bad">18</span><span class="g">19</span><span class="g is-dim">20</span>
+          <span class="g is-bad">21</span><span class="g is-dim">22</span><span class="g">23</span><span class="g is-bad">24</span><span class="g">25</span><span class="g is-dim">26</span><span class="g is-bad">27</span><span class="g is-dim">28</span><span class="g">29</span><span class="g is-bad">30</span>
+          <span class="g">31</span><span class="g is-dim">32</span><span class="g is-bad">33</span><span class="g is-dim">34</span><span class="g">35</span><span class="g is-bad">36</span><span class="g">37</span><span class="g is-dim">38</span><span class="g is-bad">39</span><span class="g is-dim">40</span>
+          <span class="g">41</span><span class="g is-bad">42</span><span class="g">43</span><span class="g is-dim">44</span><span class="g is-bad">45</span><span class="g is-dim">46</span><span class="g">47</span><span class="g is-bad">48</span><span class="g">49</span><span class="g is-dim">50</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 4 rồi i = 5.&lt;/b&gt; Số 4 đã bị gạch (là bội của 2) nên bỏ qua. Số 5 nguyên tố: gạch từ 5·5 = 25: 25, 30, 35, 40, 45, 50, tổng &lt;b&gt;6&lt;/b&gt; lần, trong đó chỉ 25 và 35 là mới. Chú ý 10, 15, 20 nhỏ hơn 25 đã bị gạch từ trước.">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g is-dim">1</span><span class="g is-ok">2</span><span class="g is-ok">3</span><span class="g is-dim">4</span><span class="g is-active">5</span><span class="g is-dim">6</span><span class="g">7</span><span class="g is-dim">8</span><span class="g is-dim">9</span><span class="g is-dim">10</span>
+          <span class="g">11</span><span class="g is-dim">12</span><span class="g">13</span><span class="g is-dim">14</span><span class="g is-dim">15</span><span class="g is-dim">16</span><span class="g">17</span><span class="g is-dim">18</span><span class="g">19</span><span class="g is-dim">20</span>
+          <span class="g is-dim">21</span><span class="g is-dim">22</span><span class="g">23</span><span class="g is-dim">24</span><span class="g is-bad">25</span><span class="g is-dim">26</span><span class="g is-dim">27</span><span class="g is-dim">28</span><span class="g">29</span><span class="g is-bad">30</span>
+          <span class="g">31</span><span class="g is-dim">32</span><span class="g is-dim">33</span><span class="g is-dim">34</span><span class="g is-bad">35</span><span class="g is-dim">36</span><span class="g">37</span><span class="g is-dim">38</span><span class="g is-dim">39</span><span class="g is-bad">40</span>
+          <span class="g">41</span><span class="g is-dim">42</span><span class="g">43</span><span class="g is-dim">44</span><span class="g is-bad">45</span><span class="g is-dim">46</span><span class="g">47</span><span class="g is-dim">48</span><span class="g">49</span><span class="g is-bad">50</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 6 rồi i = 7.&lt;/b&gt; Số 6 đã bị gạch. Số 7 nguyên tố: 7·7 = 49 ≤ 50 nên chỉ gạch đúng &lt;b&gt;1&lt;/b&gt; số là 49. Các bội 14, 21, 28, 35, 42 đã bị gạch bởi 2, 3, 5.">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g is-dim">1</span><span class="g is-ok">2</span><span class="g is-ok">3</span><span class="g is-dim">4</span><span class="g is-ok">5</span><span class="g is-dim">6</span><span class="g is-active">7</span><span class="g is-dim">8</span><span class="g is-dim">9</span><span class="g is-dim">10</span>
+          <span class="g">11</span><span class="g is-dim">12</span><span class="g">13</span><span class="g is-dim">14</span><span class="g is-dim">15</span><span class="g is-dim">16</span><span class="g">17</span><span class="g is-dim">18</span><span class="g">19</span><span class="g is-dim">20</span>
+          <span class="g is-dim">21</span><span class="g is-dim">22</span><span class="g">23</span><span class="g is-dim">24</span><span class="g is-dim">25</span><span class="g is-dim">26</span><span class="g is-dim">27</span><span class="g is-dim">28</span><span class="g">29</span><span class="g is-dim">30</span>
+          <span class="g">31</span><span class="g is-dim">32</span><span class="g is-dim">33</span><span class="g is-dim">34</span><span class="g is-dim">35</span><span class="g is-dim">36</span><span class="g">37</span><span class="g is-dim">38</span><span class="g is-dim">39</span><span class="g is-dim">40</span>
+          <span class="g">41</span><span class="g is-dim">42</span><span class="g">43</span><span class="g is-dim">44</span><span class="g is-dim">45</span><span class="g is-dim">46</span><span class="g">47</span><span class="g is-dim">48</span><span class="g is-bad">49</span><span class="g is-dim">50</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Dừng.&lt;/b&gt; i = 8 thì 8·8 = 64 &gt; 50, vòng lặp dừng. Mọi số còn sống sót đều là số nguyên tố: &lt;b&gt;15&lt;/b&gt; số 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47. Tổng cộng có 24 + 14 + 6 + 1 = &lt;b&gt;45&lt;/b&gt; lần gạch cho 34 hợp số.">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g is-dim">1</span><span class="g is-ok">2</span><span class="g is-ok">3</span><span class="g is-dim">4</span><span class="g is-ok">5</span><span class="g is-dim">6</span><span class="g is-ok">7</span><span class="g is-dim">8</span><span class="g is-dim">9</span><span class="g is-dim">10</span>
+          <span class="g is-ok">11</span><span class="g is-dim">12</span><span class="g is-ok">13</span><span class="g is-dim">14</span><span class="g is-dim">15</span><span class="g is-dim">16</span><span class="g is-ok">17</span><span class="g is-dim">18</span><span class="g is-ok">19</span><span class="g is-dim">20</span>
+          <span class="g is-dim">21</span><span class="g is-dim">22</span><span class="g is-ok">23</span><span class="g is-dim">24</span><span class="g is-dim">25</span><span class="g is-dim">26</span><span class="g is-dim">27</span><span class="g is-dim">28</span><span class="g is-ok">29</span><span class="g is-dim">30</span>
+          <span class="g is-ok">31</span><span class="g is-dim">32</span><span class="g is-dim">33</span><span class="g is-dim">34</span><span class="g is-dim">35</span><span class="g is-dim">36</span><span class="g is-ok">37</span><span class="g is-dim">38</span><span class="g is-dim">39</span><span class="g is-dim">40</span>
+          <span class="g is-ok">41</span><span class="g is-dim">42</span><span class="g is-ok">43</span><span class="g is-dim">44</span><span class="g is-dim">45</span><span class="g is-dim">46</span><span class="g is-ok">47</span><span class="g is-dim">48</span><span class="g is-dim">49</span><span class="g is-dim">50</span>
+        </div>
+      </div>
+    </div>
+    <p>Nhìn lại: 45 lần gạch cho 34 hợp số, nghĩa là có 11 lần gạch trùng (7 lần ở lượt 3, 4 lần ở lượt 5). Số lần gạch trùng ít vì ta chỉ đi gạch từ các số nguyên tố và bắt đầu từ i·i.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 360 190" width="360" role="img" aria-label="Biểu đồ số lần gạch của từng số nguyên tố khi N = 100: 2 gạch 49 lần, 3 gạch 31 lần, 5 gạch 16 lần, 7 gạch 8 lần">
+        <line class="edge" x1="20" y1="150" x2="345" y2="150"/>
+        <rect class="fill-soft stroke-accent" x="40" y="22.6" width="50" height="127.4" stroke-width="1.5"/>
+        <rect class="fill-soft stroke-accent" x="120" y="69.4" width="50" height="80.6" stroke-width="1.5"/>
+        <rect class="fill-soft stroke-accent" x="200" y="108.4" width="50" height="41.6" stroke-width="1.5"/>
+        <rect class="fill-soft stroke-accent" x="280" y="129.2" width="50" height="20.8" stroke-width="1.5"/>
+        <text x="65" y="16" text-anchor="middle">49</text>
+        <text x="145" y="63" text-anchor="middle">31</text>
+        <text x="225" y="102" text-anchor="middle">16</text>
+        <text x="305" y="123" text-anchor="middle">8</text>
+        <text x="65" y="168" text-anchor="middle">p = 2</text>
+        <text x="145" y="168" text-anchor="middle">p = 3</text>
+        <text x="225" y="168" text-anchor="middle">p = 5</text>
+        <text x="305" y="168" text-anchor="middle">p = 7</text>
+        <text class="label-sm" x="180" y="186" text-anchor="middle">N = 100: tổng 104 lần gạch, gần bằng chính N</text>
+        <text class="label-pen" x="255" y="45" text-anchor="middle">p càng lớn, càng ít việc</text>
+      </svg>
+      <figcaption>Hình 1. Số lần gạch của từng số nguyên tố khi N = 100. Lượt của p gạch khoảng (N − p²)/p + 1 số, nên các số nguyên tố lớn gần như không tốn công. Số 11 không gạch gì vì 11·11 = 121 &gt; 100.</figcaption>
+    </figure>
+
+    <h3>Ví dụ 2: bảng ước nguyên tố nhỏ nhất</h3>
+    <p>Sàng SPF giống hệt sàng thường, chỉ khác ở chỗ: thay vì ghi “bị gạch”, ta ghi <b>ai gạch nó đầu tiên</b>. Vì các số nguyên tố được duyệt theo thứ tự tăng dần, người gạch đầu tiên chính là ước nguyên tố nhỏ nhất.</p>
+    <div class="stepper" data-title="Ví dụ: dựng bảng ước nguyên tố nhỏ nhất tới 30, rồi phân tích 360">
+      <div class="frame" data-caption="&lt;b&gt;Khởi tạo.&lt;/b&gt; Hàng xám là số x, hàng dưới là spf[x]. Dấu chấm nghĩa là spf[x] = 0, chưa biết.">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span><span class="g h">6</span><span class="g h">7</span><span class="g h">8</span><span class="g h">9</span><span class="g h">10</span>
+          <span class="g">–</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span>
+          <span class="g h">11</span><span class="g h">12</span><span class="g h">13</span><span class="g h">14</span><span class="g h">15</span><span class="g h">16</span><span class="g h">17</span><span class="g h">18</span><span class="g h">19</span><span class="g h">20</span>
+          <span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span>
+          <span class="g h">21</span><span class="g h">22</span><span class="g h">23</span><span class="g h">24</span><span class="g h">25</span><span class="g h">26</span><span class="g h">27</span><span class="g h">28</span><span class="g h">29</span><span class="g h">30</span>
+          <span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span><span class="g">·</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 2.&lt;/b&gt; spf[2] = 0 nên 2 nguyên tố, spf[2] = 2. Ghi 2 vào mọi ô chẵn từ 4 tới 30 (14 ô, tô vàng).">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span><span class="g h">6</span><span class="g h">7</span><span class="g h">8</span><span class="g h">9</span><span class="g h">10</span>
+          <span class="g">–</span><span class="g is-active">2</span><span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span>
+          <span class="g h">11</span><span class="g h">12</span><span class="g h">13</span><span class="g h">14</span><span class="g h">15</span><span class="g h">16</span><span class="g h">17</span><span class="g h">18</span><span class="g h">19</span><span class="g h">20</span>
+          <span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span>
+          <span class="g h">21</span><span class="g h">22</span><span class="g h">23</span><span class="g h">24</span><span class="g h">25</span><span class="g h">26</span><span class="g h">27</span><span class="g h">28</span><span class="g h">29</span><span class="g h">30</span>
+          <span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span><span class="g">·</span><span class="g is-cmp">2</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 3.&lt;/b&gt; 3 nguyên tố. Xét 9, 12, 15, …, 30. Các ô 12, 18, 24, 30 đã có 2 nên giữ nguyên (2 nhỏ hơn 3). Chỉ ghi 3 vào 9, 15, 21, 27.">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span><span class="g h">6</span><span class="g h">7</span><span class="g h">8</span><span class="g h">9</span><span class="g h">10</span>
+          <span class="g">–</span><span class="g is-ok">2</span><span class="g is-active">3</span><span class="g">2</span><span class="g">·</span><span class="g">2</span><span class="g">·</span><span class="g">2</span><span class="g is-cmp">3</span><span class="g">2</span>
+          <span class="g h">11</span><span class="g h">12</span><span class="g h">13</span><span class="g h">14</span><span class="g h">15</span><span class="g h">16</span><span class="g h">17</span><span class="g h">18</span><span class="g h">19</span><span class="g h">20</span>
+          <span class="g">·</span><span class="g">2</span><span class="g">·</span><span class="g">2</span><span class="g is-cmp">3</span><span class="g">2</span><span class="g">·</span><span class="g">2</span><span class="g">·</span><span class="g">2</span>
+          <span class="g h">21</span><span class="g h">22</span><span class="g h">23</span><span class="g h">24</span><span class="g h">25</span><span class="g h">26</span><span class="g h">27</span><span class="g h">28</span><span class="g h">29</span><span class="g h">30</span>
+          <span class="g is-cmp">3</span><span class="g">2</span><span class="g">·</span><span class="g">2</span><span class="g">·</span><span class="g">2</span><span class="g is-cmp">3</span><span class="g">2</span><span class="g">·</span><span class="g">2</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 4 rồi i = 5.&lt;/b&gt; spf[4] = 2 ≠ 0 nên bỏ qua. 5 nguyên tố: xét 25 và 30. Ô 30 đã có 2. Chỉ ghi 5 vào ô 25.">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span><span class="g h">6</span><span class="g h">7</span><span class="g h">8</span><span class="g h">9</span><span class="g h">10</span>
+          <span class="g">–</span><span class="g is-ok">2</span><span class="g is-ok">3</span><span class="g">2</span><span class="g is-active">5</span><span class="g">2</span><span class="g">·</span><span class="g">2</span><span class="g">3</span><span class="g">2</span>
+          <span class="g h">11</span><span class="g h">12</span><span class="g h">13</span><span class="g h">14</span><span class="g h">15</span><span class="g h">16</span><span class="g h">17</span><span class="g h">18</span><span class="g h">19</span><span class="g h">20</span>
+          <span class="g">·</span><span class="g">2</span><span class="g">·</span><span class="g">2</span><span class="g">3</span><span class="g">2</span><span class="g">·</span><span class="g">2</span><span class="g">·</span><span class="g">2</span>
+          <span class="g h">21</span><span class="g h">22</span><span class="g h">23</span><span class="g h">24</span><span class="g h">25</span><span class="g h">26</span><span class="g h">27</span><span class="g h">28</span><span class="g h">29</span><span class="g h">30</span>
+          <span class="g">3</span><span class="g">2</span><span class="g">·</span><span class="g">2</span><span class="g is-cmp">5</span><span class="g">2</span><span class="g">3</span><span class="g">2</span><span class="g">·</span><span class="g">2</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Hoàn tất.&lt;/b&gt; Từ i = 6 trở đi, các ô còn 0 (7, 11, 13, 17, 19, 23, 29) là số nguyên tố, spf bằng chính nó. Đọc bảng: spf[28] = 2, spf[21] = 3, spf[25] = 5.">
+        <div class="grid-viz" style="--cols:10">
+          <span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span><span class="g h">6</span><span class="g h">7</span><span class="g h">8</span><span class="g h">9</span><span class="g h">10</span>
+          <span class="g">–</span><span class="g is-ok">2</span><span class="g is-ok">3</span><span class="g">2</span><span class="g is-ok">5</span><span class="g">2</span><span class="g is-ok">7</span><span class="g">2</span><span class="g">3</span><span class="g">2</span>
+          <span class="g h">11</span><span class="g h">12</span><span class="g h">13</span><span class="g h">14</span><span class="g h">15</span><span class="g h">16</span><span class="g h">17</span><span class="g h">18</span><span class="g h">19</span><span class="g h">20</span>
+          <span class="g is-ok">11</span><span class="g">2</span><span class="g is-ok">13</span><span class="g">2</span><span class="g">3</span><span class="g">2</span><span class="g is-ok">17</span><span class="g">2</span><span class="g is-ok">19</span><span class="g">2</span>
+          <span class="g h">21</span><span class="g h">22</span><span class="g h">23</span><span class="g h">24</span><span class="g h">25</span><span class="g h">26</span><span class="g h">27</span><span class="g h">28</span><span class="g h">29</span><span class="g h">30</span>
+          <span class="g">3</span><span class="g">2</span><span class="g is-ok">23</span><span class="g">2</span><span class="g">5</span><span class="g">2</span><span class="g">3</span><span class="g">2</span><span class="g is-ok">29</span><span class="g">2</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Dùng bảng.&lt;/b&gt; Giả sử bảng spf đã dựng tới 360. Mỗi bước chỉ đọc spf[x] và chia, không phải thử chia. Kết quả 360 = 2³ · 3² · 5, chỉ sau 6 phép chia.">
+        <table class="trace">
+          <thead><tr><th>Bước</th><th>x</th><th>spf[x]</th><th>x / spf[x]</th><th>Đã ghi nhận</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>360</td><td>2</td><td>180</td><td>2</td></tr>
+            <tr><td>2</td><td>180</td><td>2</td><td>90</td><td>2²</td></tr>
+            <tr><td>3</td><td>90</td><td>2</td><td>45</td><td>2³</td></tr>
+            <tr><td>4</td><td>45</td><td>3</td><td>15</td><td>2³ · 3</td></tr>
+            <tr><td>5</td><td>15</td><td>3</td><td>5</td><td>2³ · 3²</td></tr>
+            <tr class="hl"><td>6</td><td>5</td><td>5</td><td>1</td><td>2³ · 3² · 5</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3>Tự tay thử</h3>
+    <p>Nhập N (từ 2 đến 200). Bấm “Lượt tiếp” để xem từng số nguyên tố đi gạch bội. Bộ đếm cho biết tổng số lần gạch và số lần gạch trùng. Thử bỏ chọn “bắt đầu từ i·i” để thấy số lần gạch tăng lên bao nhiêu.</p>
+    <div class="playground" id="viz-sieve">
+      <div class="viz-head"><p class="viz-title">Sàng Eratosthenes từng lượt</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="sieve-n">N <input type="number" id="sieve-n" min="2" max="200" value="60"></label>
+          <label for="sieve-sq"><input type="checkbox" id="sieve-sq" checked> bắt đầu từ i·i</label>
+          <button type="button" data-act="reset">Làm lại</button>
+          <button type="button" data-act="step">Lượt tiếp</button>
+          <button type="button" data-act="all" class="ghost">Chạy hết</button>
+        </div>
+        <div class="sieve-board" style="overflow-x:auto"></div>
+        <div class="out" aria-live="polite">Bấm “Lượt tiếp” để bắt đầu.</div>
+      </div>
+      <div class="viz-legend"><span><i class="is-active"></i>số nguyên tố đang gạch</span><span><i class="is-bad"></i>vừa bị gạch</span><span><i class="is-dim"></i>đã bị gạch trước đó</span><span><i class="is-ok"></i>số nguyên tố</span></div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Chương trình 1: sàng + cộng dồn, đếm số nguyên tố trong đoạn</h3>
+    <p><b>Đề:</b> dòng đầu là Q. Q dòng sau, mỗi dòng hai số L, R (1 ≤ L ≤ R ≤ 10⁷). Với mỗi dòng, in số số nguyên tố trong đoạn [L, R].</p>
+    <p>Chương trình đọc hết truy vấn trước để biết R lớn nhất, sàng đúng tới đó, dựng mảng cộng dồn <code>cnt</code>, rồi trả lời mỗi truy vấn bằng một phép trừ. Chú ý biến <code>i</code>, <code>j</code> kiểu <code>long long</code> để <code>i * i</code> không tràn số.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_nguyen_to.cpp</span> Sàng Eratosthenes + mảng cộng dồn</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int q;
+    cin &gt;&gt; q;
+    vector&lt;int&gt; L(q), R(q);
+    int n = 2;                          // sàng tới số lớn nhất xuất hiện trong truy vấn
+    for (int i = 0; i &lt; q; i++) {
+        cin &gt;&gt; L[i] &gt;&gt; R[i];
+        n = max(n, R[i]);
+    }
+
+    // Bước 1: sàng Eratosthenes. isPrime[x] = true nghĩa là x còn "sống sót".
+    vector&lt;bool&gt; isPrime(n + 1, true);
+    isPrime[0] = isPrime[1] = false;     // 0 và 1 không phải số nguyên tố
+    for (long long i = 2; i * i &lt;= n; i++) {
+        if (!isPrime[i]) continue;       // i là hợp số thì bội của i đã bị gạch rồi
+        for (long long j = i * i; j &lt;= n; j += i)
+            isPrime[j] = false;          // gạch bội của i, bắt đầu từ i*i
+    }
+
+    // Bước 2: cộng dồn. cnt[x] = số số nguyên tố trong [1, x].
+    vector&lt;int&gt; cnt(n + 1, 0);
+    for (int x = 1; x &lt;= n; x++)
+        cnt[x] = cnt[x - 1] + (isPrime[x] ? 1 : 0);
+
+    // Bước 3: mỗi truy vấn trả lời trong O(1).
+    for (int i = 0; i &lt; q; i++)
+        cout &lt;&lt; cnt[R[i]] - cnt[L[i] - 1] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4
+1 10
+10 30
+14 16
+1 50</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">4
+6
+0
+15</code></pre></div>
+    </div>
+    <p>Giải thích: [1, 10] có 2, 3, 5, 7; [10, 30] có 11, 13, 17, 19, 23, 29; [14, 16] không có số nào; [1, 50] có 15 số như ở ví dụ 1. Với một truy vấn [1, 10⁷], chương trình in 664579 và chạy khoảng 0,1 giây.</p>
+
+    <h3>Chương trình 2: bảng SPF và phân tích thừa số</h3>
+    <p><b>Đề:</b> dòng đầu là T. T dòng sau, mỗi dòng một số x (1 ≤ x ≤ 10⁶). In dạng phân tích thừa số nguyên tố của x; nếu x = 1 thì in 1.</p>
+    <figure class="code">
+      <figcaption><span class="fn">spf.cpp</span> Sàng ước nguyên tố nhỏ nhất, phân tích trong O(log x)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const int MAXV = 1000000;
+int spf[MAXV + 1];                       // spf[x] = ước nguyên tố nhỏ nhất của x
+
+void buildSpf() {
+    for (int i = 2; i &lt;= MAXV; i++) spf[i] = 0;
+    for (int i = 2; i &lt;= MAXV; i++) {
+        if (spf[i] != 0) continue;       // i đã có ước nhỏ hơn: i là hợp số
+        spf[i] = i;                      // i là số nguyên tố
+        for (long long j = 1LL * i * i; j &lt;= MAXV; j += i)
+            if (spf[j] == 0) spf[j] = i; // chỉ ghi lần đầu: đó là ước nhỏ nhất
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    buildSpf();
+    int t;
+    cin &gt;&gt; t;
+    while (t--) {
+        int x;
+        cin &gt;&gt; x;
+        if (x == 1) { cout &lt;&lt; "1\n"; continue; }
+        bool first = true;
+        while (x &gt; 1) {                  // mỗi vòng chia x cho spf[x]
+            int p = spf[x], e = 0;
+            while (x % p == 0) { x /= p; e++; }
+            if (!first) cout &lt;&lt; " * ";
+            cout &lt;&lt; p;
+            if (e &gt; 1) cout &lt;&lt; '^' &lt;&lt; e;
+            first = false;
+        }
+        cout &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4
+360
+97
+1
+1000000</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2^3 * 3^2 * 5
+97
+1
+2^6 * 5^6</code></pre></div>
+    </div>
+    <div class="callout tip"><p class="callout-title">Vì sao phân tích chỉ mất O(log x)?</p><p>Mỗi lần chia, x giảm ít nhất một nửa (vì chia cho số ≥ 2). Từ 10⁶ chia đôi liên tục chỉ khoảng 20 lần là về 1. Vậy mỗi số được phân tích bằng tối đa khoảng log₂ x ≈ 20 phép chia, thay vì tới √x = 1 000 phép thử chia.</p></div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thao tác</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Sàng Eratosthenes tới N</td><td><span class="bigo">O(N log log N)</span></td><td><span class="bigo">O(N)</span> bit với <code>vector&lt;bool&gt;</code></td></tr>
+        <tr><td>Hỏi x ≤ N có nguyên tố không</td><td><span class="bigo">O(1)</span></td><td>—</td></tr>
+        <tr><td>Dựng mảng cộng dồn <code>cnt</code></td><td><span class="bigo">O(N)</span></td><td><span class="bigo">O(N)</span> số <code>int</code></td></tr>
+        <tr><td>Đếm nguyên tố trong [L, R]</td><td><span class="bigo">O(1)</span></td><td>—</td></tr>
+        <tr><td>Sàng SPF tới N</td><td><span class="bigo">O(N log log N)</span></td><td><span class="bigo">O(N)</span> số <code>int</code></td></tr>
+        <tr><td>Phân tích x ≤ N bằng SPF</td><td><span class="bigo">O(log x)</span></td><td>—</td></tr>
+        <tr><td>Sàng trên đoạn [L, R]</td><td><span class="bigo">O(√R log log R + (R − L) log log R)</span></td><td><span class="bigo">O(√R + (R − L))</span></td></tr>
+        <tr><td>Sàng điều hòa (số ước, tổng ước)</td><td><span class="bigo">O(N log N)</span></td><td><span class="bigo">O(N)</span></td></tr>
+        <tr><td>Sàng tuyến tính</td><td><span class="bigo">O(N)</span></td><td><span class="bigo">O(N)</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Bộ nhớ cho N = 10⁷</h3>
+    <table>
+      <thead><tr><th>Kiểu mảng</th><th>Mỗi phần tử</th><th>Tổng cho 10⁷ phần tử</th></tr></thead>
+      <tbody>
+        <tr><td><code>vector&lt;bool&gt;</code> hoặc <code>bitset</code></td><td>1 bit</td><td>≈ 1,25 MB</td></tr>
+        <tr><td><code>bool</code> / <code>char</code></td><td>1 byte</td><td>≈ 10 MB</td></tr>
+        <tr><td><code>int</code> (cộng dồn, SPF)</td><td>4 byte</td><td>≈ 40 MB</td></tr>
+        <tr><td><code>long long</code> (tổng ước)</td><td>8 byte</td><td>≈ 80 MB</td></tr>
+      </tbody>
+    </table>
+    <p>Giới hạn bộ nhớ thường gặp là 256 MB, nên sàng 10⁷ thoải mái. Sàng tới 10⁸ bằng <code>vector&lt;bool&gt;</code> tốn 12,5 MB và khoảng 2,5·10⁸ lần gạch, chạy chừng 1 giây: đó là mức giới hạn trên. Còn mảng <code>int</code> 10⁸ phần tử tốn 400 MB, thường vượt giới hạn.</p>
+    <div class="callout note"><p class="callout-title">Bảng nhớ nhanh</p><p>N ≤ 10⁶: dùng gì cũng được. N ≤ 10⁷: sàng bool thoải mái, mảng <code>int</code> vẫn ổn (40 MB). N ≈ 10⁸: chỉ dùng <code>vector&lt;bool&gt;</code>/<code>bitset</code>, không mảng <code>int</code> kèm theo. N ≥ 10⁹: không sàng trọn được, phải sàng trên đoạn hoặc thử chia. Xem thêm bài <a href="complexity.html">Độ phức tạp thuật toán</a>.</p></div>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Liệt kê các số nguyên tố ra một mảng</h3>
+    <p>Sau khi sàng, duyệt x từ 2 đến N và đẩy các x nguyên tố vào <code>vector&lt;int&gt; primes</code>. Có 664 579 số nguyên tố ≤ 10⁷, nên mảng này nhỏ. Mảng <code>primes</code> rất hữu ích cho các bài “tổng các số nguyên tố liên tiếp”, “số nguyên tố thứ k”, hoặc để thử chia nhanh một số lớn (chỉ chia cho số nguyên tố thay vì mọi số).</p>
+
+    <h3>2. Tổng số nguyên tố trong đoạn, số siêu nguyên tố</h3>
+    <p>Mảng cộng dồn không chỉ đếm được. Đổi <code>cnt[x] = cnt[x−1] + 1</code> thành <code>sum[x] = sum[x−1] + x</code> (kiểu <code>long long</code>) là có tổng các số nguyên tố trong đoạn. Một số bài định nghĩa “số siêu nguyên tố” là số nguyên tố mà mọi tiền tố (bỏ dần chữ số cuối) đều nguyên tố, ví dụ 2393 vì 2, 23, 239, 2393 đều nguyên tố. Sàng giúp kiểm tra từng tiền tố trong <span class="bigo">O(1)</span>.</p>
+
+    <h3>3. Sàng ước nguyên tố nhỏ nhất (SPF)</h3>
+    <p>Đã trình bày ở trên. Biến thể: lưu <b>ước nguyên tố lớn nhất</b> (ghi đè thay vì chỉ ghi lần đầu, và gạch từ 2p thay vì p·p), hoặc đếm <b>số ước nguyên tố phân biệt</b> <code>omega[x]</code>: với mỗi số nguyên tố p, tăng <code>omega[j]</code> cho mọi bội j của p (bắt đầu từ p, không phải p·p, vì cần đếm cả chính p). Từ SPF còn suy ra được số ước: nếu x = p₁^a₁ · … · pₖ^aₖ thì số ước là (a₁ + 1)…(aₖ + 1).</p>
+
+    <h3>4. Sàng điều hòa: số ước và tổng ước của mọi số</h3>
+    <p>Muốn biết số ước <code>d[x]</code> và tổng ước <code>sigma[x]</code> của <b>mọi</b> x ≤ N, hãy đảo câu hỏi: thay vì “x có những ước nào?”, hỏi “i là ước của những số nào?”. Câu trả lời: i, 2i, 3i, … Vậy với mỗi i, cộng i vào tất cả các bội của nó.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dieu_hoa.cpp</span> Số ước và tổng ước của 1..12</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    int n = 12;
+    vector&lt;int&gt; d(n + 1, 0);             // d[x]   = số ước của x
+    vector&lt;long long&gt; sigma(n + 1, 0);   // sigma[x] = tổng các ước của x
+    for (int i = 1; i &lt;= n; i++)         // i là một ước...
+        for (int j = i; j &lt;= n; j += i) {// ...của mọi bội j của i
+            d[j]++;
+            sigma[j] += i;
+        }
+    for (int x = 1; x &lt;= n; x++) cout &lt;&lt; x &lt;&lt; ": " &lt;&lt; d[x] &lt;&lt; ' ' &lt;&lt; sigma[x] &lt;&lt; '\n';
+}</code></pre>
+    </figure>
+    <p>Chương trình in, chẳng hạn, <code>12: 6 28</code> vì 12 có 6 ước 1, 2, 3, 4, 6, 12 với tổng 28. Số bước là <span class="math">N/1 + N/2 + … + N/N ≈ N ln N</span> (tổng điều hòa, nên gọi là sàng điều hòa). Với N = 10⁶ là khoảng 1,4·10⁷ bước; với N = 10⁷ khoảng 1,6·10⁸ bước, vẫn chạy được trong 1 giây nếu viết gọn.</p>
+
+    <h3>5. Sàng trên đoạn [L, R] (nâng cao)</h3>
+    <p>Khi R tới 10¹² thì không thể sàng từ 1 đến R: mảng 10¹² phần tử là bất khả thi. Nhưng nếu đoạn ngắn, R − L ≤ 10⁶, ta làm như sau:</p>
+    <ol class="algo-steps">
+      <li><div><strong>Sàng nhỏ.</strong> Sàng thường để có mọi số nguyên tố p ≤ √R. Với R = 10¹², √R = 10⁶, chỉ có 78 498 số nguyên tố.</div></li>
+      <li><div><strong>Mảng đoạn.</strong> Tạo mảng <code>mark[0..R−L]</code>, ô <code>mark[x − L]</code> đại diện cho số x. Ban đầu tất cả là true.</div></li>
+      <li><div><strong>Gạch trong đoạn.</strong> Với mỗi p, tìm bội đầu tiên ≥ L: <span class="math">⌈L/p⌉·p = (L + p − 1) / p · p</span>, lấy lớn hơn với p·p. Gạch từ đó, bước nhảy p, tới R.</div></li>
+      <li><div><strong>Số 1.</strong> Nếu L = 1 thì gạch riêng ô của số 1. Các ô còn true là số nguyên tố.</div></li>
+    </ol>
+    <p>Vì sao đúng: mỗi hợp số x ≤ R có ước nguyên tố p ≤ √x ≤ √R, nên x bị gạch bởi một p nào đó trong danh sách. Phải lấy max với p·p để không gạch nhầm chính p khi p nằm trong đoạn [L, R].</p>
+    <figure class="code">
+      <figcaption><span class="fn">sang_doan.cpp</span> In các số nguyên tố trong [L, R] và đếm</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    ll L, R;
+    cin &gt;&gt; L &gt;&gt; R;                       // 1 &lt;= L &lt;= R &lt;= 1e12, R - L &lt;= 1e6
+
+    // Bước 1: sàng thường các số nguyên tố p &lt;= sqrt(R).
+    ll s = sqrtl((long double)R);
+    while (s * s &gt; R) s--;
+    while ((s + 1) * (s + 1) &lt;= R) s++;
+    vector&lt;bool&gt; small(s + 1, true);
+    vector&lt;ll&gt; primes;
+    for (ll i = 2; i &lt;= s; i++) {
+        if (!small[i]) continue;
+        primes.push_back(i);
+        for (ll j = i * i; j &lt;= s; j += i) small[j] = false;
+    }
+
+    // Bước 2: mark[x - L] = true nghĩa là x còn là ứng viên nguyên tố.
+    vector&lt;bool&gt; mark(R - L + 1, true);
+    for (ll p : primes) {
+        ll start = max(p * p, (L + p - 1) / p * p);   // bội đầu tiên của p, &gt;= L và &gt;= p*p
+        for (ll j = start; j &lt;= R; j += p)
+            mark[j - L] = false;
+    }
+    if (L == 1) mark[0] = false;        // 1 không phải số nguyên tố
+
+    int dem = 0;
+    for (ll x = L; x &lt;= R; x++)
+        if (mark[x - L]) { cout &lt;&lt; x &lt;&lt; ' '; dem++; }
+    cout &lt;&lt; '\n' &lt;&lt; dem &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">1000000000000 1000000000100</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1000000000039 1000000000061 1000000000063 1000000000091 
+4</code></pre></div>
+    </div>
+    <p>Với đoạn dài 10⁶ ở gần 10¹², số lần gạch khoảng <span class="math">10⁶ · (1/2 + 1/3 + … ) ≈ 3·10⁶</span>, cộng thêm chi phí sàng nhỏ tới 10⁶: chạy rất nhanh.</p>
+
+    <h3>6. Sàng tuyến tính (giới thiệu)</h3>
+    <p>Sàng Eratosthenes vẫn gạch trùng một số (ví dụ 12 bị gạch bởi cả 2 và 3). Sàng tuyến tính (linear sieve) sắp xếp lại để <b>mỗi hợp số bị gạch đúng một lần</b>, bởi ước nguyên tố nhỏ nhất của nó. Ý tưởng: mọi hợp số x viết duy nhất dạng x = i · p với p = lp[x] là ước nguyên tố nhỏ nhất và p ≤ lp[i]. Ta duyệt i, rồi ghép i với từng số nguyên tố p ≤ lp[i].</p>
+    <figure class="code">
+      <figcaption><span class="fn">tuyen_tinh.cpp</span> Sàng tuyến tính, đồng thời có lp[x] = ước nguyên tố nhỏ nhất</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    int n = 30;
+    vector&lt;int&gt; lp(n + 1, 0), primes;    // lp[x] = ước nguyên tố nhỏ nhất của x
+    for (int i = 2; i &lt;= n; i++) {
+        if (lp[i] == 0) { lp[i] = i; primes.push_back(i); }
+        for (int p : primes) {           // ghép i với các p &lt;= lp[i]
+            if (p &gt; lp[i] || 1LL * i * p &gt; n) break;
+            lp[i * p] = p;               // mỗi hợp số chỉ được gán đúng một lần
+        }
+    }
+    for (int p : primes) cout &lt;&lt; p &lt;&lt; ' ';
+    cout &lt;&lt; '\n';
+}</code></pre>
+    </figure>
+    <p>Chương trình in 10 số nguyên tố đầu tiên: 2 3 5 7 11 13 17 19 23 29. Độ phức tạp đúng <span class="bigo">O(N)</span>, nhưng cần thêm mảng <code>int lp[]</code> và mảng <code>primes</code>. Trong thực tế, với N ≤ 10⁷, sàng Eratosthenes dùng <code>vector&lt;bool&gt;</code> thường nhanh ngang hoặc nhanh hơn. Hãy dùng sàng tuyến tính khi em cần cả <code>lp[]</code> lẫn danh sách nguyên tố, hoặc khi học các hàm số học như phi hàm Euler.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Tràn số ở i * i</p><p>Viết <code>for (int j = i * i; …)</code> với i tới 10⁵ hoặc lớn hơn: i·i vượt 2³¹ − 1 ≈ 2,1·10⁹, thành số âm, vòng lặp chạy loạn. Với vòng ngoài <code>i * i &lt;= N</code> thì i ≤ √N nên an toàn với N ≤ 10⁷, nhưng ở sàng SPF chạy i tới N, hoặc khi N lớn, phải ép kiểu: <code>for (long long j = 1LL * i * i; …)</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Quên 0 và 1</p><p>Khởi tạo tất cả bằng true rồi quên gán <code>isPrime[0] = isPrime[1] = false</code>. Kết quả: chương trình nói 1 là số nguyên tố, đếm thừa một số trong mọi đoạn chứa 1. Ở sàng đoạn, nhớ xử lý riêng trường hợp L = 1.</p></div>
+    <div class="callout warn"><p class="callout-title">Sai biên vòng lặp</p><p>Viết <code>i * i &lt; N</code> thay vì <code>i * i &lt;= N</code>: khi N = 49 sẽ bỏ sót, 49 không bị gạch và bị coi là nguyên tố. Tương tự, mảng phải có kích thước N + 1 để có ô <code>isPrime[N]</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Khai báo mảng lớn trong hàm</p><p><code>int spf[10000001];</code> đặt bên trong <code>main()</code> nằm trên ngăn xếp (stack), thường chỉ vài MB, chương trình bị lỗi ngay khi chạy. Hãy khai báo mảng lớn ở ngoài hàm (biến toàn cục) hoặc dùng <code>vector</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Sàng lại cho mỗi truy vấn</p><p>Gọi hàm sàng bên trong vòng lặp truy vấn: Q = 10⁵ lần sàng 10⁶ là 2·10¹¹ phép tính. Sàng chỉ làm <b>một lần</b> ở đầu chương trình, sau đó mới đọc truy vấn.</p></div>
+    <div class="callout warn"><p class="callout-title">Sàng đoạn: tính bội đầu tiên sai</p><p>Viết <code>start = L / p * p</code> có thể cho số nhỏ hơn L (chỉ số âm trong mảng). Phải làm tròn lên: <code>(L + p - 1) / p * p</code>, rồi lấy <code>max</code> với <code>p * p</code> để không gạch chính p.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo</p><p>Với 10⁶ truy vấn, thời gian nhập xuất có thể lâu hơn cả sàng. Luôn dùng <code>ios::sync_with_stdio(false); cin.tie(nullptr);</code> và in <code>'\n'</code> thay cho <code>endl</code>.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Sàng tới N = 100. Vòng ngoài (biến i) cần chạy tới giá trị lớn nhất nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 50</button>
+        <button type="button" class="quiz-opt" data-correct>B. 10</button>
+        <button type="button" class="quiz-opt">C. 99</button>
+        <button type="button" class="quiz-opt">D. 100</button>
+      </div>
+      <p class="quiz-explain">Điều kiện là i·i ≤ 100, nên i ≤ 10. Số nguyên tố cuối cùng thực sự đi gạch là 7 (gạch 49, 56, …, 98). Mọi hợp số ≤ 100 đều có ước nguyên tố ≤ 10.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Sàng tới N = 200. Đến lượt i = 11, số đầu tiên bị gạch là số nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 11</button>
+        <button type="button" class="quiz-opt">B. 22</button>
+        <button type="button" class="quiz-opt" data-correct>C. 121</button>
+        <button type="button" class="quiz-opt">D. 110</button>
+      </div>
+      <p class="quiz-explain">Bắt đầu từ 11·11 = 121. Các bội 22, 33, …, 110 có thừa số nhỏ hơn 11 nên đã bị gạch. Gạch 11 là sai vì 11 là số nguyên tố.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Độ phức tạp thời gian của sàng Eratosthenes tới N là?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. O(N√N)</button>
+        <button type="button" class="quiz-opt">B. O(N log N)</button>
+        <button type="button" class="quiz-opt" data-correct>C. O(N log log N)</button>
+        <button type="button" class="quiz-opt">D. O(N²)</button>
+      </div>
+      <p class="quiz-explain">Tổng số lần gạch là N·(1/2 + 1/3 + 1/5 + …), mà tổng nghịch đảo các số nguyên tố ≤ x chỉ cỡ ln ln x. O(N log N) là của sàng điều hòa (gạch bội của mọi i), còn O(N√N) là của thử chia từng số.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Cần sàng tới 10⁸ với giới hạn bộ nhớ 64 MB. Nên chọn kiểu mảng nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. <code>int a[100000001]</code></button>
+        <button type="button" class="quiz-opt">B. <code>bool a[100000001]</code></button>
+        <button type="button" class="quiz-opt" data-correct>C. <code>vector&lt;bool&gt;</code> hoặc <code>bitset</code></button>
+      </div>
+      <p class="quiz-explain">Mảng int tốn 400 MB, mảng bool tốn 100 MB, đều vượt 64 MB. vector&lt;bool&gt;/bitset chỉ tốn 1 bit mỗi số, tức 12,5 MB.</p>
+    </div>
+
+    <p><strong>Câu 5.</strong> Sàng tay với N = 30. Mỗi số nguyên tố 2, 3, 5 gạch bao nhiêu lần? Tổng bao nhiêu lần gạch, bao nhiêu hợp số?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>2 gạch 4, 6, …, 30: 14 lần. 3 gạch 9, 12, 15, 18, 21, 24, 27, 30: 8 lần. 5 gạch 25, 30: 2 lần. Đến i = 6 thì 36 &gt; 30, dừng. Tổng 24 lần gạch. Từ 2 đến 30 có 29 số, trong đó 10 số nguyên tố (2, 3, 5, 7, 11, 13, 17, 19, 23, 29), nên có 19 hợp số. Có 24 − 19 = 5 lần gạch trùng: 12, 18, 24, 30 (bởi 3) và 30 (bởi 5).</p></details>
+
+    <p><strong>Câu 6.</strong> Đã có mảng cộng dồn <code>cnt</code>. Vì sao số số nguyên tố trong [L, R] là <code>cnt[R] − cnt[L−1]</code> mà không phải <code>cnt[R] − cnt[L]</code>? Cho ví dụ.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p><code>cnt[R]</code> đếm các số nguyên tố trong [1, R]. Muốn giữ lại [L, R] phải bỏ đi phần [1, L−1], tức là trừ <code>cnt[L−1]</code>. Nếu trừ <code>cnt[L]</code> thì đã bỏ cả số L. Ví dụ [7, 7]: <code>cnt[7] − cnt[6] = 4 − 3 = 1</code> (đúng, 7 nguyên tố), còn <code>cnt[7] − cnt[7] = 0</code> là sai.</p></details>
+
+    <p><strong>Câu 7.</strong> Dùng bảng SPF, hãy viết các bước phân tích 84. Cần bao nhiêu phép chia?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>spf[84] = 2, 84 → 42; spf[42] = 2, 42 → 21; spf[21] = 3, 21 → 7; spf[7] = 7, 7 → 1. Vậy 84 = 2² · 3 · 7, mất 4 phép chia. Từ đó 84 có (2 + 1)(1 + 1)(1 + 1) = 12 ước.</p></details>
+
+    <p><strong>Câu 8.</strong> Sàng đoạn với L = 100, R = 130, p = 7. Bội đầu tiên của 7 cần gạch là bao nhiêu? Những số nào bị 7 gạch?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>⌈100/7⌉ = 15, nên bội đầu tiên ≥ 100 là 15·7 = 105, lớn hơn 7·7 = 49. Gạch 105, 112, 119, 126. Chú ý 119 = 7·17 là hợp số “trông giống nguyên tố”, chỉ có 7 mới gạch được nó.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Bốn bài đầu luyện sàng cơ bản; nhóm giữa kết hợp sàng với cộng dồn, đếm ước; nhóm cuối là sàng điều hòa, sàng tới 10⁸ và sàng đoạn.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cppb2p302">CPPB2P302 – Sàng số nguyên tố</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho N ≤ 10⁶, in tất cả số nguyên tố ≤ N theo thứ tự tăng dần.</p>
+        <p class="ex-skill"><b>Luyện:</b> cài đặt sàng chuẩn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sàng tới N, rồi duyệt x từ 2 đến N, in x nếu isPrime[x]. Thử N = 1 và N = 2 để chắc không in nhầm số 1.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/pnumber">PNUMBER – Tìm số nguyên tố</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho A ≤ B ≤ 200 000, in mọi số nguyên tố trong đoạn [A, B] theo thứ tự tăng dần.</p>
+        <p class="ex-skill"><b>Luyện:</b> sàng tới B, chú ý cận A = 1.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sàng tới B là đủ. Duyệt x từ A đến B. Nhớ isPrime[1] = false.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/fc075_fprime">FC075_FPRIME – Free Contest 75: FPRIME</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">K ≤ 10⁶ số, mỗi số N ≤ 10⁷. Với mỗi số in YES nếu là số nguyên tố, NO nếu không.</p>
+        <p class="ex-skill"><b>Luyện:</b> sàng 10⁷ một lần, truy vấn O(1), nhập xuất nhanh.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đây đúng là bài toán mở đầu của bài học. Dùng vector&lt;bool&gt; kích thước 10⁷ + 1. Đề có thể cho N = 0 hoặc 1: cả hai đều NO.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cppb2p313">CPPB2P313 – Ước số nguyên tố nhỏ nhất (sàng biến đổi)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">T ≤ 100 test, mỗi test một số N ≤ 10⁵. In ước nguyên tố nhỏ nhất của từng số từ 1 đến N (quy ước của 1 là 1).</p>
+        <p class="ex-skill"><b>Luyện:</b> dựng bảng SPF.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Dựng spf tới 10⁵ <b>một lần</b> trước khi đọc test, đặt riêng spf[1] = 1. Mỗi test chỉ việc in spf[1..N].</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/mprime1">MPRIME1 – Sum of Primes</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Với mỗi số n ≤ 11 000 (dãy kết thúc bằng 0), đếm số cách viết n thành tổng các số nguyên tố <b>liên tiếp</b>. Ví dụ 41 = 2 + 3 + 5 + 7 + 11 + 13 = 11 + 13 + 17 = 41 có 3 cách.</p>
+        <p class="ex-skill"><b>Luyện:</b> sàng ra mảng primes, cộng dồn trên dãy số nguyên tố.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lập danh sách các số nguyên tố ≤ 11 000 và mảng cộng dồn S của nó. Mỗi cách là một cặp (i, j) với S[j] − S[i] = n. Có thể dùng hai con trỏ vì S tăng dần.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/26/A">26A – Almost Prime</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Một số gọi là “gần nguyên tố” nếu có đúng 2 ước nguyên tố phân biệt (ví dụ 6, 18, 24). Đếm các số gần nguyên tố từ 1 đến n ≤ 3 000.</p>
+        <p class="ex-skill"><b>Luyện:</b> sàng đếm số ước nguyên tố phân biệt.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Với mỗi số nguyên tố p, tăng omega[j] cho mọi bội j = p, 2p, 3p, … Đáp án là số x có omega[x] = 2.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1713">1713 – Counting Divisors</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 10⁵ số, mỗi số x ≤ 10⁶. In số ước của từng số.</p>
+        <p class="ex-skill"><b>Luyện:</b> sàng điều hòa hoặc SPF + công thức số ước.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Cách 1: với mỗi i ≤ 10⁶, tăng d[j] cho mọi bội j của i (khoảng 1,4·10⁷ bước). Cách 2: phân tích x bằng SPF, số ước là tích (a + 1).</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/bedao_r03_prime">BEDAO_R03_PRIME – Bedao Regular Contest 03: PRIME</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Q ≤ 10⁵ truy vấn (a, b, k) với b ≤ 10⁶, k ≤ 7. Đếm số số trong [a, b] có đúng k ước nguyên tố khác nhau.</p>
+        <p class="ex-skill"><b>Luyện:</b> sàng omega kết hợp mảng cộng dồn theo từng k.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sàng omega[x] như bài Almost Prime. Lập 7 mảng cộng dồn pre[k][x] = số số ≤ x có omega bằng k. Mỗi truy vấn: pre[k][b] − pre[k][a−1].</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/coci1617_r6_savrsen">COCI1617_R6_SAVRSEN – Savrsen</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">F(N) là giá trị tuyệt đối của hiệu giữa N và tổng các ước khác N của N. Tính F(A) + F(A + 1) + … + F(B) với B ≤ 10⁷.</p>
+        <p class="ex-skill"><b>Luyện:</b> sàng tổng ước kiểu điều hòa ở quy mô 10⁷.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Với i từ 1 đến B, cộng i vào s[j] cho mọi j = 2i, 3i, … ≤ B: s[j] là tổng ước khác j. Khoảng 1,6·10⁸ bước. Mảng s dùng int (40 MB) là đủ chứa, nhưng tổng đáp án phải là long long.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/cprime">CPRIME – Prime Number Theorem</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Tối đa 1 000 giá trị x ≤ 10⁸. Với mỗi x, tính π(x) (số số nguyên tố ≤ x) và in sai số phần trăm giữa π(x) và x / ln x.</p>
+        <p class="ex-skill"><b>Luyện:</b> sàng 10⁸ tiết kiệm bộ nhớ, xử lý truy vấn ngoại tuyến (offline).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mảng cộng dồn int 10⁸ phần tử tốn 400 MB, không được. Hãy sàng bằng vector&lt;bool&gt;, đọc hết các x, sắp xếp tăng dần, rồi duyệt từ 2 đến 10⁸ một lần, vừa đếm vừa trả lời. Có thể sàng chỉ các số lẻ để nhanh gấp đôi.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://www.spoj.com/problems/PRIME1/">PRIME1 – Prime Generator</a>
+          <span class="judge">SPOJ</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">t ≤ 10 bộ test, mỗi bộ là đoạn [m, n] với n ≤ 10⁹, n − m ≤ 10⁵. In mọi số nguyên tố trong đoạn, các bộ test cách nhau một dòng trống.</p>
+        <p class="ex-skill"><b>Luyện:</b> sàng trên đoạn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sàng nhỏ tới √10⁹ ≈ 31 623 một lần. Với mỗi đoạn, dùng mảng mark độ dài n − m + 1 như chương trình sang_doan.cpp. Đừng quên m = 1.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/algebra/prime_sieve">VNOI Wiki – Sàng nguyên tố</a> (tiếng Việt): sàng Eratosthenes, sàng đoạn, sàng SPF, cùng danh sách bài tập.</li>
+      <li><a href="https://cp-algorithms.com/algebra/sieve-of-eratosthenes.html">CP-Algorithms – Sieve of Eratosthenes</a> (tiếng Anh): chứng minh O(N log log N), tối ưu sàng số lẻ, sàng theo khối.</li>
+      <li><a href="https://cp-algorithms.com/algebra/prime-sieve-linear.html">CP-Algorithms – Linear Sieve</a> (tiếng Anh): sàng tuyến tính và chứng minh mỗi hợp số chỉ bị gạch một lần.</li>
+      <li>Bài liên quan trên trang này: <a href="divisors-primes.html">Ước số &amp; số nguyên tố</a>, <a href="prefix-sum.html">Mảng cộng dồn</a>, <a href="complexity.html">Độ phức tạp thuật toán</a>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Sàng Eratosthenes: với mỗi số nguyên tố i có i·i ≤ N, gạch các bội i·i, i·i + i, … Số chưa bị gạch là số nguyên tố.</li>
+        <li>Đúng vì mỗi hợp số x có ước nguyên tố nhỏ nhất p với p·p ≤ x, nên x bị p gạch.</li>
+        <li>Thời gian <span class="bigo">O(N log log N)</span>: với N = 10⁷ chỉ khoảng 2,3·10⁷ lần gạch, chạy 0,1 giây.</li>
+        <li>Bộ nhớ: <code>vector&lt;bool&gt;</code> 1 bit mỗi số, 10⁷ số chỉ 1,25 MB. Mảng lớn khai báo toàn cục.</li>
+        <li>Đếm nguyên tố trong [L, R]: <code>cnt[R] − cnt[L−1]</code> với cnt là mảng cộng dồn.</li>
+        <li>Sàng SPF: ghi ước nguyên tố nhỏ nhất; phân tích thừa số trong <span class="bigo">O(log x)</span>.</li>
+        <li>Sàng điều hòa (bội của mọi i): số ước, tổng ước của mọi số trong <span class="bigo">O(N log N)</span>.</li>
+        <li>R tới 10¹², R − L ≤ 10⁶: sàng nhỏ tới √R rồi gạch trong đoạn. Sàng tuyến tính: mỗi hợp số gạch đúng một lần, <span class="bigo">O(N)</span>.</li>
+      </ul>
+    </div>
+  </section>
+
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/sieve.js"></script>
+</body>
+</html>

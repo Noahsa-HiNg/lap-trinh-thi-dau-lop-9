@@ -57,6 +57,9 @@
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5L19.5 7"/></svg>',
     play: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M7 5v14l12-7z"/></svg>',
     pause: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+    first: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M6 5h2.5v14H6zM20 5v14L9.5 12z"/></svg>',
+    prev: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M17 5v14L6 12z"/></svg>',
+    next: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M7 5v14l11-7z"/></svg>',
     search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
   };
 
@@ -308,9 +311,9 @@
     frames.forEach(function (f) { stage.appendChild(f); });
     var cap = el('div', { class: 'stepper-caption', 'aria-live': 'polite' });
     var ctr = el('div', { class: 'stepper-controls' });
-    var bFirst = el('button', { type: 'button', 'aria-label': 'Về bước đầu' }, '⏮');
-    var bPrev = el('button', { type: 'button' }, '◀ Trước');
-    var bNext = el('button', { type: 'button', class: 'primary' }, 'Sau ▶');
+    var bFirst = el('button', { type: 'button', 'aria-label': 'Về bước đầu', title: 'Về bước đầu' }, ICON.first);
+    var bPrev = el('button', { type: 'button' }, ICON.prev + ' Trước');
+    var bNext = el('button', { type: 'button', class: 'primary' }, 'Sau ' + ICON.next);
     var bPlay = el('button', { type: 'button' }, ICON.play + ' Tự chạy');
     var dots = el('div', { class: 'stepper-dots' });
     frames.forEach(function (_, i) {

@@ -28,6 +28,24 @@
 | `20261007T114332Z-topic-brute-force-formula-241e` | topic-brute-force-formula | brute-force-formula | aborted | 2026-10-07T11:43:32Z | 2026-10-07T14:58:08Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:32Z (agent dừng do giới hạn sử dụng API (HTTP 429)) |
 | `20261007T114348Z-topic-binomial-c1ae` | topic-binomial | binomial | aborted | 2026-10-07T11:43:48Z | 2026-10-07T14:58:08Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:48Z (agent dừng do giới hạn sử dụng API (HTTP 429)) |
 | `20261007T114353Z-topic-complexity-25ed` | topic-complexity | complexity | aborted | 2026-10-07T11:43:53Z | 2026-10-07T14:58:08Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:53Z (agent dừng do giới hạn sử dụng API (HTTP 429)) |
+| `20261007T150236Z-topic-sieve-5b4e` | topic-sieve | sieve | done | 2026-10-07T15:02:36Z | 2026-10-07T15:14:46Z | 11 bài tập (8 VI/3 EN), ~6500 từ (gồm code), 2 stepper 12 khung, 1 SVG, widget có |
+| `20261007T150239Z-topic-prefix-sum-8fc6` | topic-prefix-sum | prefix-sum | done | 2026-10-07T15:02:39Z | 2026-10-07T15:13:48Z | 10 bài tập (8 VI), ~6500 từ, 2 stepper (16 khung), 1 SVG, widget có |
+| `20261007T150241Z-topic-modular-power-e79f` | topic-modular-power | modular-power | done | 2026-10-07T15:02:41Z | 2026-10-07T15:16:31Z | 10 bài tập (9 VI), ~6100 từ, 1 stepper 6 khung + 2 SVG, widget có (BigInt) |
+| `20261007T150241Z-topic-divisors-primes-9d62` | topic-divisors-primes | divisors-primes | done | 2026-10-07T15:02:41Z | 2026-10-07T15:16:09Z | 14 bài tập (12 VI, 2 EN), 6927 từ, 2 stepper 13 khung, 2 SVG, widget có |
+| `20261007T150243Z-topic-cpp-contest-basics-3acb` | topic-cpp-contest-basics | cpp-contest-basics | active | 2026-10-07T15:02:43Z | — |  |
+| `20261007T150243Z-topic-binomial-190a` | topic-binomial | binomial | done | 2026-10-07T15:02:43Z | 2026-10-07T15:15:42Z | 11 bài tập (6 VI), ~6900 từ, 2 stepper (13 khung), widget có |
+| `20261007T150244Z-topic-counting-3c9b` | topic-counting | counting | done | 2026-10-07T15:02:44Z | 2026-10-07T15:18:19Z | 8 bài tập (8 VI, LQDOJ; 4 bản dịch CSES), ~6000 từ, 2 stepper (11 khung), 2 SVG, bảng vết, widget có (counting.js) |
+| `20261007T150244Z-topic-complexity-c32f` | topic-complexity | complexity | active | 2026-10-07T15:02:44Z | — |  |
+| `20261007T150246Z-topic-brute-force-formula-cd59` | topic-brute-force-formula | brute-force-formula | done | 2026-10-07T15:02:46Z | 2026-10-07T15:18:32Z | 10 bài tập (7 VI, 3 EN), 6779 từ, 2 stepper + 2 SVG, widget có |
+| `20261007T150255Z-topic-gcd-lcm-b0ca` | topic-gcd-lcm | gcd-lcm | done | 2026-10-07T15:02:55Z | 2026-10-07T15:15:59Z | 9 bài tập (6 VI, 3 EN), ~6050 từ (validate), 1 stepper 5 khung SVG 21x15, widget Euclid từng bước có |
+| `20261007T151446Z-topic-difference-array-75cd` | topic-difference-array | difference-array | active | 2026-10-07T15:14:46Z | — |  |
+| `20261007T151533Z-topic-sorting-cf01` | topic-sorting | sorting | active | 2026-10-07T15:15:33Z | — |  |
+| `20261007T151630Z-topic-two-pointers-4138` | topic-two-pointers | two-pointers | active | 2026-10-07T15:16:30Z | — |  |
+| `20261007T151644Z-topic-binary-search-ef8f` | topic-binary-search | binary-search | active | 2026-10-07T15:16:44Z | — |  |
+| `20261007T151701Z-topic-binary-search-answer-b893` | topic-binary-search-answer | binary-search-answer | active | 2026-10-07T15:17:01Z | — |  |
+| `20261007T151710Z-topic-recursion-d323` | topic-recursion | recursion | active | 2026-10-07T15:17:10Z | — |  |
+| `20261007T151920Z-topic-backtracking-0dda` | topic-backtracking | backtracking | active | 2026-10-07T15:19:20Z | — |  |
+| `20261007T151930Z-topic-greedy-42c4` | topic-greedy | greedy | active | 2026-10-07T15:19:30Z | — |  |
 
 ## Dòng thời gian
 
@@ -85,3 +103,92 @@
 - `14:58:08` **orchestrator** · `complexity` · _ghi chú_: Thu hồi phiên 20261007T114353Z-topic-complexity-25ed của topic-complexity: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:53Z (agent dừng do giới hạn sử dụng API (HTTP 429))
 - `14:58:09` **orchestrator** · _tiến độ_: Thêm session reap và heartbeat qua log; thu hồi 20 phiên bị ngắt do HTTP 429 — scripts/agentctl.py
 - `15:01:35` **orchestrator** · _tiến độ_: Tạo bảng việc .agents/tasks (32 đề bài + quy trình chung); bổ sung quy trình xử lý agent bị ngắt — .agents/tasks, AGENTS.md
+- `15:02:15` **orchestrator** · _ghi chú_: Đợt 1 (10 agent): complexity, cpp-contest-basics, brute-force-formula, divisors-primes, sieve, gcd-lcm, modular-power, counting, binomial, prefix-sum. Hàng đợi 22 chủ đề, phát tiếp khi có agent xong.
+- `15:02:36` **topic-sieve** · `sieve` · _bắt đầu_: Mở phiên: Soạn chủ đề sieve
+- `15:02:39` **topic-prefix-sum** · `prefix-sum` · _bắt đầu_: Mở phiên: Soạn chủ đề prefix-sum
+- `15:02:41` **topic-modular-power** · `modular-power` · _bắt đầu_: Mở phiên: Soạn chủ đề modular-power
+- `15:02:41` **topic-divisors-primes** · `divisors-primes` · _bắt đầu_: Mở phiên: Soạn chủ đề divisors-primes
+- `15:02:43` **topic-cpp-contest-basics** · `cpp-contest-basics` · _bắt đầu_: Mở phiên: Soạn chủ đề cpp-contest-basics
+- `15:02:43` **topic-binomial** · `binomial` · _bắt đầu_: Mở phiên: Soạn chủ đề binomial
+- `15:02:44` **topic-complexity** · `complexity` · _bắt đầu_: Mở phiên: Soạn chủ đề complexity
+- `15:02:44` **topic-counting** · `counting` · _bắt đầu_: Mở phiên: Soạn chủ đề counting
+- `15:02:46` **topic-brute-force-formula** · `brute-force-formula` · _bắt đầu_: Mở phiên: Soạn chủ đề brute-force-formula
+- `15:02:53` **topic-complexity** · `complexity` · _bắt đầu_: Mở phiên mới (phiên trước bị thu hồi do 429), bắt đầu tìm bài tập
+- `15:02:55` **topic-gcd-lcm** · `gcd-lcm` · _bắt đầu_: Mở phiên: Soạn chủ đề gcd-lcm
+- `15:03:03` **topic-divisors-primes** · `divisors-primes` · _bắt đầu_: Bắt đầu: đã đọc AGENTS, mẫu, giáo án; tìm bài tập
+- `15:04:39` **topic-prefix-sum** · `prefix-sum` · _tiến độ_: Đã kiểm chứng 10 bài tập (8 VI), lưu exercises.md
+- `15:05:38` **topic-binomial** · `binomial` · _tiến độ_: Đã kiểm chứng 11 bài tập (7 VI)
+- `15:05:56` **topic-sieve** · `sieve` · _tiến độ_: Đã tìm và kiểm chứng 11 bài tập (8 VI, 3 EN)
+- `15:06:12` **topic-modular-power** · `modular-power` · _tiến độ_: Đã tìm và kiểm chứng 10 bài tập (9 VI)
+- `15:06:15` **topic-gcd-lcm** · `gcd-lcm` · _tiến độ_: Đã tìm xong 9 bài tập (5 VI), lưu exercises.md
+- `15:06:24` **topic-divisors-primes** · `divisors-primes` · _tiến độ_: Đã tìm và kiểm chứng 14 bài tập (12 VI), lưu exercises.md
+- `15:06:32` **topic-prefix-sum** · `prefix-sum` · _tiến độ_: Đã biên dịch, chạy thử 6 chương trình C++ mẫu; bắt đầu viết trang
+- `15:06:59` **topic-counting** · `counting` · _tiến độ_: Đã tìm và kiểm chứng 8 bài tập (8 VI, LQDOJ; 4 bài gốc CSES)
+- `15:07:05` **topic-brute-force-formula** · `brute-force-formula` · _tiến độ_: Đã kiểm chứng 10 bài tập (6 VI)
+- `15:07:08` **topic-cpp-contest-basics** · `cpp-contest-basics` · _tiến độ_: Đã tìm xong 10 bài tập (8 VI), lưu exercises.md
+- `15:08:23` **topic-complexity** · `complexity` · _tiến độ_: Đã tìm xong 10 bài tập (10 đề tiếng Việt: HNCode, LTOJ)
+- `15:09:25` **topic-binomial** · `binomial` · _tiến độ_: Viết xong section 1-5 (mô tả tới cách hoạt động)
+- `15:09:28` **topic-prefix-sum** · `prefix-sum` · _tiến độ_: Viết xong section 1-7 (lý thuyết, 2 stepper, SVG, code)
+- `15:09:29` **topic-sieve** · `sieve` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `15:09:54` **topic-gcd-lcm** · `gcd-lcm` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `15:10:01` **topic-modular-power** · `modular-power` · _tiến độ_: Viết xong phần 1: mục tiêu, gioi-thieu..hoat-dong (+chung-minh)
+- `15:10:26` **topic-divisors-primes** · `divisors-primes` · _tiến độ_: Viết xong mục tiêu + section 1-5 (lý thuyết)
+- `15:10:27` **topic-counting** · `counting` · _tiến độ_: Viết xong mục tiêu + section 1-5 (lý thuyết)
+- `15:10:51` **topic-prefix-sum** · `prefix-sum` · _tiến độ_: Viết xong độ phức tạp + 7 biến thể
+- `15:11:07` **topic-sieve** · `sieve` · _tiến độ_: Viết xong section truc-quan (2 stepper, SVG) + widget sieve.js
+- `15:11:09` **topic-binomial** · `binomial` · _tiến độ_: Viết xong ứng dụng + minh họa (2 stepper, lưới, SVG chia kẹo)
+- `15:11:17` **topic-gcd-lcm** · `gcd-lcm` · _tiến độ_: Viết xong section truc-quan, cai-dat, do-phuc-tap
+- `15:11:43` **topic-complexity** · `complexity` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `15:11:48` **topic-divisors-primes** · `divisors-primes` · _tiến độ_: Viết xong truc-quan (2 stepper, cây SVG, khung widget) + cai-dat
+- `15:11:55` **topic-brute-force-formula** · `brute-force-formula` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `15:11:55` **topic-modular-power** · `modular-power` · _tiến độ_: Viết xong phần 2: truc-quan (stepper 6 khung, SVG đệ quy), cai-dat, do-phuc-tap
+- `15:12:24` **topic-prefix-sum** · `prefix-sum` · _tiến độ_: Viết xong toàn bộ 14 section, 10 bài tập; còn widget
+- `15:12:25` **topic-sieve** · `sieve` · _tiến độ_: Viết xong cai-dat, do-phuc-tap, bien-the, loi-thuong-gap
+- `15:12:27` **topic-cpp-contest-basics** · `cpp-contest-basics` · _tiến độ_: Viết xong mục tiêu + section 1-5 (lý thuyết)
+- `15:13:04` **topic-counting** · `counting` · _tiến độ_: Viết xong section truc-quan (2 stepper, 2 SVG, bảng vết) + widget counting.js
+- `15:13:14` **topic-gcd-lcm** · `gcd-lcm` · _tiến độ_: Viết xong bien-the, loi-thuong-gap, kiem-tra
+- `15:13:27` **topic-divisors-primes** · `divisors-primes` · _tiến độ_: Viết xong do-phuc-tap, bien-the, loi-thuong-gap, kiem-tra
+- `15:13:32` **topic-binomial** · `binomial` · _tiến độ_: Viết xong cài đặt, độ phức tạp, biến thể, lỗi thường gặp; code đã biên dịch
+- `15:13:48` **topic-prefix-sum** · `prefix-sum` · _bàn giao_: Đề xuất sửa CSS .objectives li (vỡ dòng khi có thẻ inline), xem .agents/inbox/20261007T151348Z-topic-prefix-sum.md
+- `15:13:48` **topic-prefix-sum** · `prefix-sum` · _hoàn thành_: Đóng phiên (done): 10 bài tập (8 VI), ~6500 từ, 2 stepper (16 khung), 1 SVG, widget có
+- `15:13:56` **topic-complexity** · `complexity` · _tiến độ_: Viết xong các lớp, bảng tra, minh họa trực quan (stepper 8 khung, 2 SVG)
+- `15:13:57` **topic-sieve** · `sieve` · _tiến độ_: Viết xong toàn bộ 14 section
+- `15:13:58` **topic-cpp-contest-basics** · `cpp-contest-basics` · _tiến độ_: Viết xong truc-quan (2 stepper, SVG, khung widget) + cai-dat
+- `15:14:15` **topic-brute-force-formula** · `brute-force-formula` · _tiến độ_: Viết xong truc-quan (2 stepper, 2 SVG), cai-dat (code đã chạy thử), do-phuc-tap
+- `15:14:16` **topic-gcd-lcm** · `gcd-lcm` · _tiến độ_: Viết xong toàn bộ 14 section; còn widget
+- `15:14:19` **topic-modular-power** · `modular-power` · _tiến độ_: Viết xong toàn bộ 14 section; bắt đầu widget
+- `15:14:21` **orchestrator** · _tiến độ_: Xử lý inbox prefix-sum: .objectives li bỏ grid, dấu tích dùng position:absolute; phát agent difference-array — assets/css/style.css
+- `15:14:21` **topic-divisors-primes** · `divisors-primes` · _tiến độ_: Viết xong bai-tap (14 bài), tham-khao, tom-tat; đã xóa dấu @@TIEP@@
+- `15:14:27` **topic-counting** · `counting` · _tiến độ_: Viết xong cai-dat, do-phuc-tap, bien-the (code đã biên dịch, chạy thử)
+- `15:14:46` **topic-sieve** · `sieve` · _hoàn thành_: Qua validate: 11 bài tập (8 VI), 6476 từ, 2 stepper (12 khung), widget sieve.js
+- `15:14:46` **topic-sieve** · `sieve` · _hoàn thành_: Đóng phiên (done): 11 bài tập (8 VI/3 EN), ~6500 từ (gồm code), 2 stepper 12 khung, 1 SVG, widget có
+- `15:14:46` **topic-difference-array** · `difference-array` · _bắt đầu_: Mở phiên: Soạn chủ đề difference-array
+- `15:15:11` **topic-binomial** · `binomial` · _tiến độ_: Viết xong toàn bộ 14 section + widget; validate OK
+- `15:15:15` **topic-complexity** · `complexity` · _tiến độ_: Viết xong cài đặt (4 chương trình đã chạy thử), độ phức tạp, biến thể
+- `15:15:17` **topic-difference-array** · `difference-array` · _bắt đầu_: Mở phiên mới (phiên trước bị ngắt ở bước tìm bài tập); đã đọc AGENTS, template, giáo án, VNOI Wiki
+- `15:15:33` **topic-sorting** · `sorting` · _bắt đầu_: Mở phiên: Soạn chủ đề sorting
+- `15:15:35` **topic-divisors-primes** · `divisors-primes` · _tiến độ_: Widget xong (node --check OK), validate OK; chụp ảnh soát giao diện
+- `15:15:41` **topic-gcd-lcm** · `gcd-lcm` · _tiến độ_: Widget xong, validate OK (9 bài, 6 VI)
+- `15:15:42` **topic-binomial** · `binomial` · _hoàn thành_: Đóng phiên (done): 11 bài tập (6 VI), ~6900 từ, 2 stepper (13 khung), widget có
+- `15:15:59` **topic-gcd-lcm** · `gcd-lcm` · _hoàn thành_: Đóng phiên (done): 9 bài tập (6 VI, 3 EN), ~6050 từ (validate), 1 stepper 5 khung SVG 21x15, widget Euclid từng bước có
+- `15:16:00` **topic-cpp-contest-basics** · `cpp-contest-basics` · _tiến độ_: Viết xong do-phuc-tap, bien-the, loi-thuong-gap
+- `15:16:03` **topic-brute-force-formula** · `brute-force-formula` · _tiến độ_: Viết xong bien-the, loi-thuong-gap, kiem-tra; widget xong
+- `15:16:09` **topic-divisors-primes** · `divisors-primes` · _hoàn thành_: Hoàn thành: validate OK, 14 bài tập (12 VI), ~6900 từ, 2 stepper (13 khung), 2 SVG, widget
+- `15:16:09` **topic-divisors-primes** · `divisors-primes` · _hoàn thành_: Đóng phiên (done): 14 bài tập (12 VI, 2 EN), 6927 từ, 2 stepper 13 khung, 2 SVG, widget có
+- `15:16:30` **topic-two-pointers** · `two-pointers` · _bắt đầu_: Mở phiên: Soạn chủ đề two-pointers
+- `15:16:31` **topic-modular-power** · `modular-power` · _hoàn thành_: Qua validate: 10 bài tập (9 VI), ~6100 từ, stepper 6 khung, 2 SVG, widget BigInt
+- `15:16:31` **topic-modular-power** · `modular-power` · _hoàn thành_: Đóng phiên (done): 10 bài tập (9 VI), ~6100 từ, 1 stepper 6 khung + 2 SVG, widget có (BigInt)
+- `15:16:44` **topic-binary-search** · `binary-search` · _bắt đầu_: Mở phiên: Soạn chủ đề binary-search
+- `15:17:01` **topic-binary-search-answer** · `binary-search-answer` · _bắt đầu_: Mở phiên: Soạn chủ đề binary-search-answer
+- `15:17:10` **topic-recursion** · `recursion` · _bắt đầu_: Mở phiên: Soạn chủ đề recursion
+- `15:17:11` **topic-complexity** · `complexity` · _tiến độ_: Viết xong toàn bộ 14 section + 2 section phụ; còn widget
+- `15:17:31` **topic-counting** · `counting` · _tiến độ_: Viết xong toàn bộ 14 section, validate OK
+- `15:18:19` **topic-counting** · `counting` · _hoàn thành_: Đóng phiên (done): 8 bài tập (8 VI, LQDOJ; 4 bản dịch CSES), ~6000 từ, 2 stepper (11 khung), 2 SVG, bảng vết, widget có (counting.js)
+- `15:18:32` **topic-brute-force-formula** · `brute-force-formula` · _hoàn thành_: Qua validate: 10 bài tập (7 VI), 6779 từ, 2 stepper (12 khung), 2 SVG, widget trâu vs công thức
+- `15:18:32` **topic-brute-force-formula** · `brute-force-formula` · _hoàn thành_: Đóng phiên (done): 10 bài tập (7 VI, 3 EN), 6779 từ, 2 stepper + 2 SVG, widget có
+- `15:18:57` **topic-sorting** · `sorting` · _tiến độ_: Đã tìm xong 12 bài tập (8 VI, 4 EN), lưu exercises.md
+- `15:19:20` **topic-backtracking** · `backtracking` · _bắt đầu_: Mở phiên: Soạn chủ đề backtracking
+- `15:19:23` **topic-cpp-contest-basics** · `cpp-contest-basics` · _tiến độ_: Viết xong toàn bộ 14 section + widget; validate OK (10 bài, 7291 từ)
+- `15:19:30` **topic-greedy** · `greedy` · _bắt đầu_: Mở phiên: Soạn chủ đề greedy
+- `15:19:30` **orchestrator** · _tiến độ_: Nút stepper dùng icon SVG thay ký tự ⏮ thiếu phông; công thức chụp riêng phần minh họa — assets/js/main.js, .agents/tasks/_common.md
+- `15:19:44` **orchestrator** · _commit_: Commit 8 chủ đề đã xong: prefix-sum sieve binomial gcd-lcm divisors-primes modular-power counting brute-force-formula

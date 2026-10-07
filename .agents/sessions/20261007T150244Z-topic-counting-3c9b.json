@@ -1,0 +1,12 @@
+{
+  "id": "20261007T150244Z-topic-counting-3c9b",
+  "agent": "topic-counting",
+  "task": "Soạn chủ đề counting",
+  "topic": "counting",
+  "status": "done",
+  "host": "MyPC",
+  "started_at": "2026-10-07T15:02:44Z",
+  "heartbeat_at": "2026-10-07T15:17:31Z",
+  "ended_at": "2026-10-07T15:18:19Z",
+  "summary": "8 bài tập (8 VI, LQDOJ; 4 bản dịch CSES), ~6000 từ, 2 stepper (11 khung), 2 SVG, bảng vết, widget có (counting.js)"
+}

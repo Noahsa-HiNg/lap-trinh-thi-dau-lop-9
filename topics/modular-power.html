@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đồng dư &amp; lũy thừa nhanh · Thi đấu lớp 9</title>
+<meta name="description" content="Phép toán modulo, đồng dư, cộng trừ nhân lấy dư từng bước, lũy thừa nhanh O(log n), nhân mod với __int128, định lý Fermat nhỏ và nghịch đảo modulo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="modular-power">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được phép chia có dư, khái niệm đồng dư và vì sao đề hay bắt “in kết quả theo modulo 10<sup>9</sup>+7”.</li>
+      <li>Áp dụng đúng quy tắc lấy dư từng bước cho phép cộng, trừ, nhân; biết vì sao phép chia thì không làm vậy được.</li>
+      <li>Cài đặt được lũy thừa nhanh (dạng đệ quy và dạng vòng lặp theo bit) chạy trong <span class="bigo">O(log n)</span>.</li>
+      <li>Dùng được định lý Fermat nhỏ để tính nghịch đảo modulo và giảm số mũ khổng lồ như a<sup>b<sup>c</sup></sup>.</li>
+      <li>Tránh được các lỗi tràn số, số âm khi lấy dư, và biết dùng <code>__int128</code> khi modulo lên tới 10<sup>18</sup>.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Rất nhiều bài toán có đáp án lớn khủng khiếp: số cách xếp hàng của 100 bạn, chữ số tận cùng của 7<sup>2026</sup>, hay 2<sup>10<sup>18</sup></sup>. Máy tính không chứa nổi những con số đó. Bài này dạy em hai công cụ để “thuần hóa” số lớn: <strong>phép toán đồng dư (modulo)</strong>, tức là chỉ giữ lại phần dư, và <strong>lũy thừa nhanh (binary exponentiation)</strong>, tức là tính a<sup>n</sup> chỉ với khoảng 2·log₂n phép nhân thay vì n phép nhân.</p>
+
+    <h3>Phép chia có dư</h3>
+    <p>Em đã biết từ tiểu học: chia 17 cho 5 được thương 3, dư 2, vì 17 = 5·3 + 2. Tổng quát, với số nguyên a và số nguyên dương m, luôn có duy nhất một cặp (q, r) sao cho</p>
+    <div class="math-block">a = m·q + r, &nbsp;&nbsp; với 0 ≤ r &lt; m.</div>
+    <p>Số r gọi là <strong>số dư</strong> của a khi chia cho m, viết là <span class="math">a mod m</span>. Trong C++, phép <code>a % m</code> cho đúng số dư này khi a ≥ 0. Ví dụ <code>17 % 5 == 2</code>, <code>20 % 5 == 0</code>, <code>3 % 5 == 3</code>.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> chiếc đồng hồ treo tường chỉ có 12 số. Bây giờ là 9 giờ, thêm 5 tiếng nữa là mấy giờ? Không ai nói “14 giờ trên mặt đồng hồ”, kim chỉ vào số 2. Đồng hồ đã tự “lấy dư cho 12”: 9 + 5 = 14, và 14 mod 12 = 2. Tương tự, hôm nay là thứ Tư, 100 ngày nữa là thứ mấy? Một tuần có 7 ngày, nên chỉ cần 100 mod 7 = 2: tiến thêm 2 ngày từ thứ Tư, ra thứ Sáu. Em không cần đếm đủ 100 ô lịch.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Cho số nguyên dương m. Hai số nguyên a và b gọi là <strong>đồng dư theo modulo m</strong> nếu chúng có cùng số dư khi chia cho m, hay tương đương, m chia hết hiệu a − b. Kí hiệu:</p>
+      <div class="math-block">a ≡ b (mod m) &nbsp;⇔&nbsp; m | (a − b).</div>
+      <p>Ví dụ: 14 ≡ 2 (mod 12), 100 ≡ 2 (mod 7), 38 ≡ 3 (mod 5) vì 38 − 3 = 35 chia hết cho 5.</p>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 240 240" width="240" role="img" aria-label="Đồng hồ 12 giờ minh họa 9 cộng 5 bằng 2 theo modulo 12">
+        <circle class="node" cx="120" cy="120" r="100"/>
+        <path class="edge is-active" fill="none" d="M70 120 A50 50 0 0 1 163.3 95"/>
+        <circle class="node" cx="120" cy="44" r="13"/><text x="120" y="49" text-anchor="middle">12</text>
+        <circle class="node" cx="158" cy="54" r="13"/><text x="158" y="59" text-anchor="middle">1</text>
+        <circle class="node is-ok" cx="186" cy="82" r="13"/><text x="186" y="87" text-anchor="middle">2</text>
+        <circle class="node" cx="196" cy="120" r="13"/><text x="196" y="125" text-anchor="middle">3</text>
+        <circle class="node" cx="186" cy="158" r="13"/><text x="186" y="163" text-anchor="middle">4</text>
+        <circle class="node" cx="158" cy="186" r="13"/><text x="158" y="191" text-anchor="middle">5</text>
+        <circle class="node" cx="120" cy="196" r="13"/><text x="120" y="201" text-anchor="middle">6</text>
+        <circle class="node" cx="82" cy="186" r="13"/><text x="82" y="191" text-anchor="middle">7</text>
+        <circle class="node" cx="54" cy="158" r="13"/><text x="54" y="163" text-anchor="middle">8</text>
+        <circle class="node is-active" cx="44" cy="120" r="13"/><text x="44" y="125" text-anchor="middle">9</text>
+        <circle class="node" cx="54" cy="82" r="13"/><text x="54" y="87" text-anchor="middle">10</text>
+        <circle class="node" cx="82" cy="54" r="13"/><text x="82" y="59" text-anchor="middle">11</text>
+        <text class="label-pen" x="120" y="128" text-anchor="middle">+5 giờ</text>
+      </svg>
+      <figcaption>Hình 1. Trên đồng hồ, 9 + 5 = 14 ≡ 2 (mod 12). Mọi phép cộng giờ đều “quay vòng” sau 12.</figcaption>
+    </figure>
+
+    <h3>Lũy thừa nhanh</h3>
+    <p>Muốn tính a<sup>n</sup>, cách tự nhiên là nhân a với chính nó n lần. Lũy thừa nhanh dựa trên một nhận xét đơn giản: <strong>a<sup>n</sup> = (a<sup>n/2</sup>)²</strong> khi n chẵn. Mỗi lần dùng nhận xét này, số mũ giảm một nửa. Từ n = 10<sup>18</sup> chỉ cần khoảng 60 lần chia đôi là về 0. Kết hợp với việc lấy dư sau mỗi phép nhân, ta tính được a<sup>n</sup> mod m với n cực lớn trong chớp mắt.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Đồng dư và lũy thừa nhanh là “đồ nghề” có mặt trong rất nhiều bài số học và đếm:</p>
+    <ul>
+      <li><strong>Đáp án quá lớn:</strong> đếm số cách, số dãy, số đường đi… với đáp án có hàng trăm chữ số. Đề yêu cầu in phần dư khi chia cho 10<sup>9</sup>+7. Xem thêm chủ đề <a href="counting.html">Nguyên lý đếm</a>.</li>
+      <li><strong>Chữ số tận cùng:</strong> chữ số tận cùng của a<sup>b</sup> chính là a<sup>b</sup> mod 10; hai chữ số cuối là a<sup>b</sup> mod 100.</li>
+      <li><strong>Lũy thừa với số mũ khổng lồ:</strong> 2<sup>n</sup> với n ≤ 10<sup>18</sup>, a<sup>b<sup>c</sup></sup>, tháp lũy thừa.</li>
+      <li><strong>Phép “chia” trong modulo:</strong> tính tổ hợp C(n, k) mod p cần chia cho k!, ta thay bằng nhân với nghịch đảo modulo (chủ đề <a href="binomial.html">Tổ hợp và tam giác Pascal</a>).</li>
+      <li><strong>Bài chu kỳ:</strong> ngày trong tuần, vị trí trên vòng tròn, đèn nhấp nháy theo chu kỳ.</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề có cụm “in ra phần dư khi chia cho 10<sup>9</sup>+7”, “modulo 998244353”, “chữ số tận cùng”, “k chữ số cuối”; hoặc số mũ n lên tới 10<sup>9</sup>, 10<sup>18</sup>; hoặc cần chia trong khi đáp án lấy theo modulo nguyên tố.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho a, n, m. Tính a<sup>n</sup> mod m, với a, m ≤ 10<sup>9</sup> và n ≤ 10<sup>18</sup>.</p>
+
+    <h3>Khó khăn thứ nhất: số quá lớn</h3>
+    <p>Kiểu <code>long long</code> chỉ chứa được số tới khoảng 9,2·10<sup>18</sup>. Trong khi đó 2<sup>64</sup> đã vượt quá, còn 3<sup>100</sup> có tới 48 chữ số. Nếu em tính a<sup>n</sup> trọn vẹn rồi mới lấy dư, số sẽ tràn ngay sau vài chục phép nhân và kết quả sai hoàn toàn. Lời giải: <strong>lấy dư sau mỗi phép nhân</strong>. Nhờ tính chất ở phần sau, kết quả cuối không đổi, còn mọi số trung gian luôn nhỏ hơn m.</p>
+
+    <h3>Khó khăn thứ hai: quá nhiều phép nhân</h3>
+    <p>Cách ngây thơ: bắt đầu r = 1 rồi lặp n lần <code>r = r * a % m</code>. Mỗi lần lặp là một phép nhân và một phép chia lấy dư. Với n = 10<sup>18</sup>, em cần 10<sup>18</sup> lần lặp. Máy tính chấm bài làm được khoảng 10<sup>9</sup> phép tính đơn giản mỗi giây, nên cần 10<sup>9</sup> giây, tức hơn 31 năm. Ngay cả n = 10<sup>9</sup> đã mất khoảng 1 giây cho <em>một</em> truy vấn, trong khi bài CSES Exponentiation có tới 2·10<sup>5</sup> truy vấn.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Nhân lần lượt n lần</h4><p>r = r·a mod m, lặp n lần. Độ phức tạp <span class="bigo">O(n)</span>. Với n = 10<sup>18</sup> là 10<sup>18</sup> phép nhân, hơn 31 năm.</p></div>
+      <div class="good-side"><h4>Lũy thừa nhanh</h4><p>Bình phương liên tục và nhân theo bit của n. Độ phức tạp <span class="bigo">O(log n)</span>. Với n = 10<sup>18</sup> (60 bit) chỉ cần tối đa 120 phép nhân, chưa tới 1 micro giây.</p></div>
+    </div>
+
+    <p>Bảng dưới so sánh số phép nhân cần dùng. Cột “nhanh” là giới hạn trên 2·(số bit của n).</p>
+    <table>
+      <thead><tr><th>n</th><th>Số bit của n</th><th>Ngây thơ</th><th>Lũy thừa nhanh (tối đa)</th></tr></thead>
+      <tbody>
+        <tr><td>13</td><td>4</td><td>13</td><td>8</td></tr>
+        <tr><td>1 000</td><td>10</td><td>1 000</td><td>20</td></tr>
+        <tr><td>10<sup>9</sup></td><td>30</td><td>10<sup>9</sup></td><td>60</td></tr>
+        <tr><td>10<sup>18</sup></td><td>60</td><td>10<sup>18</sup></td><td>120</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="chung-minh">
+    <h2>Quy tắc lấy dư từng bước</h2>
+    <p>Trước khi vào thuật toán, em cần chắc chắn rằng “lấy dư giữa chừng” không làm sai kết quả. Đây là ba quy tắc quan trọng nhất của bài:</p>
+    <div class="math-block">(a + b) mod m = ((a mod m) + (b mod m)) mod m<br>(a − b) mod m = ((a mod m) − (b mod m) + m) mod m<br>(a · b) mod m = ((a mod m) · (b mod m)) mod m</div>
+
+    <h3>Chứng minh ngắn</h3>
+    <p>Viết a = m·q₁ + r₁ và b = m·q₂ + r₂, với r₁ = a mod m, r₂ = b mod m.</p>
+    <ul>
+      <li><strong>Cộng:</strong> a + b = m·(q₁ + q₂) + (r₁ + r₂). Phần m·(q₁ + q₂) chia hết cho m, nên a + b và r₁ + r₂ có cùng số dư khi chia cho m.</li>
+      <li><strong>Trừ:</strong> a − b = m·(q₁ − q₂) + (r₁ − r₂). Lập luận y hệt. Chỉ khác là r₁ − r₂ có thể âm (từ −(m−1) đến m−1), nên ta cộng thêm m để đưa về số không âm rồi mới lấy dư.</li>
+      <li><strong>Nhân:</strong> a·b = (m·q₁ + r₁)(m·q₂ + r₂) = m·(m·q₁q₂ + q₁r₂ + q₂r₁) + r₁r₂. Mọi số hạng trừ r₁r₂ đều chứa thừa số m, nên a·b ≡ r₁·r₂ (mod m).</li>
+    </ul>
+    <p>Hệ quả: lũy thừa cũng lấy dư từng bước được, vì a<sup>n</sup> chỉ là nhiều phép nhân liên tiếp. Ví dụ tính 7<sup>4</sup> mod 10: 7·7 = 49 → 9; 9·7 = 63 → 3; 3·7 = 21 → 1. Vậy 7<sup>4</sup> mod 10 = 1. Kiểm tra: 7<sup>4</sup> = 2401, chữ số cuối là 1. Đúng.</p>
+
+    <div class="callout danger"><p class="callout-title">Phép chia thì KHÔNG lấy dư từng bước được</p><p>Thử với m = 5: 12 / 3 = 4, nên (12 / 3) mod 5 = 4. Nhưng 12 mod 5 = 2 và 3 mod 5 = 3, mà 2 / 3 thậm chí không phải số nguyên. Phép chia phải được thay bằng <strong>nhân với nghịch đảo modulo</strong>, sẽ học ở phần Fermat nhỏ bên dưới.</p></div>
+
+    <h3>Vì sao lại là 10⁹ + 7?</h3>
+    <p>Số 1 000 000 007 được dùng nhiều đến mức thành “quy ước” của dân thi đấu, vì nó có ba ưu điểm:</p>
+    <ol>
+      <li><strong>Là số nguyên tố.</strong> Nhờ vậy mọi số không chia hết cho nó đều có nghịch đảo, nên “chia” được (định lý Fermat nhỏ).</li>
+      <li><strong>Tổng hai số dư vẫn vừa kiểu int.</strong> Số dư lớn nhất là 10<sup>9</sup>+6; tổng hai số dư tối đa 2·10<sup>9</sup>+12, vẫn nhỏ hơn giới hạn int là 2 147 483 647.</li>
+      <li><strong>Tích hai số dư vừa kiểu long long.</strong> Tích tối đa khoảng 1,000000012·10<sup>18</sup>, nhỏ hơn 9,2·10<sup>18</sup>.</li>
+    </ol>
+
+    <h3>Số âm khi lấy dư</h3>
+    <p>Trong C++, phép <code>%</code> giữ dấu của số bị chia: <code>-7 % 3</code> cho <code>-1</code> chứ không phải <code>2</code>. Muốn luôn nhận số dư trong đoạn [0, m − 1], em dùng công thức:</p>
+    <div class="math-block">((a % m) + m) % m</div>
+    <p>Ví dụ a = −7, m = 3: (−7 % 3) = −1, cộng 3 được 2, lấy dư 3 vẫn là 2. Đúng vì −7 = 3·(−3) + 2. Với a dương, công thức vẫn cho đúng a % m, nên em có thể dùng nó ở mọi chỗ cho an toàn.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>Cách 1: Lũy thừa nhanh đệ quy</h3>
+    <p>Ý tưởng: muốn có a<sup>n</sup>, hãy tính trước h = a<sup>⌊n/2⌋</sup> rồi bình phương.</p>
+    <ul>
+      <li>Nếu n chẵn: a<sup>n</sup> = h · h.</li>
+      <li>Nếu n lẻ: a<sup>n</sup> = h · h · a.</li>
+      <li>Điểm dừng: a<sup>0</sup> = 1.</li>
+    </ul>
+    <ol class="algo-steps">
+      <li><div><strong>Điểm dừng.</strong> Nếu n = 0, trả về 1 (lấy dư m cho trường hợp m = 1).</div></li>
+      <li><div><strong>Gọi đệ quy một lần.</strong> Tính h = PowRec(a, ⌊n/2⌋, m).</div></li>
+      <li><div><strong>Bình phương.</strong> h ← h·h mod m.</div></li>
+      <li><div><strong>Bù số lẻ.</strong> Nếu n lẻ, h ← h·a mod m. Trả về h.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> PowRec(a, n, m):
+    <b>nếu</b> n = 0: <b>trả về</b> 1 mod m
+    h ← PowRec(a, n div 2, m)      <i>// chỉ gọi MỘT lần</i>
+    h ← h · h mod m
+    <b>nếu</b> n lẻ: h ← h · a mod m
+    <b>trả về</b> h</pre>
+
+    <h3>Cách 2: Lũy thừa nhanh theo bit của số mũ (vòng lặp)</h3>
+    <p>Ý tưởng: viết n ở hệ nhị phân. Ví dụ 13 = 1101₂ = 8 + 4 + 1, nên 3<sup>13</sup> = 3<sup>8</sup> · 3<sup>4</sup> · 3<sup>1</sup>. Các lũy thừa 3<sup>1</sup>, 3<sup>2</sup>, 3<sup>4</sup>, 3<sup>8</sup> có được bằng cách bình phương liên tục. Ta chỉ nhân vào kết quả những lũy thừa ứng với bit 1.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> r ← 1 mod m (kết quả), a ← a mod m (lũy thừa hiện tại, ban đầu là a<sup>1</sup>).</div></li>
+      <li><div><strong>Xét bit cuối của n.</strong> Nếu n lẻ (bit cuối bằng 1), nhân r ← r·a mod m.</div></li>
+      <li><div><strong>Bình phương.</strong> a ← a·a mod m. Bây giờ a ứng với bit kế tiếp: a<sup>2</sup>, a<sup>4</sup>, a<sup>8</sup>…</div></li>
+      <li><div><strong>Bỏ bit cuối.</strong> n ← n div 2 (trong C++: <code>n &gt;&gt;= 1</code>). Quay lại bước 2 khi n &gt; 0.</div></li>
+      <li><div><strong>Kết thúc.</strong> Khi n = 0, r chính là a<sup>n</sup> mod m ban đầu.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Pow(a, n, m):
+    r ← 1 mod m
+    a ← a mod m
+    <b>trong khi</b> n &gt; 0:
+        <b>nếu</b> n lẻ: r ← r · a mod m     <i>// bit cuối là 1</i>
+        a ← a · a mod m               <i>// a^1 → a^2 → a^4 → ...</i>
+        n ← n div 2                   <i>// dịch phải 1 bit</i>
+    <b>trả về</b> r</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Vì sao cách đệ quy đúng</h3>
+    <p>Với mọi n, ta có n = 2·⌊n/2⌋ + (n mod 2). Theo quy tắc nhân lũy thừa cùng cơ số:</p>
+    <div class="math-block">a<sup>n</sup> = a<sup>⌊n/2⌋</sup> · a<sup>⌊n/2⌋</sup> · a<sup>n mod 2</sup></div>
+    <p>Phần a<sup>n mod 2</sup> bằng 1 nếu n chẵn và bằng a nếu n lẻ. Đó đúng là ba dòng giữa của mã giả. Vì mỗi lần gọi đệ quy, n giảm ít nhất một nửa, sớm muộn n sẽ về 0 và dừng. Cuối cùng, mọi phép lấy dư là hợp lệ nhờ quy tắc nhân ở phần trên.</p>
+
+    <h3>Vì sao cách vòng lặp đúng</h3>
+    <p>Gọi n₀ là số mũ ban đầu, a₀ là cơ số ban đầu. Em hãy để ý đại lượng <strong>r · a<sup>n</sup></strong> (với r, a, n là giá trị hiện tại trong vòng lặp). Ta chứng minh nó luôn bằng a₀<sup>n₀</sup> (theo modulo m). Tính chất luôn đúng này gọi là <em>bất biến</em> (invariant).</p>
+    <ul>
+      <li><strong>Lúc đầu:</strong> r = 1, a = a₀, n = n₀, nên r·a<sup>n</sup> = a₀<sup>n₀</sup>. Đúng.</li>
+      <li><strong>Nếu n chẵn:</strong> r giữ nguyên, a thành a², n thành n/2. Ta có (a²)<sup>n/2</sup> = a<sup>n</sup>, nên tích không đổi.</li>
+      <li><strong>Nếu n lẻ:</strong> r thành r·a, a thành a², n thành (n−1)/2. Ta có r·a·(a²)<sup>(n−1)/2</sup> = r·a·a<sup>n−1</sup> = r·a<sup>n</sup>. Tích không đổi.</li>
+      <li><strong>Lúc kết thúc:</strong> n = 0 nên a<sup>0</sup> = 1, tích chỉ còn r. Vậy r = a₀<sup>n₀</sup> mod m.</li>
+    </ul>
+    <p>Một cách nhìn khác: ở lần lặp thứ k (đếm từ 0), biến a đang chứa a₀<sup>2<sup>k</sup></sup>, còn “n lẻ” nghĩa là bit thứ k của n₀ bằng 1. Kết quả r là tích các a₀<sup>2<sup>k</sup></sup> ứng với bit 1, đúng bằng a₀ mũ tổng các 2<sup>k</sup> đó, tức là a₀<sup>n₀</sup>.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Mỗi vòng lặp, n bị chia đôi. Số vòng lặp đúng bằng số chữ số nhị phân của n, tức là ⌊log₂n⌋ + 1. Mỗi vòng có tối đa 2 phép nhân (một phép nhân vào r nếu bit là 1, một phép bình phương). Vậy tổng số phép nhân không quá 2·(⌊log₂n⌋ + 1). Với n = 10<sup>18</sup>, log₂n ≈ 59,8, nên chỉ có 60 vòng lặp và tối đa 120 phép nhân.</p>
+    <p>Cách đệ quy cũng vậy: độ sâu đệ quy là ⌊log₂n⌋ + 1 và mỗi tầng có tối đa 2 phép nhân. Điều quan trọng là <strong>chỉ gọi đệ quy một lần</strong> và dùng lại kết quả h. Nếu viết <code>PowRec(a, n/2) * PowRec(a, n/2)</code>, số lần gọi sẽ nhân đôi ở mỗi tầng và thuật toán quay về O(n), không nhanh hơn cách ngây thơ.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Hãy nhớ câu: “Bình phương để nhảy xa, bit 1 thì nhặt vào”. Mỗi bước, a nhảy từ a<sup>1</sup> lên a<sup>2</sup>, a<sup>4</sup>, a<sup>8</sup>…; còn r chỉ nhặt những bước ứng với bit 1 của số mũ.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Ta chạy tay cách vòng lặp để tính <strong>3<sup>13</sup> mod 7</strong>. Số mũ 13 viết ở hệ nhị phân là 1101₂ = 8 + 4 + 1. Ô màu cam là bit đang xét, đọc từ phải sang trái (bit thấp nhất trước). Bảng vết ghi lại a ở đầu vòng, r và n sau vòng.</p>
+
+    <div class="stepper" data-title="Ví dụ: 3^13 mod 7 theo bit của 13 = 1101₂">
+      <div class="frame" data-caption="&lt;b&gt;Khởi tạo.&lt;/b&gt; r = 1, a = 3 mod 7 = 3, n = 13 = 1101₂. Chưa xét bit nào.">
+        <div class="arr"><span class="arr-label">bit</span><span class="cell" data-i="3">1</span><span class="cell" data-i="2">1</span><span class="cell" data-i="1">0</span><span class="cell" data-i="0">1</span></div>
+        <table class="trace">
+          <thead><tr><th>Vòng</th><th>bit</th><th>a đầu vòng</th><th>r sau vòng</th><th>n sau vòng</th></tr></thead>
+          <tbody><tr class="hl"><td>đầu</td><td>–</td><td>3</td><td>1</td><td>13</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Vòng 0.&lt;/b&gt; Bit 0 bằng 1 nên nhặt a vào: r = 1·3 = 3. Bình phương: a = 3·3 = 9 ≡ 2 (đây là 3&lt;sup&gt;2&lt;/sup&gt; mod 7). n = 13 div 2 = 6.">
+        <div class="arr"><span class="arr-label">bit</span><span class="cell" data-i="3">1</span><span class="cell" data-i="2">1</span><span class="cell" data-i="1">0</span><span class="cell is-active" data-i="0" data-ptr="k">1</span></div>
+        <table class="trace">
+          <thead><tr><th>Vòng</th><th>bit</th><th>a đầu vòng</th><th>r sau vòng</th><th>n sau vòng</th></tr></thead>
+          <tbody><tr><td>đầu</td><td>–</td><td>3</td><td>1</td><td>13</td></tr><tr class="hl"><td>0</td><td>1</td><td>3 = 3¹</td><td>3</td><td>6</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Vòng 1.&lt;/b&gt; Bit 1 bằng 0 nên &lt;b&gt;không&lt;/b&gt; nhân vào r, r vẫn là 3. Bình phương: a = 2·2 = 4 (đây là 3&lt;sup&gt;4&lt;/sup&gt; = 81 ≡ 4). n = 3.">
+        <div class="arr"><span class="arr-label">bit</span><span class="cell" data-i="3">1</span><span class="cell" data-i="2">1</span><span class="cell is-active" data-i="1" data-ptr="k">0</span><span class="cell is-ok" data-i="0">1</span></div>
+        <table class="trace">
+          <thead><tr><th>Vòng</th><th>bit</th><th>a đầu vòng</th><th>r sau vòng</th><th>n sau vòng</th></tr></thead>
+          <tbody><tr><td>đầu</td><td>–</td><td>3</td><td>1</td><td>13</td></tr><tr><td>0</td><td>1</td><td>3 = 3¹</td><td>3</td><td>6</td></tr><tr class="hl"><td>1</td><td>0</td><td>2 ≡ 3²</td><td>3</td><td>3</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Vòng 2.&lt;/b&gt; Bit 2 bằng 1: r = 3·4 = 12 ≡ 5. Bình phương: a = 4·4 = 16 ≡ 2 (đây là 3&lt;sup&gt;8&lt;/sup&gt; = 6561 ≡ 2). n = 1.">
+        <div class="arr"><span class="arr-label">bit</span><span class="cell" data-i="3">1</span><span class="cell is-active" data-i="2" data-ptr="k">1</span><span class="cell is-dim" data-i="1">0</span><span class="cell is-ok" data-i="0">1</span></div>
+        <table class="trace">
+          <thead><tr><th>Vòng</th><th>bit</th><th>a đầu vòng</th><th>r sau vòng</th><th>n sau vòng</th></tr></thead>
+          <tbody><tr><td>đầu</td><td>–</td><td>3</td><td>1</td><td>13</td></tr><tr><td>0</td><td>1</td><td>3 = 3¹</td><td>3</td><td>6</td></tr><tr><td>1</td><td>0</td><td>2 ≡ 3²</td><td>3</td><td>3</td></tr><tr class="hl"><td>2</td><td>1</td><td>4 ≡ 3⁴</td><td>5</td><td>1</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Vòng 3.&lt;/b&gt; Bit 3 bằng 1: r = 5·2 = 10 ≡ 3. Bình phương a = 4 (phép này thừa, nhưng vô hại). n = 0, vòng lặp dừng.">
+        <div class="arr"><span class="arr-label">bit</span><span class="cell is-active" data-i="3" data-ptr="k">1</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-dim" data-i="1">0</span><span class="cell is-ok" data-i="0">1</span></div>
+        <table class="trace">
+          <thead><tr><th>Vòng</th><th>bit</th><th>a đầu vòng</th><th>r sau vòng</th><th>n sau vòng</th></tr></thead>
+          <tbody><tr><td>đầu</td><td>–</td><td>3</td><td>1</td><td>13</td></tr><tr><td>0</td><td>1</td><td>3 = 3¹</td><td>3</td><td>6</td></tr><tr><td>1</td><td>0</td><td>2 ≡ 3²</td><td>3</td><td>3</td></tr><tr><td>2</td><td>1</td><td>4 ≡ 3⁴</td><td>5</td><td>1</td></tr><tr class="hl"><td>3</td><td>1</td><td>2 ≡ 3⁸</td><td>3</td><td>0</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kết quả.&lt;/b&gt; 3&lt;sup&gt;13&lt;/sup&gt; mod 7 = 3. Kiểm tra: 3&lt;sup&gt;13&lt;/sup&gt; = 1 594 323 = 7·227 760 + 3. Chỉ dùng 3 phép nhân vào r và 4 phép bình phương, tổng 7 phép nhân thay vì 13.">
+        <div class="arr"><span class="arr-label">r</span><span class="cell is-ok" data-i="3">3⁸≡2</span><span class="cell is-ok" data-i="2">3⁴≡4</span><span class="cell is-dim" data-i="1">bỏ</span><span class="cell is-ok" data-i="0">3¹≡3</span></div>
+        <p class="math-block">3<sup>13</sup> = 3<sup>8</sup> · 3<sup>4</sup> · 3<sup>1</sup> ≡ 2 · 4 · 3 = 24 ≡ 3 (mod 7)</p>
+      </div>
+    </div>
+
+    <h3>Cây gọi của cách đệ quy</h3>
+    <p>Cùng ví dụ 3<sup>13</sup> mod 7 nhưng bằng cách đệ quy. Mỗi lần gọi, số mũ bị chia đôi (lấy phần nguyên): 13 → 6 → 3 → 1 → 0. Sau khi chạm đáy, kết quả được “đưa ngược lên” và bình phương ở mỗi tầng.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 560 170" width="560" role="img" aria-label="Chuỗi gọi đệ quy PowRec của 3 mũ 13 modulo 7">
+        <line class="edge" x1="88" y1="60" x2="152" y2="60"/>
+        <line class="edge" x1="208" y1="60" x2="272" y2="60"/>
+        <line class="edge" x1="328" y1="60" x2="392" y2="60"/>
+        <line class="edge" x1="448" y1="60" x2="502" y2="60"/>
+        <circle class="node is-ok" cx="60" cy="60" r="28"/><text x="60" y="65" text-anchor="middle">n=13</text>
+        <circle class="node" cx="180" cy="60" r="28"/><text x="180" y="65" text-anchor="middle">n=6</text>
+        <circle class="node" cx="300" cy="60" r="28"/><text x="300" y="65" text-anchor="middle">n=3</text>
+        <circle class="node" cx="420" cy="60" r="28"/><text x="420" y="65" text-anchor="middle">n=1</text>
+        <circle class="node is-active" cx="525" cy="60" r="24"/><text x="525" y="65" text-anchor="middle">n=0</text>
+        <text class="label-sm" x="60" y="112" text-anchor="middle">h=1, 1·1=1</text>
+        <text class="label-sm" x="60" y="130" text-anchor="middle">lẻ: 1·3 = 3</text>
+        <text class="label-sm" x="180" y="112" text-anchor="middle">h=6, 6·6=36≡1</text>
+        <text class="label-sm" x="180" y="130" text-anchor="middle">chẵn: 1</text>
+        <text class="label-sm" x="300" y="112" text-anchor="middle">h=3, 3·3=9≡2</text>
+        <text class="label-sm" x="300" y="130" text-anchor="middle">lẻ: 2·3 = 6</text>
+        <text class="label-sm" x="420" y="112" text-anchor="middle">h=1, 1·1=1</text>
+        <text class="label-sm" x="420" y="130" text-anchor="middle">lẻ: 1·3 = 3</text>
+        <text class="label-sm" x="525" y="112" text-anchor="middle">trả về 1</text>
+        <text class="label-pen" x="280" y="160" text-anchor="middle">kết quả đi ngược từ phải sang trái: 1 → 3 → 6 → 1 → 3</text>
+      </svg>
+      <figcaption>Hình 2. PowRec(3, 13, 7): mỗi nút ghi h nhận từ nút bên phải, sau đó bình phương và nhân thêm 3 nếu n lẻ. Đáp án ở nút n = 13 là 3, khớp với cách vòng lặp.</figcaption>
+    </figure>
+    <p>Em để ý các giá trị trung gian chính là 3<sup>1</sup> ≡ 3, 3<sup>3</sup> = 27 ≡ 6, 3<sup>6</sup> = 729 ≡ 1 và 3<sup>13</sup> ≡ 3 (mod 7).</p>
+
+    <div class="playground" id="viz-modular-power">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: lũy thừa nhanh a<sup>n</sup> mod m</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="mp-a">a <input type="text" id="mp-a" value="3" inputmode="numeric"></label>
+          <label for="mp-n">n <input type="text" id="mp-n" value="13" inputmode="numeric"></label>
+          <label for="mp-m">m <input type="text" id="mp-m" value="7" inputmode="numeric"></label>
+          <button type="button" data-act="run">Tính</button>
+          <button type="button" class="ghost" data-act="big">Ví dụ lớn</button>
+        </div>
+        <div class="out" data-role="out">Nhập a, n, m (số nguyên, n ≥ 0, m ≥ 1) rồi bấm Tính.</div>
+        <div data-role="table"></div>
+      </div>
+    </div>
+    <p>Widget dùng BigInt nên nhận được n tới 60 chữ số. Thử n = 10<sup>18</sup> (nút “Ví dụ lớn”): chỉ có 60 vòng lặp.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Chương trình dưới giải bài <a href="https://cses.fi/problemset/task/1095">CSES Exponentiation</a>: có t truy vấn, mỗi truy vấn cho a, b (0 ≤ a, b ≤ 10<sup>9</sup>), in a<sup>b</sup> mod 10<sup>9</sup>+7, quy ước 0<sup>0</sup> = 1. Chương trình viết cả hai cách và kiểm tra chúng cho cùng kết quả.</p>
+    <figure class="code">
+      <figcaption><span class="fn">luythua.cpp</span> Lũy thừa nhanh dạng vòng lặp và dạng đệ quy</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+using ll = long long;
+
+const ll MOD = 1000000007;   // số nguyên tố, vừa kiểu int, bình phương vừa long long
+
+// Lũy thừa nhanh dạng vòng lặp: tính a^n mod m trong O(log n)
+ll power(ll a, ll n, ll m) {
+    ll r = 1 % m;            // "1 % m" để m = 1 vẫn đúng (mọi số mod 1 đều bằng 0)
+    a %= m;
+    if (a &lt; 0) a += m;       // phòng khi a âm
+    while (n &gt; 0) {
+        if (n &amp; 1) r = r * a % m;   // bit cuối của n bằng 1: nhân a vào kết quả
+        a = a * a % m;              // a lần lượt là a^1, a^2, a^4, a^8, ...
+        n &gt;&gt;= 1;                    // bỏ bit cuối của n
+    }
+    return r;
+}
+
+// Lũy thừa nhanh dạng đệ quy: a^n = (a^(n/2))^2, nhân thêm a nếu n lẻ
+ll powerRec(ll a, ll n, ll m) {
+    if (n == 0) return 1 % m;
+    ll h = powerRec(a, n / 2, m);   // gọi đệ quy MỘT lần rồi dùng lại
+    h = h * h % m;
+    if (n % 2 == 1) h = h * (a % m) % m;
+    return h;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int t;
+    cin &gt;&gt; t;                        // số truy vấn
+    while (t--) {
+        ll a, b;
+        cin &gt;&gt; a &gt;&gt; b;
+        ll x = power(a, b, MOD);
+        assert(x == powerRec(a, b, MOD));   // hai cách phải cho cùng kết quả
+        cout &lt;&lt; x &lt;&lt; '\n';           // quy ước 0^0 = 1, hàm trên đã trả về 1
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+3 4
+2 8
+123 123</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">81
+256
+921450052</code></pre></div>
+    </div>
+    <p>Giải thích vài chi tiết:</p>
+    <ul>
+      <li><code>n &amp; 1</code> lấy bit cuối của n (bằng 1 khi n lẻ), <code>n &gt;&gt;= 1</code> là chia đôi lấy phần nguyên. Em cũng có thể viết <code>n % 2 == 1</code> và <code>n /= 2</code>, kết quả như nhau.</li>
+      <li>Mọi biến đều là <code>long long</code>. Nếu r, a là <code>int</code> thì <code>r * a</code> (tới 10<sup>18</sup>) sẽ tràn trước khi kịp lấy dư.</li>
+    </ul>
+
+    <h3>Phép chia trong modulo: nghịch đảo bằng lũy thừa nhanh</h3>
+    <p>Bài <a href="https://lqdoj.edu.vn/problem/modulo">LQDOJ – Phép toán với modulo</a> yêu cầu in (a+b), (a−b), (a·b) và (a/b) theo modulo 10<sup>9</sup>+7. Ba phép đầu dùng quy tắc ở trên. Phép chia được thay bằng nhân với b<sup>p−2</sup>, lý do nằm ở phần <a href="#bien-the">Biến thể</a>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">modulo.cpp</span> Cộng, trừ, nhân, chia theo modulo nguyên tố</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+using ll = long long;
+
+const ll MOD = 1000000007;
+
+ll power(ll a, ll n, ll m) {
+    ll r = 1 % m;
+    a %= m;
+    while (n &gt; 0) {
+        if (n &amp; 1) r = r * a % m;
+        a = a * a % m;
+        n &gt;&gt;= 1;
+    }
+    return r;
+}
+
+// Nghịch đảo modulo theo Fermat nhỏ: b^(-1) = b^(p-2) mod p (p nguyên tố, p không chia hết b)
+ll inverse(ll b) { return power(b, MOD - 2, MOD); }
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    ll a, b;
+    cin &gt;&gt; a &gt;&gt; b;
+    cout &lt;&lt; (a + b) % MOD &lt;&lt; '\n';
+    cout &lt;&lt; ((a - b) % MOD + MOD) % MOD &lt;&lt; '\n';   // kéo số âm về [0, MOD)
+    cout &lt;&lt; a * b % MOD &lt;&lt; '\n';                   // a, b &lt; MOD nên a*b &lt; 1.1e18, vừa long long
+    cout &lt;&lt; a * inverse(b) % MOD &lt;&lt; '\n';          // "chia" = nhân với nghịch đảo
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">6 3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">9
+3
+18
+2</code></pre></div>
+    </div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thao tác</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Cộng, trừ, nhân lấy dư</td><td><span class="bigo">O(1)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Lũy thừa ngây thơ a<sup>n</sup> mod m</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Lũy thừa nhanh, vòng lặp</td><td><span class="bigo">O(log n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Lũy thừa nhanh, đệ quy</td><td><span class="bigo">O(log n)</span></td><td><span class="bigo">O(log n)</span> (ngăn xếp đệ quy)</td></tr>
+        <tr><td>Nghịch đảo modulo p bằng Fermat</td><td><span class="bigo">O(log p)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Nhân mod với <code>__int128</code> (m ≤ 10<sup>18</sup>)</td><td><span class="bigo">O(1)</span>, chậm hơn vài lần</td><td><span class="bigo">O(1)</span></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Ví dụ đếm phép tính.</strong> Bài CSES Exponentiation có 2·10<sup>5</sup> truy vấn, mỗi truy vấn b ≤ 10<sup>9</sup> (30 bit). Lũy thừa nhanh cần tối đa 60 phép nhân mỗi truy vấn, tổng cộng 1,2·10<sup>7</sup> phép nhân, chạy dưới 0,1 giây. Cách ngây thơ cần tới 2·10<sup>5</sup> · 10<sup>9</sup> = 2·10<sup>14</sup> phép nhân, mất vài ngày.</p>
+    <p>Với n ≤ 10<sup>18</sup>, mỗi lần gọi lũy thừa nhanh tốn tối đa 120 phép nhân. Vì vậy em có thể gọi nó khoảng 10<sup>6</sup> lần trong 1 giây mà vẫn an toàn. Trong bài tính nghịch đảo của nhiều số, mỗi nghịch đảo tốn khoảng 2·30 = 60 phép nhân (p ≈ 2<sup>30</sup>).</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Định lý Fermat nhỏ</h3>
+    <div class="definition" data-label="Định lý Fermat nhỏ">
+      <p>Nếu p là số nguyên tố và a không chia hết cho p thì</p>
+      <div class="math-block">a<sup>p−1</sup> ≡ 1 (mod p).</div>
+    </div>
+    <p>Ví dụ: 2<sup>4</sup> = 16 ≡ 1 (mod 5); 3<sup>6</sup> = 729 = 7·104 + 1 ≡ 1 (mod 7).</p>
+    <p><strong>Vì sao đúng (chứng minh ngắn).</strong> Xét p − 1 số a, 2a, 3a, …, (p−1)a và lấy dư cho p. Với p = 7, a = 3 ta được 3, 6, 9, 12, 15, 18, có số dư lần lượt là 3, 6, 2, 5, 1, 4: đúng là các số 1, 2, …, 6, chỉ bị xáo trộn thứ tự. Điều này luôn đúng: nếu i·a ≡ j·a (mod p) thì p chia hết (i − j)·a; vì p nguyên tố và không chia hết a nên p chia hết i − j, mà |i − j| &lt; p nên i = j. Vậy p − 1 số dư khác nhau, không số nào bằng 0, nên chúng là 1, 2, …, p−1. Nhân tất cả lại:</p>
+    <div class="math-block">a<sup>p−1</sup> · (p−1)! ≡ (p−1)! (mod p) &nbsp;⇒&nbsp; p | (a<sup>p−1</sup> − 1)·(p−1)!</div>
+    <p>Vì p nguyên tố, p không chia hết (p−1)! (đó là tích các số nhỏ hơn p). Do đó p chia hết a<sup>p−1</sup> − 1. Xong.</p>
+
+    <h3>2. Nghịch đảo modulo: cách để “chia”</h3>
+    <p><strong>Nghịch đảo modulo</strong> của b theo modulo m là số x sao cho b·x ≡ 1 (mod m). Kí hiệu b<sup>−1</sup>. Khi đó “chia cho b” chính là “nhân với b<sup>−1</sup>”, giống như chia cho 4 là nhân với 1/4.</p>
+    <p>Từ Fermat nhỏ: b · b<sup>p−2</sup> = b<sup>p−1</sup> ≡ 1 (mod p). Vậy với p nguyên tố và p không chia hết b:</p>
+    <div class="math-block">b<sup>−1</sup> ≡ b<sup>p−2</sup> (mod p)</div>
+    <p>Tính bằng lũy thừa nhanh, chỉ khoảng 60 phép nhân với p = 10<sup>9</sup>+7.</p>
+    <ul>
+      <li>Nghịch đảo của 3 theo mod 7: 3<sup>5</sup> = 243 = 7·34 + 5, nên 3<sup>−1</sup> ≡ 5. Kiểm tra 3·5 = 15 ≡ 1. Đúng.</li>
+      <li>Quay lại ví dụ “chia hỏng” với m = 5: 3<sup>−1</sup> ≡ 3<sup>3</sup> = 27 ≡ 2 (mod 5). Khi đó 12/3 ≡ 12·2 = 24 ≡ 4 (mod 5), đúng bằng 12/3 = 4.</li>
+    </ul>
+    <div class="callout warn"><p class="callout-title">Khi nào không có nghịch đảo?</p><p>Nếu p chia hết b (ví dụ b = 0) thì không tồn tại nghịch đảo, công thức b<sup>p−2</sup> sẽ cho 0. Nếu m không phải số nguyên tố, b có nghịch đảo khi và chỉ khi gcd(b, m) = 1, và phải tìm bằng thuật toán Euclid mở rộng (xem <a href="gcd-lcm.html">ƯCLN và BCNN</a>). Fermat chỉ dùng cho modulo nguyên tố.</p></div>
+
+    <h3>3. Chuẩn bị cho C(n, k) mod p</h3>
+    <p>Công thức tổ hợp C(n, k) = n! / (k!·(n−k)!) có phép chia. Theo modulo nguyên tố p, ta viết lại:</p>
+    <div class="math-block">C(n, k) ≡ n! · (k!)<sup>−1</sup> · ((n−k)!)<sup>−1</sup> (mod p)</div>
+    <p>Ví dụ C(5, 2) = 10 ≡ 3 (mod 7). Tính theo modulo: 5! = 120 ≡ 1, 2! = 2 có nghịch đảo 4 (vì 2·4 = 8 ≡ 1), 3! = 6 có nghịch đảo 6 (vì 6·6 = 36 ≡ 1). Vậy C(5, 2) ≡ 1·4·6 = 24 ≡ 3 (mod 7). Khớp! Chi tiết về tiền xử lý giai thừa và nghịch đảo giai thừa có ở chủ đề <a href="binomial.html">Tổ hợp</a>.</p>
+
+    <h3>4. Đếm số cách lớn và chữ số tận cùng</h3>
+    <ul>
+      <li>Số tập con của một tập n phần tử là 2<sup>n</sup>; số xâu nhị phân độ dài n cũng là 2<sup>n</sup>. Với n = 100, đáp án mod 10<sup>9</sup>+7 là 976 371 285, tính bằng một lần gọi <code>power(2, 100, MOD)</code>. Xem <a href="counting.html">Nguyên lý đếm</a>.</li>
+      <li>Chữ số tận cùng của a<sup>b</sup> là <code>power(a, b, 10)</code>. Ví dụ 7<sup>2026</sup>: các lũy thừa của 7 có chữ số cuối lặp lại theo chu kỳ 7, 9, 3, 1; vì 2026 = 4·506 + 2 nên chữ số cuối là 9. Lũy thừa nhanh cho cùng đáp án mà không cần tìm chu kỳ.</li>
+      <li>k chữ số cuối: dùng m = 10<sup>k</sup>. Bốn chữ số cuối của x<sup>n</sup> là x<sup>n</sup> mod 10 000 (nhớ in đúng định dạng đề yêu cầu).</li>
+    </ul>
+
+    <h3>5. Số mũ khổng lồ a^(b^c) mod p: giảm mũ theo p − 1</h3>
+    <p>Bài <a href="https://cses.fi/problemset/task/1712">CSES Exponentiation II</a> hỏi a<sup>b<sup>c</sup></sup> mod p với p = 10<sup>9</sup>+7. Số mũ E = b<sup>c</sup> có thể có hàng tỉ chữ số, không lưu được. Nhưng nếu p không chia hết a, viết E = k·(p−1) + r thì</p>
+    <div class="math-block">a<sup>E</sup> = (a<sup>p−1</sup>)<sup>k</sup> · a<sup>r</sup> ≡ 1<sup>k</sup> · a<sup>r</sup> = a<sup>r</sup> (mod p).</div>
+    <p>Vậy chỉ cần r = b<sup>c</sup> mod (p − 1), mà r lại tính được bằng lũy thừa nhanh với modulo p − 1. <strong>Chú ý: số mũ giảm theo p − 1, không phải p.</strong></p>
+    <figure class="code">
+      <figcaption><span class="fn">luythua2.cpp</span> Phần chính của lời giải a^(b^c) mod 10^9+7</figcaption>
+<pre><code class="language-cpp">// power(a, n, m) như trong luythua.cpp
+ll e = power(b, c, MOD - 1);        // số mũ theo modulo p - 1
+cout &lt;&lt; power(a, e, MOD) &lt;&lt; '\n';   // a &lt;= 10^9 &lt; p nên p không chia hết a</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+3 7 1
+15 2 2
+3 4 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2187
+50625
+763327764</code></pre></div>
+    </div>
+    <p>Kiểm tra hai dòng đầu bằng tay: 3<sup>7<sup>1</sup></sup> = 3<sup>7</sup> = 2187; 15<sup>2<sup>2</sup></sup> = 15<sup>4</sup> = 50 625.</p>
+
+    <h3>6. Nhân lấy dư tránh tràn với modulo cỡ 10¹⁸ (nâng cao)</h3>
+    <p>Khi m tới 10<sup>18</sup>, tích hai số dư có thể tới 10<sup>36</sup>, vượt xa <code>long long</code>. Trình biên dịch GCC có kiểu <code>__int128</code> chứa được số tới khoảng 1,7·10<sup>38</sup>. Ta ép một thừa số sang <code>__int128</code>, nhân, lấy dư, rồi ép về <code>long long</code>. Ví dụ dưới giải bài <a href="https://lqdoj.edu.vn/problem/powmodulo">LQDOJ – Lũy thừa mod</a>: a<sup>b<sup>c</sup></sup> mod (10<sup>18</sup>+9), với 10<sup>18</sup>+9 là số nguyên tố.</p>
+    <figure class="code">
+      <figcaption><span class="fn">powmodulo.cpp</span> Lũy thừa nhanh với modulo 10^18 + 9 và __int128</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+using ll = long long;
+
+const ll P = 1000000000000000009LL;   // 10^18 + 9, là số nguyên tố
+
+// Nhân lấy dư khi m tới 10^18: tích có thể tới 10^36, phải dùng __int128
+ll mulmod(ll a, ll b, ll m) { return (ll)((__int128)a * b % m); }
+
+ll power(ll a, ll n, ll m) {
+    ll r = 1 % m;
+    a %= m;
+    while (n &gt; 0) {
+        if (n &amp; 1) r = mulmod(r, a, m);
+        a = mulmod(a, a, m);
+        n &gt;&gt;= 1;
+    }
+    return r;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int q;
+    cin &gt;&gt; q;
+    while (q--) {
+        ll a, b, c;
+        cin &gt;&gt; a &gt;&gt; b &gt;&gt; c;
+        if (a % P == 0) {                       // P chia hết a: không dùng được Fermat
+            bool expZero = (b == 0 &amp;&amp; c &gt; 0);   // b^c = 0 chỉ khi b = 0, c &gt; 0
+            cout &lt;&lt; (expZero ? 1 : 0) &lt;&lt; '\n';
+            continue;
+        }
+        ll e = power(b, c, P - 1);              // giảm số mũ theo P - 1
+        cout &lt;&lt; power(a, e, P) &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+2 3 2
+5 2 2
+3 4 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">512
+625
+824168097938645257</code></pre></div>
+    </div>
+    <p>Nếu trình chấm không có <code>__int128</code>, em dùng <strong>“nhân kiểu Ấn Độ”</strong>: tính a·b như lũy thừa nhanh nhưng thay phép nhân bằng phép cộng (a·b = a + a + … + a, cộng theo bit của b). Các số trung gian chỉ tới 2m nên không tràn khi m ≤ 4·10<sup>18</sup>; đổi lại tốn <span class="bigo">O(log b)</span> phép cộng.</p>
+<pre><code class="language-cpp">ll mulmod(ll a, ll b, ll m) {        // a, b đã nằm trong [0, m)
+    ll r = 0;
+    while (b &gt; 0) {
+        if (b &amp; 1) r = (r + a) % m;  // bit 1: cộng a vào
+        a = (a + a) % m;             // a, 2a, 4a, 8a, ...
+        b &gt;&gt;= 1;
+    }
+    return r;
+}</code></pre>
+
+    <h3>7. Số mũ cho dưới dạng xâu rất dài</h3>
+    <p>Bài <a href="https://oj.vnoi.info/problem/tnhtest">VNOJ – Kiểm tra siêu máy tính</a> cho a, b có tới 10<sup>6</sup> chữ số và c ≤ 10<sup>9</sup> bất kì (không nhất thiết nguyên tố, nên không giảm mũ theo Fermat được). Mẹo: đọc b từng chữ số từ trái sang. Nếu b = 10·b' + d thì a<sup>b</sup> = (a<sup>b'</sup>)<sup>10</sup> · a<sup>d</sup>. Còn a mod c thì tính bằng cách đọc a từng chữ số: x ← (x·10 + chữ số) mod c.</p>
+<pre><code class="language-cpp">ll a = 0;
+for (char ch : A) a = (a * 10 + (ch - '0')) % c;      // A, B là xâu
+ll r = 1 % c;
+for (char ch : B)
+    r = power(r, 10, c) * power(a, ch - '0', c) % c;  // a^b = (a^b')^10 * a^d</code></pre>
+    <p>Mỗi chữ số của b tốn khoảng 8 + 8 phép nhân, nên 10<sup>6</sup> chữ số chỉ cần chừng 1,6·10<sup>7</sup> phép nhân.</p>
+
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Tràn số vì dùng int</p><p><code>int r, a; r = r * a % MOD;</code> sai vì r·a có thể tới 10<sup>18</sup>, tràn kiểu int (giới hạn khoảng 2,1·10<sup>9</sup>) <em>trước khi</em> lấy dư. Sửa: khai báo <code>long long</code>, hoặc viết <code>1LL * r * a % MOD</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Quên lấy dư cơ số ở đầu hàm</p><p>Nếu a = 10<sup>18</sup> mà không có <code>a %= m</code> thì ngay phép <code>a * a</code> đầu tiên đã tràn. Luôn lấy dư a trước vòng lặp.</p></div>
+    <div class="callout danger"><p class="callout-title">Số âm sau phép trừ</p><p><code>(a - b) % MOD</code> có thể âm, ví dụ (2 − 5) % 7 = −3 trong C++. Sửa: <code>((a - b) % MOD + MOD) % MOD</code>, cho 4. Lỗi này hay gặp trong bài cộng dồn: <code>(pre[r] - pre[l-1])</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Chia trực tiếp trong modulo</p><p>Viết <code>(x % MOD) / k</code> là sai. Phải nhân với nghịch đảo: <code>x % MOD * power(k, MOD - 2, MOD) % MOD</code>, và chỉ khi MOD nguyên tố.</p></div>
+    <div class="callout warn"><p class="callout-title">Giảm số mũ theo p thay vì p − 1</p><p>Trong a<sup>b<sup>c</sup></sup> mod p, số mũ b<sup>c</sup> phải lấy dư cho p − 1. Ngoài ra, nếu p chia hết a thì Fermat không áp dụng được: đáp án là 0 (khi số mũ dương), cần xét riêng.</p></div>
+    <div class="callout warn"><p class="callout-title">Gọi đệ quy hai lần</p><p><code>return powerRec(a, n/2) * powerRec(a, n/2) % m;</code> nhìn có vẻ đúng nhưng số lần gọi tăng gấp đôi ở mỗi tầng, tổng cộng khoảng 2n lần gọi, chậm như cách ngây thơ. Lưu kết quả vào biến h rồi tính h·h.</p></div>
+    <div class="callout warn"><p class="callout-title">Viết MOD bằng #define không có ngoặc</p><p><code>#define MOD 1e9+7</code> vừa là số thực, vừa khiến <code>x % MOD</code> thành <code>x % 1e9 + 7</code> (lỗi biên dịch hoặc sai thứ tự phép tính). Dùng <code>const long long MOD = 1000000007;</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Modulo lớn hơn khoảng 3·10<sup>9</sup></p><p>Khi m vượt khoảng 3·10<sup>9</sup>, tích hai số dư vượt 9,2·10<sup>18</sup> và tràn <code>long long</code>. Cần <code>__int128</code> hoặc nhân kiểu Ấn Độ.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo</p><p>Trường hợp biên: m = 1 thì mọi đáp án là 0, nên khởi tạo <code>r = 1 % m</code>. Đề thường quy ước 0<sup>0</sup> = 1; hàm vòng lặp ở trên tự trả về 1 khi n = 0. Khi nghi ngờ, so kết quả với cách ngây thơ cho n nhỏ.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Trong C++, biểu thức <code>-8 % 5</code> có giá trị bằng bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 2</button>
+        <button type="button" class="quiz-opt" data-correct>B. −3</button>
+        <button type="button" class="quiz-opt">C. 3</button>
+        <button type="button" class="quiz-opt">D. −2</button>
+      </div>
+      <p class="quiz-explain">C++ giữ dấu của số bị chia: −8 = 5·(−1) − 3 nên kết quả là −3. Muốn nhận số dư toán học 2, dùng ((−8 % 5) + 5) % 5 = 2.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Với n = 1000, vòng lặp <code>while (n &gt; 0)</code> trong lũy thừa nhanh chạy bao nhiêu lần?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 1000</button>
+        <button type="button" class="quiz-opt">B. 500</button>
+        <button type="button" class="quiz-opt" data-correct>C. 10</button>
+        <button type="button" class="quiz-opt">D. 32</button>
+      </div>
+      <p class="quiz-explain">Số lần lặp bằng số bit của n. Vì 512 ≤ 1000 &lt; 1024 nên 1000 có 10 bit: 1000 → 500 → 250 → 125 → 62 → 31 → 15 → 7 → 3 → 1 → 0.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Nghịch đảo của 2 theo modulo 7 là số nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 2</button>
+        <button type="button" class="quiz-opt">B. 3</button>
+        <button type="button" class="quiz-opt" data-correct>C. 4</button>
+        <button type="button" class="quiz-opt">D. 5</button>
+      </div>
+      <p class="quiz-explain">2·4 = 8 ≡ 1 (mod 7). Theo Fermat: 2<sup>7−2</sup> = 2<sup>5</sup> = 32 = 7·4 + 4 ≡ 4.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Để tính a<sup>b<sup>c</sup></sup> mod p (p nguyên tố, p không chia hết a), số mũ b<sup>c</sup> được thay bằng</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. b<sup>c</sup> mod p</button>
+        <button type="button" class="quiz-opt" data-correct>B. b<sup>c</sup> mod (p − 1)</button>
+        <button type="button" class="quiz-opt">C. (b mod p)<sup>c mod p</sup></button>
+        <button type="button" class="quiz-opt">D. Không thay được, phải tính b<sup>c</sup> chính xác</button>
+      </div>
+      <p class="quiz-explain">Vì a<sup>p−1</sup> ≡ 1 (mod p), số mũ “quay vòng” theo chu kỳ p − 1. Các lũy thừa lặp lại sau mỗi p − 1 bước, không phải p bước.</p>
+    </div>
+    <p><strong>Câu 5.</strong> Không dùng máy tính, tìm 2<sup>100</sup> mod 7.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>2<sup>3</sup> = 8 ≡ 1 (mod 7). Vì 100 = 3·33 + 1 nên 2<sup>100</sup> = (2<sup>3</sup>)<sup>33</sup>·2 ≡ 1·2 = 2. Cách khác theo Fermat: 2<sup>6</sup> ≡ 1, 100 = 6·16 + 4, nên 2<sup>100</sup> ≡ 2<sup>4</sup> = 16 ≡ 2. Đáp án 2.</p></details>
+    <p><strong>Câu 6.</strong> Chạy tay lũy thừa nhanh dạng vòng lặp để tính 5<sup>6</sup> mod 13. Ghi a, r, n sau mỗi vòng.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>6 = 110₂. Ban đầu r = 1, a = 5, n = 6. Vòng 0: n chẵn, r = 1; a = 25 ≡ 12; n = 3. Vòng 1: n lẻ, r = 1·12 = 12; a = 144 ≡ 1 (vì 144 = 13·11 + 1); n = 1. Vòng 2: n lẻ, r = 12·1 = 12; a = 1; n = 0. Kết quả 12. Kiểm tra: 5<sup>6</sup> = 15 625 = 13·1201 + 12.</p></details>
+    <p><strong>Câu 7.</strong> Hôm nay là Chủ nhật. Hỏi 2026 ngày nữa là thứ mấy?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>2026 = 7·289 + 3, nên 2026 ≡ 3 (mod 7). Từ Chủ nhật tiến thêm 3 ngày: thứ Hai, thứ Ba, thứ Tư. Đáp án: thứ Tư.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Chín bài có đề tiếng Việt; bài Codeforces có tóm tắt tiếng Việt bên dưới.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/lastdigit">LASTDIGIT – Số tận cùng</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho hai số nguyên không âm a, b. In chữ số tận cùng của a<sup>b</sup>.</p>
+        <p class="ex-skill"><b>Luyện:</b> lũy thừa nhanh với m = 10, lấy dư cơ số trước khi nhân.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đáp án là a<sup>b</sup> mod 10. Lấy a mod 10 trước. Cẩn thận trường hợp b = 0 (a<sup>0</sup> = 1) và đọc kĩ giới hạn của subtask lớn: nếu a, b vượt long long thì đọc dạng xâu và chỉ cần vài chữ số cuối.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/742/A">742A – Arpa’s hard exam and Mehrdad’s naive cheat</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho n (0 ≤ n ≤ 10<sup>9</sup>). In chữ số tận cùng của 1378<sup>n</sup>.</p>
+        <p class="ex-skill"><b>Luyện:</b> đồng dư mod 10, chu kỳ chữ số tận cùng, trường hợp n = 0.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>1378 ≡ 8 (mod 10). Hoặc gọi lũy thừa nhanh với m = 10, hoặc nhận xét chu kỳ 8, 4, 2, 6. Nhớ n = 0 thì đáp án là 1.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/16hsg9hn1">16HSG9HN1 – Tích lấy dư (HSG9 Hà Nội 2016)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho a &lt; b ≤ 10<sup>4</sup> và c ≤ 10<sup>9</sup>. Tìm số dư khi chia tích a·(a+1)·…·b cho c.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhân lấy dư từng bước, dùng long long cho tích trung gian.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Duyệt i từ a tới b, mỗi bước r = r·i mod c. Tích trung gian r·i nhỏ hơn 10<sup>9</sup>·10<sup>4</sup> nên vừa long long.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/luythua01">LUYTHUA01 – Lũy thừa</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho x ≤ 1000 và n ≤ 10<sup>18</sup>. In x<sup>n</sup> mod 10<sup>4</sup> (bốn chữ số cuối).</p>
+        <p class="ex-skill"><b>Luyện:</b> lũy thừa nhanh với số mũ tới 10<sup>18</sup>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Vòng lặp ngây thơ không kịp với n = 10<sup>18</sup>. Dùng đúng hàm power ở trên với m = 10 000; chỉ có 60 vòng lặp.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1095">CSES 1095 – Exponentiation | Lũy thừa</a>
+          <span class="judge">LQDOJ (CSES)</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Có tới 2·10<sup>5</sup> truy vấn, mỗi truy vấn tính a<sup>b</sup> mod 10<sup>9</sup>+7 với a, b ≤ 10<sup>9</sup>, quy ước 0<sup>0</sup> = 1. Bản gốc tiếng Anh: <a href="https://cses.fi/problemset/task/1095">CSES 1095</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> cài đặt lũy thừa nhanh chuẩn, nhập xuất nhanh.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chính là chương trình luythua.cpp trong bài. Mỗi truy vấn O(log b).</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/modulo">MODULO – Phép toán với modulo</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho a, b và m = 10<sup>9</sup>+7. In (a+b), (a−b), (a·b) và (a/b) theo modulo m.</p>
+        <p class="ex-skill"><b>Luyện:</b> xử lý số âm, nghịch đảo modulo bằng Fermat nhỏ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Phép trừ: cộng thêm m rồi lấy dư. Phép chia: nhân a với b<sup>m−2</sup> mod m.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1712">CSES 1712 – Exponentiation II | Lũy thừa II</a>
+          <span class="judge">LQDOJ (CSES)</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có tới 10<sup>5</sup> truy vấn, mỗi truy vấn tính a<sup>b<sup>c</sup></sup> mod 10<sup>9</sup>+7 với a, b, c ≤ 10<sup>9</sup>. Bản gốc: <a href="https://cses.fi/problemset/task/1712">CSES 1712</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> định lý Fermat nhỏ, giảm số mũ theo p − 1.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tính e = b<sup>c</sup> mod (p − 1) trước, rồi a<sup>e</sup> mod p. Đừng lấy dư số mũ cho p.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/fermat1">FERMAT1 – Lũy thừa nhiều lần</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho dãy n ≤ 10<sup>6</sup> số a<sub>i</sub> ≤ 10<sup>18</sup>. Tính (…((a<sub>1</sub><sup>a<sub>2</sub></sup>)<sup>a<sub>3</sub></sup>)…)<sup>a<sub>n</sub></sup> mod 2004010501 (một số nguyên tố).</p>
+        <p class="ex-skill"><b>Luyện:</b> quy tắc (x<sup>u</sup>)<sup>v</sup> = x<sup>u·v</sup>, giảm mũ theo p − 1, trường hợp p chia hết cơ số.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Biểu thức bằng a<sub>1</sub> mũ (a<sub>2</sub>·a<sub>3</sub>·…·a<sub>n</sub>). Tính tích các số mũ theo modulo p − 1 (lấy dư từng số trước khi nhân để không tràn). Nếu a<sub>1</sub> chia hết cho p thì đáp án là 0.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/powmodulo">POWMODULO – Lũy thừa mod</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Q ≤ 5000 truy vấn, mỗi truy vấn tính a<sup>b<sup>c</sup></sup> mod (10<sup>18</sup>+9) với a, b, c ≤ 10<sup>15</sup>.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhân lấy dư với <code>__int128</code>, giảm mũ theo p − 1.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giống Exponentiation II nhưng modulo cỡ 10<sup>18</sup>, nên mọi phép nhân phải đi qua <code>__int128</code>. Xem powmodulo.cpp ở phần Biến thể.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/tnhtest">TNHTEST – Kiểm tra siêu máy tính</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Tính a<sup>b</sup> mod c, trong đó a, b có tới gần 10<sup>6</sup> chữ số và 2 ≤ c ≤ 10<sup>9</sup>.</p>
+        <p class="ex-skill"><b>Luyện:</b> lấy dư số lớn dạng xâu, lũy thừa với số mũ dạng xâu.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>c không nhất thiết nguyên tố nên không dùng Fermat được. Đọc b từng chữ số: r ← r<sup>10</sup>·a<sup>d</sup> mod c. Xem mục 7 phần Biến thể.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/math/modulo">VNOI Wiki – Modulo cơ bản</a> (tiếng Việt)</li>
+      <li><a href="https://wiki.vnoi.info/algo/algebra/binary_exponentation">VNOI Wiki – Lũy thừa nhị phân</a> (tiếng Việt)</li>
+      <li><a href="https://wiki.vnoi.info/algo/math/modular-inverse">VNOI Wiki – Nghịch đảo modulo</a> (tiếng Việt)</li>
+      <li><a href="https://vi.wikipedia.org/wiki/%C4%90%E1%BB%8Bnh_l%C3%BD_nh%E1%BB%8F_Fermat">Wikipedia – Định lý nhỏ Fermat</a> (tiếng Việt)</li>
+      <li><a href="https://cp-algorithms.com/algebra/binary-exp.html">cp-algorithms – Binary Exponentiation</a> (tiếng Anh)</li>
+      <li><a href="https://cp-algorithms.com/algebra/module-inverse.html">cp-algorithms – Modular Multiplicative Inverse</a> (tiếng Anh)</li>
+      <li><a href="https://cses.fi/problemset/">CSES Problem Set</a>, mục Mathematics (tiếng Anh)</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>a ≡ b (mod m) nghĩa là m chia hết a − b. Cộng, trừ, nhân được phép lấy dư từng bước; <strong>chia thì không</strong>.</li>
+        <li>Số dư không âm: <code>((a % m) + m) % m</code>. Dùng <code>long long</code> và nhớ <code>a %= m</code> trước khi nhân.</li>
+        <li>10<sup>9</sup>+7 là số nguyên tố, tổng hai số dư vừa int, tích vừa long long.</li>
+        <li>Lũy thừa nhanh: <code>if (n &amp; 1) r = r*a%m; a = a*a%m; n &gt;&gt;= 1;</code>, tối đa 2·log₂n phép nhân, <span class="bigo">O(log n)</span>.</li>
+        <li>Fermat nhỏ: a<sup>p−1</sup> ≡ 1 (mod p) với p nguyên tố, p ∤ a. Nghịch đảo: a<sup>−1</sup> ≡ a<sup>p−2</sup>.</li>
+        <li>a<sup>b<sup>c</sup></sup> mod p: lấy số mũ b<sup>c</sup> mod (p − 1), không phải mod p.</li>
+        <li>Modulo tới 10<sup>18</sup>: nhân qua <code>(__int128)a * b % m</code>.</li>
+        <li>Ứng dụng: chữ số tận cùng (m = 10), đếm số cách lớn, C(n, k) mod p.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/modular-power.js"></script>
+</body>
+</html>

@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Duyệt trâu, mô phỏng &amp; công thức · Thi đấu lớp 9</title>
+<meta name="description" content="Viết lời giải trâu đúng trước, mô phỏng theo đề, đối chiếu chéo để bắt lỗi, rồi dùng toán để tăng tốc: tổng 1..n, đếm bội số trong đoạn, số 0 tận cùng của n!, xoắn ốc số.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="brute-force-formula">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Viết được lời giải <strong>duyệt trâu</strong> (liệt kê mọi ứng viên rồi kiểm tra) và biết đọc giới hạn để quyết định khi nào trâu là đủ.</li>
+      <li>Cài đặt được bài <strong>mô phỏng</strong> làm đúng từng bước của đề, kể cả khi số bước rất lớn nhưng trạng thái lặp lại theo chu kỳ.</li>
+      <li>Áp dụng được <strong>chiến lược subtask</strong>: nộp lời giải trâu để lấy điểm, rồi dùng nó làm bộ đối chiếu để kiểm tra lời giải nhanh.</li>
+      <li>Viết được bộ <strong>đối chiếu chéo (stress test)</strong> gồm chương trình sinh test, lời giải trâu, lời giải nhanh và một script bash.</li>
+      <li>Thay vòng lặp bằng công thức: tổng 1..n, tổng cấp số cộng, đếm số chia hết cho k trong [a, b], số chữ số 0 tận cùng của n!, giá trị trên xoắn ốc số.</li>
+      <li>Bớt được một vòng lặp lồng nhau nhờ nhận xét “biến cuối cùng được suy ra từ các biến trước”.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Bài này gom ba công cụ đầu tiên mà em nên rút ra khi gặp một bài lạ. <strong>Duyệt trâu</strong> là thử hết mọi khả năng. <strong>Mô phỏng</strong> là làm đúng y như đề kể. <strong>Công thức</strong> là dùng toán để nhảy thẳng tới đáp án mà không cần đi từng bước.</p>
+    <p>Ba công cụ này không đối đầu nhau. Chúng nối tiếp nhau: em viết lời giải trâu trước vì nó dễ đúng; sau đó em quan sát kết quả của nó, tìm ra quy luật, rồi biến quy luật thành công thức. Lời giải trâu vẫn được giữ lại để kiểm tra công thức có đúng không.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> em quên mã của ổ khóa vali, mã gồm 3 chữ số. Cách trâu là thử từ 000, 001, 002… đến 999: tối đa 1 000 lần, chắc chắn mở được. Bây giờ giả sử ổ khóa có 18 chữ số: thử hết cần 10<sup>18</sup> lần, cả đời cũng không xong. Lúc đó em phải tìm một <em>nhận xét</em>, ví dụ nhớ ra mã là ngày sinh của mẹ, để thu hẹp số khả năng. Lập trình thi đấu cũng vậy: n nhỏ thì cứ thử hết, n lớn thì phải nghĩ.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>Duyệt toàn bộ (brute force, “duyệt trâu”):</strong> liệt kê mọi ứng viên có thể là đáp án, kiểm tra từng ứng viên theo điều kiện của đề, rồi đếm, cộng hoặc chọn cái tốt nhất.</p>
+      <p><strong>Mô phỏng (simulation):</strong> dùng biến và mảng để lưu <em>trạng thái</em> của sự vật trong đề, rồi thực hiện lần lượt từng thao tác đúng như mô tả cho tới khi kết thúc.</p>
+      <p><strong>Công thức đóng (closed form):</strong> một biểu thức tính thẳng ra đáp án chỉ bằng vài phép tính, không phụ thuộc vào việc n lớn hay nhỏ. Ví dụ 1 + 2 + … + n = n(n + 1)/2.</p>
+    </div>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Gần như mọi đề thi học sinh giỏi lớp 9 đều có ít nhất một bài mà ba công cụ này giải được trọn vẹn, và gần như mọi bài khó đều có <em>subtask</em> nhỏ cho lời giải trâu. Biết dùng chúng là cách chắc chắn nhất để không bị điểm 0.</p>
+
+    <h3>Duyệt toàn bộ</h3>
+    <p>Dùng khi số ứng viên đủ nhỏ để thử hết trong khoảng 1 giây (cỡ 10<sup>8</sup> phép tính). Ví dụ: tìm mọi số có ba chữ số thỏa điều kiện; đếm cặp (i, j) với n ≤ 5 000; thử mọi tập con khi n ≤ 20 (xem bài <a href="backtracking.html">Quay lui &amp; nhánh cận</a>).</p>
+
+    <h3>Mô phỏng</h3>
+    <p>Dùng khi đề kể một quá trình: robot đi theo lệnh, đồng hồ chạy, người chơi lần lượt bốc bài, dãy số biến đổi theo luật. Mô phỏng không cần ý tưởng khó, nhưng cần đọc đề cực kỹ và cài đặt cẩn thận. Khi số bước tới 10<sup>18</sup> mà số trạng thái chỉ vài triệu, em mô phỏng tới lúc <em>lặp lại</em> rồi dùng phép chia lấy dư để nhảy.</p>
+
+    <h3>Công thức và nhận xét toán học</h3>
+    <p>Dùng khi giới hạn rất lớn (10<sup>9</sup>, 10<sup>18</sup>) mà đề chỉ hỏi một con số. Một vòng lặp tới 10<sup>18</sup> chắc chắn quá giờ, nên đáp án phải tính được bằng công thức hoặc bằng vòng lặp rất ngắn (ví dụ chia liên tiếp cho 5, chỉ khoảng 26 lần).</p>
+
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p>
+      <p>Đề có subtask kiểu “30% số test có n ≤ 100”: hãy viết trâu cho subtask đó trước. Đề có “n ≤ 10<sup>18</sup>”, “a, b ≤ 10<sup>12</sup>”: gần như chắc chắn cần công thức. Đề có “sau K bước” với K rất lớn: mô phỏng có chu kỳ. Đề có cụm “đếm số chia hết”, “tổng các số từ … đến …”, “chữ số 0 tận cùng”, “bảng số xoắn ốc”: đã có công thức quen thuộc.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Giới hạn n</th><th>Độ phức tạp chạy kịp (khoảng 1 giây)</th><th>Thường dùng</th></tr></thead>
+      <tbody>
+        <tr><td>n ≤ 20</td><td><span class="bigo">O(2<sup>n</sup>)</span>, <span class="bigo">O(n!)</span> với n ≤ 10</td><td>Duyệt mọi tập con, mọi hoán vị</td></tr>
+        <tr><td>n ≤ 500</td><td><span class="bigo">O(n<sup>3</sup>)</span></td><td>Ba vòng lặp lồng nhau</td></tr>
+        <tr><td>n ≤ 5 000</td><td><span class="bigo">O(n<sup>2</sup>)</span></td><td>Duyệt mọi cặp</td></tr>
+        <tr><td>n ≤ 10<sup>6</sup> đến 10<sup>7</sup></td><td><span class="bigo">O(n)</span>, <span class="bigo">O(n log n)</span></td><td>Một vòng lặp, sắp xếp</td></tr>
+        <tr><td>n ≤ 10<sup>18</sup></td><td><span class="bigo">O(1)</span>, <span class="bigo">O(log n)</span></td><td>Công thức, chia liên tiếp</td></tr>
+      </tbody>
+    </table>
+    <p>Bảng này được giải thích kỹ trong bài <a href="complexity.html">Độ phức tạp thuật toán</a>. Em nên thuộc lòng nó.</p>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho hai số n và S. Đếm số bộ ba (x, y, z) với 1 ≤ x, y, z ≤ n và x + y + z = S. Ví dụ n = 4, S = 6 thì có 10 bộ, như (1, 1, 4), (1, 4, 1), (2, 2, 2)…</p>
+
+    <h3>Bước 1: lời giải trâu ba vòng lặp</h3>
+    <p>Cho x, y, z cùng chạy từ 1 đến n, bộ nào có tổng bằng S thì đếm. Cách này <em>chắc chắn đúng</em> vì nó xét đủ mọi bộ. Nhưng nó chạy n × n × n lần: với n = 2 000 là 8 · 10<sup>9</sup> lần, khoảng 10 giây trở lên.</p>
+
+    <h3>Bước 2: nhận xét “biến cuối được suy ra”</h3>
+    <p>Khi đã biết x và y thì z <em>bắt buộc</em> bằng S − x − y. Không cần thử z, chỉ cần kiểm tra số đó có nằm trong [1, n] không. Còn hai vòng lặp: n<sup>2</sup> = 4 · 10<sup>6</sup> lần với n = 2 000, chạy trong nháy mắt.</p>
+
+    <h3>Bước 3: thêm một nhận xét nữa</h3>
+    <p>Cố định x, đặt s = S − x. Cần đếm số y trong [1, n] sao cho z = s − y cũng trong [1, n]. Điều kiện z ≥ 1 cho y ≤ s − 1; điều kiện z ≤ n cho y ≥ s − n. Vậy y chạy trong đoạn [max(1, s − n), min(n, s − 1)], và số giá trị là hi − lo + 1 nếu đoạn không rỗng. Chỉ còn một vòng lặp: 2 000 lần.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Trâu ba vòng</h4><p>Thử mọi (x, y, z). Độ phức tạp <span class="bigo">O(n³)</span>, với n = 2 000 là 8 · 10<sup>9</sup> phép kiểm tra, quá giờ.</p></div>
+      <div class="good-side"><h4>Suy ra biến cuối, đếm theo đoạn</h4><p>Cố định x, đếm y bằng công thức đoạn. Độ phức tạp <span class="bigo">O(n)</span>, chỉ 2 000 lần lặp; n = 10<sup>7</sup> vẫn kịp.</p></div>
+    </div>
+
+    <p><strong>Một ví dụ nữa.</strong> Tính 1 + 2 + … + n với n = 10<sup>9</sup>. Vòng lặp cần 10<sup>9</sup> phép cộng, khoảng 1 giây, rất sát giới hạn. Với n = 10<sup>12</sup> thì vòng lặp mất hơn 15 phút. Công thức n(n + 1)/2 chỉ cần 3 phép tính dù n bằng bao nhiêu.</p>
+
+    <div class="callout tip"><p class="callout-title">Bài học quan trọng</p><p>Đừng vứt lời giải trâu đi. Ở bước 3 rất dễ viết nhầm <code>min(n, s)</code> thay vì <code>min(n, s - 1)</code>. Lời giải trâu ở bước 1 chính là “đáp án mẫu” để em phát hiện nhầm lẫn đó. Mục <a href="#cai-dat">Cài đặt</a> sẽ chỉ cách làm việc này tự động.</p></div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>Duyệt toàn bộ</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Xác định ứng viên.</strong> Đáp án có dạng gì: một số, một cặp, một bộ ba, một tập con? Mỗi ứng viên được mô tả bởi những biến nào?</div></li>
+      <li><div><strong>Đếm số ứng viên.</strong> Nhân phạm vi của các biến lại. Nếu kết quả cỡ 10<sup>8</sup> trở xuống thì duyệt được.</div></li>
+      <li><div><strong>Liệt kê.</strong> Dùng các vòng lặp lồng nhau (hoặc đệ quy) để sinh từng ứng viên đúng một lần.</div></li>
+      <li><div><strong>Kiểm tra và ghi nhận.</strong> Với mỗi ứng viên, kiểm tra điều kiện; nếu đạt thì đếm, cộng, hoặc so với đáp án tốt nhất hiện có.</div></li>
+      <li><div><strong>Bớt vòng lặp nếu được.</strong> Biến nào bị các biến khác xác định duy nhất thì tính thẳng thay vì lặp.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> DemBoBa(n, S):
+    dem ← 0
+    <b>với</b> x <b>từ</b> 1 <b>đến</b> n:
+        <b>với</b> y <b>từ</b> 1 <b>đến</b> n:
+            z ← S − x − y              <i>// không lặp z: z bị x, y xác định</i>
+            <b>nếu</b> 1 ≤ z ≤ n: dem ← dem + 1
+    <b>trả về</b> dem</pre>
+
+    <h3>Mô phỏng (có phát hiện chu kỳ)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Chọn trạng thái.</strong> Viết ra những thông tin đủ để mô tả “tình hình hiện tại”: vị trí robot và hướng nhìn, giờ và phút, giá trị hiện tại của dãy…</div></li>
+      <li><div><strong>Viết hàm chuyển.</strong> Từ trạng thái hiện tại, làm đúng một bước theo đề để ra trạng thái tiếp theo.</div></li>
+      <li><div><strong>Lặp.</strong> Gọi hàm chuyển cho tới khi đủ số bước hoặc gặp điều kiện dừng.</div></li>
+      <li><div><strong>Nếu số bước K quá lớn.</strong> Ghi lại bước đầu tiên gặp mỗi trạng thái. Khi một trạng thái xuất hiện lần thứ hai, em đã tìm được chu kỳ có điểm bắt đầu <code>start</code> và độ dài <code>len</code>; trạng thái ở bước K chính là trạng thái ở bước start + (K − start) mod len.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> MoPhong(x0, K):
+    x ← x0;  dauTien[mọi trạng thái] ← −1
+    <b>với</b> i <b>từ</b> 0 <b>trở đi</b>:
+        <b>nếu</b> i = K: <b>trả về</b> x
+        <b>nếu</b> dauTien[x] ≠ −1:                <i>// gặp lại trạng thái cũ</i>
+            start ← dauTien[x];  len ← i − start
+            <b>trả về</b> day[start + (K − start) <b>mod</b> len]
+        dauTien[x] ← i;  day[i] ← x
+        x ← BuocTiep(x)                        <i>// làm đúng một bước theo đề</i></pre>
+
+    <h3>Chiến lược subtask và đối chiếu chéo</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Viết trâu trước.</strong> Viết lời giải đơn giản nhất mà em chắc chắn đúng, chạy thử với ví dụ của đề. Nộp nó để lấy điểm subtask nhỏ.</div></li>
+      <li><div><strong>Tìm quy luật.</strong> In kết quả của lời giải trâu cho n = 1, 2, 3, … rồi quan sát. Nhiều công thức được “nhìn ra” từ bảng này.</div></li>
+      <li><div><strong>Viết lời giải nhanh.</strong> Cài đặt công thức hoặc thuật toán tốt hơn trong một file riêng.</div></li>
+      <li><div><strong>Viết bộ sinh test.</strong> Một chương trình nhỏ in ra một test ngẫu nhiên <em>nhỏ</em> (để trâu chạy kịp), nhận hạt giống từ dòng lệnh.</div></li>
+      <li><div><strong>Đối chiếu.</strong> Một script chạy hàng nghìn test, so sánh kết quả hai lời giải. Lệch nhau thì dừng và in test đó ra để em sửa.</div></li>
+    </ol>
+    <pre class="pseudo"><b>với</b> i <b>từ</b> 1 <b>đến</b> 1000:
+    test ← SinhTest(hạt giống i)
+    <b>nếu</b> Trau(test) ≠ Nhanh(test):
+        in test, in hai kết quả;  <b>dừng</b>          <i>// đã bắt được lỗi</i>
+in "Qua hết 1000 test"</pre>
+
+    <h3>Các công thức tăng tốc</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Tổng 1..n.</strong> 1 + 2 + … + n = n(n + 1)/2.</div></li>
+      <li><div><strong>Tổng cấp số cộng.</strong> Dãy cách đều có số hạng đầu u, số hạng cuối v, gồm c số hạng: tổng = (u + v) · c / 2. Số số hạng c = (v − u)/d + 1 với công sai d.</div></li>
+      <li><div><strong>Đếm bội của k trong [a, b]</strong> (a ≥ 1): ⌊b/k⌋ − ⌊(a − 1)/k⌋.</div></li>
+      <li><div><strong>Số chữ số 0 tận cùng của n!</strong>: ⌊n/5⌋ + ⌊n/25⌋ + ⌊n/125⌋ + … (dừng khi số hạng bằng 0).</div></li>
+      <li><div><strong>Ô (y, x) trên xoắn ốc số</strong>: tìm tầng k = max(y, x), số nhỏ nhất của tầng là (k − 1)² + 1, rồi cộng hoặc trừ theo vị trí trên cạnh.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> SoKhong(n):                   <i>// số chữ số 0 tận cùng của n!</i>
+    dem ← 0
+    <b>trong khi</b> n &gt; 0:
+        n ← n <b>div</b> 5;  dem ← dem + n
+    <b>trả về</b> dem
+
+<b>hàm</b> XoanOc(y, x):
+    k ← max(y, x);  lo ← (k − 1)²
+    <b>nếu</b> k chẵn:  <b>nếu</b> x = k: <b>trả về</b> lo + y   <b>ngược lại</b>: <b>trả về</b> k² − x + 1
+    <b>nếu</b> k lẻ:   <b>nếu</b> y = k: <b>trả về</b> lo + x   <b>ngược lại</b>: <b>trả về</b> k² − y + 1</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Duyệt toàn bộ: đúng vì không bỏ sót</h3>
+    <p>Lời giải trâu đúng vì một lý do rất đơn giản: <strong>nó xét đủ mọi ứng viên</strong>, mỗi ứng viên đúng một lần. Nếu đáp án tồn tại thì nó nằm đâu đó trong danh sách, và vòng lặp sẽ đi qua nó. Chỗ duy nhất có thể sai là em liệt kê thiếu (vòng lặp chạy từ 1 thay vì 0, quên trường hợp bằng nhau) hoặc liệt kê trùng (đếm (1, 2) và (2, 1) khi đề coi là một). Vì vậy hãy tự hỏi: “mỗi ứng viên có được sinh ra đúng một lần không?”.</p>
+    <p>Khi bớt một vòng lặp, em vẫn xét đủ mọi bộ: với mỗi cặp (x, y) chỉ có <em>đúng một</em> z có thể làm tổng bằng S, nên thử z khác là phí công. Số phép tính giảm từ n<sup>3</sup> xuống n<sup>2</sup> mà kết quả không đổi.</p>
+
+    <h3>Mô phỏng: đúng vì làm y như đề, nhanh nhờ chu kỳ</h3>
+    <p>Bài mô phỏng đúng khi hàm chuyển làm đúng từng chữ của đề. Thường đề sẽ “gài” chi tiết nhỏ: robot đi ra ngoài lưới thì đứng yên hay quay đầu? Giờ 23:59 cộng 1 phút thành 00:00 chứ không phải 24:00. Hãy tự chạy tay ví dụ của đề trước khi code.</p>
+    <p>Vì sao có chu kỳ? Nếu trạng thái chỉ có m giá trị khác nhau, thì trong m + 1 bước đầu tiên chắc chắn có hai bước trùng trạng thái (nguyên lý Dirichlet: m + 1 con thỏ vào m cái chuồng). Và vì bước tiếp theo chỉ phụ thuộc vào trạng thái hiện tại, từ lúc trùng trở đi dãy lặp lại y hệt. Do đó em chỉ mô phỏng tối đa m bước, rồi dùng phép chia lấy dư để nhảy tới bước K.</p>
+
+    <h3>Tổng 1..n: ghép cặp Gauss</h3>
+    <p>Chuyện kể rằng cậu bé Gauss tính 1 + 2 + … + 100 rất nhanh như sau. Viết dãy hai lần: một lần xuôi, một lần ngược, đặt thẳng hàng. Mỗi cột có tổng bằng n + 1 (vì 1 + n, 2 + (n − 1), …). Có n cột nên tổng hai dãy là n(n + 1). Mỗi dãy bằng một nửa:</p>
+    <div class="math-block">1 + 2 + … + n = <span class="frac"><span>n(n + 1)</span><span>2</span></span></div>
+    <p>Với n = 100: 100 · 101 / 2 = 5 050. Công thức luôn cho số nguyên vì trong hai số liền nhau n và n + 1 luôn có một số chẵn.</p>
+    <p>Cách ghép cặp này dùng được cho mọi <strong>cấp số cộng</strong> (dãy cách đều, ví dụ 3, 7, 11, 15): cặp đầu–cuối, cặp thứ hai–áp chót… đều có tổng bằng u + v. Có c số hạng thì tổng là (u + v) · c / 2. Ví dụ 3 + 7 + 11 + 15 = (3 + 15) · 4 / 2 = 36.</p>
+
+    <h3>Đếm bội của k trong [a, b]</h3>
+    <p>Các bội dương của k không vượt quá b là k, 2k, 3k, …, mk với mk ≤ b. Số lớn nhất là m = ⌊b/k⌋, nên có đúng ⌊b/k⌋ bội trong [1, b]. Muốn đếm trong [a, b], lấy số bội trong [1, b] trừ số bội trong [1, a − 1]:</p>
+    <div class="math-block">số bội của k trong [a, b] = ⌊b/k⌋ − ⌊(a − 1)/k⌋</div>
+    <p>Ví dụ a = 10, b = 50, k = 7: ⌊50/7⌋ = 7, ⌊9/7⌋ = 1, đáp án 6 (đó là 14, 21, 28, 35, 42, 49). Ý tưởng “đếm [1, b] trừ đếm [1, a − 1]” sẽ gặp lại rất nhiều lần, chính là tinh thần của <a href="prefix-sum.html">mảng cộng dồn</a>. Chú ý phải trừ phần đến <strong>a − 1</strong>, không phải a, vì chính a có thể là bội của k.</p>
+
+    <h3>Số chữ số 0 tận cùng của n!: công thức Legendre</h3>
+    <p>Mỗi chữ số 0 ở cuối là một thừa số 10 = 2 · 5. Trong n! = 1 · 2 · … · n, thừa số 2 nhiều hơn hẳn thừa số 5 (cứ hai số có một số chẵn, năm số mới có một bội của 5). Vì vậy số chữ số 0 tận cùng bằng <strong>số thừa số 5</strong> trong n!.</p>
+    <p>Đếm thừa số 5 thế nào? Mỗi bội của 5 góp ít nhất một thừa số 5: có ⌊n/5⌋ số như vậy. Mỗi bội của 25 = 5² góp thêm một thừa số nữa: thêm ⌊n/25⌋. Mỗi bội của 125 góp thêm một nữa… Cộng lại:</p>
+    <div class="math-block">Z(n) = ⌊n/5⌋ + ⌊n/25⌋ + ⌊n/125⌋ + …</div>
+    <p>Đây là công thức Legendre (Legendre's formula) cho số mũ của một số nguyên tố p trong n!. Ví dụ 25! có ⌊25/5⌋ + ⌊25/25⌋ = 5 + 1 = 6 chữ số 0 tận cùng: số 25 = 5 · 5 đóng góp hai thừa số 5 và được đếm ở cả hai số hạng. Vòng lặp chỉ chạy khoảng log<sub>5</sub> n lần: với n = 10<sup>18</sup> là 26 lần thay vì 10<sup>18</sup> lần. Mẹo cài đặt: thay vì tính 5, 25, 125, … (dễ tràn số), cứ chia n cho 5 liên tiếp, vì ⌊⌊n/5⌋/5⌋ = ⌊n/25⌋.</p>
+
+    <h3>Ô trên xoắn ốc số</h3>
+    <p>Trong bài CSES Number Spiral, các số được xếp thành từng “tầng” hình chữ L. Tầng k gồm các ô có max(hàng, cột) = k, tức là cạnh dưới và cạnh phải của hình vuông k × k. Tầng k có k² − (k − 1)² = 2k − 1 ô, chứa đúng các số từ (k − 1)² + 1 đến k² (vì hình vuông (k − 1) × (k − 1) bên trong đã dùng hết các số từ 1 đến (k − 1)²). Chiều đi của tầng đổi luân phiên:</p>
+    <ul>
+      <li><strong>k chẵn:</strong> bắt đầu ở hàng 1 cột k, đi <em>xuống</em> theo cột k tới ô (k, k), rồi đi <em>sang trái</em> theo hàng k. Vậy ô (y, k) có giá trị (k − 1)² + y; ô (k, x) có giá trị k² − x + 1.</li>
+      <li><strong>k lẻ:</strong> bắt đầu ở hàng k cột 1, đi <em>sang phải</em> theo hàng k tới (k, k), rồi đi <em>lên</em> theo cột k. Vậy ô (k, x) có giá trị (k − 1)² + x; ô (y, k) có giá trị k² − y + 1.</li>
+    </ul>
+    <p>Kiểm tra: ô hàng 4 cột 2 thuộc tầng 4 (chẵn), nằm trên hàng 4, giá trị 16 − 2 + 1 = 15. Ô góc (k, k) theo cả hai công thức đều cho k² − k + 1, khớp nhau. Mọi truy vấn chỉ tốn vài phép tính, dù tọa độ tới 10<sup>9</sup>.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Mọi công thức trên đều thay một vòng lặp chạy n lần bằng một số phép tính cố định (hoặc khoảng log n lần). Khi n = 10<sup>18</sup>, đó là khác biệt giữa “chạy hàng chục năm” và “chạy trong một phần triệu giây”.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi viết vòng lặp, hãy tự hỏi: “Có công thức không? Biến này có suy ra được từ các biến khác không?”. Thói quen nhỏ này sẽ theo em suốt các chuyên đề sau. Nhưng nếu chưa nghĩ ra, đừng ngồi im: viết trâu, nộp, rồi nghĩ tiếp.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+
+    <h3>Ghép cặp Gauss</h3>
+    <p>Hình dưới viết dãy 1..10 xuôi ở hàng trên và ngược ở hàng giữa. Em hãy cộng từng cột: lúc nào cũng được 11.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 520 190" width="520" role="img" aria-label="Ghép cặp Gauss: dãy 1 đến 10 viết xuôi và ngược, mỗi cột có tổng 11">
+        <text class="label-sm" x="8" y="39">xuôi</text><text class="label-sm" x="8" y="99">ngược</text><text class="label-sm" x="8" y="159">tổng</text>
+        <line class="edge is-dim" x1="87" y1="52" x2="87" y2="80"/><line class="edge is-dim" x1="87" y1="112" x2="87" y2="140"/>
+        <rect class="node" x="70" y="18" width="34" height="34" rx="6"/><text x="87" y="40" text-anchor="middle">1</text>
+        <rect class="node is-cmp" x="70" y="78" width="34" height="34" rx="6"/><text x="87" y="100" text-anchor="middle">10</text>
+        <rect class="node is-ok" x="70" y="138" width="34" height="34" rx="6"/><text x="87" y="160" text-anchor="middle">11</text>
+        <line class="edge is-dim" x1="129" y1="52" x2="129" y2="80"/><line class="edge is-dim" x1="129" y1="112" x2="129" y2="140"/>
+        <rect class="node" x="112" y="18" width="34" height="34" rx="6"/><text x="129" y="40" text-anchor="middle">2</text>
+        <rect class="node is-cmp" x="112" y="78" width="34" height="34" rx="6"/><text x="129" y="100" text-anchor="middle">9</text>
+        <rect class="node is-ok" x="112" y="138" width="34" height="34" rx="6"/><text x="129" y="160" text-anchor="middle">11</text>
+        <line class="edge is-dim" x1="171" y1="52" x2="171" y2="80"/><line class="edge is-dim" x1="171" y1="112" x2="171" y2="140"/>
+        <rect class="node" x="154" y="18" width="34" height="34" rx="6"/><text x="171" y="40" text-anchor="middle">3</text>
+        <rect class="node is-cmp" x="154" y="78" width="34" height="34" rx="6"/><text x="171" y="100" text-anchor="middle">8</text>
+        <rect class="node is-ok" x="154" y="138" width="34" height="34" rx="6"/><text x="171" y="160" text-anchor="middle">11</text>
+        <line class="edge is-dim" x1="213" y1="52" x2="213" y2="80"/><line class="edge is-dim" x1="213" y1="112" x2="213" y2="140"/>
+        <rect class="node" x="196" y="18" width="34" height="34" rx="6"/><text x="213" y="40" text-anchor="middle">4</text>
+        <rect class="node is-cmp" x="196" y="78" width="34" height="34" rx="6"/><text x="213" y="100" text-anchor="middle">7</text>
+        <rect class="node is-ok" x="196" y="138" width="34" height="34" rx="6"/><text x="213" y="160" text-anchor="middle">11</text>
+        <line class="edge is-dim" x1="255" y1="52" x2="255" y2="80"/><line class="edge is-dim" x1="255" y1="112" x2="255" y2="140"/>
+        <rect class="node" x="238" y="18" width="34" height="34" rx="6"/><text x="255" y="40" text-anchor="middle">5</text>
+        <rect class="node is-cmp" x="238" y="78" width="34" height="34" rx="6"/><text x="255" y="100" text-anchor="middle">6</text>
+        <rect class="node is-ok" x="238" y="138" width="34" height="34" rx="6"/><text x="255" y="160" text-anchor="middle">11</text>
+        <line class="edge is-dim" x1="297" y1="52" x2="297" y2="80"/><line class="edge is-dim" x1="297" y1="112" x2="297" y2="140"/>
+        <rect class="node" x="280" y="18" width="34" height="34" rx="6"/><text x="297" y="40" text-anchor="middle">6</text>
+        <rect class="node is-cmp" x="280" y="78" width="34" height="34" rx="6"/><text x="297" y="100" text-anchor="middle">5</text>
+        <rect class="node is-ok" x="280" y="138" width="34" height="34" rx="6"/><text x="297" y="160" text-anchor="middle">11</text>
+        <line class="edge is-dim" x1="339" y1="52" x2="339" y2="80"/><line class="edge is-dim" x1="339" y1="112" x2="339" y2="140"/>
+        <rect class="node" x="322" y="18" width="34" height="34" rx="6"/><text x="339" y="40" text-anchor="middle">7</text>
+        <rect class="node is-cmp" x="322" y="78" width="34" height="34" rx="6"/><text x="339" y="100" text-anchor="middle">4</text>
+        <rect class="node is-ok" x="322" y="138" width="34" height="34" rx="6"/><text x="339" y="160" text-anchor="middle">11</text>
+        <line class="edge is-dim" x1="381" y1="52" x2="381" y2="80"/><line class="edge is-dim" x1="381" y1="112" x2="381" y2="140"/>
+        <rect class="node" x="364" y="18" width="34" height="34" rx="6"/><text x="381" y="40" text-anchor="middle">8</text>
+        <rect class="node is-cmp" x="364" y="78" width="34" height="34" rx="6"/><text x="381" y="100" text-anchor="middle">3</text>
+        <rect class="node is-ok" x="364" y="138" width="34" height="34" rx="6"/><text x="381" y="160" text-anchor="middle">11</text>
+        <line class="edge is-dim" x1="423" y1="52" x2="423" y2="80"/><line class="edge is-dim" x1="423" y1="112" x2="423" y2="140"/>
+        <rect class="node" x="406" y="18" width="34" height="34" rx="6"/><text x="423" y="40" text-anchor="middle">9</text>
+        <rect class="node is-cmp" x="406" y="78" width="34" height="34" rx="6"/><text x="423" y="100" text-anchor="middle">2</text>
+        <rect class="node is-ok" x="406" y="138" width="34" height="34" rx="6"/><text x="423" y="160" text-anchor="middle">11</text>
+        <line class="edge is-dim" x1="465" y1="52" x2="465" y2="80"/><line class="edge is-dim" x1="465" y1="112" x2="465" y2="140"/>
+        <rect class="node" x="448" y="18" width="34" height="34" rx="6"/><text x="465" y="40" text-anchor="middle">10</text>
+        <rect class="node is-cmp" x="448" y="78" width="34" height="34" rx="6"/><text x="465" y="100" text-anchor="middle">1</text>
+        <rect class="node is-ok" x="448" y="138" width="34" height="34" rx="6"/><text x="465" y="160" text-anchor="middle">11</text>
+        <text class="label-pen" x="252" y="188" text-anchor="middle">10 cột × 11 = 110 = 2 lần tổng, nên tổng = 55</text>
+      </svg>
+      <figcaption>Hình 1. Viết dãy 1..10 hai lần (xuôi và ngược). Mỗi cột cộng lại được 11, có 10 cột nên hai dãy có tổng 110; một dãy có tổng 55 = 10 · 11 / 2.</figcaption>
+    </figure>
+    <h3>Xoắn ốc số chạy tay</h3>
+    <p>Bảng xoắn ốc của CSES Number Spiral được dựng theo từng tầng hình chữ L. Bấm qua từng khung để thấy các số được điền thế nào, sau đó tra hai ô bằng công thức. Ô màu nổi là tầng đang điền.</p>
+    <div class="stepper" data-title="Xoắn ốc số 5 × 5: dựng từng tầng rồi tra bằng công thức">
+      <div class="frame" data-caption="&lt;b&gt;Tầng 1.&lt;/b&gt; Chỉ có ô (1, 1) = 1. Tầng k gồm các ô có max(hàng, cột) = k.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g is-active">1</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Tầng 2 (chẵn).&lt;/b&gt; Có 2·2 − 1 = 3 ô, chứa 2, 3, 4 = các số từ 1² + 1 đến 2². Đi xuống theo cột 2, rồi sang trái theo hàng 2.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g">1</span><span class="g is-active">2</span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g is-active">4</span><span class="g is-active">3</span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Tầng 3 (lẻ).&lt;/b&gt; 5 ô chứa 5..9 (từ 2² + 1 đến 3²). Chiều đổi lại: đi sang phải theo hàng 3, rồi lên theo cột 3.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g">1</span><span class="g">2</span><span class="g is-active">9</span><span class="g"></span><span class="g"></span>
+          <span class="g">4</span><span class="g">3</span><span class="g is-active">8</span><span class="g"></span><span class="g"></span>
+          <span class="g is-active">5</span><span class="g is-active">6</span><span class="g is-active">7</span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Tầng 4 (chẵn).&lt;/b&gt; 7 ô chứa 10..16. Xuống cột 4 (10, 11, 12, 13), rồi sang trái hàng 4 (14, 15, 16).">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g">1</span><span class="g">2</span><span class="g">9</span><span class="g is-active">10</span><span class="g"></span>
+          <span class="g">4</span><span class="g">3</span><span class="g">8</span><span class="g is-active">11</span><span class="g"></span>
+          <span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g is-active">12</span><span class="g"></span>
+          <span class="g is-active">16</span><span class="g is-active">15</span><span class="g is-active">14</span><span class="g is-active">13</span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Tầng 5 (lẻ).&lt;/b&gt; 9 ô chứa 17..25. Sang phải hàng 5 (17..21), rồi lên cột 5 (22..25). Bảng đầy đủ giống hệt đề CSES.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g">1</span><span class="g">2</span><span class="g">9</span><span class="g">10</span><span class="g is-active">25</span>
+          <span class="g">4</span><span class="g">3</span><span class="g">8</span><span class="g">11</span><span class="g is-active">24</span>
+          <span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g">12</span><span class="g is-active">23</span>
+          <span class="g">16</span><span class="g">15</span><span class="g">14</span><span class="g">13</span><span class="g is-active">22</span>
+          <span class="g is-active">17</span><span class="g is-active">18</span><span class="g is-active">19</span><span class="g is-active">20</span><span class="g is-active">21</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Truy vấn (y, x) = (4, 2).&lt;/b&gt; k = max(4, 2) = 4, chẵn. Ô nằm trên hàng k (vì y = k) nên giá trị = k² − x + 1 = 16 − 2 + 1 = &lt;b&gt;15&lt;/b&gt;. Không cần tô bảng.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g">1</span><span class="g">2</span><span class="g">9</span><span class="g is-path">10</span><span class="g">25</span>
+          <span class="g">4</span><span class="g">3</span><span class="g">8</span><span class="g is-path">11</span><span class="g">24</span>
+          <span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g is-path">12</span><span class="g">23</span>
+          <span class="g is-path">16</span><span class="g is-sel is-active">15</span><span class="g is-path">14</span><span class="g is-path">13</span><span class="g">22</span>
+          <span class="g">17</span><span class="g">18</span><span class="g">19</span><span class="g">20</span><span class="g">21</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Truy vấn (2, 5).&lt;/b&gt; k = 5, lẻ. Ô nằm trên cột k (y ≠ k) nên giá trị = k² − y + 1 = 25 − 2 + 1 = &lt;b&gt;24&lt;/b&gt;. Với tọa độ 10⁹ em vẫn chỉ làm vài phép tính.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g">1</span><span class="g">2</span><span class="g">9</span><span class="g">10</span><span class="g is-path">25</span>
+          <span class="g">4</span><span class="g">3</span><span class="g">8</span><span class="g">11</span><span class="g is-sel is-active">24</span>
+          <span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g">12</span><span class="g is-path">23</span>
+          <span class="g">16</span><span class="g">15</span><span class="g">14</span><span class="g">13</span><span class="g is-path">22</span>
+          <span class="g is-path">17</span><span class="g is-path">18</span><span class="g is-path">19</span><span class="g is-path">20</span><span class="g is-path">21</span>
+        </div>
+      </div>
+    </div>
+    <h3>Đếm thừa số 5 trong 100!</h3>
+    <p>100! là một số có 158 chữ số, không kiểu số nguyên nào chứa nổi. Nhưng em không cần tính nó: chỉ cần đếm thừa số 5. Ô màu xanh là bội của 5, ô màu nổi là bội của 25 (góp thêm một thừa số).</p>
+    <div class="stepper" data-title="Đếm số chữ số 0 tận cùng của 100!">
+      <div class="frame" data-caption="&lt;b&gt;Đặt vấn đề.&lt;/b&gt; Mỗi chữ số 0 tận cùng là một thừa số 10 = 2 · 5. Thừa số 2 dư dả, nên chỉ cần đếm thừa số 5. Chỉ các bội của 5 mới chứa thừa số 5: đó là 20 số 5, 10, …, 100.">
+        <div class="arr"><span class="cell" data-i="1">5</span><span class="cell" data-i="2">10</span><span class="cell" data-i="3">15</span><span class="cell" data-i="4">20</span><span class="cell" data-i="5">25</span><span class="cell" data-i="6">30</span><span class="cell" data-i="7">35</span><span class="cell" data-i="8">40</span><span class="cell" data-i="9">45</span><span class="cell" data-i="10">50</span><span class="cell" data-i="11">55</span><span class="cell" data-i="12">60</span><span class="cell" data-i="13">65</span><span class="cell" data-i="14">70</span><span class="cell" data-i="15">75</span><span class="cell" data-i="16">80</span><span class="cell" data-i="17">85</span><span class="cell" data-i="18">90</span><span class="cell" data-i="19">95</span><span class="cell" data-i="20">100</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt 1: ⌊100/5⌋ = 20.&lt;/b&gt; Mỗi bội của 5 góp ít nhất một thừa số 5. Tạm có 20.">
+        <div class="arr"><span class="cell is-ok" data-i="1">5</span><span class="cell is-ok" data-i="2">10</span><span class="cell is-ok" data-i="3">15</span><span class="cell is-ok" data-i="4">20</span><span class="cell is-ok" data-i="5">25</span><span class="cell is-ok" data-i="6">30</span><span class="cell is-ok" data-i="7">35</span><span class="cell is-ok" data-i="8">40</span><span class="cell is-ok" data-i="9">45</span><span class="cell is-ok" data-i="10">50</span><span class="cell is-ok" data-i="11">55</span><span class="cell is-ok" data-i="12">60</span><span class="cell is-ok" data-i="13">65</span><span class="cell is-ok" data-i="14">70</span><span class="cell is-ok" data-i="15">75</span><span class="cell is-ok" data-i="16">80</span><span class="cell is-ok" data-i="17">85</span><span class="cell is-ok" data-i="18">90</span><span class="cell is-ok" data-i="19">95</span><span class="cell is-ok" data-i="20">100</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt 2: ⌊100/25⌋ = 4.&lt;/b&gt; Các số 25, 50, 75, 100 chia hết cho 25 = 5², mỗi số góp &lt;i&gt;thêm&lt;/i&gt; một thừa số 5. Cộng dồn: 20 + 4 = 24.">
+        <div class="arr"><span class="cell is-ok" data-i="1">5</span><span class="cell is-ok" data-i="2">10</span><span class="cell is-ok" data-i="3">15</span><span class="cell is-ok" data-i="4">20</span><span class="cell is-active" data-i="5" data-ptr="+1">25</span><span class="cell is-ok" data-i="6">30</span><span class="cell is-ok" data-i="7">35</span><span class="cell is-ok" data-i="8">40</span><span class="cell is-ok" data-i="9">45</span><span class="cell is-active" data-i="10" data-ptr="+1">50</span><span class="cell is-ok" data-i="11">55</span><span class="cell is-ok" data-i="12">60</span><span class="cell is-ok" data-i="13">65</span><span class="cell is-ok" data-i="14">70</span><span class="cell is-active" data-i="15" data-ptr="+1">75</span><span class="cell is-ok" data-i="16">80</span><span class="cell is-ok" data-i="17">85</span><span class="cell is-ok" data-i="18">90</span><span class="cell is-ok" data-i="19">95</span><span class="cell is-active" data-i="20" data-ptr="+1">100</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt 3: ⌊100/125⌋ = 0.&lt;/b&gt; Không có bội nào của 125 trong 1..100, dừng. Vậy 100! có &lt;b&gt;24&lt;/b&gt; chữ số 0 tận cùng.">
+        <div class="arr"><span class="cell is-ok" data-i="1">5</span><span class="cell is-ok" data-i="2">10</span><span class="cell is-ok" data-i="3">15</span><span class="cell is-ok" data-i="4">20</span><span class="cell is-active" data-i="5" data-ptr="+1">25</span><span class="cell is-ok" data-i="6">30</span><span class="cell is-ok" data-i="7">35</span><span class="cell is-ok" data-i="8">40</span><span class="cell is-ok" data-i="9">45</span><span class="cell is-active" data-i="10" data-ptr="+1">50</span><span class="cell is-ok" data-i="11">55</span><span class="cell is-ok" data-i="12">60</span><span class="cell is-ok" data-i="13">65</span><span class="cell is-ok" data-i="14">70</span><span class="cell is-active" data-i="15" data-ptr="+1">75</span><span class="cell is-ok" data-i="16">80</span><span class="cell is-ok" data-i="17">85</span><span class="cell is-ok" data-i="18">90</span><span class="cell is-ok" data-i="19">95</span><span class="cell is-active" data-i="20" data-ptr="+1">100</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cách cài đặt: chia liên tiếp cho 5.&lt;/b&gt; ⌊100/5⌋ = 20, ⌊20/5⌋ = 4, ⌊4/5⌋ = 0. Cộng các thương: 24. Để so sánh, số thừa số 2 trong 100! là 50 + 25 + 12 + 6 + 3 + 1 = 97, nhiều hơn hẳn.">
+        <table class="trace">
+          <thead><tr><th>Lượt</th><th>n trước</th><th>n ← n / 5</th><th>dem</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>100</td><td>20</td><td>20</td></tr>
+            <tr><td>2</td><td>20</td><td>4</td><td>24</td></tr>
+            <tr class="hl"><td>3</td><td>4</td><td>0</td><td>24 (dừng)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <h3>Mô phỏng có chu kỳ</h3>
+    <p>Dãy x<sub>0</sub> = 3, x<sub>i+1</sub> = (x<sub>i</sub>² + 1) mod 10. Tính tay: 3 → 0 → 1 → 2 → 5 → 6 → 7 → 0 → … Chỉ có 10 giá trị có thể, nên dãy buộc phải lặp. Hình có dạng chữ ρ (đọc là “rô”): một đoạn đuôi rồi vào vòng tròn.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 470 220" width="470" role="img" aria-label="Dãy x tiếp theo bằng x bình phương cộng 1 mod 10, bắt đầu từ 3: đuôi 3 rồi vào chu kỳ 0, 1, 2, 5, 6, 7 dài 6">
+        <defs><marker id="bf-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs>
+        <line class="edge is-active" x1="129.0" y1="110.0" x2="235.0" y2="110.0" marker-end="url(#bf-arrow)"/>
+        <line class="edge is-ok" x1="267.5" y1="93.5" x2="282.5" y2="67.6" marker-end="url(#bf-arrow)"/>
+        <line class="edge is-ok" x1="313.0" y1="47.6" x2="343.0" y2="47.6" marker-end="url(#bf-arrow)"/>
+        <line class="edge is-ok" x1="375.5" y1="64.1" x2="390.5" y2="90.1" marker-end="url(#bf-arrow)"/>
+        <line class="edge is-ok" x1="392.5" y1="126.5" x2="377.5" y2="152.4" marker-end="url(#bf-arrow)"/>
+        <line class="edge is-ok" x1="347.0" y1="172.4" x2="317.0" y2="172.4" marker-end="url(#bf-arrow)"/>
+        <line class="edge is-ok" x1="284.5" y1="155.9" x2="269.5" y2="129.9" marker-end="url(#bf-arrow)"/>
+        <circle class="node is-ok" cx="258.0" cy="110.0" r="18"/><text x="258.0" y="115.0" text-anchor="middle">0</text>
+        <text class="label-sm" x="258.0" y="144.0" text-anchor="middle">bước 1</text>
+        <circle class="node is-ok" cx="294.0" cy="47.6" r="18"/><text x="294.0" y="52.6" text-anchor="middle">1</text>
+        <text class="label-sm" x="294.0" y="23.6" text-anchor="middle">bước 2</text>
+        <circle class="node is-ok" cx="366.0" cy="47.6" r="18"/><text x="366.0" y="52.6" text-anchor="middle">2</text>
+        <text class="label-sm" x="366.0" y="23.6" text-anchor="middle">bước 3</text>
+        <circle class="node is-ok" cx="402.0" cy="110.0" r="18"/><text x="402.0" y="115.0" text-anchor="middle">5</text>
+        <text class="label-sm" x="402.0" y="86.0" text-anchor="middle">bước 4</text>
+        <circle class="node is-ok" cx="366.0" cy="172.4" r="18"/><text x="366.0" y="177.4" text-anchor="middle">6</text>
+        <text class="label-sm" x="366.0" y="206.4" text-anchor="middle">bước 5</text>
+        <circle class="node is-ok" cx="294.0" cy="172.4" r="18"/><text x="294.0" y="177.4" text-anchor="middle">7</text>
+        <text class="label-sm" x="294.0" y="206.4" text-anchor="middle">bước 6</text>
+        <circle class="node is-active" cx="110.0" cy="110.0" r="18"/><text x="110.0" y="115.0" text-anchor="middle">3</text>
+        <text class="label-sm" x="110.0" y="86.0" text-anchor="middle">bước 0</text>
+        <text class="label-pen" x="110" y="160" text-anchor="middle">đuôi (start = 1)</text>
+        <text class="label-pen" x="330" y="114" text-anchor="middle">chu kỳ len = 6</text>
+      </svg>
+      <figcaption>Hình 2. Dãy x<sub>0</sub> = 3, x<sub>i+1</sub> = (x<sub>i</sub>² + 1) mod 10. Bước 7 cho lại số 0 đã gặp ở bước 1, nên chu kỳ bắt đầu ở start = 1, dài len = 7 − 1 = 6. Bước K = 10<sup>18</sup> ứng với bước 1 + (10<sup>18</sup> − 1) mod 6 = 1 + 3 = 4, giá trị 5.</figcaption>
+    </figure>
+    <h3>Tự tay thử: trâu và công thức</h3>
+    <p>Chọn một bài, nhập tham số và bấm <em>So sánh</em>. Widget tính đáp án bằng công thức, đếm số phép tính mà lời giải trâu cần, và nếu con số đó đủ nhỏ thì chạy thật lời giải trâu ngay trong trình duyệt để em so kết quả và thời gian. Hãy thử tăng n lên 10<sup>9</sup>, 10<sup>18</sup> xem chuyện gì xảy ra.</p>
+    <div class="playground" id="viz-brute-force-formula">
+      <div class="viz-head"><p class="viz-title">Trâu hay công thức?</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="bff-kind">Bài
+            <select id="bff-kind">
+              <option value="sum">Tổng 1 + 2 + … + n</option>
+              <option value="div">Đếm bội của k trong [a, b]</option>
+              <option value="zero">Số chữ số 0 tận cùng của n!</option>
+              <option value="spiral">Ô (y, x) trên xoắn ốc số</option>
+            </select>
+          </label>
+          <label for="bff-input"><span class="bff-hint">n</span> <input type="text" id="bff-input" value="1000000" inputmode="numeric"></label>
+          <button type="button" class="bff-run">So sánh</button>
+        </div>
+        <div class="out" aria-live="polite">Chọn bài, nhập tham số rồi bấm “So sánh”.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+
+    <h3>Xoắn ốc số (CSES Number Spiral)</h3>
+    <p>Mỗi test cho hàng y và cột x (tới 10<sup>9</sup>), in giá trị trong ô đó. Vì k² có thể tới 10<sup>18</sup> nên mọi biến dùng <code>long long</code>. Code dưới đây đã được đối chiếu với lời giải trâu tô bảng thật trên toàn bộ bảng 60 × 60.</p>
+    <figure class="code">
+      <figcaption><span class="fn">spiral.cpp</span> Giá trị ô (y, x) của xoắn ốc số trong O(1)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Giá trị tại hàng y, cột x của xoắn ốc số (CSES 1071 - Number Spiral)
+long long spiral(long long y, long long x) {
+    long long k = max(y, x);          // ô (y, x) nằm ở "tầng" thứ k
+    long long lo = (k - 1) * (k - 1); // tầng k chứa các số lo+1 .. k*k
+    if (k % 2 == 0) {                 // tầng chẵn: đi xuống cột k, rồi sang trái hàng k
+        if (x == k) return lo + y;
+        return k * k - x + 1;
+    } else {                          // tầng lẻ: đi sang phải hàng k, rồi lên cột k
+        if (y == k) return lo + x;
+        return k * k - y + 1;
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int t;
+    cin &gt;&gt; t;                         // số truy vấn
+    while (t--) {
+        long long y, x;
+        cin &gt;&gt; y &gt;&gt; x;                // y, x có thể tới 10^9 nên dùng long long
+        cout &lt;&lt; spiral(y, x) &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+2 3
+1 1
+4 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">8
+1
+15</code></pre></div>
+    </div>
+
+    <h3>Số chữ số 0 tận cùng của n!</h3>
+    <figure class="code">
+      <figcaption><span class="fn">zeros.cpp</span> Công thức Legendre, n tới 10<sup>18</sup></figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Số chữ số 0 tận cùng của n! = số thừa số 5 trong n!
+// = n/5 + n/25 + n/125 + ...   (công thức Legendre)
+long long trailingZeros(long long n) {
+    long long cnt = 0;
+    while (n &gt; 0) {
+        n /= 5;          // lần 1: số bội của 5; lần 2: số bội của 25; ...
+        cnt += n;
+    }
+    return cnt;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int t;
+    cin &gt;&gt; t;
+    while (t--) {
+        long long n;
+        cin &gt;&gt; n;
+        cout &lt;&lt; trailingZeros(n) &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+25
+100
+1000000000000000000</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">6
+24
+249999999999999995</code></pre></div>
+    </div>
+
+    <h3>Bộ đối chiếu chéo (stress test) hoàn chỉnh</h3>
+    <p>Ta kiểm tra lời giải một vòng lặp của bài mở đầu (đếm bộ ba có tổng S). Em cần bốn file trong cùng một thư mục: lời giải trâu, lời giải nhanh, bộ sinh test và script chạy.</p>
+    <figure class="code">
+      <figcaption><span class="fn">brute.cpp</span> Lời giải trâu ba vòng lặp, chắc chắn đúng</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// TRÂU: đếm bộ (x, y, z), 1 &lt;= x, y, z &lt;= n, x + y + z = S bằng 3 vòng lặp
+int main() {
+    long long n, S;
+    cin &gt;&gt; n &gt;&gt; S;
+    long long cnt = 0;
+    for (long long x = 1; x &lt;= n; x++)
+        for (long long y = 1; y &lt;= n; y++)
+            for (long long z = 1; z &lt;= n; z++)
+                if (x + y + z == S) cnt++;
+    cout &lt;&lt; cnt &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <figure class="code">
+      <figcaption><span class="fn">fast.cpp</span> Lời giải nhanh O(n): cố định x, đếm y theo đoạn</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// NHANH: cố định x; khi đó y + z = s = S - x.
+// z = s - y phải nằm trong [1, n]  =&gt;  s - n &lt;= y &lt;= s - 1.
+// Kết hợp 1 &lt;= y &lt;= n: y chạy trong [max(1, s - n), min(n, s - 1)].
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    long long n, S;
+    cin &gt;&gt; n &gt;&gt; S;
+    long long cnt = 0;
+    for (long long x = 1; x &lt;= n; x++) {
+        long long s = S - x;
+        long long lo = max(1LL, s - n);
+        long long hi = min(n, s - 1);
+        if (lo &lt;= hi) cnt += hi - lo + 1;   // số giá trị y hợp lệ
+    }
+    cout &lt;&lt; cnt &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4 6</code></pre></div>
+      <div><div class="io-k">Output (cả hai chương trình)</div><pre><code class="language-text">10</code></pre></div>
+    </div>
+    <figure class="code">
+      <figcaption><span class="fn">gen.cpp</span> Sinh một test nhỏ ngẫu nhiên theo hạt giống</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Sinh test ngẫu nhiên NHỎ; hạt giống (seed) lấy từ tham số dòng lệnh
+int main(int argc, char* argv[]) {
+    int seed = (argc &gt; 1) ? atoi(argv[1]) : 0;
+    mt19937 rng(seed);
+    long long n = rng() % 10 + 1;          // 1..10
+    long long S = rng() % (3 * n + 3);     // 0..3n+2, có cả trường hợp không có bộ nào
+    cout &lt;&lt; n &lt;&lt; ' ' &lt;&lt; S &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <figure class="code">
+      <figcaption><span class="fn">stress.sh</span> Chạy 1 000 test, dừng ở test đầu tiên bị lệch</figcaption>
+<pre><code class="language-bash">#!/bin/bash
+# Biên dịch 3 chương trình một lần
+g++ -std=c++17 -O2 -o brute brute.cpp
+g++ -std=c++17 -O2 -o fast  fast.cpp
+g++ -std=c++17 -O2 -o gen   gen.cpp
+for ((i = 1; i &lt;= 1000; i++)); do
+    ./gen $i &gt; in.txt
+    ./brute &lt; in.txt &gt; out_brute.txt
+    ./fast  &lt; in.txt &gt; out_fast.txt
+    if ! cmp -s out_brute.txt out_fast.txt; then
+        echo "Sai ở test $i:"
+        cat in.txt
+        echo "Trâu: $(cat out_brute.txt)  Nhanh: $(cat out_fast.txt)"
+        exit 1
+    fi
+done
+echo "Qua hết 1000 test"</code></pre>
+    </figure>
+    <p>Chạy bằng lệnh <code>bash stress.sh</code>. Nếu hai lời giải khớp nhau, màn hình in <code>Qua hết 1000 test</code>. Để thấy script bắt lỗi, thầy cô cố tình sửa dòng <code>hi = min(n, s - 1)</code> thành <code>min(n, s)</code> (quên điều kiện z ≥ 1). Script dừng ngay ở test thứ 3:</p>
+    <div class="io">
+      <div><div class="io-k">Màn hình</div><pre><code class="language-text">Sai ở test 3:
+7 8
+Trâu: 21  Nhanh: 28</code></pre></div>
+      <div><div class="io-k">Đọc kết quả</div><pre><code class="language-text">Test nhỏ n = 7, S = 8.
+Đúng là 21 bộ (chia 8 thành
+3 phần dương: C(7,2) = 21).
+Bản lỗi đếm thêm 7 bộ có z = 0.</code></pre></div>
+    </div>
+    <div class="callout tip"><p class="callout-title">Vì sao test phải nhỏ?</p><p>Lời giải trâu chậm, nên test phải nhỏ để nó chạy kịp. Hơn nữa, khi bị lệch, một test n = 7 rất dễ chạy tay để tìm lỗi; một test n = 10<sup>5</sup> thì không. Trên Windows em có thể viết script tương tự bằng file <code>.bat</code> với lệnh <code>fc</code> thay cho <code>cmp</code>.</p></div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Bài toán</th><th>Trâu / mô phỏng thẳng</th><th>Sau khi dùng toán</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Đếm bộ ba x + y + z = S</td><td><span class="bigo">O(n³)</span></td><td><span class="bigo">O(n²)</span> rồi <span class="bigo">O(n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Tổng 1..n, tổng cấp số cộng</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(1)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Đếm bội của k trong [a, b]</td><td><span class="bigo">O(b − a)</span></td><td><span class="bigo">O(1)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Số 0 tận cùng của n!</td><td><span class="bigo">O(n log n)</span> (đếm thừa số 5 của từng số)</td><td><span class="bigo">O(log n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Ô (y, x) trên xoắn ốc</td><td><span class="bigo">O(k²)</span>, k = max(y, x)</td><td><span class="bigo">O(1)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Mô phỏng K bước, m trạng thái</td><td><span class="bigo">O(K)</span></td><td><span class="bigo">O(min(K, m))</span></td><td><span class="bigo">O(m)</span></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Ví dụ số phép tính.</strong> Đếm bộ ba với n = 2 000: trâu 8 · 10<sup>9</sup>, hai vòng 4 · 10<sup>6</sup>, một vòng 2 · 10<sup>3</sup>. Số 0 tận cùng của n! với n = 10<sup>18</sup>: vòng lặp chia cho 5 chạy 26 lần. Xoắn ốc với y = x = 10<sup>9</sup>: tô bảng cần 10<sup>18</sup> ô (và cũng không đủ bộ nhớ), công thức cần khoảng 5 phép tính. Mô phỏng dãy mod m = 10<sup>6</sup> với K = 10<sup>18</sup>: nhờ chu kỳ chỉ cần tối đa 10<sup>6</sup> bước và hai mảng 10<sup>6</sup> phần tử (khoảng 16 MB với <code>long long</code>).</p>
+    <p>Stress test không làm bài chạy nhanh hơn, nhưng nó tốn rất ít thời gian của em: 1 000 test nhỏ chạy xong trong vài giây, mà có thể cứu cả một bài khỏi điểm 0.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Tổng các bội của k trong [a, b]</h3>
+    <p>Các bội của k trong đoạn tạo thành một cấp số cộng công sai k. Số hạng đầu u = ⌈a/k⌉ · k, số hạng cuối v = ⌊b/k⌋ · k, số số hạng c = ⌊b/k⌋ − ⌊(a − 1)/k⌋. Nếu c &gt; 0 thì tổng là (u + v) · c / 2. Ví dụ bội của 7 trong [10, 50]: u = 14, v = 49, c = 6, tổng = 63 · 6 / 2 = 189. Bài LQDOJ TONGCHIAHET3 ở mục bài tập là trường hợp a = 1, k = 3.</p>
+
+    <h3>Vài công thức tổng nên nhớ</h3>
+    <ul>
+      <li>1² + 2² + … + n² = n(n + 1)(2n + 1)/6. Ví dụ n = 10: 10 · 11 · 21 / 6 = 385.</li>
+      <li>1³ + 2³ + … + n³ = (n(n + 1)/2)². Tổng lập phương bằng bình phương của tổng!</li>
+      <li>1 + 3 + 5 + … + (2n − 1) = n². Đây là tổng n số lẻ đầu tiên, cũng chính là lý do mỗi tầng xoắn ốc có 2k − 1 ô.</li>
+      <li>Số cặp (i, j) với 1 ≤ i &lt; j ≤ n là n(n − 1)/2. Với n = 10<sup>5</sup> là gần 5 · 10<sup>9</sup>, phải dùng <code>long long</code>.</li>
+    </ul>
+
+    <h3>Đếm số chia hết cho a hoặc b</h3>
+    <p>Số chia hết cho a hoặc b trong [1, n] = ⌊n/a⌋ + ⌊n/b⌋ − ⌊n/BCNN(a, b)⌋, vì các số chia hết cho cả hai bị đếm hai lần. Ví dụ n = 100, a = 4, b = 6: BCNN = 12, đáp án 25 + 16 − 8 = 33. Đây là <em>nguyên lý bù trừ</em>, học kỹ ở bài <a href="counting.html">Quy tắc đếm &amp; nguyên lý bù trừ</a>; cách tính BCNN ở bài <a href="gcd-lcm.html">ƯCLN, BCNN</a>. Bài VNOJ PBCDIV trong mục bài tập dùng đúng ý này.</p>
+
+    <h3>Hai quân mã (CSES Two Knights)</h3>
+    <p>Đếm số cách đặt hai quân mã không ăn nhau trên bàn k × k. Đếm trâu mọi cặp ô mất cỡ k<sup>4</sup>. Công thức: tổng số cách đặt hai quân là C(k², 2) = k²(k² − 1)/2. Hai quân mã ăn nhau khi và chỉ khi chúng nằm ở hai góc đối của một hình chữ nhật 2 × 3 hoặc 3 × 2; mỗi hình như vậy có đúng 2 cặp như thế, và có (k − 1)(k − 2) hình mỗi loại. Vậy đáp án = k²(k² − 1)/2 − 4(k − 1)(k − 2). Thử k = 3: 36 − 8 = 28, khớp với đề.</p>
+
+    <h3>Mô phỏng có chu kỳ</h3>
+    <p>Đây là chương trình cho ví dụ ở hình 2. Mảng <code>first</code> nhớ bước đầu tiên gặp mỗi giá trị; mảng <code>seq</code> nhớ cả dãy để tra lại.</p>
+    <figure class="code">
+      <figcaption><span class="fn">cycle.cpp</span> Tìm x<sub>K</sub> với K tới 10<sup>18</sup> nhờ chu kỳ</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Dãy x0 = a, x(i+1) = (x(i)^2 + c) mod m. Tìm x(K) với K tới 10^18.
+// Chỉ có m giá trị khác nhau, nên sau tối đa m bước dãy sẽ lặp lại.
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    long long a, c, m, K;
+    cin &gt;&gt; a &gt;&gt; c &gt;&gt; m &gt;&gt; K;
+    vector&lt;long long&gt; first(m, -1);   // first[v] = bước đầu tiên gặp giá trị v
+    vector&lt;long long&gt; seq;            // seq[i] = x(i)
+    long long x = a % m;
+    for (long long i = 0; ; i++) {
+        if (i == K) { cout &lt;&lt; x &lt;&lt; '\n'; return 0; }   // tới đích trước khi lặp
+        if (first[x] != -1) {                         // gặp lại giá trị cũ
+            long long start = first[x];               // chu kỳ bắt đầu ở bước start
+            long long len = i - start;                // độ dài chu kỳ
+            long long pos = start + (K - start) % len;
+            cout &lt;&lt; seq[pos] &lt;&lt; '\n';
+            return 0;
+        }
+        first[x] = i;
+        seq.push_back(x);
+        x = (x * x + c) % m;
+    }
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input (a c m K)</div><pre><code class="language-text">3 1 10 1000000000000000000</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">5</code></pre></div>
+    </div>
+    <p>Kỹ thuật “mô phỏng đến khi lặp” dùng được cho rất nhiều đề: đèn nhấp nháy theo luật, trò chơi chuyền bóng, vị trí robot sau K lần lặp lại dãy lệnh.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Tràn số trong n(n + 1)/2</p><p>Với <code>int n = 100000</code>, phép <code>n * (n + 1)</code> đã vượt 2,1 · 10<sup>9</sup> và cho số âm mà không báo lỗi. Hãy dùng <code>long long</code>. Kể cả với <code>long long</code>, tích n(n + 1) tràn khi n vượt khoảng 3 · 10<sup>9</sup>; nếu n lớn hơn, hãy chia trước: n chẵn thì tính (n/2)(n + 1), n lẻ thì tính n((n + 1)/2). Cách này chạy được tới n ≈ 4,29 · 10<sup>9</sup>.</p></div>
+    <div class="callout danger"><p class="callout-title">Trừ phần đếm tới a thay vì a − 1</p><p>Công thức đúng là ⌊b/k⌋ − ⌊(a − 1)/k⌋. Viết b/k − a/k sẽ bỏ sót chính số a khi a là bội của k. Thử ngay với [7, 7], k = 7: đáp án phải là 1.</p></div>
+    <div class="callout warn"><p class="callout-title">Phép chia số âm trong C++</p><p>C++ chia số nguyên theo kiểu <em>bỏ phần thập phân về phía 0</em>: <code>-1 / 7 == 0</code>, trong khi ⌊−1/7⌋ = −1. Nếu đoạn [a, b] có thể chứa 0 hoặc số âm, công thức trên cho kết quả sai. Hãy viết một hàm chia làm tròn xuống riêng, hoặc tịnh tiến cả đoạn sang số dương. Bài Đếm Bộ Ba (LQDOJ) với L âm là nơi lỗi này hay xuất hiện.</p></div>
+    <div class="callout warn"><p class="callout-title">Tính thẳng n!</p><p>20! ≈ 2,4 · 10<sup>18</sup> là giai thừa lớn nhất vừa <code>long long</code>; 21! đã tràn. Đừng tính n! rồi đếm số 0, hãy đếm thừa số 5. Khi cài Legendre bằng biến <code>p = 5, 25, 125, …</code>, p có thể tràn nếu n gần giới hạn <code>long long</code>; chia n liên tiếp cho 5 thì an toàn.</p></div>
+    <div class="callout warn"><p class="callout-title">Chu kỳ không bắt đầu từ bước 0</p><p>Nhiều dãy có một đoạn “đuôi” trước khi vào vòng (như số 3 ở hình 2). Nếu em coi chu kỳ bắt đầu từ bước 0 và tính K mod len, kết quả sẽ lệch. Luôn ghi lại <code>start</code> = bước đầu tiên của giá trị bị lặp, và chỉ áp dụng phép mod cho phần K − start.</p></div>
+    <div class="callout warn"><p class="callout-title">Stress test sai cách</p><p>Sinh test quá lớn làm lời giải trâu chạy mãi; dùng <code>time(0)</code> làm hạt giống khiến em không tái hiện được test lỗi; lời giải trâu “thông minh” quá nên cũng sai giống lời giải nhanh. Hãy để test nhỏ, hạt giống là số thứ tự test, và giữ lời giải trâu thật ngây thơ.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo phòng thi</p><p>Đọc hết đề trong 10–15 phút đầu. Bài nào chưa nghĩ ra lời giải đầy đủ thì viết trâu để lấy điểm subtask. Còn thời gian thì đối chiếu chéo lời giải chính với lời giải trâu. Trước khi nộp: kiểm tra tên file, <code>freopen</code>, <code>long long</code>, xóa dòng in gỡ lỗi (xem bài <a href="cpp-contest-basics.html">Khung bài thi C++</a>).</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Trong đoạn [14, 70] có bao nhiêu số chia hết cho 7?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 8</button>
+        <button type="button" class="quiz-opt" data-correct>B. 9</button>
+        <button type="button" class="quiz-opt">C. 10</button>
+      </div>
+      <p class="quiz-explain">⌊70/7⌋ − ⌊13/7⌋ = 10 − 1 = 9. Đó là 14, 21, 28, 35, 42, 49, 56, 63, 70. Nếu trừ ⌊14/7⌋ = 2 thì sẽ ra 8, sai vì bỏ sót số 14.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. 50! có bao nhiêu chữ số 0 tận cùng?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 10</button>
+        <button type="button" class="quiz-opt">B. 11</button>
+        <button type="button" class="quiz-opt" data-correct>C. 12</button>
+      </div>
+      <p class="quiz-explain">⌊50/5⌋ + ⌊50/25⌋ = 10 + 2 = 12. Các số 25 và 50 mỗi số góp hai thừa số 5.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Trên xoắn ốc số của CSES, ô hàng 3 cột 5 chứa số mấy?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 13</button>
+        <button type="button" class="quiz-opt">B. 21</button>
+        <button type="button" class="quiz-opt" data-correct>C. 23</button>
+      </div>
+      <p class="quiz-explain">k = max(3, 5) = 5 lẻ, ô nằm trên cột k với y = 3 ≠ k, nên giá trị là k² − y + 1 = 25 − 3 + 1 = 23. Xem lại khung hình cuối của bảng xoắn ốc.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Đề cho n ≤ 10<sup>18</sup> và chỉ hỏi một con số. Cách nào hợp lý nhất?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Một vòng lặp từ 1 đến n, dùng <code>long long</code>.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Tìm công thức O(1) hoặc O(log n), kiểm tra bằng lời giải trâu với n nhỏ.</button>
+        <button type="button" class="quiz-opt">C. Dùng mảng n phần tử để lưu kết quả trung gian.</button>
+      </div>
+      <p class="quiz-explain">10<sup>18</sup> bước cần hàng trăm năm, và mảng 10<sup>18</sup> phần tử không có bộ nhớ nào chứa nổi. Chỉ còn cách tìm công thức; lời giải trâu với n nhỏ giúp em kiểm tra công thức.</p>
+    </div>
+
+    <p><strong>Câu 5.</strong> Tính 2 + 5 + 8 + … + 98 mà không cộng từng số.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Đây là cấp số cộng công sai 3. Số số hạng c = (98 − 2)/3 + 1 = 33. Tổng = (2 + 98) · 33 / 2 = 1 650.</p></details>
+
+    <p><strong>Câu 6.</strong> Với dãy ở hình 2 (x<sub>0</sub> = 3, x<sub>i+1</sub> = (x<sub>i</sub>² + 1) mod 10), tìm x<sub>100</sub>.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Dãy: 3, 0, 1, 2, 5, 6, 7, 0, … Chu kỳ bắt đầu ở start = 1, dài len = 6. Bước 100 ứng với bước 1 + (100 − 1) mod 6 = 1 + 3 = 4, nên x<sub>100</sub> = x<sub>4</sub> = 5.</p></details>
+
+    <p><strong>Câu 7.</strong> Trong <code>stress.sh</code>, vì sao truyền số thứ tự test <code>$i</code> làm hạt giống cho <code>gen</code> thay vì dùng thời gian hiện tại?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Để tái hiện được. Khi script báo “Sai ở test 37”, em chạy lại <code>./gen 37</code> sẽ được đúng test đó để gỡ lỗi. Nếu dùng thời gian, test lỗi biến mất ngay sau lần chạy.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Với mỗi bài, hãy viết lời giải trâu trước (dù nó chậm), rồi mới tìm công thức và đối chiếu hai lời giải. Đề CSES viết bằng tiếng Anh, có tóm tắt tiếng Việt bên dưới.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1068">Weird Algorithm</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho n. Nếu n chẵn chia đôi, nếu lẻ nhân 3 cộng 1; lặp đến khi n = 1 và in ra mọi giá trị đi qua (n ≤ 10<sup>6</sup>).</p>
+        <p class="ex-skill"><b>Luyện:</b> mô phỏng đúng theo đề; giá trị trung gian vượt <code>int</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chỉ cần một vòng <code>while (n != 1)</code>. Giá trị có thể lên quá 2,1 · 10<sup>9</sup> dù n ban đầu nhỏ, nên khai báo <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/scrcb02">Tìm các số chia hết cho 3 trong đoạn a, b</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đếm số chia hết cho 3 trong đoạn từ a đến b, với a &lt; b &lt; 10<sup>12</sup>.</p>
+        <p class="ex-skill"><b>Luyện:</b> công thức ⌊b/k⌋ − ⌊(a − 1)/k⌋, dùng <code>long long</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Vòng lặp tới 10<sup>12</sup> quá chậm. Dùng công thức đếm bội. Cẩn thận khi a = 0: số 0 cũng chia hết cho 3, mà <code>(0 - 1) / 3</code> trong C++ bằng 0 chứ không phải −1; hãy xử lý riêng trường hợp này.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cdl3p2">Cánh diều – TONGCHIAHET3</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Tính tổng các số tự nhiên không vượt quá n và chia hết cho 3 (n ≤ 10<sup>9</sup>).</p>
+        <p class="ex-skill"><b>Luyện:</b> tổng cấp số cộng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Các số đó là 3 · 1, 3 · 2, …, 3 · m với m = ⌊n/3⌋. Tổng bằng 3 nhân (1 + 2 + … + m). Kết quả cỡ 1,7 · 10<sup>17</sup>, cần <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1083">Missing Number</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Dãy gồm n − 1 số khác nhau lấy từ 1..n, thiếu đúng một số. Tìm số bị thiếu (n ≤ 2 · 10<sup>5</sup>).</p>
+        <p class="ex-skill"><b>Luyện:</b> dùng tổng n(n + 1)/2 thay cho sắp xếp hay đánh dấu.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lấy n(n + 1)/2 trừ tổng các số đã cho. Với n = 2 · 10<sup>5</sup> tổng là khoảng 2 · 10<sup>10</sup>, vượt <code>int</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/th_thpt_22_a">HSG THPT Thanh Hóa 2022 – Robot</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Robot đi một bước sang một trong 8 ô xung quanh (kể cả đường chéo). Tìm số bước ít nhất từ (x<sub>1</sub>, y<sub>1</sub>) đến (x<sub>2</sub>, y<sub>2</sub>), tọa độ tới 10<sup>9</sup>.</p>
+        <p class="ex-skill"><b>Luyện:</b> thay mô phỏng từng bước bằng nhận xét toán học.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Robot nên đi chéo tới khi thẳng hàng hoặc thẳng cột với đích, rồi đi thẳng. Đáp án chỉ phụ thuộc |x<sub>1</sub> − x<sub>2</sub>| và |y<sub>1</sub> − y<sub>2</sub>| (tới 2 · 10<sup>9</sup>). Đề đọc/ghi tệp ROBOT.INP/ROBOT.OUT.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/countlast0">Đếm chữ số 0 tận cùng</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có t ≤ 20 test, mỗi test cho n (0 ≤ n ≤ 10<sup>18</sup>), đếm số chữ số 0 tận cùng của n!.</p>
+        <p class="ex-skill"><b>Luyện:</b> công thức Legendre, chia liên tiếp cho 5.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chia n cho 5 liên tiếp và cộng các thương. Nhớ trường hợp n = 0: 0! = 1, không có chữ số 0 nào.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1071">Number Spiral</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Bảng xoắn ốc vô hạn như ở phần minh họa; mỗi truy vấn cho hàng y và cột x (tới 10<sup>9</sup>), in số trong ô đó. Có tới 10<sup>5</sup> truy vấn.</p>
+        <p class="ex-skill"><b>Luyện:</b> tìm công thức O(1) theo tầng k = max(y, x).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xem lại khung hình xoắn ốc. Viết trước một chương trình tô bảng 10 × 10 để đối chiếu, vì rất dễ nhầm hàng với cột và chẵn với lẻ.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/ontaptht1">Đếm Bộ Ba</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Đếm bộ ba x, y, z với L ≤ x &lt; y &lt; z ≤ R và x + y + z = T. Ba subtask: |L|, |R| ≤ 300; ≤ 3 000; ≤ 10<sup>7</sup>.</p>
+        <p class="ex-skill"><b>Luyện:</b> chiến lược subtask: ba vòng, hai vòng, rồi một vòng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Subtask 1: ba vòng. Subtask 2: z = T − x − y, còn hai vòng. Subtask 3: cố định x, các điều kiện y &gt; x, y &lt; z, z ≤ R cho một đoạn giá trị của y; đếm độ dài đoạn, cẩn thận chia số âm. Lời giải subtask 2 là bộ đối chiếu.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/tornadonotnh">Lốc xoáy</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Điền 1, 2, 3, … vào bảng m × n theo vòng xoắn từ ngoài vào trong, theo chiều kim đồng hồ. In số nhỏ nhất và lớn nhất của từng hàng (m, n ≤ 10<sup>6</sup>).</p>
+        <p class="ex-skill"><b>Luyện:</b> mô phỏng cho subtask nhỏ, công thức cho subtask lớn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Subtask 1: mô phỏng điền bảng, giữ làm bộ đối chiếu. Subtask 2 (10<sup>12</sup> ô): số ở vòng trong luôn lớn hơn vòng ngoài, và số đầu tiên của vòng d tính được từ chu vi các vòng ngoài. Vậy min của hàng nằm ở cột 1 hoặc cột n, max nằm trên vòng sâu nhất mà hàng cắt qua.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/pbcdiv">PBCDIV – Phép chia hết</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Có tới 10<sup>5</sup> truy vấn, mỗi truy vấn cho A ≤ B ≤ 10<sup>18</sup>; đếm số trong [A, B] chia hết cho <em>đúng hai</em> trong ba số 4, 6, 15.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm bội trong đoạn kết hợp bù trừ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Viết f(x) = số trong [1, x] thỏa đề, đáp án f(B) − f(A − 1). Đếm số chia hết cho từng cặp (theo BCNN của cặp), rồi trừ phần chia hết cho cả ba vì bị đếm ở cả ba cặp. Đối chiếu với lời giải trâu khi B ≤ 1 000.</p></details>
+      </li>
+    </ol>
+    <p>Muốn luyện thêm: <a href="https://cses.fi/problemset/task/1618">CSES Trailing Zeros</a> (số 0 tận cùng, n ≤ 10<sup>9</sup>) và <a href="https://cses.fi/problemset/task/1072">CSES Two Knights</a> (công thức ở mục Biến thể).</p>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/basic/computational-complexity">VNOI Wiki – Độ phức tạp thời gian</a> (tiếng Việt): đọc giới hạn để chọn thuật toán.</li>
+      <li><a href="https://wiki.vnoi.info/algo/skill/viet-trinh-cham">VNOI Wiki – Tự code, tự chấm: bí kíp thi offline</a> (tiếng Việt): viết trình sinh test, trình trâu và trình chấm để đối chiếu.</li>
+      <li><a href="https://wiki.vnoi.info/translate/topcoder/How-To-Find-a-Solution">VNOI Wiki – Nghệ thuật giải bài</a> (tiếng Việt, dịch từ TopCoder): khi nào duyệt, khi nào mô phỏng, khi nào cần ý tưởng khác.</li>
+      <li><a href="https://vi.wikipedia.org/wiki/C%E1%BA%A5p_s%E1%BB%91_c%E1%BB%99ng">Wikipedia – Cấp số cộng</a> (tiếng Việt): công thức số hạng tổng quát và tổng.</li>
+      <li><a href="https://en.wikipedia.org/wiki/Legendre%27s_formula">Wikipedia – Legendre's formula</a> (tiếng Anh): số mũ của số nguyên tố p trong n!.</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer's Handbook</a> (tiếng Anh): chương 1 và 2 về kỹ thuật cơ bản và duyệt toàn bộ.</li>
+      <li><a href="https://cses.fi/problemset/">CSES Problem Set</a>: nhóm Introductory Problems có nhiều bài mô phỏng và công thức.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li><strong>Duyệt trâu</strong>: liệt kê mọi ứng viên, kiểm tra từng cái. Đủ nhanh khi số ứng viên cỡ 10<sup>8</sup> trở xuống. Biến nào bị các biến khác xác định thì tính thẳng, bớt được một vòng lặp.</li>
+        <li><strong>Mô phỏng</strong>: chọn trạng thái, viết hàm chuyển đúng từng chữ của đề. K lớn mà ít trạng thái: tìm chu kỳ, bước K ứng với start + (K − start) mod len.</li>
+        <li><strong>Subtask</strong>: chưa nghĩ ra lời giải đầy đủ thì nộp trâu để lấy điểm; sau đó dùng trâu làm đáp án mẫu.</li>
+        <li><strong>Stress test</strong>: gen (test nhỏ, hạt giống = số thứ tự) + brute + fast + script so sánh; lệch thì dừng và in test.</li>
+        <li>1 + 2 + … + n = n(n + 1)/2; cấp số cộng: (đầu + cuối) · số số hạng / 2.</li>
+        <li>Bội của k trong [a, b] (a ≥ 1): ⌊b/k⌋ − ⌊(a − 1)/k⌋.</li>
+        <li>Số 0 tận cùng của n!: ⌊n/5⌋ + ⌊n/25⌋ + …, cài bằng cách chia n liên tiếp cho 5.</li>
+        <li>Xoắn ốc: k = max(y, x), tầng k chứa (k − 1)² + 1 .. k²; chiều đi đổi theo k chẵn/lẻ. Luôn dùng <code>long long</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/brute-force-formula.js"></script>
+</body>
+</html>

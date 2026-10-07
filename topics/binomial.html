@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tính C(n, k) &amp; tam giác Pascal · Thi đấu lớp 9</title>
+<meta name="description" content="Tính tổ hợp C(n, k) trong lập trình thi đấu: tam giác Pascal O(n²), nhân chia xen kẽ, giai thừa kèm nghịch đảo modulo, chia kẹo Euler, đếm đường đi trên lưới, định lý Lucas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  /* Tam giác Pascal: ô nhỏ hơn mặc định để vừa nhiều hàng; chỉ dùng token, không mã màu cứng */
+  .pascal-tri { overflow-x: auto; padding: 0.4rem 0; }
+  .pascal-tri .arr { margin: 0 auto; }
+  .pascal-tri .arr + .arr { margin-top: 0.3rem; }
+  .pascal-tri .cell { min-width: 2.5rem; height: 2.2rem; font-size: 0.85rem; }
+  .pascal-tri.small .cell { min-width: 2.1rem; height: 1.9rem; font-size: 0.74rem; padding: 0 0.2rem; }
+  .pascal-tri button.cell { cursor: pointer; }
+</style>
+</head>
+<body data-page="topic" data-topic="binomial">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được vì sao không nên tính C(n, k) bằng công thức n!/(k!(n−k)!) một cách trực tiếp.</li>
+      <li>Dựng được tam giác Pascal trong O(n²) và chứng minh công thức C(n, k) = C(n−1, k−1) + C(n−1, k).</li>
+      <li>Tính được C(n, k) chính xác bằng long long nhờ nhân và chia xen kẽ.</li>
+      <li>Cài đặt được bảng giai thừa và nghịch đảo giai thừa để trả lời mỗi truy vấn C(n, k) mod p trong O(1), với n tới 10⁶.</li>
+      <li>Nhận ra các bài đếm quen thuộc quy về C(n, k): đường đi trên lưới, chia kẹo Euler, hoán vị lặp, nhị thức Newton; biết định lý Lucas dùng khi nào.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Số tổ hợp C(n, k) (đọc là “n chọn k”, tiếng Anh: <em>binomial coefficient</em>) là số cách chọn ra k đồ vật từ n đồ vật khác nhau, khi <strong>không quan tâm thứ tự</strong>. Bài trước (<a href="counting.html">Quy tắc đếm</a>) em đã biết công thức của nó. Bài này trả lời câu hỏi của người lập trình: <strong>tính con số đó bằng máy như thế nào</strong> cho nhanh, không tràn số và đúng khi phải lấy số dư.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> lớp em có 5 bạn An, Bình, Chi, Dũng, Em. Cô cần chọn 2 bạn đi trực nhật. Chọn “An và Bình” hay “Bình và An” thì cũng là cùng một cặp. Liệt kê ra: AB, AC, AD, AE, BC, BD, BE, CD, CE, DE. Có đúng 10 cách, vậy C(5, 2) = 10. Với 5 bạn em còn liệt kê được. Với 1 000 000 bạn thì em cần một thuật toán.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Với các số nguyên 0 ≤ k ≤ n, <span class="math">C(n, k)</span> là số tập con có đúng k phần tử của một tập có n phần tử. Ta có công thức</p>
+      <div class="math-block">C(n, k) = <span class="frac"><span>n!</span><span>k! · (n − k)!</span></span></div>
+      <p>Quy ước: C(n, 0) = C(n, n) = 1, và C(n, k) = 0 khi k &lt; 0 hoặc k &gt; n (không có cách nào chọn quá số đồ vật đang có). Sách giáo khoa Việt Nam thường viết là <span class="math">C<sub>n</sub><sup>k</sup></span>.</p>
+    </div>
+
+    <p>Nếu xếp các số C(n, k) thành từng hàng, hàng n gồm C(n, 0), C(n, 1), …, C(n, n), ta được một hình tam giác rất đẹp gọi là <strong>tam giác Pascal</strong> (Pascal's triangle). Mỗi số bên trong bằng tổng hai số ngay phía trên nó.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 360 230" width="360" role="img" aria-label="Sáu hàng đầu của tam giác Pascal, số 10 ở hàng 5 bằng 4 cộng 6">
+        <g text-anchor="middle">
+          <text class="label-sm" x="22" y="28">n = 0</text>
+          <text class="label-sm" x="22" y="63">n = 1</text>
+          <text class="label-sm" x="22" y="98">n = 2</text>
+          <text class="label-sm" x="22" y="133">n = 3</text>
+          <text class="label-sm" x="22" y="168">n = 4</text>
+          <text class="label-sm" x="22" y="203">n = 5</text>
+          <circle class="node" cx="200" cy="24" r="14"/><text x="200" y="29">1</text>
+          <circle class="node" cx="180" cy="59" r="14"/><text x="180" y="64">1</text>
+          <circle class="node" cx="220" cy="59" r="14"/><text x="220" y="64">1</text>
+          <circle class="node" cx="160" cy="94" r="14"/><text x="160" y="99">1</text>
+          <circle class="node" cx="200" cy="94" r="14"/><text x="200" y="99">2</text>
+          <circle class="node" cx="240" cy="94" r="14"/><text x="240" y="99">1</text>
+          <circle class="node" cx="140" cy="129" r="14"/><text x="140" y="134">1</text>
+          <circle class="node" cx="180" cy="129" r="14"/><text x="180" y="134">3</text>
+          <circle class="node" cx="220" cy="129" r="14"/><text x="220" y="134">3</text>
+          <circle class="node" cx="260" cy="129" r="14"/><text x="260" y="134">1</text>
+          <circle class="node" cx="120" cy="164" r="14"/><text x="120" y="169">1</text>
+          <circle class="node is-cmp" cx="160" cy="164" r="14"/><text x="160" y="169">4</text>
+          <circle class="node is-cmp" cx="200" cy="164" r="14"/><text x="200" y="169">6</text>
+          <circle class="node" cx="240" cy="164" r="14"/><text x="240" y="169">4</text>
+          <circle class="node" cx="280" cy="164" r="14"/><text x="280" y="169">1</text>
+          <circle class="node" cx="100" cy="199" r="14"/><text x="100" y="204">1</text>
+          <circle class="node" cx="140" cy="199" r="14"/><text x="140" y="204">5</text>
+          <circle class="node is-active" cx="180" cy="199" r="14"/><text x="180" y="204">10</text>
+          <circle class="node" cx="220" cy="199" r="14"/><text x="220" y="204">10</text>
+          <circle class="node" cx="260" cy="199" r="14"/><text x="260" y="204">5</text>
+          <circle class="node" cx="300" cy="199" r="14"/><text x="300" y="204">1</text>
+        </g>
+        <line class="edge is-active" x1="166" y1="177" x2="174" y2="187"/>
+        <line class="edge is-active" x1="194" y1="177" x2="186" y2="187"/>
+        <text class="label-pen" x="325" y="145" text-anchor="middle">4 + 6 = 10</text>
+      </svg>
+      <figcaption>Hình 1. Tam giác Pascal, hàng 0 đến hàng 5. Số C(5, 2) = 10 bằng tổng hai số phía trên là C(4, 1) = 4 và C(4, 2) = 6.</figcaption>
+    </figure>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>C(n, k) là “viên gạch” của hầu hết các bài đếm. Gặp nó rất thường xuyên trong đề thi học sinh giỏi và Olympic tin học:</p>
+    <ul>
+      <li><strong>Chọn nhóm:</strong> chọn k bạn từ n bạn, chọn k câu hỏi trong đề, đếm số cái bắt tay giữa n người (C(n, 2)), đếm số tam giác có đỉnh trong n điểm (C(n, 3) nếu không có ba điểm thẳng hàng).</li>
+      <li><strong>Đường đi trên lưới:</strong> số đường đi chỉ sang phải hoặc xuống dưới trong lưới là C(m + n, m). Đây cũng là bài <a href="dp-grid.html">QHĐ trên lưới</a> đơn giản nhất.</li>
+      <li><strong>Chia kẹo:</strong> chia n viên kẹo giống nhau cho k bạn là C(n + k − 1, k − 1) cách (bài toán chia kẹo Euler, hay “sao và vạch”).</li>
+      <li><strong>Xếp chữ có lặp:</strong> số xâu khác nhau tạo từ các chữ cái của “BANANA” là 6!/(3!·2!·1!) = 60.</li>
+      <li><strong>Khai triển:</strong> hệ số trong (a + b)ⁿ chính là hàng n của tam giác Pascal (nhị thức Newton).</li>
+      <li><strong>Xác suất:</strong> tung đồng xu 10 lần, số cách được đúng 3 lần ngửa là C(10, 3) = 120.</li>
+    </ul>
+    <p>Ngoài ra, công thức Pascal chính là bài <a href="dp-intro.html">quy hoạch động</a> đầu tiên em gặp: kết quả của bài lớn được ghép từ kết quả của hai bài nhỏ hơn.</p>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề hỏi “có bao nhiêu cách chọn / chia / đi / xếp”, kèm câu “in ra kết quả modulo 10⁹ + 7”. Nếu n ≤ 5000 và cần nhiều giá trị C khác nhau, dùng tam giác Pascal. Nếu n tới 10⁵ hoặc 10⁶ và có nhiều truy vấn, dùng giai thừa kèm nghịch đảo modulo. Nếu n tới 10¹⁸ nhưng số nguyên tố p nhỏ (ví dụ 100003), nghĩ tới định lý Lucas.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho q ≤ 10⁵ truy vấn, mỗi truy vấn gồm hai số n, k (0 ≤ k ≤ n ≤ 10⁶). Hãy in ra C(n, k) mod (10⁹ + 7). Đây chính là bài <a href="https://cses.fi/problemset/task/1079">CSES Binomial Coefficients</a>.</p>
+
+    <h3>Cách ngây thơ 1: tính thẳng n! / (k!(n−k)!)</h3>
+    <p>Ý tưởng rất tự nhiên: tính ba giai thừa rồi chia. Nhưng giai thừa lớn cực nhanh. 20! = 2 432 902 008 176 640 000 vẫn còn vừa long long, nhưng 21! đã vượt giới hạn khoảng 9,22 · 10¹⁸. Vậy với n = 21 cách này đã cho kết quả sai, trong khi C(21, 10) = 352 716 chỉ là một số nhỏ.</p>
+    <p>Vậy thì lấy số dư sau mỗi phép nhân? Khi đó lại gặp chuyện khó hơn: <strong>phép chia không đi cùng phép lấy dư</strong>. Thử với C(5, 2) = 10 và mod 7:</p>
+    <ul>
+      <li>5! = 120, mà 120 mod 7 = 1.</li>
+      <li>2! · 3! = 12, mà 12 mod 7 = 5.</li>
+      <li>Lấy 1 chia 5? Không ra số nguyên. Trong khi đáp án đúng là 10 mod 7 = 3.</li>
+    </ul>
+    <p>Phép cộng, trừ, nhân thì “lấy dư lúc nào cũng được”, còn phép chia thì không. Phần <a href="#thuat-toan">thuật toán</a> sẽ thay phép chia bằng phép nhân với <strong>nghịch đảo modulo</strong>.</p>
+
+    <h3>Cách ngây thơ 2: đệ quy không nhớ</h3>
+    <p>Dùng công thức Pascal C(n, k) = C(n−1, k−1) + C(n−1, k) và gọi đệ quy trực tiếp. Công thức chỉ có phép cộng nên không lo chia. Nhưng cây đệ quy có rất nhiều nhánh trùng nhau. Mỗi lá của cây trả về 1, nên muốn ra kết quả C(n, k) thì cây phải có đúng C(n, k) lá, tức 2·C(n, k) − 1 lời gọi. Với C(30, 15) = 155 117 520, máy phải gọi hàm khoảng 310 triệu lần chỉ cho <em>một</em> truy vấn.</p>
+
+    <h3>Cách ngây thơ 3: nhân chia xen kẽ cho từng truy vấn</h3>
+    <p>Mỗi truy vấn tốn k bước, k có thể tới 5 · 10⁵. Với 10⁵ truy vấn là 5 · 10¹⁰ bước, chạy cả phút. Và vẫn còn vấn đề chia khi lấy mod.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p>Tính giai thừa thẳng: sai từ n = 21. Đệ quy không nhớ: khoảng 3 · 10⁸ lời gọi cho C(30, 15). Tính lại từ đầu cho mỗi truy vấn: <span class="bigo">O(q · k)</span>, tới 5 · 10¹⁰ phép tính.</p></div>
+      <div class="good-side"><h4>Dùng thuật toán</h4><p>Tam giác Pascal: dựng một lần <span class="bigo">O(n²)</span>, với n = 5000 khoảng 12,5 triệu phép cộng. Giai thừa kèm nghịch đảo: tiền xử lý <span class="bigo">O(n)</span> khoảng 2 · 10⁶ phép nhân, mỗi truy vấn <span class="bigo">O(1)</span>, tổng cộng dưới 3 · 10⁶ phép tính.</p></div>
+    </div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Có ba cách chính. Em chọn cách tùy giới hạn của đề.</p>
+
+    <h3>Cách 1. Tam giác Pascal (n ≤ 5000, modulo bất kỳ)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Mép tam giác.</strong> Với mọi i, gán C[i][0] = C[i][i] = 1.</div></li>
+      <li><div><strong>Lấp phần giữa.</strong> Đi từng hàng i = 1, 2, …, n. Trong hàng i, với j từ 1 đến i − 1, gán C[i][j] = (C[i−1][j−1] + C[i−1][j]) mod p.</div></li>
+      <li><div><strong>Trả lời.</strong> Mỗi truy vấn (n, k) chỉ cần đọc ô C[n][k]; nếu k &gt; n thì in 0.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> DungPascal(N, p):
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> N:
+        C[i][0] ← 1;  C[i][i] ← 1
+        <b>với</b> j <b>từ</b> 1 <b>đến</b> i − 1:
+            C[i][j] ← (C[i−1][j−1] + C[i−1][j]) mod p   <i>// chỉ dùng phép cộng</i></pre>
+
+    <h3>Cách 2. Nhân chia xen kẽ (kết quả vừa long long, không mod)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Thu nhỏ k.</strong> Nhờ tính đối xứng C(n, k) = C(n, n−k), đặt k = min(k, n − k).</div></li>
+      <li><div><strong>Lặp.</strong> Bắt đầu r = 1. Với i = 1, 2, …, k: nhân r với (n − k + i) rồi <em>chia ngay</em> cho i.</div></li>
+      <li><div><strong>Kết thúc.</strong> Sau bước i, r đúng bằng C(n − k + i, i). Khi i = k, r = C(n, k).</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> ToHopChinhXac(n, k):
+    k ← min(k, n − k)
+    r ← 1
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> k:
+        r ← r · (n − k + i) / i     <i>// luôn chia hết, không có phần dư</i>
+    <b>trả về</b> r</pre>
+
+    <h3>Cách 3. Giai thừa kèm nghịch đảo modulo (n ≤ 10⁶, p nguyên tố, p &gt; n)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Bảng giai thừa.</strong> fact[0] = 1, rồi fact[i] = fact[i−1] · i mod p với i = 1..N.</div></li>
+      <li><div><strong>Một lần lũy thừa.</strong> Tính inv_fact[N] = fact[N]<sup>p−2</sup> mod p bằng <a href="modular-power.html">lũy thừa nhanh</a> (định lý Fermat nhỏ).</div></li>
+      <li><div><strong>Đi ngược.</strong> Với i = N − 1 xuống 0: inv_fact[i] = inv_fact[i+1] · (i + 1) mod p.</div></li>
+      <li><div><strong>Truy vấn O(1).</strong> C(n, k) = fact[n] · inv_fact[k] · inv_fact[n−k] mod p, nhớ lấy mod sau <em>mỗi</em> phép nhân.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> ChuanBi(N, p):
+    fact[0] ← 1
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> N:  fact[i] ← fact[i−1] · i mod p
+    inv_fact[N] ← LuyThua(fact[N], p − 2, p)        <i>// O(log p)</i>
+    <b>với</b> i <b>từ</b> N − 1 <b>xuống</b> 0:  inv_fact[i] ← inv_fact[i+1] · (i+1) mod p
+
+<b>hàm</b> C(n, k):
+    <b>nếu</b> k &lt; 0 <b>hoặc</b> k &gt; n: <b>trả về</b> 0
+    <b>trả về</b> fact[n] · inv_fact[k] mod p · inv_fact[n−k] mod p</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Vì sao công thức Pascal đúng: nhìn vào phần tử cuối</h3>
+    <p>Có n bạn, cần chọn k bạn. Hãy để ý riêng bạn cuối danh sách, gọi là bạn X. Mọi cách chọn rơi vào đúng một trong hai trường hợp, và hai trường hợp không trùng nhau:</p>
+    <ul>
+      <li><strong>Có chọn X.</strong> Còn phải chọn k − 1 bạn trong n − 1 bạn còn lại: C(n−1, k−1) cách.</li>
+      <li><strong>Không chọn X.</strong> Phải chọn đủ k bạn trong n − 1 bạn còn lại: C(n−1, k) cách.</li>
+    </ul>
+    <p>Theo quy tắc cộng, C(n, k) = C(n−1, k−1) + C(n−1, k). Ví dụ với 5 bạn A, B, C, D, E và X = E: các cặp có E là AE, BE, CE, DE (4 cặp = C(4, 1)); các cặp không có E là AB, AC, AD, BC, BD, CD (6 cặp = C(4, 2)). Tổng 4 + 6 = 10.</p>
+    <p>Khi dựng bảng, ta đi theo thứ tự hàng tăng dần. Lúc tính hàng i, cả hàng i − 1 đã xong, nên hai ô cần dùng luôn có sẵn. Đây đúng là tư tưởng của quy hoạch động: lưu kết quả bài nhỏ để không phải tính lại.</p>
+
+    <h3>Hai tính chất quan trọng của tam giác</h3>
+    <p><strong>Đối xứng: C(n, k) = C(n, n − k).</strong> Chọn k bạn đi trực nhật cũng chính là chọn n − k bạn được ở lại. Mỗi cách chọn nhóm đi ứng với đúng một cách chọn nhóm ở lại. Vì vậy mỗi hàng đọc xuôi và đọc ngược như nhau: 1 4 6 4 1.</p>
+    <p><strong>Tổng hàng n bằng 2ⁿ.</strong> Tổng C(n, 0) + C(n, 1) + … + C(n, n) đếm <em>mọi</em> tập con của tập n phần tử, bất kể kích thước. Mỗi phần tử có hai lựa chọn: lấy hoặc không lấy. Theo quy tắc nhân có 2 · 2 · … · 2 = 2ⁿ tập con. Kiểm tra: hàng 5 là 1 + 5 + 10 + 10 + 5 + 1 = 32 = 2⁵.</p>
+
+    <h3>Vì sao nhân chia xen kẽ luôn chia hết</h3>
+    <p>Gọi r<sub>i</sub> là giá trị của r sau bước i. Ta chứng minh r<sub>i</sub> = C(n − k + i, i). Ban đầu r<sub>0</sub> = 1 = C(n − k, 0). Giả sử đã đúng tới bước i − 1. Ở bước i:</p>
+    <div class="math-block">r<sub>i−1</sub> · (n − k + i) / i = <span class="frac"><span>(n−k+i−1)!</span><span>(i−1)! (n−k)!</span></span> · <span class="frac"><span>n−k+i</span><span>i</span></span> = <span class="frac"><span>(n−k+i)!</span><span>i! (n−k)!</span></span> = C(n−k+i, i)</div>
+    <p>Kết quả là một số tổ hợp, tức là một số nguyên, nên phép chia nguyên trong C++ không bị mất phần dư. Lưu ý: phải <strong>nhân trước rồi mới chia</strong>. Nếu chia trước (r / i) · (n − k + i) thì r chưa chắc chia hết cho i.</p>
+    <p>Cách này tốn k bước và an toàn với mọi C(n, k) khi n ≤ 61. Với n lớn hơn, số trung gian r · (n − k + i) có thể vượt long long dù đáp án cuối vẫn vừa. Ví dụ C(66, 33) = 7 219 428 434 016 265 740 vẫn nhỏ hơn 9,22 · 10¹⁸ nhưng phép nhân trung gian thì tràn. Khi đó em có thể dùng kiểu <code>__int128</code> cho phép nhân.</p>
+
+    <h3>Vì sao nhân với nghịch đảo thay được phép chia</h3>
+    <p>Với p nguyên tố và a không chia hết cho p, <strong>định lý Fermat nhỏ</strong> nói a<sup>p−1</sup> ≡ 1 (mod p). Tách ra: a · a<sup>p−2</sup> ≡ 1 (mod p). Vậy số a<sup>p−2</sup> đóng vai trò “1/a” trong thế giới số dư. Ta gọi nó là nghịch đảo modulo của a, viết a<sup>−1</sup>. Muốn “chia cho a” thì nhân với a<sup>−1</sup>.</p>
+    <p>Quay lại ví dụ C(5, 2) mod 7: ta cần 1 “chia” 5. Nghịch đảo của 5 theo mod 7 là 5⁵ mod 7 = 3125 mod 7 = 3, kiểm tra 5 · 3 = 15 ≡ 1 (mod 7). Vậy kết quả là 1 · 3 = 3, đúng bằng 10 mod 7.</p>
+    <p>Điều kiện “a không chia hết cho p” rất quan trọng. Vì p = 10⁹ + 7 lớn hơn mọi n ≤ 10⁶, các số k! và (n − k)! không chứa thừa số p, nên luôn có nghịch đảo.</p>
+
+    <h3>Vì sao đi ngược inv_fact lại đúng</h3>
+    <p>Ta có (i + 1)! = i! · (i + 1). Lấy nghịch đảo hai vế: 1/i! = (i + 1) · 1/(i + 1)!. Viết theo mảng: inv_fact[i] = inv_fact[i+1] · (i + 1). Vậy chỉ cần biết <em>một</em> giá trị ở đầu cao nhất, ta suy ra hết các giá trị còn lại bằng phép nhân. Cả quá trình chỉ gọi lũy thừa nhanh <strong>đúng một lần</strong>.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <ul>
+      <li><strong>Pascal:</strong> mỗi ô tốn một phép cộng và một phép lấy dư. Bảng tới hàng n có khoảng n²/2 ô. Với n = 5000 là 12 502 500 ô, chạy dưới 0,1 giây.</li>
+      <li><strong>Giai thừa:</strong> N phép nhân để dựng fact, khoảng 60 phép nhân cho lũy thừa nhanh (số mũ p − 2 có khoảng 30 bit), N phép nhân để đi ngược. Với N = 10⁶ là khoảng 2 · 10⁶ phép tính. Sau đó mỗi truy vấn chỉ 2 phép nhân.</li>
+      <li>Nếu ngây thơ tính nghịch đảo riêng cho từng i! bằng lũy thừa nhanh thì tốn 10⁶ · 60 = 6 · 10⁷ phép nhân. Vẫn chạy được nhưng chậm hơn khoảng 30 lần, nên mẹo đi ngược rất đáng nhớ.</li>
+    </ul>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Ba cách, ba giới hạn: Pascal khi n nhỏ hoặc mod không nguyên tố; nhân chia xen kẽ khi không có mod và số còn nhỏ; giai thừa kèm nghịch đảo khi n lớn và mod là số nguyên tố lớn. Đọc giới hạn trước, chọn cách sau.</p></div>
+  </section>
+
+    <section id="ung-dung">
+    <h2>Bốn bài toán đếm quy về C(n, k)</h2>
+    <p>Biết tính C(n, k) nhanh mới chỉ là một nửa. Nửa còn lại là <strong>nhận ra</strong> bài toán đang đếm tổ hợp. Dưới đây là bốn dạng gặp nhiều nhất.</p>
+
+    <h3>1. Đường đi trên lưới: C(m + n, m)</h3>
+    <p>Một con robot đứng ở góc trên bên trái của lưới. Mỗi bước nó chỉ được đi sang phải (P) hoặc xuống dưới (X). Muốn tới góc dưới bên phải, cách đó m bước xuống và n bước sang, nó phải đi đúng m + n bước, trong đó có đúng m bước X. Một đường đi ứng với một xâu, ví dụ “PPXPXPX”. Chọn xem m vị trí nào trong m + n vị trí là X thì xâu được xác định. Vậy số đường đi là <span class="math">C(m + n, m)</span>.</p>
+    <p>Trong hình dưới, lưới có 4 hàng, 5 cột, nên robot đi 3 bước xuống và 4 bước sang: C(7, 3) = 35 đường. Mỗi ô ghi số đường đi từ ô xuất phát tới nó. Số ở ô (i, j) bằng ô trên cộng ô trái, y hệt công thức Pascal. Đó chính là tam giác Pascal được “xoay nghiêng”: ô (i, j) chứa C(i + j, i).</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Số đường đi tới từng ô của lưới 4 × 5</p></div>
+      <div class="viz-body">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g is-start">1</span><span class="g is-path">1</span><span class="g is-path">1</span><span class="g">1</span><span class="g">1</span>
+          <span class="g">1</span><span class="g">2</span><span class="g is-path">3</span><span class="g">4</span><span class="g">5</span>
+          <span class="g">1</span><span class="g">3</span><span class="g is-path">6</span><span class="g is-path">10</span><span class="g">15</span>
+          <span class="g">1</span><span class="g">4</span><span class="g">10</span><span class="g is-path">20</span><span class="g is-end">35</span>
+        </div>
+      </div>
+      <div class="viz-legend"><span><i class="is-ok"></i>xuất phát</span><span><i class="is-cmp"></i>một đường đi: P P X X P X P</span></div>
+      <div class="viz-caption"><p>Ô đích ghi 35 = C(7, 3) = 20 + 15 (ô trên cộng ô trái). Bài <a href="dp-grid.html">QHĐ trên lưới</a> dùng đúng cách cộng này khi lưới có chướng ngại vật.</p></div>
+    </div>
+
+    <h3>2. Chia kẹo Euler: C(n + k − 1, k − 1)</h3>
+    <p>Có n viên kẹo <strong>giống hệt nhau</strong>, chia cho k bạn, bạn nào cũng có thể không được viên nào. Có bao nhiêu cách? Mẹo “sao và vạch” (stars and bars): xếp n viên kẹo (sao) thành một hàng, rồi chèn k − 1 vạch ngăn. Phần trước vạch thứ nhất là của bạn 1, giữa vạch 1 và vạch 2 là của bạn 2, và cứ thế. Hàng có tất cả n + k − 1 vị trí; chọn k − 1 vị trí đặt vạch, còn lại là kẹo. Vậy có <span class="math">C(n + k − 1, k − 1)</span> cách.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 380 150" width="380" role="img" aria-label="Hai cách chia 5 viên kẹo cho 3 bạn bằng sao và vạch">
+        <circle class="node is-cmp" cx="30" cy="35" r="12"/>
+        <circle class="node is-cmp" cx="70" cy="35" r="12"/>
+        <line class="edge is-active" x1="110" y1="15" x2="110" y2="55"/>
+        <circle class="node is-cmp" cx="150" cy="35" r="12"/>
+        <line class="edge is-active" x1="190" y1="15" x2="190" y2="55"/>
+        <circle class="node is-cmp" cx="230" cy="35" r="12"/>
+        <circle class="node is-cmp" cx="270" cy="35" r="12"/>
+        <text class="label-pen" x="300" y="40">(2, 1, 2)</text>
+        <line class="edge is-active" x1="30" y1="85" x2="30" y2="125"/>
+        <circle class="node is-cmp" cx="70" cy="105" r="12"/>
+        <circle class="node is-cmp" cx="110" cy="105" r="12"/>
+        <circle class="node is-cmp" cx="150" cy="105" r="12"/>
+        <circle class="node is-cmp" cx="190" cy="105" r="12"/>
+        <circle class="node is-cmp" cx="230" cy="105" r="12"/>
+        <line class="edge is-active" x1="270" y1="85" x2="270" y2="125"/>
+        <text class="label-pen" x="300" y="110">(0, 5, 0)</text>
+        <text class="label-sm" x="20" y="145">7 vị trí, chọn 2 vị trí làm vạch</text>
+      </svg>
+      <figcaption>Hình 2. Chia 5 viên kẹo cho 3 bạn: 5 sao và 2 vạch, tổng 7 vị trí. Có C(7, 2) = 21 cách.</figcaption>
+    </figure>
+    <p>Nếu mỗi bạn phải có <strong>ít nhất một</strong> viên, em phát trước cho mỗi bạn 1 viên, còn n − k viên chia tự do: C(n − k + k − 1, k − 1) = <span class="math">C(n − 1, k − 1)</span>. Với 5 viên và 3 bạn là C(4, 2) = 6 cách. Cách nghĩ khác: đặt 2 vạch vào 4 khe <em>giữa</em> 5 viên kẹo.</p>
+    <p>Bài toán này còn có dạng “đếm nghiệm nguyên không âm của x₁ + x₂ + … + x<sub>k</sub> = n”. Hai cách phát biểu là một.</p>
+
+    <h3>3. Hoán vị lặp: n! / (c₁! · c₂! · …)</h3>
+    <p>Xâu “aabac” có 5 chữ cái, trong đó 3 chữ a, 1 chữ b, 1 chữ c. Nếu 5 chữ khác nhau thì có 5! = 120 cách xếp. Thử tô màu ba chữ a thành a₁, a₂, a₃: mỗi xâu thật như “aabac” ứng với 3! = 6 cách tô màu. Vậy số xâu khác nhau là 120 / 6 = 20. Tổng quát, nếu các chữ lặp lại c₁, c₂, …, c<sub>m</sub> lần thì đáp án là</p>
+    <div class="math-block"><span class="frac"><span>n!</span><span>c₁! · c₂! · … · c<sub>m</sub>!</span></span> = C(n, c₁) · C(n − c₁, c₂) · C(n − c₁ − c₂, c₃) · …</div>
+    <p>Cách viết bên phải nói: chọn c₁ vị trí cho chữ thứ nhất, rồi chọn c₂ vị trí trong số còn lại cho chữ thứ hai… Với “aabac”: C(5, 3) · C(2, 1) · C(1, 1) = 10 · 2 · 1 = 20. Khi lấy mod, em dùng fact và inv_fact: fact[n] · inv_fact[c₁] · inv_fact[c₂] · … mod p.</p>
+
+    <h3>4. Nhị thức Newton</h3>
+    <div class="math-block">(a + b)ⁿ = C(n, 0)aⁿ + C(n, 1)aⁿ⁻¹b + C(n, 2)aⁿ⁻²b² + … + C(n, n)bⁿ</div>
+    <p>Vì sao? Khai triển (a + b)(a + b)…(a + b) gồm n ngoặc: từ mỗi ngoặc em lấy a hoặc b rồi nhân lại. Số hạng aⁿ⁻ᵏbᵏ xuất hiện mỗi khi em lấy b ở đúng k ngoặc, và có C(n, k) cách chọn k ngoặc đó. Ví dụ (a + b)⁴ = a⁴ + 4a³b + 6a²b² + 4ab³ + b⁴, hệ số đúng là hàng 4 của tam giác. Thay a = 10, b = 1: 11⁴ = 14 641, cũng là hàng 4 viết liền! Thay a = b = 1: 2ⁿ = tổng hàng n, đúng như tính chất đã chứng minh.</p>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Ví dụ đầu tiên dựng tam giác Pascal bằng tay. Ô <strong>đỏ</strong> là ô đang tính, hai ô <strong>vàng</strong> phía trên là hai ô được cộng lại. Ô xám có dấu “?” là ô chưa tính.</p>
+
+    <div class="stepper" data-title="Ví dụ 1: dựng tam giác Pascal từ hàng 0 đến hàng 5">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Hàng 0 chỉ có một số: C(0, 0) = 1 (chọn 0 thứ từ 0 thứ: một cách, là không chọn gì).">
+        <div class="pascal-tri"><div class="arr"><span class="cell is-active">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Hàng 1: hai mép luôn bằng 1, vì C(n, 0) = C(n, n) = 1.">
+        <div class="pascal-tri"><div class="arr"><span class="cell">1</span></div><div class="arr"><span class="cell is-active">1</span><span class="cell is-active">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; Hàng 2: ô giữa bằng tổng hai ô phía trên. C(2, 1) = C(1, 0) + C(1, 1) = 1 + 1 = 2.">
+        <div class="pascal-tri"><div class="arr"><span class="cell">1</span></div><div class="arr"><span class="cell is-cmp">1</span><span class="cell is-cmp">1</span></div><div class="arr"><span class="cell">1</span><span class="cell is-active">2</span><span class="cell">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; Hàng 3, ô k = 1: C(3, 1) = C(2, 0) + C(2, 1) = 1 + 2 = 3. Ô k = 2 chưa tính.">
+        <div class="pascal-tri"><div class="arr"><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">1</span></div><div class="arr"><span class="cell is-cmp">1</span><span class="cell is-cmp">2</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell is-active">3</span><span class="cell is-dim">?</span><span class="cell">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; Ô k = 2: C(3, 2) = C(2, 1) + C(2, 2) = 2 + 1 = 3. Hàng 3 là 1 3 3 1, đọc xuôi ngược như nhau (đối xứng).">
+        <div class="pascal-tri"><div class="arr"><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell is-cmp">2</span><span class="cell is-cmp">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">3</span><span class="cell is-active">3</span><span class="cell">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 6.&lt;/b&gt; Hàng 4: C(4, 1) = 1 + 3 = 4 đã có; ô giữa C(4, 2) = C(3, 1) + C(3, 2) = 3 + 3 = 6.">
+        <div class="pascal-tri"><div class="arr"><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">2</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell is-cmp">3</span><span class="cell is-cmp">3</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell is-ok">4</span><span class="cell is-active">6</span><span class="cell is-dim">?</span><span class="cell">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 7.&lt;/b&gt; Hàng 5: C(5, 1) = 1 + 4 = 5; rồi C(5, 2) = C(4, 1) + C(4, 2) = 4 + 6 = 10. Đây là số cách chọn 2 bạn trực nhật trong 5 bạn.">
+        <div class="pascal-tri"><div class="arr"><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">2</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">3</span><span class="cell">3</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell is-cmp">4</span><span class="cell is-cmp">6</span><span class="cell">4</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell is-ok">5</span><span class="cell is-active">10</span><span class="cell is-dim">?</span><span class="cell is-dim">?</span><span class="cell">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 8.&lt;/b&gt; Hàng 5 hoàn chỉnh: 1 5 10 10 5 1. Tổng hàng là 32 = 2⁵. Cả bảng 6 hàng chỉ tốn 10 phép cộng cho các ô bên trong.">
+        <div class="pascal-tri"><div class="arr"><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">2</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">3</span><span class="cell">3</span><span class="cell">1</span></div><div class="arr"><span class="cell">1</span><span class="cell">4</span><span class="cell">6</span><span class="cell">4</span><span class="cell">1</span></div><div class="arr"><span class="cell is-ok">1</span><span class="cell is-ok">5</span><span class="cell is-ok">10</span><span class="cell is-ok">10</span><span class="cell is-ok">5</span><span class="cell is-ok">1</span></div></div>
+      </div>
+    </div>
+    <p>Ví dụ thứ hai chạy cách giai thừa kèm nghịch đảo với số nhỏ để em tự kiểm tra được bằng tay: p = 13 (số nguyên tố), N = 6. Cột cuối kiểm tra fact[i] · inv_fact[i] mod 13 có bằng 1 không.</p>
+
+    <div class="stepper" data-title="Ví dụ 2: bảng fact và inv_fact với p = 13, N = 6">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Dựng fact: nhân dồn rồi lấy dư. 4! = 24 ≡ 11; 5! ≡ 11 · 5 = 55 ≡ 3; 6! ≡ 3 · 6 = 18 ≡ 5 (mod 13).">
+        <table class="trace">
+          <thead><tr><th>i</th><th>fact[i]</th><th>inv_fact[i]</th><th>fact · inv mod 13</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>1</td><td></td><td></td></tr>
+            <tr><td>1</td><td>1</td><td></td><td></td></tr>
+            <tr><td>2</td><td>2</td><td></td><td></td></tr>
+            <tr><td>3</td><td>6</td><td></td><td></td></tr>
+            <tr class="hl"><td>4</td><td>11</td><td></td><td></td></tr>
+            <tr class="hl"><td>5</td><td>3</td><td></td><td></td></tr>
+            <tr class="hl"><td>6</td><td>5</td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Một lần lũy thừa nhanh: inv_fact[6] = 5&lt;sup&gt;11&lt;/sup&gt; mod 13. Ta có 5² = 25 ≡ 12, 5⁴ ≡ 12² = 144 ≡ 1, 5⁸ ≡ 1. Vì 11 = 8 + 2 + 1 nên 5&lt;sup&gt;11&lt;/sup&gt; ≡ 1 · 12 · 5 = 60 ≡ 8. Kiểm tra: 5 · 8 = 40 ≡ 1.">
+        <table class="trace">
+          <thead><tr><th>i</th><th>fact[i]</th><th>inv_fact[i]</th><th>fact · inv mod 13</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>1</td><td></td><td></td></tr>
+            <tr><td>1</td><td>1</td><td></td><td></td></tr>
+            <tr><td>2</td><td>2</td><td></td><td></td></tr>
+            <tr><td>3</td><td>6</td><td></td><td></td></tr>
+            <tr><td>4</td><td>11</td><td></td><td></td></tr>
+            <tr><td>5</td><td>3</td><td></td><td></td></tr>
+            <tr class="hl"><td>6</td><td>5</td><td>8</td><td>40 mod 13 = 1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; Đi ngược, không cần lũy thừa nữa: inv_fact[5] = 8 · 6 = 48 ≡ 9; inv_fact[4] = 9 · 5 = 45 ≡ 6. Kiểm tra: 3 · 9 = 27 ≡ 1 và 11 · 6 = 66 ≡ 1.">
+        <table class="trace">
+          <thead><tr><th>i</th><th>fact[i]</th><th>inv_fact[i]</th><th>fact · inv mod 13</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>1</td><td></td><td></td></tr>
+            <tr><td>1</td><td>1</td><td></td><td></td></tr>
+            <tr><td>2</td><td>2</td><td></td><td></td></tr>
+            <tr><td>3</td><td>6</td><td></td><td></td></tr>
+            <tr class="hl"><td>4</td><td>11</td><td>6</td><td>66 mod 13 = 1</td></tr>
+            <tr class="hl"><td>5</td><td>3</td><td>9</td><td>27 mod 13 = 1</td></tr>
+            <tr><td>6</td><td>5</td><td>8</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; Tiếp tục: inv_fact[3] = 6 · 4 = 24 ≡ 11; inv_fact[2] = 11 · 3 = 33 ≡ 7; inv_fact[1] = 7 · 2 = 14 ≡ 1; inv_fact[0] = 1 · 1 = 1. Mọi dòng đều kiểm tra ra 1.">
+        <table class="trace">
+          <thead><tr><th>i</th><th>fact[i]</th><th>inv_fact[i]</th><th>fact · inv mod 13</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>0</td><td>1</td><td>1</td><td>1</td></tr>
+            <tr class="hl"><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+            <tr class="hl"><td>2</td><td>2</td><td>7</td><td>14 mod 13 = 1</td></tr>
+            <tr class="hl"><td>3</td><td>6</td><td>11</td><td>66 mod 13 = 1</td></tr>
+            <tr><td>4</td><td>11</td><td>6</td><td>1</td></tr>
+            <tr><td>5</td><td>3</td><td>9</td><td>1</td></tr>
+            <tr><td>6</td><td>5</td><td>8</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; Trả lời truy vấn. C(6, 2) = fact[6] · inv_fact[2] · inv_fact[4] = 5 · 7 · 6: 5 · 7 = 35 ≡ 9, 9 · 6 = 54 ≡ 2. Thật vậy C(6, 2) = 15 ≡ 2. Tương tự C(5, 2) = 3 · 7 · 11: 21 ≡ 8, 8 · 11 = 88 ≡ 10, đúng bằng 10.">
+        <table class="trace">
+          <thead><tr><th>Truy vấn</th><th>Công thức</th><th>Kết quả mod 13</th><th>Giá trị thật</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>C(6, 2)</td><td>5 · 7 · 6</td><td>2</td><td>15 ≡ 2</td></tr>
+            <tr class="hl"><td>C(5, 2)</td><td>3 · 7 · 11</td><td>10</td><td>10</td></tr>
+            <tr><td>C(6, 3)</td><td>5 · 11 · 11</td><td>7</td><td>20 ≡ 7</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="playground" id="viz-binomial">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: tam giác Pascal</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="binomial-n">Số hàng n (0–15) <input type="number" id="binomial-n" min="0" max="15" value="7"></label>
+          <label for="binomial-mod">Lấy dư cho (0 = không lấy) <input type="number" id="binomial-mod" min="0" max="1000" value="0"></label>
+          <button type="button" data-act="draw">Vẽ</button>
+        </div>
+        <p>Bấm vào một ô để thấy hai ô “cha” cộng lại thành nó. Thử lấy dư cho 2 với n = 15 để thấy một hoa văn bất ngờ.</p>
+        <div class="pascal-tri small" data-out="tri"></div>
+        <div class="out" data-out="msg" aria-live="polite">Kết quả hiện ở đây.</div>
+      </div>
+    </div>
+  </section>
+
+    <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Chương trình chính giải bài mở đầu: đọc q truy vấn (n, k) với n ≤ 10⁶, in C(n, k) mod 10⁹ + 7. Mảng fact và inv_fact được dựng <strong>một lần</strong> trước khi đọc truy vấn. Chú ý cách viết <code>fact[n] * inv_fact[k] % MOD * inv_fact[n - k] % MOD</code>: lấy dư ngay sau phép nhân đầu tiên để tích không vượt quá khoảng 10¹⁸.</p>
+    <figure class="code">
+      <figcaption><span class="fn">nck_mod.cpp</span> Giai thừa kèm nghịch đảo, mỗi truy vấn O(1)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const long long MOD = 1000000007;    // số nguyên tố
+const int MAXN = 1000000;            // n lớn nhất cần dùng
+long long fact[MAXN + 1], inv_fact[MAXN + 1];
+
+// Lũy thừa nhanh: a^b mod MOD trong O(log b)
+long long power(long long a, long long b) {
+    long long r = 1;
+    a %= MOD;
+    while (b &gt; 0) {
+        if (b &amp; 1) r = r * a % MOD;
+        a = a * a % MOD;
+        b &gt;&gt;= 1;
+    }
+    return r;
+}
+
+void prepare() {
+    fact[0] = 1;
+    for (int i = 1; i &lt;= MAXN; i++) fact[i] = fact[i - 1] * i % MOD;
+    // Fermat nhỏ: nghịch đảo của x là x^(MOD-2). Chỉ cần gọi một lần!
+    inv_fact[MAXN] = power(fact[MAXN], MOD - 2);
+    // Đi ngược: 1/i! = 1/(i+1)! * (i+1)
+    for (int i = MAXN - 1; i &gt;= 0; i--) inv_fact[i] = inv_fact[i + 1] * (i + 1) % MOD;
+}
+
+// C(n, k) mod MOD trong O(1)
+long long C(int n, int k) {
+    if (k &lt; 0 || k &gt; n) return 0;
+    return fact[n] * inv_fact[k] % MOD * inv_fact[n - k] % MOD;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    prepare();
+    int q; cin &gt;&gt; q;
+    while (q--) {
+        int n, k; cin &gt;&gt; n &gt;&gt; k;
+        cout &lt;&lt; C(n, k) &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4
+5 2
+6 3
+10 0
+1000000 500000</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">10
+20
+1
+996692777</code></pre></div>
+    </div>
+
+    <p>Khi n nhỏ (tới vài nghìn) hoặc khi số chia <strong>không phải số nguyên tố</strong> (ví dụ 10⁹ hay 2³²), em dùng bảng Pascal. Bảng chỉ có phép cộng nên đúng với mọi số chia.</p>
+    <figure class="code">
+      <figcaption><span class="fn">pascal.cpp</span> Bảng Pascal, trả lời truy vấn bằng cách tra bảng</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const int MOD = 1000000007;
+const int MAXN = 2000;           // tăng lên 5000 nếu bộ nhớ cho phép (~100 MB với int)
+int C[MAXN + 1][MAXN + 1];       // C[i][j] = tổ hợp chập j của i, đã lấy mod
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    // Dựng tam giác Pascal một lần, dùng cho mọi truy vấn
+    for (int i = 0; i &lt;= MAXN; i++) {
+        C[i][0] = C[i][i] = 1;                       // hai mép luôn bằng 1
+        for (int j = 1; j &lt; i; j++)
+            C[i][j] = (C[i - 1][j - 1] + C[i - 1][j]) % MOD;   // chỉ có phép cộng
+    }
+    int q; cin &gt;&gt; q;
+    while (q--) {
+        int n, k; cin &gt;&gt; n &gt;&gt; k;
+        if (k &lt; 0 || k &gt; n) cout &lt;&lt; 0 &lt;&lt; '\n';      // chọn quá số phần tử: 0 cách
+        else cout &lt;&lt; C[n][k] &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4
+5 2
+6 3
+10 0
+3 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">10
+20
+1
+0</code></pre></div>
+    </div>
+
+    <p>Còn khi đề không lấy dư và đáp án đảm bảo vừa long long, em dùng nhân chia xen kẽ:</p>
+    <figure class="code">
+      <figcaption><span class="fn">nck_exact.cpp</span> C(n, k) chính xác, an toàn khi n ≤ 61</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+// C(n, k) chính xác (không mod), dùng khi kết quả vừa long long
+long long Cexact(long long n, long long k) {
+    if (k &lt; 0 || k &gt; n) return 0;
+    k = min(k, n - k);                 // dùng đối xứng để vòng lặp ngắn hơn
+    long long r = 1;
+    for (long long i = 1; i &lt;= k; i++)
+        r = r * (n - k + i) / i;       // luôn chia hết: r lúc này là C(n-k+i, i)
+    return r;
+}
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    long long n, k;
+    while (cin &gt;&gt; n &gt;&gt; k) cout &lt;&lt; Cexact(n, k) &lt;&lt; '\n';   // đọc tới hết dữ liệu
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 2
+52 5
+60 30</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">10
+2598960
+118264581564861424</code></pre></div>
+    </div>
+    <p>Số 2 598 960 = C(52, 5) là số cách rút 5 lá từ bộ bài 52 lá.</p>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Cách</th><th>Tiền xử lý</th><th>Mỗi truy vấn</th><th>Bộ nhớ</th><th>Dùng khi</th></tr></thead>
+      <tbody>
+        <tr><td>Giai thừa thẳng</td><td>—</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(1)</span></td><td>Chỉ khi n ≤ 20, không mod</td></tr>
+        <tr><td>Đệ quy không nhớ</td><td>—</td><td><span class="bigo">O(C(n, k))</span></td><td><span class="bigo">O(n)</span></td><td>Không nên dùng</td></tr>
+        <tr><td>Tam giác Pascal</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(1)</span></td><td><span class="bigo">O(n²)</span></td><td>n ≤ 5000, mod bất kỳ</td></tr>
+        <tr><td>Nhân chia xen kẽ</td><td>—</td><td><span class="bigo">O(k)</span></td><td><span class="bigo">O(1)</span></td><td>Không mod, n ≤ 61 (hoặc __int128)</td></tr>
+        <tr><td>fact + inv_fact</td><td><span class="bigo">O(N + log p)</span></td><td><span class="bigo">O(1)</span></td><td><span class="bigo">O(N)</span></td><td>N cỡ 10⁶ (tới 10⁷ nếu đủ bộ nhớ), p nguyên tố <td>N ≤ 10⁷, p nguyên tố &gt; N</td>gt; N</td></tr>
+        <tr><td>Lucas (xem Biến thể)</td><td><span class="bigo">O(p)</span></td><td><span class="bigo">O(log<sub>p</sub> n)</span></td><td><span class="bigo">O(p)</span></td><td>n tới 10¹⁸, p nguyên tố nhỏ</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Ví dụ đếm phép tính.</strong></p>
+    <ul>
+      <li>Pascal với n = 5000: khoảng 12,5 triệu ô. Nếu lưu bằng <code>int</code> thì cần 5001 · 5001 · 4 byte ≈ 100 MB; dùng <code>long long</code> là 200 MB, dễ vượt giới hạn bộ nhớ. Vì đã lấy dư nên mọi giá trị nhỏ hơn 10⁹ + 7, vừa <code>int</code>; hãy dùng <code>int</code> cho bảng.</li>
+      <li>Pascal với n = 10⁶: khoảng 5 · 10¹¹ ô. Không thể chạy kịp, càng không đủ bộ nhớ. Đây là lý do phải chuyển sang giai thừa.</li>
+      <li>fact + inv_fact với N = 10⁶ và q = 10⁵: khoảng 2 · 10⁶ phép nhân tiền xử lý cộng 2 · 10⁵ phép nhân cho truy vấn. Hai mảng long long chiếm 16 MB.</li>
+    </ul>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Pascal chỉ với một hàng</h3>
+    <p>Nếu chỉ cần hàng n (không cần cả bảng), em giữ một mảng một chiều và cập nhật tại chỗ. Phải đi <strong>từ phải sang trái</strong>: khi tính row[j], ô row[j − 1] vẫn còn là giá trị của hàng cũ. Đi từ trái sang phải thì row[j − 1] đã bị ghi đè bằng hàng mới, kết quả sai. Đây cũng là mẹo của bài <a href="knapsack.html">cái túi</a>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">pascal_row.cpp</span> In hàng n của tam giác, bộ nhớ O(n)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int MOD = 1000000007;
+int main() {
+    int n; cin &gt;&gt; n;
+    vector&lt;long long&gt; row(n + 1, 0);   // chỉ giữ MỘT hàng của tam giác
+    row[0] = 1;
+    for (int i = 1; i &lt;= n; i++)
+        for (int j = i; j &gt;= 1; j--)       // đi từ PHẢI sang TRÁI
+            row[j] = (row[j] + row[j - 1]) % MOD;
+    for (int j = 0; j &lt;= n; j++) cout &lt;&lt; row[j] &lt;&lt; ' ';
+    cout &lt;&lt; '\n';
+}</code></pre>
+    </figure>
+
+    <h3>Tính cả một hàng bằng công thức truy hồi theo k</h3>
+    <p>Từ định nghĩa, C(n, k + 1) = C(n, k) · (n − k) / (k + 1). Khi lấy mod p nguyên tố, “chia cho k + 1” là nhân với nghịch đảo của k + 1. Có n + 1 số nên tốn O(n log p) nếu tính nghịch đảo bằng lũy thừa, hoặc O(n) nếu dùng bảng fact, inv_fact. Đây là hướng giải bài in hàng thứ n của tam giác Pascal với n tới 10⁵.</p>
+
+    <h3>n rất lớn nhưng k nhỏ</h3>
+    <p>Ví dụ n = 10¹⁸, k ≤ 10⁶. Không thể dựng fact tới n, nhưng có thể dùng</p>
+    <div class="math-block">C(n, k) = <span class="frac"><span>n · (n − 1) · … · (n − k + 1)</span><span>k!</span></span></div>
+    <p>Tử số có k thừa số, mỗi thừa số lấy (n − i) mod p rồi nhân dồn; mẫu số là k!, nhân với nghịch đảo một lần. Độ phức tạp O(k + log p). Cách này đúng miễn là k &lt; p (để k! có nghịch đảo).</p>
+    <figure class="code">
+      <figcaption><span class="fn">nck_bign.cpp</span> Hàm C(n, k) khi n lớn, k nhỏ</figcaption>
+<pre><code class="language-cpp">const long long MOD = 1000000007;
+// power(a, b) là hàm lũy thừa nhanh như trong nck_mod.cpp
+// C(n, k) mod MOD khi n rất lớn (tới 10^18) nhưng k nhỏ (k &lt;= 10^6, k &lt; MOD)
+long long Cbig(long long n, long long k) {
+    if (k &lt; 0 || k &gt; n) return 0;
+    long long tu = 1, mau = 1;
+    for (long long i = 0; i &lt; k; i++) {
+        tu = tu * ((n - i) % MOD) % MOD;     // n(n-1)...(n-k+1)
+        mau = mau * ((i + 1) % MOD) % MOD;   // k!
+    }
+    return tu * power(mau, MOD - 2) % MOD;
+}</code></pre>
+    </figure>
+
+    <h3>Định lý Lucas (nâng cao)</h3>
+    <p>Khi số nguyên tố p <strong>nhỏ hơn</strong> n, cách giai thừa hỏng: với n ≥ p thì n! chứa thừa số p nên fact[n] ≡ 0, mà k! cũng có thể ≡ 0 và không có nghịch đảo. Định lý Lucas cứu ta. Viết n và k trong cơ số p:</p>
+    <div class="math-block">n = n<sub>t</sub>…n₁n₀ (cơ số p), k = k<sub>t</sub>…k₁k₀ (cơ số p) ⇒ C(n, k) ≡ C(n₀, k₀) · C(n₁, k₁) · … · C(n<sub>t</sub>, k<sub>t</sub>) (mod p)</div>
+    <p>Mỗi chữ số đều nhỏ hơn p, nên từng C(n<sub>i</sub>, k<sub>i</sub>) tính được bằng fact, inv_fact dựng tới p − 1. Quy ước C(a, b) = 0 khi b &gt; a.</p>
+    <p><strong>Ví dụ với p = 3.</strong> C(7, 3) = 35 ≡ 2 (mod 3). Ta có 7 = 21₃, 3 = 10₃, nên Lucas cho C(2, 1) · C(1, 0) = 2 · 1 = 2. Đúng! Một ví dụ khác: C(10, 4) = 210 ≡ 0 (mod 3). Ta có 10 = 101₃, 4 = 011₃; chữ số giữa cho C(0, 1) = 0, nên tích bằng 0. Cũng đúng.</p>
+    <p><strong>Hệ quả đẹp với p = 2.</strong> C(n, k) lẻ khi và chỉ khi mọi bit 1 của k cũng là bit 1 của n, tức <code>(n &amp; k) == k</code>. Vì vậy số các số lẻ trên hàng n bằng 2 mũ (số bit 1 của n). Hàng 5 = 101₂ có hai bit 1, nên có 2² = 4 số lẻ: 1, 5, 5, 1. Em thử widget ở trên với số chia 2 sẽ thấy hình tam giác Sierpinski.</p>
+    <figure class="code">
+      <figcaption><span class="fn">lucas.cpp</span> C(n, k) mod p với n, k tới 10¹⁸, p nguyên tố nhỏ</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+long long P;                          // số nguyên tố nhỏ (p ≤ 10^6)
+vector&lt;long long&gt; f, inv_f;           // giai thừa và nghịch đảo giai thừa, chỉ tới p - 1
+
+long long power(long long a, long long b) {
+    long long r = 1; a %= P;
+    while (b &gt; 0) { if (b &amp; 1) r = r * a % P; a = a * a % P; b &gt;&gt;= 1; }
+    return r;
+}
+
+// C(n, k) mod P với 0 &lt;= n, k &lt; P
+long long Csmall(long long n, long long k) {
+    if (k &lt; 0 || k &gt; n) return 0;
+    return f[n] * inv_f[k] % P * inv_f[n - k] % P;
+}
+
+// Định lý Lucas: nhân C của từng cặp "chữ số" trong cơ số P
+long long lucas(long long n, long long k) {
+    long long res = 1;
+    while (n &gt; 0 || k &gt; 0) {
+        res = res * Csmall(n % P, k % P) % P;
+        if (res == 0) return 0;        // có một chữ số của k lớn hơn của n
+        n /= P; k /= P;
+    }
+    return res;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int q;
+    cin &gt;&gt; P &gt;&gt; q;
+    f.assign(P, 1); inv_f.assign(P, 1);
+    for (long long i = 1; i &lt; P; i++) f[i] = f[i - 1] * i % P;
+    inv_f[P - 1] = power(f[P - 1], P - 2);
+    for (long long i = P - 1; i &gt; 0; i--) inv_f[i - 1] = inv_f[i] * i % P;
+    while (q--) {
+        long long n, k; cin &gt;&gt; n &gt;&gt; k;
+        cout &lt;&lt; lucas(n, k) &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3 3
+10 4
+7 3
+5 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">0
+2
+1</code></pre></div>
+    </div>
+
+    <h3>Khi số chia không nguyên tố</h3>
+    <p>Với n nhỏ, Pascal vẫn đúng. Với n lớn và số chia m bất kỳ, cách làm khó hơn: phân tích m ra thừa số nguyên tố, đếm số mũ của từng thừa số trong n!, k!, (n − k)! (công thức Legendre), rồi ghép lại bằng định lý thặng dư Trung Hoa. Phần này vượt ngoài chương trình lớp 9; em chỉ cần nhớ rằng <strong>Fermat chỉ dùng được với p nguyên tố</strong>.</p>
+
+    <h3>Vài đẳng thức hay dùng</h3>
+    <ul>
+      <li><strong>Cây gậy khúc côn cầu (hockey stick):</strong> C(k, k) + C(k + 1, k) + … + C(n, k) = C(n + 1, k + 1). Ví dụ C(2, 2) + C(3, 2) + C(4, 2) = 1 + 3 + 6 = 10 = C(5, 3).</li>
+      <li><strong>Vandermonde:</strong> C(m + n, k) = Σ C(m, i) · C(n, k − i). Chọn k người từ m nam và n nữ: chia trường hợp theo số nam i.</li>
+      <li><strong>Số Catalan:</strong> C(2n, n) / (n + 1) đếm số dãy ngoặc đúng độ dài 2n; ví dụ n = 3 cho 20 / 4 = 5 dãy.</li>
+    </ul>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Chia khi đang lấy dư</p><p>Viết <code>fact[n] / (fact[k] * fact[n-k]) % MOD</code> sau khi fact đã lấy dư cho kết quả sai (ví dụ C(5, 2) mod 7 ở trên). Phải nhân với inv_fact, không bao giờ dùng phép chia <code>/</code> trên các số đã lấy dư.</p></div>
+    <div class="callout danger"><p class="callout-title">Tràn số khi nhân ba số</p><p><code>fact[n] * inv_fact[k] * inv_fact[n-k] % MOD</code> nhân ba số cỡ 10⁹ được khoảng 10²⁷, tràn long long trước khi kịp lấy dư. Sửa: <code>fact[n] * inv_fact[k] % MOD * inv_fact[n-k] % MOD</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Bảng Pascal không lấy dư bị tràn int</p><p>Số giữa hàng 34 là C(34, 17) = 2 333 606 220, đã vượt int (khoảng 2,1 · 10⁹). Nếu đề không cho mod mà n lớn, đáp án có thể có hàng nghìn chữ số (C(5000, 2500) có 1504 chữ số); khi đó cần <a href="big-numbers.html">số lớn</a>.</p></div>
+    <div class="callout warn"><p class="callout-title">Quên trường hợp k &gt; n hoặc k &lt; 0</p><p>Truy cập inv_fact[n − k] với n − k âm sẽ đọc ra ngoài mảng. Luôn kiểm tra <code>if (k &lt; 0 || k &gt; n) return 0;</code> ở đầu hàm C.</p></div>
+    <div class="callout warn"><p class="callout-title">Mảng fact chưa đủ dài</p><p>Bài chia kẹo cần C(n + k − 1, k − 1). Với n, k ≤ 10⁶ thì đối số tới gần 2 · 10⁶, nên MAXN phải là 2 · 10⁶ chứ không phải 10⁶. Hãy đọc kỹ đối số lớn nhất mà em sẽ truyền vào hàm C.</p></div>
+    <div class="callout warn"><p class="callout-title">Dùng Fermat khi p không nguyên tố hoặc p ≤ n</p><p>Định lý Fermat nhỏ chỉ đúng với p nguyên tố. Đề cho mod 10⁹ (không nguyên tố) thì dùng Pascal; đề cho p nhỏ như 100003 mà n ≥ p thì dùng Lucas.</p></div>
+    <div class="callout warn"><p class="callout-title">Nhầm tổ hợp với chỉnh hợp</p><p>Chọn lớp trưởng và lớp phó từ 30 bạn có thứ tự: 30 · 29 = 870 cách. Chọn 2 bạn trực nhật không thứ tự: C(30, 2) = 435 cách. Hỏi mình: đổi chỗ hai người có tạo ra cách mới không?</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo</p><p>Viết sẵn một “khuôn” gồm power, prepare và C trong thư viện cá nhân. Khi thi chỉ cần chép vào và sửa MAXN. Gọi prepare() ở đầu main, đừng gọi lại cho mỗi truy vấn.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Hàng 6 của tam giác Pascal là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 1 6 12 18 12 6 1</button>
+        <button type="button" class="quiz-opt" data-correct>B. 1 6 15 20 15 6 1</button>
+        <button type="button" class="quiz-opt">C. 1 5 10 10 5 1</button>
+        <button type="button" class="quiz-opt">D. 1 6 15 15 6 1</button>
+      </div>
+      <p class="quiz-explain">Cộng hai số kề nhau của hàng 5 (1 5 10 10 5 1): 1, 1+5 = 6, 5+10 = 15, 10+10 = 20, 15, 6, 1. Tổng 64 = 2⁶. Phương án C là hàng 5; phương án D chỉ có 6 số trong khi hàng 6 có 7 số.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Một robot đi từ góc trên trái tới góc dưới phải của lưới 3 hàng × 4 cột, mỗi bước sang phải hoặc xuống dưới. Có bao nhiêu đường đi?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 12</button>
+        <button type="button" class="quiz-opt">B. 7</button>
+        <button type="button" class="quiz-opt" data-correct>C. 10</button>
+        <button type="button" class="quiz-opt">D. 35</button>
+      </div>
+      <p class="quiz-explain">Robot đi 2 bước xuống và 3 bước sang, tổng 5 bước. Chọn 2 vị trí cho bước xuống: C(5, 2) = 10.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Vì sao không thể tính C(n, k) mod p bằng <code>fact[n] / (fact[k] * fact[n-k])</code> khi fact đã lấy dư?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Vì phép chia trong C++ chậm hơn phép nhân.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Vì số dư của thương không bằng thương của các số dư; phải nhân với nghịch đảo modulo.</button>
+        <button type="button" class="quiz-opt">C. Vì fact[k] luôn bằng 0.</button>
+        <button type="button" class="quiz-opt">D. Vì C(n, k) không phải số nguyên.</button>
+      </div>
+      <p class="quiz-explain">Ví dụ C(5, 2) mod 7: 5! ≡ 1, 2!·3! ≡ 5, mà 1/5 không phải số nguyên, trong khi đáp án là 3. Nhân với 5⁻¹ ≡ 3 (mod 7) mới ra 1 · 3 = 3.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Chia 10 viên kẹo giống nhau cho 4 bạn, mỗi bạn ít nhất 1 viên. Có bao nhiêu cách?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. C(13, 3) = 286</button>
+        <button type="button" class="quiz-opt" data-correct>B. C(9, 3) = 84</button>
+        <button type="button" class="quiz-opt">C. C(10, 4) = 210</button>
+        <button type="button" class="quiz-opt">D. 4¹⁰</button>
+      </div>
+      <p class="quiz-explain">Đặt 3 vạch vào 9 khe giữa 10 viên kẹo, mỗi khe nhiều nhất một vạch: C(9, 3) = 84. Phương án A là đáp án khi bạn được phép không có kẹo nào.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Đề cho 10⁵ truy vấn C(n, k) mod 10⁹ + 7 với n ≤ 2 · 10⁶. Em chọn cách nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Tam giác Pascal tới hàng 2 · 10⁶.</button>
+        <button type="button" class="quiz-opt">B. Nhân chia xen kẽ cho từng truy vấn.</button>
+        <button type="button" class="quiz-opt" data-correct>C. Dựng fact và inv_fact tới 2 · 10⁶, mỗi truy vấn O(1).</button>
+        <button type="button" class="quiz-opt">D. Định lý Lucas với p = 10⁹ + 7.</button>
+      </div>
+      <p class="quiz-explain">Pascal cần khoảng 2 · 10¹² ô; nhân chia xen kẽ có thể tốn 10⁵ · 10⁶ = 10¹¹ bước và vướng phép chia. Lucas với p lớn hơn n thì chỉ còn một chữ số, chính là cách giai thừa.</p>
+    </div>
+
+    <p><strong>Câu 6.</strong> Tính bằng tay C(7, 3) mod 5 bằng định lý Lucas, rồi kiểm tra lại bằng giá trị thật.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>7 = 12₅ (1 · 5 + 2), 3 = 03₅. Lucas: C(2, 3) · C(1, 0) = 0 · 1 = 0, vì chữ số cuối của k (là 3) lớn hơn của n (là 2). Kiểm tra: C(7, 3) = 35, và 35 chia hết cho 5. Đúng.</p></details>
+
+    <p><strong>Câu 7.</strong> Vì sao vòng lặp tính inv_fact phải đi từ N xuống 0 mà không đi từ 0 lên N?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Công thức inv_fact[i] = inv_fact[i + 1] · (i + 1) cần giá trị ở chỉ số <em>lớn hơn</em>. Ta chỉ biết sẵn inv_fact[N] (tính bằng một lần lũy thừa), nên phải đi ngược xuống. Nếu muốn đi xuôi từ 0 lên, mỗi bước cần chia cho i, tức là cần nghịch đảo của i, lại phải gọi lũy thừa ở mỗi bước.</p></details>
+
+    <p><strong>Câu 8.</strong> Xâu “BANANA” tạo được bao nhiêu xâu khác nhau? Viết theo hai cách.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Có 6 chữ: 3 chữ A, 2 chữ N, 1 chữ B. Cách 1: 6! / (3! · 2! · 1!) = 720 / 12 = 60. Cách 2: chọn 3 vị trí cho A: C(6, 3) = 20, chọn 2 trong 3 vị trí còn lại cho N: C(3, 2) = 3, vị trí cuối cho B: 1. Tích 20 · 3 · 1 = 60.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Bảy bài đầu chỉ cần nội dung chính của bài; bốn bài cuối cần phần biến thể (Lucas, đường đi có chướng ngại).</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cppb1p533">CPPB1P533 – Tam giác pascal</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">In ra n hàng đầu của tam giác Pascal với n ≤ 10.</p>
+        <p class="ex-skill"><b>Luyện:</b> dựng bảng Pascal bằng mảng hai chiều.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Gán hai mép bằng 1, phần giữa bằng tổng hai ô phía trên. Số nhỏ nên không cần lấy dư. Đọc kỹ đề xem hàng đầu tiên là hàng 0 hay hàng 1.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/ncr">NCR – Tam giác Pascal</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Với mỗi n ≤ 10⁵ (tối đa 100 test), in hàng n của tam giác Pascal, mỗi số lấy dư cho 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> fact, inv_fact hoặc truy hồi C(n, k + 1) = C(n, k) · (n − k) / (k + 1).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Bảng Pascal tới 10⁵ quá lớn. Dựng fact, inv_fact tới 10⁵ một lần, rồi in C(n, 0), …, C(n, n). Lượng số in ra có thể rất nhiều nên nhớ dùng <code>'\n'</code> và tắt đồng bộ cin/cout.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/24ct1103combimulti">24CT1103COMBIMULTI – Tổ hợp multitest</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Trả lời t ≤ 10⁵ câu hỏi C(n, k) mod 10⁹ + 7; các subtask lần lượt n ≤ 20, n ≤ 1000, n ≤ 10⁶.</p>
+        <p class="ex-skill"><b>Luyện:</b> thấy rõ ba mức giới hạn ứng với ba cách tính.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Thử làm cả ba cách để so sánh: giai thừa long long cho subtask 1, Pascal cho subtask 2, fact + inv_fact cho subtask 3.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1079">Binomial Coefficients</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Tính n ≤ 10⁵ giá trị C(a, b) mod 10⁹ + 7 với 0 ≤ b ≤ a ≤ 10⁶.</p>
+        <p class="ex-skill"><b>Luyện:</b> cài đặt chuẩn fact, inv_fact, truy vấn O(1).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đây chính là bài mở đầu. Chương trình nck_mod.cpp ở trên giải được ngay.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1716">Distributing Apples</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có n đứa trẻ và m quả táo (n, m ≤ 10⁶). Đếm số cách chia táo (mỗi trẻ có thể không được quả nào), lấy dư 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> chia kẹo Euler, chọn đúng kích thước mảng fact.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>m quả táo là “sao”, n − 1 vạch ngăn. Đáp án C(n + m − 1, n − 1). Đối số lớn nhất gần 2 · 10⁶, nên dựng fact tới 2 · 10⁶.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1715">Creating Strings II</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho một xâu độ dài n ≤ 10⁶ gồm chữ thường. Đếm số xâu khác nhau tạo được bằng cách đổi chỗ các chữ cái, lấy dư 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> hoán vị lặp n! / (c₁! · c₂! · … · c₂₆!).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đếm số lần xuất hiện của từng chữ cái. Đáp án là fact[n] nhân lần lượt với inv_fact[cnt] của 26 chữ cái. Ví dụ “aabac” ra 20.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://atcoder.jp/contests/abc145/tasks/abc145_d">ABC145 D – Knight</a>
+          <span class="judge">AtCoder</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Quân mã ở ô (0, 0), mỗi bước chỉ đi tới (i + 1, j + 2) hoặc (i + 2, j + 1). Đếm số cách tới ô (X, Y) với X, Y ≤ 10⁶, lấy dư 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> quy một bài “trông như lưới” về C(n, k) bằng cách giải hệ phương trình.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Gọi a là số bước loại thứ nhất, b là số bước loại thứ hai: a + 2b = X và 2a + b = Y. Nếu a, b không phải số nguyên không âm thì đáp án 0. Ngược lại, chọn vị trí cho a bước trong a + b bước.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://atcoder.jp/contests/abc042/tasks/arc058_b">ABC042 D – Iroha and a Grid</a>
+          <span class="judge">AtCoder</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Lưới H × W (≤ 10⁵), đi sang phải hoặc xuống dưới từ góc trên trái tới góc dưới phải, cấm đi vào hình chữ nhật A × B ở góc dưới trái. Đếm số đường đi, lấy dư 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> đường đi trên lưới kết hợp quy tắc cộng theo “cửa” đi qua.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mỗi đường đi hợp lệ đi xuống qua ranh giới hàng H − A đúng một lần, tại một cột i ≥ B. Với mỗi cột i, nhân số đường từ góc trên trái tới ô ngay trên ranh giới với số đường từ ô ngay dưới ranh giới tới đích, rồi cộng lại.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/combi">COMBI – Tổ hợp</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho số nguyên tố p và t ≤ 10⁵ truy vấn (n, k) với n, k ≤ 10⁵. In C(n, k) mod p. Chú ý p có thể nhỏ hơn n.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra khi nào cách giai thừa hỏng; dùng Lucas.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Ví dụ trong đề có p = 5 và n = 7: khi đó 5! ≡ 0. Dựng fact, inv_fact tới min(p − 1, 10⁵) rồi áp dụng Lucas. Nhớ trả 0 khi k &gt; n.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/tgpascal">TGPASCAL – Tam giác Pascal</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Đếm số các số lẻ nằm trên dòng thứ N (N ≤ 10⁹) của tam giác Pascal, dòng đánh số từ 0.</p>
+        <p class="ex-skill"><b>Luyện:</b> định lý Lucas với p = 2, thao tác bit.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Không thể dựng dòng N. Dùng hệ quả của Lucas: C(N, k) lẻ khi và chỉ khi (N &amp; k) == k. Đếm số k như vậy theo số bit 1 của N. Thử lại bằng widget với số chia 2.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/c11TCT">C11TCT – Xông nhà ngày Tết</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Khu phố có m ngôi nhà xếp hàng, chọn đúng n nhà để xông đất sao cho không có hai nhà kề nhau. Đếm số cách mod 100003, với m, n ≤ 10¹⁶ và tới 10⁵ test.</p>
+        <p class="ex-skill"><b>Luyện:</b> biến đổi bài đếm về C(n, k), rồi Lucas với p nhỏ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giữa n nhà được chọn có ít nhất n − 1 nhà không chọn. “Rút bớt” mỗi khoảng cách đi một nhà, bài trở thành chọn n nhà tùy ý trong m − n + 1 nhà, tức C(m − n + 1, n). Kiểm tra với ví dụ m = 5, n = 2: C(4, 2) = 6. Vì m tới 10¹⁶ và 100003 là số nguyên tố, dùng Lucas.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/algebra/nCk">VNOI Wiki – Cách tính nCk</a> (tiếng Việt): Pascal, giai thừa kèm nghịch đảo, Lucas, mod không nguyên tố.</li>
+      <li><a href="https://wiki.vnoi.info/algo/math/modular-inverse">VNOI Wiki – Nghịch đảo modulo</a> (tiếng Việt): Fermat nhỏ, Euclid mở rộng, tính nghịch đảo hàng loạt.</li>
+      <li><a href="https://wiki.vnoi.info/translate/he/Number-Theory-5">VNOI Wiki – Các kiến thức cơ bản về Tổ hợp</a> (tiếng Việt): hoán vị, tổ hợp, chia kẹo, nhị thức.</li>
+      <li><a href="https://cp-algorithms.com/combinatorics/binomial-coefficients.html">CP-Algorithms – Binomial Coefficients</a> (tiếng Anh).</li>
+      <li><a href="https://cp-algorithms.com/combinatorics/stars_and_bars.html">CP-Algorithms – Stars and bars</a> (tiếng Anh): chia kẹo Euler.</li>
+      <li><a href="https://cp-algorithms.com/algebra/module-inverse.html">CP-Algorithms – Modular Inverse</a> (tiếng Anh).</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>C(n, k) đếm số cách chọn k phần tử không thứ tự từ n phần tử; C(n, k) = 0 khi k &lt; 0 hoặc k &gt; n.</li>
+        <li>Không tính thẳng n!/(k!(n−k)!): 21! đã tràn long long, và không được chia khi đang lấy dư.</li>
+        <li>Pascal: C(n, k) = C(n−1, k−1) + C(n−1, k) (chọn hay không chọn phần tử cuối). Bảng O(n²), n ≤ 5000, dùng được với mọi số chia.</li>
+        <li>Đối xứng C(n, k) = C(n, n−k); tổng hàng n bằng 2ⁿ.</li>
+        <li>Không mod: nhân rồi chia xen kẽ r = r · (n − k + i) / i, an toàn tới n = 61.</li>
+        <li>n ≤ 10⁶, p nguyên tố lớn: fact[], inv_fact[N] = fact[N]<sup>p−2</sup>, inv_fact[i] = inv_fact[i+1] · (i+1); truy vấn O(1), nhớ lấy dư sau mỗi phép nhân.</li>
+        <li>Dạng quen thuộc: lưới C(m + n, m); chia kẹo C(n + k − 1, k − 1); hoán vị lặp n!/∏cᵢ!; (a + b)ⁿ có hệ số là hàng n.</li>
+        <li>n lớn hơn p nguyên tố nhỏ: định lý Lucas, nhân C của từng chữ số trong cơ số p.</li>
+      </ul>
+    </div>
+  </section>
+
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/binomial.js"></script>
+</body>
+</html>

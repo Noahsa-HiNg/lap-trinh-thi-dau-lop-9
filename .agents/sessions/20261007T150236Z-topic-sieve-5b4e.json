@@ -1,0 +1,12 @@
+{
+  "id": "20261007T150236Z-topic-sieve-5b4e",
+  "agent": "topic-sieve",
+  "task": "Soạn chủ đề sieve",
+  "topic": "sieve",
+  "status": "done",
+  "host": "MyPC",
+  "started_at": "2026-10-07T15:02:36Z",
+  "heartbeat_at": "2026-10-07T15:14:46Z",
+  "ended_at": "2026-10-07T15:14:46Z",
+  "summary": "11 bài tập (8 VI/3 EN), ~6500 từ (gồm code), 2 stepper 12 khung, 1 SVG, widget có"
+}

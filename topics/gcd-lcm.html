@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ƯCLN, BCNN &amp; thuật toán Euclid · Thi đấu lớp 9</title>
+<meta name="description" content="Tính ước chung lớn nhất bằng thuật toán Euclid trong O(log n), bội chung nhỏ nhất không tràn số, ƯCLN của nhiều số và Euclid mở rộng giải ax + by = c.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="gcd-lcm">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Phát biểu được định nghĩa ƯCLN, BCNN và tính tay được bằng thuật toán Euclid.</li>
+      <li>Chứng minh được đẳng thức gcd(a, b) = gcd(b, a mod b) và giải thích vì sao Euclid chỉ cần O(log) bước.</li>
+      <li>Cài đặt được Euclid bằng đệ quy, bằng vòng lặp và dùng đúng <code>std::gcd</code>, <code>std::lcm</code> của C++17.</li>
+      <li>Tính BCNN mà không bị tràn số; tính ƯCLN, BCNN của cả một dãy số.</li>
+      <li>Nhận ra các bài rút gọn phân số, chia nhóm đều, chu kỳ gặp lại, lát gạch vuông là bài ƯCLN/BCNN.</li>
+      <li>(Nâng cao) Dùng Euclid mở rộng tìm x, y với ax + by = gcd(a, b), biết khi nào ax + by = c có nghiệm nguyên.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Ước chung lớn nhất (ƯCLN, tiếng Anh <em>greatest common divisor</em>, viết tắt gcd) của hai số là số lớn nhất chia hết cả hai số đó. Thuật toán Euclid tìm ƯCLN cực nhanh chỉ bằng những phép chia lấy dư liên tiếp. Đây là một trong những thuật toán cổ nhất còn được dùng hằng ngày: nó có từ thời Hy Lạp cổ đại, hơn 2 300 năm trước.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> lớp em có 24 bạn nam và 36 bạn nữ. Cô giáo muốn chia cả lớp thành các nhóm sao cho nhóm nào cũng có số nam bằng nhau và số nữ bằng nhau, không thừa bạn nào. Hỏi chia được nhiều nhất bao nhiêu nhóm? Số nhóm phải là ước của 24 và cũng là ước của 36, và ta muốn nó lớn nhất. Đó chính là ƯCLN(24, 36) = 12: có 12 nhóm, mỗi nhóm 2 nam và 3 nữ.</p></div>
+    </div>
+
+    <p>Anh em sinh đôi với ƯCLN là bội chung nhỏ nhất (BCNN, tiếng Anh <em>least common multiple</em>, viết tắt lcm). Nếu xe buýt tuyến A cứ 12 phút có một chuyến, tuyến B cứ 18 phút có một chuyến, và hai xe vừa cùng rời bến lúc 7 giờ, thì lần tiếp theo chúng cùng rời bến là sau BCNN(12, 18) = 36 phút, tức 7 giờ 36.</p>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Cho hai số nguyên không âm a, b không đồng thời bằng 0.</p>
+      <ul>
+        <li><strong>Ước chung</strong> của a và b là số nguyên dương d chia hết cả a lẫn b (viết d | a và d | b).</li>
+        <li><strong>ƯCLN</strong>, ký hiệu gcd(a, b), là ước chung lớn nhất. Quy ước gcd(a, 0) = a, vì mọi số đều chia hết 0.</li>
+        <li><strong>BCNN</strong> của hai số nguyên dương a, b, ký hiệu lcm(a, b), là số nguyên dương nhỏ nhất chia hết cho cả a và b.</li>
+        <li>Hai số gọi là <strong>nguyên tố cùng nhau</strong> nếu gcd(a, b) = 1, ví dụ 8 và 15.</li>
+      </ul>
+    </div>
+
+    <p>Ví dụ: các ước của 12 là 1, 2, 3, 4, 6, 12; các ước của 18 là 1, 2, 3, 6, 9, 18. Ước chung là 1, 2, 3, 6, nên gcd(12, 18) = 6. Các bội của 12 là 12, 24, 36, 48…; các bội của 18 là 18, 36, 54…; bội chung nhỏ nhất là 36, nên lcm(12, 18) = 36. Em để ý: 6 · 36 = 216 = 12 · 18. Đây không phải ngẫu nhiên, ta sẽ dùng nó ở phần sau.</p>
+
+    <p>Ở bài <a href="divisors-primes.html">Ước và số nguyên tố</a>, em đã biết cách phân tích thừa số nguyên tố. Từ đó cũng tính được ƯCLN: 12 = 2² · 3 và 18 = 2 · 3², lấy mỗi thừa số chung với số mũ nhỏ nhất được 2 · 3 = 6. Cách này đúng nhưng phải phân tích cả hai số, tốn O(√n). Bài này dạy một cách nhanh hơn rất nhiều.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>ƯCLN và BCNN xuất hiện trong rất nhiều bài thi học sinh giỏi lớp 9, thường là bài 1 hoặc bài 2. Đôi khi đề nói thẳng “tìm ƯCLN”, nhưng thường nó được giấu trong một câu chuyện. Một số dạng hay gặp:</p>
+    <table>
+      <thead><tr><th>Dạng bài</th><th>Ví dụ</th><th>Dùng gì</th></tr></thead>
+      <tbody>
+        <tr><td>Rút gọn phân số</td><td>84/126 = 2/3</td><td>Chia tử và mẫu cho gcd(84, 126) = 42</td></tr>
+        <tr><td>Chia nhóm đều, cắt đoạn bằng nhau</td><td>24 nam, 36 nữ thành 12 nhóm</td><td>gcd của các số lượng</td></tr>
+        <tr><td>Ô vuông lớn nhất lát kín hình chữ nhật</td><td>Nền 21 × 15 lát bằng gạch 3 × 3</td><td>Cạnh gạch = gcd(dài, rộng)</td></tr>
+        <tr><td>Chu kỳ gặp lại, sự kiện lặp lại</td><td>Xe 12 phút và 18 phút gặp lại sau 36 phút</td><td>lcm của các chu kỳ</td></tr>
+        <tr><td>Cộng, trừ phân số</td><td>1/6 − 5/12 = −1/4</td><td>Quy đồng mẫu bằng lcm, rút gọn bằng gcd</td></tr>
+        <tr><td>Phương trình nghiệm nguyên ax + by = c</td><td>21x + 15y = 12</td><td>Euclid mở rộng</td></tr>
+        <tr><td>Nghịch đảo modulo</td><td>3 · 5 ≡ 1 (mod 7)</td><td>Euclid mở rộng</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề có các cụm từ “chia đều”, “nhiều nhất bao nhiêu nhóm”, “hình vuông lớn nhất”, “phân số tối giản”, “cùng lúc lần tiếp theo”, “sau bao lâu lại gặp nhau”, “chia hết cho cả”. Giới hạn số rất lớn (a, b ≤ 10⁹ hoặc 10¹⁸) mà vẫn đòi chạy nhanh là dấu hiệu phải dùng Euclid, không được duyệt.</p></div>
+
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho hai số nguyên dương a, b ≤ 10⁹. Tính gcd(a, b).</p>
+
+    <h3>Cách ngây thơ: thử từng số</h3>
+    <p>Ước chung không thể lớn hơn số nhỏ hơn. Vậy ta thử d từ min(a, b) giảm dần về 1, gặp số d đầu tiên chia hết cả hai thì dừng.</p>
+    <pre class="pseudo"><b>hàm</b> GcdNgayTho(a, b):
+    <b>với</b> d <b>từ</b> min(a, b) <b>giảm về</b> 1:
+        <b>nếu</b> a mod d = 0 <b>và</b> b mod d = 0:
+            <b>trả về</b> d</pre>
+    <p>Thử với a = 1 000 000 000 và b = 999 999 999. Hai số liên tiếp luôn nguyên tố cùng nhau, nên d phải chạy từ 999 999 999 về tận 1: gần <strong>10⁹ lần thử</strong>, mỗi lần hai phép chia. Máy chấm làm khoảng 10⁸ phép tính mỗi giây, nên một lần tính đã mất khoảng 10 giây. Nếu đề có 10⁵ cặp số cần tính thì không bao giờ xong.</p>
+
+    <h3>Euclid dạng trừ: tốt hơn nhưng vẫn có thể chậm</h3>
+    <p>Người Hy Lạp nhận xét: ước chung của a và b cũng là ước của a − b. Nên có thể thay số lớn bằng hiệu của hai số, lặp lại tới khi hai số bằng nhau. Ví dụ gcd(24, 36) → gcd(24, 12) → gcd(12, 12) = 12. Rất nhanh! Nhưng với a = 10⁹, b = 1 thì ta phải trừ 1 tới gần 10⁹ lần. Lại chậm.</p>
+
+    <h3>Euclid dạng chia dư: luôn nhanh</h3>
+    <p>Trừ b nhiều lần liên tiếp khỏi a chính là phép chia lấy dư: trừ đến khi không trừ được nữa thì phần còn lại là a mod b. Thay cả chuỗi phép trừ bằng một phép <code>%</code>, ta được thuật toán Euclid hiện đại. Với a = 10⁹, b = 999 999 999: 10⁹ mod 999 999 999 = 1, rồi 999 999 999 mod 1 = 0. Chỉ <strong>2 bước</strong>. Ngay cả trường hợp xấu nhất với a, b ≤ 10⁹ cũng chỉ cần 42 bước.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Thử từng ước</h4><p>Độ phức tạp <span class="bigo">O(min(a, b))</span>. Với a, b ≈ 10⁹ cần tới 10⁹ lần thử, khoảng 10 giây.</p></div>
+      <div class="good-side"><h4>Euclid chia dư</h4><p>Độ phức tạp <span class="bigo">O(log min(a, b))</span>. Với a, b ≤ 10⁹ cần nhiều nhất 42 bước; với a, b ≤ 10¹⁸ cũng chưa tới 90 bước.</p></div>
+    </div>
+
+    <table>
+      <thead><tr><th>Cặp (a, b)</th><th>Thử từng số</th><th>Euclid dạng trừ</th><th>Euclid chia dư</th></tr></thead>
+      <tbody>
+        <tr><td>(36, 24)</td><td>13 lần thử</td><td>2 phép trừ</td><td>2 bước</td></tr>
+        <tr><td>(1071, 462)</td><td>442 lần thử</td><td>11 phép trừ</td><td>3 bước</td></tr>
+        <tr><td>(10⁹, 1)</td><td>1 lần thử</td><td>gần 10⁹ phép trừ</td><td>1 bước</td></tr>
+        <tr><td>(10⁹, 10⁹ − 1)</td><td>gần 10⁹ lần thử</td><td>gần 10⁹ phép trừ</td><td>2 bước</td></tr>
+        <tr><td>(701 408 733, 433 494 437)</td><td>hơn 4 · 10⁸ lần thử</td><td>42 phép trừ</td><td>42 bước</td></tr>
+      </tbody>
+    </table>
+    <p>Hàng cuối là hai số Fibonacci liên tiếp: trường hợp xấu nhất của Euclid, ta sẽ giải thích ở phần “Cách hoạt động”.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>Thuật toán Euclid (dạng chia dư)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Nhận hai số không âm a, b.</div></li>
+      <li><div><strong>Kiểm tra dừng.</strong> Nếu b = 0 thì trả về a. Đó là ƯCLN.</div></li>
+      <li><div><strong>Chia lấy dư.</strong> Tính r = a mod b.</div></li>
+      <li><div><strong>Dịch cặp số.</strong> Thay (a, b) bằng (b, r) rồi quay lại bước 2.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Gcd(a, b):            <i>// dạng vòng lặp</i>
+    <b>khi</b> b ≠ 0:
+        r ← a mod b
+        a ← b
+        b ← r
+    <b>trả về</b> a
+
+<b>hàm</b> GcdDeQuy(a, b):       <i>// dạng đệ quy, ngắn gọn hơn</i>
+    <b>nếu</b> b = 0: <b>trả về</b> a
+    <b>trả về</b> GcdDeQuy(b, a mod b)</pre>
+    <p>Nếu ban đầu a &lt; b thì sao? Bước đầu tiên a mod b = a, cặp (a, b) thành (b, a): thuật toán tự đổi chỗ hai số. Vì vậy em không cần kiểm tra số nào lớn hơn.</p>
+
+    <h3>Euclid dạng trừ (để hiểu ý tưởng)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Lặp.</strong> Khi a ≠ b: nếu a &gt; b thì a ← a − b, ngược lại b ← b − a.</div></li>
+      <li><div><strong>Kết thúc.</strong> Khi a = b thì đó là ƯCLN (với a, b dương).</div></li>
+    </ol>
+
+    <h3>Bội chung nhỏ nhất</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Tính ƯCLN.</strong> g = gcd(a, b) bằng Euclid.</div></li>
+      <li><div><strong>Chia trước, nhân sau.</strong> lcm(a, b) = (a / g) · b. Phép chia luôn chia hết vì g | a.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Lcm(a, b):
+    <b>trả về</b> (a / Gcd(a, b)) * b      <i>// KHÔNG viết a * b / Gcd(a, b): dễ tràn số</i></pre>
+
+    <h3>ƯCLN và BCNN của cả dãy</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> g ← 0 (vì gcd(0, x) = x), l ← 1 (vì lcm(1, x) = x).</div></li>
+      <li><div><strong>Gộp dần.</strong> Với mỗi phần tử x: g ← gcd(g, x), l ← lcm(l, x).</div></li>
+    </ol>
+    <p>Ví dụ gcd(12, 18, 30): gcd(0, 12) = 12, gcd(12, 18) = 6, gcd(6, 30) = 6. Còn lcm(4, 6, 10): lcm(1, 4) = 4, lcm(4, 6) = 12, lcm(12, 10) = 60.</p>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Chạy tay một ví dụ</h3>
+    <p>Tính gcd(1071, 462). Mỗi dòng viết a = q · b + r, với q là thương và r là số dư:</p>
+    <table class="trace">
+      <thead><tr><th>Bước</th><th>a</th><th>b</th><th>Phép chia</th><th>r = a mod b</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>1071</td><td>462</td><td>1071 = 2 · 462 + 147</td><td>147</td></tr>
+        <tr><td>2</td><td>462</td><td>147</td><td>462 = 3 · 147 + 21</td><td>21</td></tr>
+        <tr><td>3</td><td>147</td><td>21</td><td>147 = 7 · 21 + 0</td><td>0</td></tr>
+        <tr class="hl"><td>4</td><td>21</td><td>0</td><td>b = 0, dừng</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p>Vậy gcd(1071, 462) = 21. Kiểm tra: 1071 = 21 · 51 và 462 = 21 · 22, mà 51 và 22 không còn ước chung nào khác 1. Đúng.</p>
+
+    <h3>Vì sao đúng: chìa khóa gcd(a, b) = gcd(b, a mod b)</h3>
+    <p>Gọi r = a mod b, tức là a = q · b + r với q là số nguyên. Ta chứng minh <strong>hai cặp (a, b) và (b, r) có đúng cùng một tập ước chung</strong>. Khi đã cùng tập ước chung thì ước chung lớn nhất cũng bằng nhau.</p>
+    <ul>
+      <li><strong>Chiều 1.</strong> Nếu d | a và d | b thì d | q · b, nên d chia hết hiệu a − q · b = r. Vậy mọi ước chung của (a, b) cũng là ước chung của (b, r).</li>
+      <li><strong>Chiều 2.</strong> Nếu d | b và d | r thì d chia hết tổng q · b + r = a. Vậy mọi ước chung của (b, r) cũng là ước chung của (a, b).</li>
+    </ul>
+    <div class="math-block">gcd(a, b) = gcd(b, a mod b)</div>
+    <p>Mỗi bước số b giảm thật sự (vì 0 ≤ r &lt; b), mà b là số nguyên không âm, nên chắc chắn có lúc b = 0. Khi đó gcd(a, 0) = a vì a là ước lớn nhất của chính nó và mọi số đều chia hết 0. Ghép chuỗi đẳng thức lại: gcd(1071, 462) = gcd(462, 147) = gcd(147, 21) = gcd(21, 0) = 21.</p>
+    <p>Dạng trừ đúng vì cùng lý do với q = 1: gcd(a, b) = gcd(a − b, b). Dạng chia dư chỉ là gộp q phép trừ liên tiếp thành một phép <code>%</code>.</p>
+
+    <h3>Vì sao nhanh: sau hai bước, số giảm ít nhất một nửa</h3>
+    <p>Xét a ≥ b &gt; 0. Ta khẳng định <strong>a mod b &lt; a / 2</strong>. Có hai trường hợp:</p>
+    <ul>
+      <li>Nếu b ≤ a / 2: số dư luôn nhỏ hơn số chia, nên a mod b &lt; b ≤ a / 2.</li>
+      <li>Nếu b &gt; a / 2: a chỉ chứa được một lần b, nên a mod b = a − b &lt; a − a / 2 = a / 2.</li>
+    </ul>
+    <p>Sau hai bước, cặp (a, b) thành (b, r) rồi thành (r, b mod r). Số đứng đầu đã đổi từ a thành r &lt; a / 2. Nghĩa là <strong>cứ hai bước, số lớn giảm ít nhất một nửa</strong>. Số 10⁹ chia đôi khoảng 30 lần là về 1, nên Euclid cần không quá khoảng 2 · 30 = 60 bước. Thực tế còn ít hơn: tối đa 42 bước.</p>
+
+    <h3>Trường hợp xấu nhất: số Fibonacci</h3>
+    <p>Dãy Fibonacci: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55… mỗi số bằng tổng hai số trước. Với hai số Fibonacci liên tiếp, mọi thương q đều bằng 1, nên mỗi bước số chỉ “lùi” đúng một bậc trong dãy:</p>
+    <div class="math-block">gcd(13, 8) → gcd(8, 5) → gcd(5, 3) → gcd(3, 2) → gcd(2, 1) → gcd(1, 0) = 1</div>
+    <p>Mất 5 bước cho hai số chỉ có hai chữ số. Nhà toán học Gabriel Lamé chứng minh năm 1844 rằng đây là trường hợp tệ nhất: <strong>số bước Euclid không vượt quá 5 lần số chữ số của số nhỏ hơn</strong>. Vì số Fibonacci tăng theo cấp số nhân (mỗi số gấp khoảng 1,618 lần số trước), số bước tối đa là O(log min(a, b)).</p>
+    <table>
+      <thead><tr><th>Giới hạn</th><th>Cặp xấu nhất</th><th>Số bước Euclid</th></tr></thead>
+      <tbody>
+        <tr><td>a, b ≤ 100</td><td>(89, 55)</td><td>9</td></tr>
+        <tr><td>a, b ≤ 10⁹</td><td>(701 408 733, 433 494 437)</td><td>42</td></tr>
+        <tr><td>a, b ≤ 10¹⁸</td><td>(F₈₇, F₈₆) ≈ (6,8 · 10¹⁷; 4,2 · 10¹⁷)</td><td>85</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Vì sao gcd · lcm = a · b</h3>
+    <p>Đặt g = gcd(a, b), a = g · x, b = g · y với gcd(x, y) = 1. Một bội chung của a và b phải chia hết cho g · x và g · y. Vì x, y không có ước chung nào ngoài 1, số nhỏ nhất như vậy là g · x · y. Suy ra lcm(a, b) = g · x · y và</p>
+    <div class="math-block">gcd(a, b) · lcm(a, b) = g · (g · x · y) = (g · x) · (g · y) = a · b</div>
+    <p>Ví dụ a = 12, b = 18: g = 6, x = 2, y = 3, lcm = 6 · 2 · 3 = 36. Công thức tính lcm(a, b) = a / g · b chính là g · x · y viết khác đi.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Ba dòng code nhưng chứa cả một chứng minh đẹp. Em hãy tự chạy tay gcd(13, 8) và gcd(1071, 462) ra giấy một lần. Hiểu vì sao đúng thì sẽ không bao giờ quên.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Euclid có một hình ảnh rất đẹp. Em có một tấm bìa hình chữ nhật 21 × 15 và muốn lát kín nó bằng những viên gạch vuông <strong>bằng nhau</strong>, to nhất có thể. Cạnh viên gạch phải chia hết cả 21 lẫn 15, và lớn nhất, nên đó là gcd(21, 15). Cách tìm: cứ cắt đi hình vuông lớn nhất có thể khỏi tấm bìa, lặp lại với phần còn thừa. Mỗi lần cắt chính là một bước Euclid.</p>
+
+    <div class="stepper" data-title="Euclid trên hình chữ nhật 21 × 15">
+      <div class="frame" data-caption="&lt;b&gt;Bước 0.&lt;/b&gt; Tấm bìa 21 × 15. Ta muốn tìm viên gạch vuông lớn nhất lát kín nó. Cặp số ban đầu (a, b) = (21, 15).">
+        <figure class="diagram">
+          <svg viewBox="0 0 250 195" width="250" role="img" aria-label="Hình chữ nhật 21 nhân 15">
+            <rect class="node" x="20" y="20" width="210" height="150"/>
+            <text class="label-sm" x="125" y="14" text-anchor="middle">21</text>
+            <text class="label-sm" x="10" y="98" text-anchor="middle">15</text>
+            <text x="125" y="100" text-anchor="middle">21 × 15</text>
+          </svg>
+        </figure>
+        <table class="trace">
+          <thead><tr><th>Bước</th><th>a</th><th>b</th><th>a = q · b + r</th></tr></thead>
+          <tbody><tr class="hl"><td>0</td><td>21</td><td>15</td><td>—</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Cắt được &lt;b&gt;1&lt;/b&gt; hình vuông 15 × 15 (q = 1). Còn thừa dải 6 × 15, vì 21 mod 15 = 6. Cặp số thành (15, 6).">
+        <figure class="diagram">
+          <svg viewBox="0 0 250 195" width="250" role="img" aria-label="Cắt một hình vuông 15 nhân 15, còn dải 6 nhân 15">
+            <rect class="node is-ok" x="20" y="20" width="150" height="150"/>
+            <rect class="node is-active" x="170" y="20" width="60" height="150"/>
+            <text x="95" y="100" text-anchor="middle">15 × 15</text>
+            <text x="200" y="100" text-anchor="middle">6 × 15</text>
+            <text class="label-sm" x="95" y="14" text-anchor="middle">15</text>
+            <text class="label-sm" x="200" y="14" text-anchor="middle">6</text>
+          </svg>
+        </figure>
+        <table class="trace">
+          <thead><tr><th>Bước</th><th>a</th><th>b</th><th>a = q · b + r</th></tr></thead>
+          <tbody><tr class="hl"><td>1</td><td>21</td><td>15</td><td>21 = 1 · 15 + 6</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Từ dải 6 × 15 cắt được &lt;b&gt;2&lt;/b&gt; hình vuông 6 × 6 (q = 2). Còn thừa 6 × 3, vì 15 mod 6 = 3. Cặp số thành (6, 3).">
+        <figure class="diagram">
+          <svg viewBox="0 0 250 195" width="250" role="img" aria-label="Cắt hai hình vuông 6 nhân 6, còn 6 nhân 3">
+            <rect class="node is-dim" x="20" y="20" width="150" height="150"/>
+            <rect class="node is-cmp" x="170" y="20" width="60" height="60"/>
+            <rect class="node is-cmp" x="170" y="80" width="60" height="60"/>
+            <rect class="node is-active" x="170" y="140" width="60" height="30"/>
+            <text x="200" y="55" text-anchor="middle">6 × 6</text>
+            <text x="200" y="115" text-anchor="middle">6 × 6</text>
+            <text class="label-sm" x="200" y="160" text-anchor="middle">6 × 3</text>
+          </svg>
+        </figure>
+        <table class="trace">
+          <thead><tr><th>Bước</th><th>a</th><th>b</th><th>a = q · b + r</th></tr></thead>
+          <tbody><tr><td>1</td><td>21</td><td>15</td><td>21 = 1 · 15 + 6</td></tr><tr class="hl"><td>2</td><td>15</td><td>6</td><td>15 = 2 · 6 + 3</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; Mảnh 6 × 3 cắt được đúng &lt;b&gt;2&lt;/b&gt; hình vuông 3 × 3, không thừa gì: 6 mod 3 = 0. Cặp số thành (3, 0), thuật toán dừng.">
+        <figure class="diagram">
+          <svg viewBox="0 0 250 195" width="250" role="img" aria-label="Cắt hai hình vuông 3 nhân 3, không còn thừa">
+            <rect class="node is-dim" x="20" y="20" width="150" height="150"/>
+            <rect class="node is-dim" x="170" y="20" width="60" height="60"/>
+            <rect class="node is-dim" x="170" y="80" width="60" height="60"/>
+            <rect class="node is-ok" x="170" y="140" width="30" height="30"/>
+            <rect class="node is-ok" x="200" y="140" width="30" height="30"/>
+            <text class="label-sm" x="185" y="160" text-anchor="middle">3</text>
+            <text class="label-sm" x="215" y="160" text-anchor="middle">3</text>
+          </svg>
+        </figure>
+        <table class="trace">
+          <thead><tr><th>Bước</th><th>a</th><th>b</th><th>a = q · b + r</th></tr></thead>
+          <tbody><tr><td>1</td><td>21</td><td>15</td><td>21 = 1 · 15 + 6</td></tr><tr><td>2</td><td>15</td><td>6</td><td>15 = 2 · 6 + 3</td></tr><tr class="hl"><td>3</td><td>6</td><td>3</td><td>6 = 2 · 3 + 0</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kết quả.&lt;/b&gt; gcd(21, 15) = 3. Hình vuông 3 × 3 lát kín được mọi mảnh đã cắt, nên lát kín cả tấm bìa: 7 · 5 = &lt;b&gt;35&lt;/b&gt; viên. Không có viên vuông nào lớn hơn làm được việc này.">
+        <figure class="diagram">
+          <svg viewBox="0 0 250 195" width="250" role="img" aria-label="Lát kín 21 nhân 15 bằng 35 viên gạch 3 nhân 3">
+            <rect class="node is-ok" x="20" y="20" width="30" height="30"/>
+            <rect class="node is-ok" x="50" y="20" width="30" height="30"/>
+            <rect class="node is-ok" x="80" y="20" width="30" height="30"/>
+            <rect class="node is-ok" x="110" y="20" width="30" height="30"/>
+            <rect class="node is-ok" x="140" y="20" width="30" height="30"/>
+            <rect class="node is-ok" x="170" y="20" width="30" height="30"/>
+            <rect class="node is-ok" x="200" y="20" width="30" height="30"/>
+            <rect class="node is-ok" x="20" y="50" width="30" height="30"/>
+            <rect class="node is-ok" x="50" y="50" width="30" height="30"/>
+            <rect class="node is-ok" x="80" y="50" width="30" height="30"/>
+            <rect class="node is-ok" x="110" y="50" width="30" height="30"/>
+            <rect class="node is-ok" x="140" y="50" width="30" height="30"/>
+            <rect class="node is-ok" x="170" y="50" width="30" height="30"/>
+            <rect class="node is-ok" x="200" y="50" width="30" height="30"/>
+            <rect class="node is-ok" x="20" y="80" width="30" height="30"/>
+            <rect class="node is-ok" x="50" y="80" width="30" height="30"/>
+            <rect class="node is-ok" x="80" y="80" width="30" height="30"/>
+            <rect class="node is-ok" x="110" y="80" width="30" height="30"/>
+            <rect class="node is-ok" x="140" y="80" width="30" height="30"/>
+            <rect class="node is-ok" x="170" y="80" width="30" height="30"/>
+            <rect class="node is-ok" x="200" y="80" width="30" height="30"/>
+            <rect class="node is-ok" x="20" y="110" width="30" height="30"/>
+            <rect class="node is-ok" x="50" y="110" width="30" height="30"/>
+            <rect class="node is-ok" x="80" y="110" width="30" height="30"/>
+            <rect class="node is-ok" x="110" y="110" width="30" height="30"/>
+            <rect class="node is-ok" x="140" y="110" width="30" height="30"/>
+            <rect class="node is-ok" x="170" y="110" width="30" height="30"/>
+            <rect class="node is-ok" x="200" y="110" width="30" height="30"/>
+            <rect class="node is-ok" x="20" y="140" width="30" height="30"/>
+            <rect class="node is-ok" x="50" y="140" width="30" height="30"/>
+            <rect class="node is-ok" x="80" y="140" width="30" height="30"/>
+            <rect class="node is-ok" x="110" y="140" width="30" height="30"/>
+            <rect class="node is-ok" x="140" y="140" width="30" height="30"/>
+            <rect class="node is-ok" x="170" y="140" width="30" height="30"/>
+            <rect class="node is-ok" x="200" y="140" width="30" height="30"/>
+            <text class="label-pen" x="125" y="190" text-anchor="middle">7 cột × 5 hàng = 35 viên 3 × 3</text>
+          </svg>
+        </figure>
+        <table class="trace">
+          <thead><tr><th>Bước</th><th>a</th><th>b</th><th>a = q · b + r</th></tr></thead>
+          <tbody><tr><td>1</td><td>21</td><td>15</td><td>21 = 1 · 15 + 6</td></tr><tr><td>2</td><td>15</td><td>6</td><td>15 = 2 · 6 + 3</td></tr><tr><td>3</td><td>6</td><td>3</td><td>6 = 2 · 3 + 0</td></tr><tr class="hl"><td>4</td><td>3</td><td>0</td><td>b = 0, gcd = 3</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p>Vì sao viên gạch 3 × 3 lát kín được mảnh lớn? Đi ngược lại: nó lát kín 3 × 3, nên lát kín 6 × 3 (hai viên); lát kín 6 × 6 và 6 × 3 thì lát kín 6 × 15; lát kín 15 × 15 và 6 × 15 thì lát kín 21 × 15. Đó chính là “chiều 2” của chứng minh: d | b và d | r thì d | a.</p>
+
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Trường hợp xấu nhất: hai số Fibonacci liên tiếp</p></div>
+      <div class="viz-body">
+        <div class="bars" style="--max:13">
+          <span class="bar is-active" style="--v:13" data-v="13"></span>
+          <span class="bar is-cmp" style="--v:8" data-v="8"></span>
+          <span class="bar" style="--v:5" data-v="5"></span>
+          <span class="bar" style="--v:3" data-v="3"></span>
+          <span class="bar" style="--v:2" data-v="2"></span>
+          <span class="bar is-ok" style="--v:1" data-v="1"></span>
+        </div>
+      </div>
+      <div class="viz-legend"><span><i class="is-active"></i>a ban đầu</span><span><i class="is-cmp"></i>b ban đầu</span><span><i class="is-ok"></i>gcd</span></div>
+      <div class="viz-caption"><p>gcd(13, 8): mỗi bước thương q = 1, số chỉ giảm từ một số Fibonacci xuống số liền trước: 13, 8, 5, 3, 2, 1. Đây là cách giảm chậm nhất có thể, vậy mà vẫn giảm theo cấp số nhân.</p></div>
+    </div>
+
+    <div class="playground" id="viz-gcd-lcm">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: Euclid từng bước</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="gcd-lcm-a">a <input type="text" id="gcd-lcm-a" value="1071" inputmode="numeric"></label>
+          <label for="gcd-lcm-b">b <input type="text" id="gcd-lcm-b" value="462" inputmode="numeric"></label>
+          <button type="button" data-act="run">Chạy</button>
+          <button type="button" data-act="fib">Cặp Fibonacci</button>
+          <button type="button" data-act="rand">Ngẫu nhiên</button>
+        </div>
+        <div class="out">Nhập hai số nguyên không âm (tối đa 18 chữ số) rồi bấm Chạy.</div>
+      </div>
+    </div>
+    <p>Gợi ý thử: (10⁹, 1), (999999999, 1000000000), cặp Fibonacci, và một cặp số bằng nhau. So sánh cột “thử từng số” với “Euclid” để thấy khác biệt.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+
+    <h3>Chương trình chính: ƯCLN và BCNN của hai số</h3>
+    <p>Đề: nhập hai số nguyên dương a, b (≤ 2 · 10⁹), in ra gcd(a, b) và lcm(a, b). BCNN có thể lên tới khoảng 4 · 10¹⁸, vẫn vừa trong <code>long long</code> (tối đa khoảng 9,2 · 10¹⁸), nhưng chỉ khi ta chia trước rồi mới nhân.</p>
+    <figure class="code">
+      <figcaption><span class="fn">gcd_lcm.cpp</span> Euclid vòng lặp và BCNN không tràn số</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// ƯCLN bằng thuật toán Euclid (dạng vòng lặp)
+long long ucln(long long a, long long b) {
+    while (b != 0) {
+        long long r = a % b;   // số dư của a chia b
+        a = b;                 // cặp (a, b) thành (b, r)
+        b = r;
+    }
+    return a;                  // khi b = 0 thì a là ƯCLN
+}
+
+// BCNN: CHIA TRƯỚC rồi mới NHÂN để không bị tràn số
+long long bcnn(long long a, long long b) {
+    return a / ucln(a, b) * b;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    long long a, b;
+    cin &gt;&gt; a &gt;&gt; b;
+    cout &lt;&lt; ucln(a, b) &lt;&lt; ' ' &lt;&lt; bcnn(a, b) &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">1071 462</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">21 23562</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">2000000000 1999999999</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1 3999999998000000000</code></pre></div>
+    </div>
+    <p>Kiểm tra ví dụ 1: 1071 / 21 = 51, rồi 51 · 462 = 23 562. Ví dụ 2: hai số liên tiếp nên gcd = 1 và BCNN bằng tích.</p>
+
+    <h3>Dạng đệ quy</h3>
+    <p>Viết đúng như công thức toán. Độ sâu đệ quy chỉ khoảng 90 tầng với số 10¹⁸, không lo tràn ngăn xếp.</p>
+<pre><code class="language-cpp">long long gcdDeQuy(long long a, long long b) {
+    return b == 0 ? a : gcdDeQuy(b, a % b);
+}</code></pre>
+
+    <h3>Dùng thư viện: std::gcd, std::lcm</h3>
+    <p>Từ C++17, thư viện <code>&lt;numeric&gt;</code> (đã có trong <code>bits/stdc++.h</code>) có sẵn <code>gcd(a, b)</code> và <code>lcm(a, b)</code>. Trình biên dịch GCC còn có hàm cũ <code>__gcd(a, b)</code>. Trong phòng thi em cứ dùng hàm có sẵn cho nhanh, nhưng phải hiểu bên trong là Euclid.</p>
+<pre><code class="language-cpp">long long a = 84, b = 126;
+cout &lt;&lt; gcd(a, b) &lt;&lt; '\n';   // 42
+cout &lt;&lt; lcm(a, b) &lt;&lt; '\n';   // 252
+// Chú ý: hai tham số nên cùng kiểu. gcd(a, 5) với a là long long vẫn được,
+// nhưng lcm vẫn có thể tràn nếu kết quả vượt quá long long.</code></pre>
+
+    <h3>ƯCLN và BCNN của một dãy</h3>
+<pre><code class="language-cpp">int n; cin &gt;&gt; n;
+long long g = 0, l = 1;
+for (int i = 0; i &lt; n; i++) {
+    long long x; cin &gt;&gt; x;
+    g = gcd(g, x);          // gcd(0, x) = x nên khởi tạo g = 0
+    l = l / gcd(l, x) * x;  // cẩn thận: BCNN của dãy tăng rất nhanh
+}
+cout &lt;&lt; g &lt;&lt; ' ' &lt;&lt; l &lt;&lt; '\n';   // dãy 4 6 10 cho: 2 60</code></pre>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thao tác</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Thử từng ước</td><td><span class="bigo">O(min(a, b))</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Phân tích thừa số nguyên tố rồi so</td><td><span class="bigo">O(√a + √b)</span></td><td><span class="bigo">O(log a)</span></td></tr>
+        <tr><td>Euclid dạng trừ</td><td><span class="bigo">O(max(a, b))</span> xấu nhất</td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Euclid chia dư (vòng lặp)</td><td><span class="bigo">O(log min(a, b))</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Euclid chia dư (đệ quy)</td><td><span class="bigo">O(log min(a, b))</span></td><td><span class="bigo">O(log min(a, b))</span> ngăn xếp</td></tr>
+        <tr><td>BCNN hai số</td><td><span class="bigo">O(log min(a, b))</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>gcd của dãy n số ≤ M</td><td><span class="bigo">O(n + log M)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Euclid mở rộng</td><td><span class="bigo">O(log min(a, b))</span></td><td><span class="bigo">O(log min(a, b))</span></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Ví dụ số phép tính.</strong> Đề cho 10⁵ cặp số, mỗi số ≤ 10¹⁸. Euclid tốn tối đa 85 bước mỗi cặp, tổng chưa tới 10⁷ phép chia: chạy trong vài phần trăm giây. Cách thử từng ước thì một cặp đã có thể cần 10¹⁸ lần thử, không bao giờ xong.</p>
+    <p><strong>Vì sao gcd của dãy chỉ O(n + log M)?</strong> Giá trị g chỉ giảm dần, và mỗi lần thật sự đổi thì giảm ít nhất một nửa, nên chỉ đổi khoảng log M lần. Những lần g không đổi (g | x), gcd(g, x) xong sau hai, ba bước. Vậy tính gcd cả dãy gần như tuyến tính.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Rút gọn phân số và cộng trừ phân số</h3>
+    <p>Phân số x / y tối giản khi gcd(x, y) = 1. Để rút gọn, chia cả tử và mẫu cho g = gcd(|x|, y). Ví dụ 84 / 126: g = 42, được 2 / 3. Muốn tính a/b − c/d, ta quy đồng: tử a · d − c · b, mẫu b · d, rồi rút gọn. Tử có thể âm hoặc bằng 0; nhờ gcd(0, y) = y mà phân số 0 / y tự rút thành 0 / 1.</p>
+<pre><code class="language-cpp">long long a, b, c, d;
+cin &gt;&gt; a &gt;&gt; b &gt;&gt; c &gt;&gt; d;            // tính a/b - c/d
+long long x = a * d - c * b;           // tử, có thể âm
+long long y = b * d;                   // mẫu, luôn dương
+long long g = gcd(llabs(x), y);        // llabs: trị tuyệt đối của long long
+x /= g; y /= g;
+cout &lt;&lt; x &lt;&lt; ' ' &lt;&lt; y &lt;&lt; '\n';         // 1 6 5 12 cho: -1 4</code></pre>
+    <p>Kiểm tra: 1/6 − 5/12 có tử 1 · 12 − 5 · 6 = −18, mẫu 72, g = 18, được −1/4. Đúng.</p>
+
+    <h3>2. Tính chất hữu ích: gcd(a, b) = gcd(a − b, b)</h3>
+    <p>Đây là “dạng trừ” của Euclid, nhưng hay dùng để biến đổi đề bài. Ví dụ: gcd(a₁ + x, a₂ + x, …, aₙ + x) = gcd(a₁ + x, a₂ − a₁, …, aₙ − a₁), vì trừ a₁ + x khỏi mỗi số không làm đổi ƯCLN. Phần gcd(a₂ − a₁, …, aₙ − a₁) không phụ thuộc x, tính một lần dùng mãi. Đây là chìa khóa của bài Row GCD trong phần bài tập.</p>
+    <p>Một vài tính chất khác em nên thuộc:</p>
+    <ul>
+      <li>gcd(n, n + 1) = 1, vì gcd(n + 1, n) = gcd(n, 1) = 1.</li>
+      <li>gcd(k · a, k · b) = k · gcd(a, b). Ví dụ gcd(120, 180) = 10 · gcd(12, 18) = 60.</li>
+      <li>Nếu g = gcd(a, b) thì gcd(a / g, b / g) = 1.</li>
+      <li>gcd(a, b) với số âm: lấy theo trị tuyệt đối, gcd(−12, 18) = 6. Hàm <code>std::gcd</code> tự làm việc này.</li>
+      <li>BCNN của dãy tăng rất nhanh: lcm(1, 2, …, 20) = 232 792 560, còn lcm(1, 2, …, 43) ≈ 9,4 · 10¹⁸ đã vượt quá <code>long long</code>.</li>
+    </ul>
+
+    <h3>3. Euclid mở rộng (nâng cao)</h3>
+    <p><strong>Mô tả.</strong> Ngoài g = gcd(a, b), Euclid mở rộng (extended Euclidean algorithm) còn tìm được hai số nguyên x, y (có thể âm) sao cho</p>
+    <div class="math-block">a · x + b · y = gcd(a, b)</div>
+    <p>Đẳng thức này gọi là đẳng thức Bézout. Ví dụ gcd(21, 15) = 3 và 21 · (−2) + 15 · 3 = −42 + 45 = 3.</p>
+    <p><strong>Ý nghĩa.</strong> Hình dung em có một bình 5 lít và một bình 3 lít, muốn đong đúng 1 lít. Vì 5 · 2 + 3 · (−3) = 1, em đổ đầy bình 5 lít hai lần vào thùng (10 lít), rồi múc ra bằng bình 3 lít ba lần (9 lít): trong thùng còn đúng 1 lít. Euclid mở rộng cho ta “công thức pha chế” như vậy. Trong thi đấu nó dùng để giải phương trình nghiệm nguyên ax + by = c và tìm nghịch đảo modulo.</p>
+    <p><strong>Vì sao cần.</strong> Cách ngây thơ: thử x = 0, 1, 2, …, b − 1, xem (g − a · x) có chia hết cho b không. Với b ≈ 10⁹ đó là 10⁹ lần thử. Euclid mở rộng chỉ tốn đúng số bước như Euclid thường, khoảng 42 bước.</p>
+
+    <p><strong>Các bước.</strong></p>
+    <ol class="algo-steps">
+      <li><div><strong>Trường hợp dừng.</strong> Nếu b = 0 thì g = a, và a · 1 + 0 · 0 = a, nên x = 1, y = 0.</div></li>
+      <li><div><strong>Gọi đệ quy.</strong> Giải bài nhỏ hơn với cặp (b, a mod b), được x₁, y₁ thỏa b · x₁ + (a mod b) · y₁ = g.</div></li>
+      <li><div><strong>Lùi về.</strong> Đặt q = a / b (chia nguyên). Khi đó x = y₁ và y = x₁ − q · y₁.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> ExtGcd(a, b):                 <i>// trả về (g, x, y) với a*x + b*y = g</i>
+    <b>nếu</b> b = 0: <b>trả về</b> (a, 1, 0)
+    (g, x1, y1) ← ExtGcd(b, a mod b)
+    q ← a div b
+    <b>trả về</b> (g, y1, x1 − q * y1)</pre>
+
+    <p><strong>Cách hoạt động.</strong> Vì a mod b = a − q · b, thay vào đẳng thức của bài nhỏ:</p>
+    <div class="math-block">g = b · x₁ + (a − q · b) · y₁ = a · y₁ + b · (x₁ − q · y₁)</div>
+    <p>Nhìn vào hệ số của a và b, ta đọc ra ngay x = y₁ và y = x₁ − q · y₁. Thuật toán đi xuống giống hệt Euclid thường, rồi trên đường quay lên thì “dựng” lại x, y từng tầng một. Chạy tay với (21, 15):</p>
+    <table class="trace">
+      <thead><tr><th>Tầng</th><th>a</th><th>b</th><th>q = a div b</th><th>x</th><th>y</th><th>Kiểm tra a · x + b · y</th></tr></thead>
+      <tbody>
+        <tr><td>4</td><td>3</td><td>0</td><td>—</td><td>1</td><td>0</td><td>3 · 1 + 0 · 0 = 3</td></tr>
+        <tr><td>3</td><td>6</td><td>3</td><td>2</td><td>0</td><td>1 − 2 · 0 = 1</td><td>6 · 0 + 3 · 1 = 3</td></tr>
+        <tr><td>2</td><td>15</td><td>6</td><td>2</td><td>1</td><td>0 − 2 · 1 = −2</td><td>15 · 1 + 6 · (−2) = 3</td></tr>
+        <tr class="hl"><td>1</td><td>21</td><td>15</td><td>1</td><td>−2</td><td>1 − 1 · (−2) = 3</td><td>21 · (−2) + 15 · 3 = 3</td></tr>
+      </tbody>
+    </table>
+    <p>Đọc bảng từ dưới lên: tầng 4 là trường hợp dừng, mỗi tầng trên lấy x của mình bằng y của tầng dưới, và y của mình bằng x tầng dưới trừ q nhân y tầng dưới.</p>
+
+    <h3>4. Phương trình ax + by = c có nghiệm nguyên khi nào?</h3>
+    <div class="definition" data-label="Định lý">
+      <p>Với a, b không đồng thời bằng 0 và g = gcd(a, b), phương trình a · x + b · y = c có nghiệm nguyên khi và chỉ khi <strong>g chia hết c</strong>.</p>
+    </div>
+    <ul>
+      <li><strong>Cần:</strong> g | a và g | b nên g chia hết a · x + b · y với mọi x, y nguyên. Vậy nếu g ∤ c thì vô nghiệm. Ví dụ 21x + 15y = 10 vô nghiệm, vì vế trái luôn chia hết cho 3 còn 10 thì không.</li>
+      <li><strong>Đủ:</strong> nếu c = k · g, lấy (x₀, y₀) từ Euclid mở rộng rồi nhân với k: a · (k · x₀) + b · (k · y₀) = k · g = c.</li>
+      <li><strong>Mọi nghiệm:</strong> x = x₀ · k + t · (b / g), y = y₀ · k − t · (a / g), với t là số nguyên bất kỳ. Cộng t · (b / g) vào x và trừ t · (a / g) khỏi y thì tổng a · x + b · y không đổi.</li>
+    </ul>
+    <p>Ví dụ 21x + 15y = 12: g = 3, k = 4, nghiệm riêng x = −8, y = 12. Nghiệm tổng quát x = −8 + 5t, y = 12 − 7t. Với t = 1: x = −3, y = 5, thử lại 21 · (−3) + 15 · 5 = −63 + 75 = 12. Đúng.</p>
+    <figure class="code">
+      <figcaption><span class="fn">ext_euclid.cpp</span> Giải a·x + b·y = c bằng Euclid mở rộng</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Euclid mở rộng: trả về g = gcd(a, b) và tìm x, y sao cho a*x + b*y = g
+long long extgcd(long long a, long long b, long long &amp;x, long long &amp;y) {
+    if (b == 0) {              // gcd(a, 0) = a = a*1 + 0*0
+        x = 1; y = 0;
+        return a;
+    }
+    long long x1, y1;
+    long long g = extgcd(b, a % b, x1, y1);   // b*x1 + (a%b)*y1 = g
+    x = y1;                                   // thay a%b = a - (a/b)*b
+    y = x1 - (a / b) * y1;
+    return g;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    long long a, b, c;
+    cin &gt;&gt; a &gt;&gt; b &gt;&gt; c;        // giải a*x + b*y = c (a, b &gt; 0)
+    long long x, y;
+    long long g = extgcd(a, b, x, y);
+    if (c % g != 0) {          // c không chia hết cho gcd thì vô nghiệm
+        cout &lt;&lt; "VO NGHIEM\n";
+        return 0;
+    }
+    long long k = c / g;       // nhân cả hai vế a*x + b*y = g với k
+    x *= k; y *= k;
+    cout &lt;&lt; "gcd = " &lt;&lt; g &lt;&lt; '\n';
+    cout &lt;&lt; "x = " &lt;&lt; x &lt;&lt; ", y = " &lt;&lt; y &lt;&lt; '\n';
+    // Mọi nghiệm: x + t*(b/g), y - t*(a/g) với t nguyên
+    cout &lt;&lt; "Nghiem tong quat: x = " &lt;&lt; x &lt;&lt; " + " &lt;&lt; b / g &lt;&lt; "t, y = "
+         &lt;&lt; y &lt;&lt; " - " &lt;&lt; a / g &lt;&lt; "t\n";
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">21 15 12</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">gcd = 3
+x = -8, y = 12
+Nghiem tong quat: x = -8 + 5t, y = 12 - 7t</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">21 15 10</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">VO NGHIEM</code></pre></div>
+    </div>
+
+    <h3>5. Liên hệ nghịch đảo modulo</h3>
+    <p>Nghịch đảo của a theo modulo m là số x sao cho a · x ≡ 1 (mod m), tức a · x chia m dư 1. Viết lại: a · x + m · y = 1 với y nguyên nào đó. Theo định lý trên, x tồn tại <strong>khi và chỉ khi gcd(a, m) = 1</strong>, và Euclid mở rộng tìm ra nó. Ví dụ a = 3, m = 7: Euclid mở rộng cho 3 · (−2) + 7 · 1 = 1, nên x = −2 ≡ 5 (mod 7). Thử lại: 3 · 5 = 15 = 2 · 7 + 1. Em sẽ gặp lại nghịch đảo modulo ở bài <a href="modular-power.html">Đồng dư và lũy thừa nhanh</a>, nơi có thêm cách tính bằng lũy thừa khi m là số nguyên tố.</p>
+<pre><code class="language-cpp">// Nghịch đảo của a theo modulo m, trả về -1 nếu không tồn tại
+long long nghichDao(long long a, long long m) {
+    long long x, y;
+    long long g = extgcd(a, m, x, y);
+    if (g != 1) return -1;
+    return (x % m + m) % m;    // đưa x về đoạn [0, m-1] vì x có thể âm
+}</code></pre>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Lỗi 1: Tính BCNN bằng a * b / gcd(a, b)</p><p>Tích a · b có thể tràn trước khi kịp chia. Ví dụ với <code>int</code>, a = b = 100 000: a · b = 10¹⁰ vượt quá giới hạn khoảng 2,1 · 10⁹ của <code>int</code>, ra số rác, dù đáp án lcm = 100 000 rất nhỏ. Với <code>long long</code>, a = b = 10¹⁰ cũng tràn như vậy. <strong>Sửa:</strong> luôn viết <code>a / gcd(a, b) * b</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Lỗi 2: Dùng int cho số lớn</p><p>Đề cho a, b ≤ 10¹⁸ hoặc BCNN tới 4 · 10¹⁸ mà khai báo <code>int</code>. <strong>Sửa:</strong> dùng <code>long long</code> cho số đầu vào, cho kết quả và cho cả kiểu trả về của hàm gcd.</p></div>
+    <div class="callout warn"><p class="callout-title">Lỗi 3: Euclid dạng trừ với số 0</p><p>Vòng <code>while (a != b)</code> với a = 0, b = 5 sẽ lặp mãi: 5 − 0 = 5. Dạng trừ còn chậm khi một số rất nhỏ. <strong>Sửa:</strong> dùng dạng chia dư, nó tự xử lý gcd(a, 0) = a.</p></div>
+    <div class="callout warn"><p class="callout-title">Lỗi 4: Số âm và phép %</p><p>Trong C++, <code>-7 % 3</code> cho <code>-1</code> chứ không phải 2. Hàm gcd tự viết có thể trả về số âm. <strong>Sửa:</strong> lấy trị tuyệt đối trước (<code>llabs</code>) hoặc dùng <code>std::gcd</code>. Khi đưa nghiệm x của Euclid mở rộng về đoạn [0, m − 1], viết <code>(x % m + m) % m</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Lỗi 5: Chia cho 0</p><p>gcd(0, 0) = 0, nên <code>a / gcd(a, b) * b</code> với a = b = 0 sẽ chia cho 0 và chương trình bị lỗi chạy. <strong>Sửa:</strong> nếu đề cho phép số 0, xử lý riêng: lcm(a, 0) = 0.</p></div>
+    <div class="callout warn"><p class="callout-title">Lỗi 6: Khởi tạo sai khi tính cho dãy</p><p>Khởi tạo <code>g = 1</code> thì gcd luôn ra 1. Khởi tạo <code>l = 0</code> thì lcm luôn ra 0. <strong>Sửa:</strong> g bắt đầu từ 0 (hoặc phần tử đầu), l bắt đầu từ 1.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo</p><p><code>std::gcd</code> và <code>std::lcm</code> cần biên dịch với C++17 (<code>-std=c++17</code>). Nếu máy chấm cũ chỉ có C++11, dùng <code>__gcd(a, b)</code>, nhưng hai tham số phải <strong>cùng kiểu</strong>: <code>__gcd(a, 5)</code> với a là <code>long long</code> sẽ báo lỗi, phải viết <code>__gcd(a, 5LL)</code>.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. gcd(0, 25) bằng bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 0</button>
+        <button type="button" class="quiz-opt">B. 1</button>
+        <button type="button" class="quiz-opt" data-correct>C. 25</button>
+        <button type="button" class="quiz-opt">D. Không xác định</button>
+      </div>
+      <p class="quiz-explain">Mọi số đều chia hết 0, nên ước chung của 0 và 25 chính là các ước của 25, lớn nhất là 25. Đây cũng là điều kiện dừng của Euclid: gcd(a, 0) = a.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Cách nào tính BCNN của hai số long long an toàn nhất?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. a * b / gcd(a, b)</button>
+        <button type="button" class="quiz-opt" data-correct>B. a / gcd(a, b) * b</button>
+        <button type="button" class="quiz-opt">C. a * b</button>
+        <button type="button" class="quiz-opt">D. gcd(a, b) * a * b</button>
+      </div>
+      <p class="quiz-explain">Chia trước thì số trung gian a / g không vượt quá a, và kết quả cuối chính là lcm. Cách A nhân trước nên tích a · b có thể tràn dù lcm nhỏ.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Với a, b ≤ 10⁹, thuật toán Euclid chia dư cần nhiều nhất khoảng bao nhiêu bước?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 10⁹</button>
+        <button type="button" class="quiz-opt">B. 31 623 (khoảng √10⁹)</button>
+        <button type="button" class="quiz-opt" data-correct>C. Dưới 50</button>
+        <button type="button" class="quiz-opt">D. Đúng 1</button>
+      </div>
+      <p class="quiz-explain">Sau hai bước số lớn giảm ít nhất một nửa, nên số bước là O(log). Trường hợp xấu nhất là hai số Fibonacci liên tiếp (701 408 733, 433 494 437): 42 bước.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Phương trình 6x + 9y = 7 có nghiệm nguyên không?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Có, x = 1, y = 0</button>
+        <button type="button" class="quiz-opt">B. Có vô số nghiệm</button>
+        <button type="button" class="quiz-opt" data-correct>C. Không có</button>
+      </div>
+      <p class="quiz-explain">gcd(6, 9) = 3 mà 3 không chia hết 7. Vế trái 6x + 9y luôn chia hết cho 3, không bao giờ bằng 7.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Hai đèn nháy cùng lúc. Đèn đỏ cứ 8 giây nháy một lần, đèn xanh cứ 12 giây. Sau bao nhiêu giây chúng lại nháy cùng lúc?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 4 giây</button>
+        <button type="button" class="quiz-opt">B. 20 giây</button>
+        <button type="button" class="quiz-opt" data-correct>C. 24 giây</button>
+        <button type="button" class="quiz-opt">D. 96 giây</button>
+      </div>
+      <p class="quiz-explain">Thời điểm nháy cùng lúc phải là bội của cả 8 và 12; nhỏ nhất là lcm(8, 12) = 8 / 4 · 12 = 24. Đáp án 96 là tích, chỉ là một bội chung chứ không phải nhỏ nhất.</p>
+    </div>
+
+    <p><strong>Câu 6.</strong> Tính tay gcd(252, 198) bằng Euclid, rồi suy ra lcm(252, 198).</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>252 = 1 · 198 + 54; 198 = 3 · 54 + 36; 54 = 1 · 36 + 18; 36 = 2 · 18 + 0. Vậy gcd = 18, mất 4 bước. lcm = 252 / 18 · 198 = 14 · 198 = 2 772.</p>
+    </details>
+    <p><strong>Câu 7.</strong> Tìm hai số nguyên x, y sao cho 35x + 15y = 5.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>35 = 2 · 15 + 5 và 15 = 3 · 5 + 0, nên gcd(35, 15) = 5. Từ dòng đầu: 5 = 35 − 2 · 15, tức x = 1, y = −2. Thử lại: 35 − 30 = 5. Mọi nghiệm khác: x = 1 + 3t, y = −2 − 7t.</p>
+    </details>
+    <p><strong>Câu 8.</strong> Chứng minh hai số tự nhiên liên tiếp n và n + 1 luôn nguyên tố cùng nhau.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Theo Euclid (dạng trừ): gcd(n + 1, n) = gcd(n + 1 − n, n) = gcd(1, n) = 1. Hoặc: nếu d chia hết cả n và n + 1 thì d chia hết hiệu bằng 1, nên d = 1.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Sáu bài có đề tiếng Việt; bài tiếng Anh có tóm tắt tiếng Việt. Em nên làm hết các bài Cơ bản trước khi sang phần Vận dụng.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/ucbc">UCBC – Tìm UCLN, BCNN</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho hai số nguyên dương a, b ≤ 2 · 10⁹. In ra ƯCLN và BCNN của chúng.</p>
+        <p class="ex-skill"><b>Luyện:</b> cài Euclid, tính BCNN không tràn số.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>BCNN có thể gần 4 · 10¹⁸ nên phải dùng <code>long long</code> và viết a / g * b. Chính là chương trình mẫu trong bài.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/14hsg9hnoi1">14HSG9HNOI1 – Hiệu hai phân số</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đề thi học sinh giỏi lớp 9 Hà Nội. Cho a, b, c, d ≤ 10⁵, viết a/b − c/d dưới dạng phân số tối giản x/y với y &gt; 0.</p>
+        <p class="ex-skill"><b>Luyện:</b> quy đồng, rút gọn phân số, xử lý tử âm và tử bằng 0.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tử a·d − c·b, mẫu b·d (tới 10¹⁰, cần <code>long long</code>). Chia cả hai cho gcd(|tử|, mẫu). Xem mục Biến thể 1.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/gcdlcmprod">GCDLCMPROD – ƯCLN và BCNN</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Biết x = ƯCLN(a, b) và y = BCNN(a, b) (x, y ≤ 10⁹), tính (a · b)² chia lấy dư cho 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> đẳng thức gcd · lcm = a · b, lấy dư từng bước.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Không cần tìm a, b: a · b = x · y. Lấy t = x · y mod (10⁹ + 7) (tích ≤ 10¹⁸ vừa <code>long long</code>), đáp án là t · t mod (10⁹ + 7).</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cb0309">CB0309 – GCD lớn nhất</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Với mỗi n (n ≤ 10¹⁵, có tới 10⁷ truy vấn), tìm giá trị lớn nhất của gcd(a, b) với 1 ≤ a &lt; b ≤ n.</p>
+        <p class="ex-skill"><b>Luyện:</b> lập luận về ước chung, nhập xuất nhanh.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Nếu gcd(a, b) = d thì a, b là hai bội khác nhau của d, nên b ≥ 2d, tức d ≤ n / 2. Cặp (⌊n/2⌋, 2⌊n/2⌋) đạt được. Với 10⁷ dòng, nhớ tắt đồng bộ <code>cin</code> và in bằng <code>'\n'</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/1473/B">1473B – String LCM</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Xâu s “chia hết” cho xâu t nếu s là t lặp lại nhiều lần. Cho hai xâu chỉ gồm a và b, tìm xâu ngắn nhất chia hết cho cả hai (BCNN của hai xâu), hoặc in −1.</p>
+        <p class="ex-skill"><b>Luyện:</b> BCNN trong bài toán chu kỳ, lặp lại.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Nếu có đáp án thì độ dài của nó là L = lcm(|s|, |t|). Lặp s đủ L / |s| lần, lặp t đủ L / |t| lần, rồi so hai xâu thu được.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1081">Common Divisors</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho dãy n ≤ 2 · 10⁵ số, mỗi số ≤ 10⁶. Tìm giá trị lớn nhất của gcd của hai phần tử khác vị trí.</p>
+        <p class="ex-skill"><b>Luyện:</b> đổi góc nhìn: duyệt theo ước thay vì duyệt theo cặp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Thử mọi cặp là 2 · 10¹⁰ lần gcd, quá chậm. Đếm cnt[v] số lần xuất hiện giá trị v. Duyệt d từ 10⁶ giảm dần, đếm tổng cnt của các bội d, 2d, 3d…; d đầu tiên có tổng ≥ 2 là đáp án. Tổng số bước khoảng M · ln M ≈ 1,4 · 10⁷.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/gcd">GCD – Ước chung lớn nhất</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho dãy n ≤ 5 · 10⁵ số (mỗi số ≤ 10¹⁸) và k. Trong mọi đoạn k phần tử liên tiếp, tìm ƯCLN lớn nhất của một đoạn.</p>
+        <p class="ex-skill"><b>Luyện:</b> gcd của dãy, gcd có tính kết hợp nên ghép được các đoạn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tính lại gcd cho từng đoạn tốn O(n · k). Chia dãy thành các khối dài k; với mỗi khối tính gcd tiền tố và gcd hậu tố. Đoạn [i, i + k − 1] luôn cắt qua tối đa hai khối liền nhau, nên gcd của nó là gcd(hậu tố khối trái từ i, tiền tố khối phải tới i + k − 1).</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/1458/A">1458A – Row GCD</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho dãy a gồm n số và dãy b gồm m số (n, m ≤ 2 · 10⁵, giá trị ≤ 10¹⁸). Với mỗi j, tính gcd(a₁ + bⱼ, a₂ + bⱼ, …, aₙ + bⱼ).</p>
+        <p class="ex-skill"><b>Luyện:</b> tính chất gcd(x, y) = gcd(x, y − x).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tính sẵn G = gcd(|a₂ − a₁|, …, |aₙ − a₁|). Đáp án với mỗi j là gcd(a₁ + bⱼ, G). Xem Biến thể 2.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/integer7">INTEGER7 – Số nguyên</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Tìm hai số nguyên không âm x₁, x₂ thỏa a₁ · x₁ + b₁ = a₂ · x₂ + b₂ và x₁ + x₂ nhỏ nhất (các số trong [0, 2³¹ − 1], đề bảo đảm có nghiệm).</p>
+        <p class="ex-skill"><b>Luyện:</b> Euclid mở rộng, nghiệm tổng quát của ax + by = c.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Viết lại a₁ · x₁ − a₂ · x₂ = b₂ − b₁. Dùng Euclid mở rộng tìm một nghiệm, rồi dịch theo t trong nghiệm tổng quát để x₁ là số không âm nhỏ nhất có thể (x₁ nhỏ thì x₂ cũng nhỏ). Cẩn thận các trường hợp a₁ = 0 hoặc a₂ = 0 và tràn số khi nhân.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/algebra/euclid">VNOI Wiki – Thuật toán Euclid</a> (tiếng Việt, có Euclid mở rộng và bài tập)</li>
+      <li><a href="https://wiki.vnoi.info/algo/math/modular-inverse">VNOI Wiki – Nghịch đảo modulo</a> (tiếng Việt)</li>
+      <li><a href="https://cp-algorithms.com/algebra/euclid-algorithm.html">CP-Algorithms – Euclidean algorithm for computing the GCD</a> (tiếng Anh, có chứng minh Lamé)</li>
+      <li><a href="https://cp-algorithms.com/algebra/extended-euclid-algorithm.html">CP-Algorithms – Extended Euclidean Algorithm</a> (tiếng Anh)</li>
+      <li><a href="https://cp-algorithms.com/algebra/linear-diophantine-equation.html">CP-Algorithms – Linear Diophantine Equation</a> (tiếng Anh, phương trình ax + by = c)</li>
+      <li><a href="https://en.cppreference.com/w/cpp/numeric/gcd">cppreference – std::gcd</a> và <a href="https://en.cppreference.com/w/cpp/numeric/lcm">std::lcm</a> (tiếng Anh)</li>
+      <li>Bài liên quan trong lộ trình: <a href="divisors-primes.html">Ước và số nguyên tố</a>, <a href="modular-power.html">Đồng dư và lũy thừa nhanh</a>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>gcd(a, b) = gcd(b, a mod b), dừng khi b = 0 và trả về a. Quy ước gcd(a, 0) = a.</li>
+        <li>Euclid chạy O(log min(a, b)): sau hai bước số giảm ít nhất một nửa; xấu nhất là số Fibonacci (42 bước với 10⁹).</li>
+        <li>gcd(a, b) · lcm(a, b) = a · b; tính lcm bằng <code>a / gcd(a, b) * b</code>, chia trước nhân sau.</li>
+        <li>C++17 có sẵn <code>gcd</code>, <code>lcm</code> trong <code>&lt;numeric&gt;</code>; dùng <code>long long</code> khi số lớn.</li>
+        <li>Dãy số: g = 0 rồi g = gcd(g, x); l = 1 rồi l = lcm(l, x). BCNN của dãy tăng rất nhanh, coi chừng tràn.</li>
+        <li>Nhận dạng: rút gọn phân số, chia nhóm đều, hình vuông lớn nhất lát kín (gcd); chu kỳ gặp lại (lcm).</li>
+        <li>Euclid mở rộng tìm x, y với ax + by = gcd(a, b); ax + by = c có nghiệm nguyên khi và chỉ khi gcd(a, b) | c.</li>
+        <li>Nghịch đảo của a theo modulo m tồn tại khi và chỉ khi gcd(a, m) = 1.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/gcd-lcm.js"></script>
+</body>
+</html>

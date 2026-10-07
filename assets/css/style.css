@@ -502,8 +502,8 @@ kbd {
 .objectives h2 { font-size: var(--fs-md) !important; font-family: var(--f-mono) !important; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); }
 .objectives h2::before { display: none; }
 .objectives ul { list-style: none; padding: 0; display: grid; gap: 0.35rem; }
-.objectives li { display: grid; grid-template-columns: 1.4rem 1fr; }
-.objectives li::before { content: "✓"; color: var(--ok); font-weight: 700; }
+.objectives li { position: relative; padding-left: 1.4rem; margin: 0; }
+.objectives li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--ok); font-weight: 700; }
 
 /* ---------- 7. Hộp ghi chú (callout) ---------- */
 .callout {
@@ -589,14 +589,16 @@ kbd {
 .algo-steps { list-style: none; counter-reset: st; padding: 0 !important; margin: 1.25rem 0; display: grid; gap: 0.75rem; }
 .algo-steps > li {
   counter-increment: st;
-  display: grid;
-  grid-template-columns: 2.3rem minmax(0, 1fr);
-  gap: 0.75rem;
+  position: relative;
+  min-height: 2.1rem;
+  padding: 0.2rem 0 0 3.05rem;
   margin: 0;
-  align-items: start;
 }
 .algo-steps > li::before {
   content: counter(st);
+  position: absolute;
+  left: 0;
+  top: 0;
   display: grid;
   place-items: center;
   width: 2.1rem;
@@ -987,8 +989,8 @@ details.hint > :last-child, details.solution > :last-child { margin-bottom: 0; }
 
 /* Liên kết tham khảo */
 .refs { list-style: none; padding: 0 !important; display: grid; gap: 0.45rem; }
-.refs li { display: grid; grid-template-columns: 1.2rem minmax(0, 1fr); gap: 0.4rem; }
-.refs li::before { content: "→"; color: var(--stage); font-weight: 700; }
+.refs li { position: relative; padding-left: 1.5rem; margin: 0; }
+.refs li::before { content: "→"; position: absolute; left: 0; top: 0; color: var(--stage); font-weight: 700; }
 .refs a { overflow-wrap: anywhere; }
 
 /* Công thức toán đơn giản */

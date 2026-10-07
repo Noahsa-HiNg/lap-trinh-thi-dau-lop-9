@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ước số &amp; số nguyên tố · Thi đấu lớp 9</title>
+<meta name="description" content="Duyệt ước đến căn n, kiểm tra số nguyên tố, phân tích thừa số nguyên tố bằng chia thử, công thức số ước và tổng ước, số chính phương, số hoàn hảo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="divisors-primes">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được vì sao chỉ cần duyệt ước đến <span class="math">√n</span>, và viết đúng điều kiện <code>d * d &lt;= n</code>.</li>
+      <li>Cài đặt được ba hàm nền tảng: liệt kê ước (tăng dần), kiểm tra số nguyên tố (kể cả cải tiến 6k ± 1), phân tích thừa số nguyên tố bằng chia thử.</li>
+      <li>Chứng minh và dùng được công thức số ước <span class="math">(a₁+1)(a₂+1)…(aₖ+1)</span> và công thức tổng ước.</li>
+      <li>Nhận ra số chính phương (mọi số mũ chẵn, số ước lẻ) và số hoàn hảo bằng phân tích thừa số.</li>
+      <li>Ước lượng được số phép tính để biết khi nào <span class="math">O(√n)</span> chạy kịp (n ≤ 10¹²) và khi nào phải chuyển sang sàng nguyên tố.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Ước số và số nguyên tố là “bảng cửu chương” của số học thi đấu. Gần như mọi đề thi lập trình THCS đều có ít nhất một bài hỏi về ước: đếm ước, tính tổng ước, kiểm tra số nguyên tố, phân tích một số thành tích các thừa số nguyên tố. Bài này dạy em một ý tưởng duy nhất nhưng cực kỳ mạnh: <strong>ước luôn đi theo cặp, nên chỉ cần duyệt đến căn bậc hai</strong>.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> lớp em có 36 cái ghế và cô giáo muốn xếp chúng thành một hình chữ nhật đều đặn. Có thể xếp 1 hàng 36 ghế, 2 hàng 18 ghế, 3 hàng 12 ghế, 4 hàng 9 ghế, hoặc 6 hàng 6 ghế. Mỗi cách xếp là một <em>cặp ước</em> của 36: số hàng nhân số ghế mỗi hàng bằng 36. Để ý rằng khi số hàng vượt quá 6, em chỉ đang “xoay” lại các cách đã có (9 hàng 4 ghế chính là 4 hàng 9 ghế xoay ngang). Còn nếu lớp có 7 cái ghế thì sao? Chỉ xếp được 1 hàng 7 ghế (hoặc 7 hàng 1 ghế). Số 7 “không chịu chia nhỏ”, đó là một <strong>số nguyên tố</strong>.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Cho hai số nguyên <span class="math">a</span> và <span class="math">d</span> với <span class="math">d ≠ 0</span>. Ta nói <span class="math">a</span> <strong>chia hết</strong> cho <span class="math">d</span>, viết <span class="math">d | a</span>, nếu có số nguyên <span class="math">k</span> sao cho <span class="math">a = d · k</span>. Khi đó <span class="math">d</span> là một <strong>ước</strong> (divisor) của <span class="math">a</span>, còn <span class="math">a</span> là một <strong>bội</strong> (multiple) của <span class="math">d</span>. Trong C++, “<span class="math">a</span> chia hết cho <span class="math">d</span>” viết là <code>a % d == 0</code>.</p>
+    </div>
+
+    <div class="definition" data-label="Số nguyên tố, hợp số">
+      <p>Số tự nhiên <span class="math">p &gt; 1</span> là <strong>số nguyên tố</strong> (prime) nếu nó có đúng hai ước dương là 1 và chính nó. Số tự nhiên lớn hơn 1 mà không phải số nguyên tố gọi là <strong>hợp số</strong> (composite). Số 0 và số 1 <em>không</em> là số nguyên tố, cũng không là hợp số.</p>
+      <p>Mười số nguyên tố đầu tiên: 2, 3, 5, 7, 11, 13, 17, 19, 23, 29. Số 2 là số nguyên tố chẵn duy nhất.</p>
+    </div>
+
+    <div class="definition" data-label="Định lý cơ bản của số học">
+      <p>Mọi số tự nhiên <span class="math">n &gt; 1</span> đều viết được thành tích các số nguyên tố, và cách viết này là <strong>duy nhất</strong> nếu không kể thứ tự:</p>
+      <div class="math-block">n = p₁<sup>a₁</sup> · p₂<sup>a₂</sup> · … · pₖ<sup>aₖ</sup>,<br>với p₁ &lt; p₂ &lt; … &lt; pₖ là các số nguyên tố và aᵢ ≥ 1.</div>
+      <p>Ví dụ: <span class="math">360 = 2³ · 3² · 5</span>, <span class="math">36 = 2² · 3²</span>, <span class="math">97 = 97¹</span>. Cách viết này gọi là <strong>phân tích thừa số nguyên tố</strong> (prime factorization).</p>
+    </div>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Các kỹ thuật trong bài này là nền móng cho cả chuyên đề Số học. Chúng giúp em giải trực tiếp nhiều loại bài:</p>
+    <ul>
+      <li><strong>Kiểm tra một số có phải số nguyên tố không</strong>, tìm số nguyên tố lớn nhất trong dãy, kiểm tra “siêu nguyên tố”.</li>
+      <li><strong>Liệt kê, đếm, tính tổng các ước</strong>; tìm ước thứ k; kiểm tra số hoàn hảo (tổng ước bằng hai lần chính nó).</li>
+      <li><strong>Phân tích thừa số nguyên tố</strong>: tính tổng các ước nguyên tố, kiểm tra số chính phương, đếm ước của một số rất lớn, rút gọn phân số.</li>
+      <li><strong>Làm bước đệm</strong> cho các chủ đề sau: <a href="sieve.html">sàng nguyên tố</a> (khi có rất nhiều số cần kiểm tra), <a href="gcd-lcm.html">ƯCLN và BCNN</a> (so sánh số mũ của từng thừa số), <a href="counting.html">tổ hợp và đếm</a> (công thức số ước chính là quy tắc nhân).</li>
+    </ul>
+    <p>Ngoài đời, số nguyên tố bảo vệ tài khoản ngân hàng của em: mật mã RSA dựa trên việc nhân hai số nguyên tố rất lớn thì dễ, nhưng tách ngược tích đó ra thành hai thừa số thì cực kỳ khó.</p>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề có các cụm từ “ước”, “bội”, “chia hết”, “số nguyên tố”, “phân tích thừa số”, “số hoàn hảo”, “số chính phương”. Nếu chỉ có <strong>một vài số</strong> và mỗi số đến khoảng <span class="math">10¹²</span>, dùng duyệt đến √n trong bài này. Nếu có <strong>rất nhiều số</strong> (10⁵ đến 10⁶ truy vấn) và mỗi số không quá 10⁶ hoặc 10⁷, hãy nghĩ tới <a href="sieve.html">sàng</a>.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho một số nguyên dương <span class="math">n ≤ 10¹²</span>. Hãy đếm số ước dương của <span class="math">n</span>.</p>
+    <p>Cách ai cũng nghĩ ra đầu tiên là thử mọi số <span class="math">d</span> từ 1 đến <span class="math">n</span>, số nào chia hết thì đếm. Cách này đúng, nhưng với <span class="math">n = 10¹²</span> máy phải làm <strong>10¹² phép chia</strong>. Một máy chấm thông thường làm được khoảng 10⁸ đến 10⁹ phép tính đơn giản mỗi giây, nên chương trình chạy mất từ khoảng 17 phút đến gần 3 giờ. Đề cho 1 giây.</p>
+    <p>Cách thông minh: mỗi khi tìm được ước <span class="math">d</span>, ta “được tặng” luôn ước <span class="math">n / d</span>. Trong hai số đó luôn có một số không vượt quá <span class="math">√n</span>. Vì vậy ta chỉ cần thử <span class="math">d</span> từ 1 đến <span class="math">√n = 10⁶</span>: chỉ <strong>một triệu phép chia</strong>, chạy dưới 0,01 giây.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p>Thử mọi <span class="math">d = 1, 2, …, n</span>. Độ phức tạp <span class="bigo">O(n)</span>. Với <span class="math">n = 10¹²</span> là 10¹² phép chia: quá giới hạn thời gian hàng nghìn lần.</p></div>
+      <div class="good-side"><h4>Duyệt đến √n</h4><p>Chỉ thử <span class="math">d</span> với <span class="math">d · d ≤ n</span>, mỗi ước nhỏ ghép với ước lớn <span class="math">n / d</span>. Độ phức tạp <span class="bigo">O(√n)</span>. Với <span class="math">n = 10¹²</span> chỉ 10⁶ phép chia.</p></div>
+    </div>
+    <table>
+      <thead><tr><th>n</th><th>Cách ngây thơ (n phép chia)</th><th>Duyệt đến √n</th><th>Nhanh hơn</th></tr></thead>
+      <tbody>
+        <tr><td>10⁶</td><td>1 000 000</td><td>1 000</td><td>1 000 lần</td></tr>
+        <tr><td>10⁹</td><td>1 000 000 000</td><td>31 622</td><td>khoảng 31 600 lần</td></tr>
+        <tr><td>10¹²</td><td>1 000 000 000 000</td><td>1 000 000</td><td>1 000 000 lần</td></tr>
+      </tbody>
+    </table>
+    <p>Cùng một ý tưởng √n sẽ dùng lại cho cả ba việc: <strong>kiểm tra nguyên tố</strong>, <strong>liệt kê ước</strong> và <strong>phân tích thừa số</strong>. Học chắc một ý, giải được cả họ bài.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Bài này có bốn thuật toán nhỏ, cùng dựa trên ý tưởng duyệt đến √n. Em đọc lần lượt từng cái.</p>
+
+    <h3>A. Liệt kê và đếm ước trong O(√n)</h3>
+    <p><strong>Mô tả.</strong> Duyệt <span class="math">d</span> từ 1 khi <span class="math">d · d ≤ n</span>. Nếu <span class="math">d</span> là ước thì ghi nhận cả <span class="math">d</span> và <span class="math">n / d</span> (chỉ ghi một lần nếu hai số bằng nhau).</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Tạo hai danh sách rỗng: <code>nho</code> (các ước ≤ √n) và <code>lon</code> (các ước &gt; √n).</div></li>
+      <li><div><strong>Duyệt.</strong> Cho <span class="math">d = 1, 2, 3, …</span> chừng nào <span class="math">d · d ≤ n</span>. Nếu <span class="math">n mod d = 0</span>: thêm <span class="math">d</span> vào <code>nho</code>; nếu <span class="math">d ≠ n / d</span> thì thêm <span class="math">n / d</span> vào <code>lon</code>.</div></li>
+      <li><div><strong>Ghép.</strong> <code>nho</code> đã tăng dần; <code>lon</code> đang giảm dần. Nối <code>nho</code> với <code>lon</code> đảo ngược, ta được mọi ước theo thứ tự tăng dần. Số ước bằng tổng độ dài hai danh sách.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> LietKeUoc(n):
+    nho ← [], lon ← []
+    d ← 1
+    <b>khi</b> d * d ≤ n:
+        <b>nếu</b> n mod d = 0:
+            thêm d vào nho
+            <b>nếu</b> d ≠ n / d: thêm n / d vào lon    <i>// tránh đếm √n hai lần</i>
+        d ← d + 1
+    <b>trả về</b> nho + đảo_ngược(lon)                 <i>// tăng dần</i></pre>
+
+    <h3>B. Kiểm tra số nguyên tố trong O(√n)</h3>
+    <p><strong>Mô tả.</strong> Số <span class="math">n ≥ 2</span> là hợp số khi và chỉ khi nó có một ước <span class="math">d</span> với <span class="math">2 ≤ d ≤ √n</span>. Vậy chỉ cần thử các <span class="math">d</span> đó; không tìm thấy ước nào thì <span class="math">n</span> là số nguyên tố.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Loại trường hợp nhỏ.</strong> Nếu <span class="math">n &lt; 2</span>: không nguyên tố. Nếu <span class="math">n = 2</span> hoặc <span class="math">n = 3</span>: nguyên tố.</div></li>
+      <li><div><strong>Loại bội của 2 và 3.</strong> Nếu <span class="math">n</span> chia hết cho 2 hoặc 3: không nguyên tố.</div></li>
+      <li><div><strong>Thử các số dạng 6k ± 1.</strong> Cho <span class="math">d = 5, 11, 17, …</span> (mỗi lần tăng 6) chừng nào <span class="math">d · d ≤ n</span>; thử chia <span class="math">n</span> cho <span class="math">d</span> (dạng 6k − 1) và <span class="math">d + 2</span> (dạng 6k + 1). Gặp ước thì kết luận hợp số.</div></li>
+      <li><div><strong>Kết luận.</strong> Hết vòng lặp mà không gặp ước: <span class="math">n</span> là số nguyên tố.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> LaNguyenTo(n):
+    <b>nếu</b> n &lt; 2: <b>trả về</b> sai
+    <b>nếu</b> n &lt; 4: <b>trả về</b> đúng                  <i>// n = 2 hoặc 3</i>
+    <b>nếu</b> n mod 2 = 0 <b>hoặc</b> n mod 3 = 0: <b>trả về</b> sai
+    d ← 5
+    <b>khi</b> d * d ≤ n:
+        <b>nếu</b> n mod d = 0 <b>hoặc</b> n mod (d + 2) = 0: <b>trả về</b> sai
+        d ← d + 6                              <i>// 5, 7, 11, 13, 17, 19, ...</i>
+    <b>trả về</b> đúng</pre>
+    <p>Bản đơn giản nhất (thử mọi <span class="math">d</span> từ 2) cũng là <span class="math">O(√n)</span> và đủ dùng trong hầu hết bài. Bản 6k ± 1 chỉ thử 2 trong mỗi 6 số liên tiếp, nhanh gấp khoảng 3 lần.</p>
+    <table class="trace">
+      <thead><tr><th>n</th><th>Bước</th><th>d · d ≤ n?</th><th>Thử chia</th><th>Kết quả</th></tr></thead>
+      <tbody>
+        <tr><td>97</td><td>chia cho 2, 3</td><td>—</td><td>97 mod 2 = 1, 97 mod 3 = 1</td><td>chưa có ước</td></tr>
+        <tr><td>97</td><td>d = 5</td><td>25 ≤ 97</td><td>97 mod 5 = 2, 97 mod 7 = 6</td><td>chưa có ước</td></tr>
+        <tr class="hl"><td>97</td><td>d = 11</td><td>121 &gt; 97</td><td>dừng</td><td>97 là số nguyên tố</td></tr>
+        <tr><td>1001</td><td>chia cho 2, 3</td><td>—</td><td>1001 mod 2 = 1, 1001 mod 3 = 2</td><td>chưa có ước</td></tr>
+        <tr class="hl"><td>1001</td><td>d = 5</td><td>25 ≤ 1001</td><td>1001 mod 5 = 1, 1001 mod 7 = 0</td><td>hợp số (1001 = 7 · 143)</td></tr>
+      </tbody>
+    </table>
+    <p>Với 97, máy chỉ làm 4 phép chia, trong khi cách ngây thơ (thử từ 2 đến 96) phải làm 95 phép chia.</p>
+
+    <h3>C. Phân tích thừa số nguyên tố bằng chia thử</h3>
+    <p><strong>Mô tả.</strong> Chia thử (trial division): lần lượt thử <span class="math">p = 2, 3, 4, …</span>; mỗi khi <span class="math">p</span> chia hết <span class="math">n</span> thì chia <span class="math">n</span> cho <span class="math">p</span> liên tục đến khi không chia được nữa, đếm số lần chia (đó là số mũ). Dừng khi <span class="math">p · p</span> vượt quá phần còn lại của <span class="math">n</span>.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Danh sách thừa số rỗng, <span class="math">p = 2</span>.</div></li>
+      <li><div><strong>Chia thử.</strong> Chừng nào <span class="math">p · p ≤ n</span>: nếu <span class="math">p | n</span> thì đặt <span class="math">c = 0</span>, lặp “<span class="math">n ← n / p</span>, <span class="math">c ← c + 1</span>” đến khi <span class="math">p ∤ n</span>, rồi ghi cặp <span class="math">(p, c)</span>. Tăng <span class="math">p</span> lên 1.</div></li>
+      <li><div><strong>Phần còn lại.</strong> Hết vòng lặp, nếu <span class="math">n &gt; 1</span> thì phần còn lại chính là một số nguyên tố: ghi cặp <span class="math">(n, 1)</span>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> PhanTich(n):
+    f ← []
+    p ← 2
+    <b>khi</b> p * p ≤ n:                  <i>// n nhỏ dần nên vòng lặp dừng sớm</i>
+        <b>nếu</b> n mod p = 0:
+            c ← 0
+            <b>khi</b> n mod p = 0: n ← n / p, c ← c + 1
+            thêm (p, c) vào f
+        p ← p + 1
+    <b>nếu</b> n &gt; 1: thêm (n, 1) vào f        <i>// phần còn lại là số nguyên tố</i>
+    <b>trả về</b> f</pre>
+
+    <h3>D. Số ước và tổng ước từ phân tích</h3>
+    <p><strong>Mô tả.</strong> Khi đã có <span class="math">n = p₁<sup>a₁</sup> · p₂<sup>a₂</sup> · … · pₖ<sup>aₖ</sup></span>, không cần liệt kê ước nữa:</p>
+    <div class="math-block">số ước τ(n) = (a₁ + 1)(a₂ + 1)…(aₖ + 1)<br>tổng ước σ(n) = (1 + p₁ + p₁² + … + p₁<sup>a₁</sup>) · … · (1 + pₖ + … + pₖ<sup>aₖ</sup>)</div>
+    <ol class="algo-steps">
+      <li><div><strong>Phân tích</strong> <span class="math">n</span> bằng thuật toán C.</div></li>
+      <li><div><strong>Nhân dồn.</strong> Bắt đầu <code>dem = 1</code>, <code>tong = 1</code>. Với mỗi cặp <span class="math">(p, a)</span>: <code>dem *= a + 1</code>; tính <span class="math">S = 1 + p + … + pᵃ</span> rồi <code>tong *= S</code>.</div></li>
+    </ol>
+    <p>Ví dụ: <span class="math">360 = 2³ · 3² · 5</span> có <span class="math">(3+1)(2+1)(1+1) = 24</span> ước và tổng ước <span class="math">(1+2+4+8)(1+3+9)(1+5) = 15 · 13 · 6 = 1170</span>.</p>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Vì sao chỉ cần duyệt đến √n</h3>
+    <p>Giả sử <span class="math">d</span> là ước của <span class="math">n</span>, và đặt <span class="math">e = n / d</span>, tức là <span class="math">d · e = n</span>. Nếu <strong>cả hai</strong> <span class="math">d</span> và <span class="math">e</span> đều lớn hơn <span class="math">√n</span> thì <span class="math">d · e &gt; √n · √n = n</span>, vô lý. Vậy trong mỗi cặp ước <span class="math">(d, n/d)</span> luôn có ít nhất một số <strong>không vượt quá √n</strong>.</p>
+    <p>Hệ quả: nếu ta tìm hết các ước <span class="math">d ≤ √n</span>, ta tìm được hết mọi ước (ước lớn là “bạn cặp” <span class="math">n / d</span> của chúng). Hình dưới vẽ 9 ước của 36 xếp tăng dần: các cặp nối với nhau đối xứng quanh <span class="math">√36 = 6</span>. Ước 6 ghép cặp với chính nó, nên chỉ đếm một lần; đó là lý do 36 có số ước <em>lẻ</em>.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 620 220" width="620" role="img" aria-label="Các cặp ước của 36 đối xứng quanh căn 36 bằng 6: (1,36), (2,18), (3,12), (4,9), (6,6)">
+        <path class="edge" d="M50 150 Q310 -58 570 150"/>
+        <path class="edge" d="M115 150 Q310 -6 505 150"/>
+        <path class="edge" d="M180 150 Q310 46 440 150"/>
+        <path class="edge is-active" d="M245 150 Q310 98 375 150"/>
+        <line class="edge is-bad" x1="310" y1="20" x2="310" y2="200"/>
+        <text class="label-pen" x="318" y="34">√36 = 6</text>
+        <circle class="node is-ok" cx="50" cy="150" r="17"/><text x="50" y="155" text-anchor="middle">1</text>
+        <circle class="node is-ok" cx="115" cy="150" r="17"/><text x="115" y="155" text-anchor="middle">2</text>
+        <circle class="node is-ok" cx="180" cy="150" r="17"/><text x="180" y="155" text-anchor="middle">3</text>
+        <circle class="node is-ok" cx="245" cy="150" r="17"/><text x="245" y="155" text-anchor="middle">4</text>
+        <circle class="node is-active" cx="310" cy="150" r="17"/><text x="310" y="155" text-anchor="middle">6</text>
+        <circle class="node is-cmp" cx="375" cy="150" r="17"/><text x="375" y="155" text-anchor="middle">9</text>
+        <circle class="node is-cmp" cx="440" cy="150" r="17"/><text x="440" y="155" text-anchor="middle">12</text>
+        <circle class="node is-cmp" cx="505" cy="150" r="17"/><text x="505" y="155" text-anchor="middle">18</text>
+        <circle class="node is-cmp" cx="570" cy="150" r="17"/><text x="570" y="155" text-anchor="middle">36</text>
+        <text class="label-sm" x="150" y="195" text-anchor="middle">ước nhỏ d ≤ 6 (vòng lặp tìm)</text>
+        <text class="label-sm" x="470" y="195" text-anchor="middle">ước lớn 36/d ≥ 6 (được tặng)</text>
+      </svg>
+      <figcaption>Hình 1. Ước của 36 xếp tăng dần. Mỗi cung nối một cặp có tích bằng 36. Vòng lặp chỉ cần đi qua nửa trái (d ≤ 6).</figcaption>
+    </figure>
+
+    <p><strong>Vì sao viết <code>d * d &lt;= n</code> mà không viết <code>d &lt;= sqrt(n)</code>?</strong> Hàm <code>sqrt</code> tính bằng số thực, kết quả có thể lệch một chút so với giá trị đúng (nhất là khi <span class="math">n</span> lớn hơn khoảng 10¹⁵, hoặc khi lỡ dùng kiểu <code>float</code>). Chỉ cần lệch xuống, ví dụ ra 999999.99999 thay vì 1000000, là vòng lặp bỏ sót đúng ước cuối cùng. Phép nhân số nguyên <code>d * d</code> thì luôn chính xác. Nhớ khai báo <code>d</code> kiểu <code>long long</code> để <code>d * d</code> không bị tràn.</p>
+
+    <h3>Vì sao kiểm tra nguyên tố chỉ cần thử đến √n và 6k ± 1</h3>
+    <p>Nếu <span class="math">n</span> là hợp số thì <span class="math">n = d · e</span> với <span class="math">1 &lt; d ≤ e &lt; n</span>. Theo lập luận ở trên, <span class="math">d ≤ √n</span>. Vậy hợp số <em>chắc chắn</em> có ước trong đoạn <span class="math">[2, √n]</span>; không tìm thấy thì <span class="math">n</span> là số nguyên tố.</p>
+    <p>Còn vì sao bỏ được nhiều <span class="math">d</span>? Mọi số nguyên đều có một trong sáu dạng <span class="math">6k, 6k+1, 6k+2, 6k+3, 6k+4, 6k+5</span>. Các dạng <span class="math">6k, 6k+2, 6k+4</span> chia hết cho 2; dạng <span class="math">6k+3</span> chia hết cho 3. Nếu <span class="math">n</span> không chia hết cho 2 và 3 thì nó cũng không chia hết cho bất kỳ số nào thuộc bốn dạng đó (nếu <span class="math">d</span> chia hết cho 2 và <span class="math">d | n</span> thì <span class="math">n</span> cũng chia hết cho 2, trái giả thiết; tương tự với 3). Chỉ còn <span class="math">6k + 1</span> và <span class="math">6k + 5 = 6(k+1) − 1</span>, tức “6k ± 1”: 5, 7, 11, 13, 17, 19, 23, 25…</p>
+
+    <h3>Vì sao chia thử cho ra đúng các thừa số nguyên tố</h3>
+    <p>Có hai điều cần hiểu.</p>
+    <p><strong>(1) Mỗi <span class="math">p</span> mà vòng lặp ghi nhận đều là số nguyên tố.</strong> Khi vòng lặp đến <span class="math">p = 4</span>, mọi thừa số 2 đã bị chia hết khỏi <span class="math">n</span>, nên 4 không thể chia hết <span class="math">n</span>. Tổng quát: khi xét <span class="math">p</span>, mọi số nguyên tố nhỏ hơn <span class="math">p</span> đã bị “rút sạch” khỏi <span class="math">n</span>. Nếu <span class="math">p</span> là hợp số, nó có ước nguyên tố <span class="math">q &lt; p</span>; <span class="math">p | n</span> kéo theo <span class="math">q | n</span>, mâu thuẫn. Vì vậy ta không cần biết trước số nào là nguyên tố mà vẫn chỉ ghi ra số nguyên tố.</p>
+    <p><strong>(2) Khi vòng lặp dừng, phần còn lại <span class="math">m &gt; 1</span> là số nguyên tố.</strong> Vòng lặp dừng vì <span class="math">p · p &gt; m</span>, và <span class="math">m</span> không còn ước nguyên tố nào nhỏ hơn <span class="math">p</span>. Nếu <span class="math">m</span> là hợp số thì <span class="math">m = a · b</span> với <span class="math">p ≤ a ≤ b</span>, suy ra <span class="math">m ≥ a · a ≥ p · p &gt; m</span>, vô lý. Vậy <span class="math">m</span> là số nguyên tố. Ví dụ <span class="math">n = 2 · 97 = 194</span>: sau khi chia 2, còn <span class="math">m = 97</span>; thử tiếp <span class="math">p = 3, …, 9</span> không chia được, đến <span class="math">p = 10</span> thì <span class="math">100 &gt; 97</span>, dừng; 97 là thừa số nguyên tố cuối cùng.</p>
+    <div class="callout warn"><p class="callout-title">Một số có tối đa một thừa số nguyên tố lớn hơn √n</p><p>Nếu có hai thừa số nguyên tố cùng lớn hơn √n thì tích của chúng đã lớn hơn n. Vì vậy chỉ cần một dòng <code>if (n &gt; 1)</code> sau vòng lặp là bắt được thừa số “to” duy nhất đó. Quên dòng này là lỗi kinh điển.</p></div>
+
+    <h3>Vì sao công thức số ước đúng (quy tắc nhân)</h3>
+    <p>Theo định lý cơ bản của số học, <span class="math">d</span> là ước của <span class="math">n = p₁<sup>a₁</sup> · … · pₖ<sup>aₖ</sup></span> khi và chỉ khi <span class="math">d = p₁<sup>b₁</sup> · … · pₖ<sup>bₖ</sup></span> với <span class="math">0 ≤ bᵢ ≤ aᵢ</span>. Mỗi ước ứng với đúng một cách chọn bộ số mũ <span class="math">(b₁, …, bₖ)</span>. Số mũ <span class="math">b₁</span> có <span class="math">a₁ + 1</span> cách chọn (0, 1, …, a₁), <span class="math">b₂</span> có <span class="math">a₂ + 1</span> cách… Theo <a href="counting.html">quy tắc nhân</a>, số cách chọn là <span class="math">(a₁+1)(a₂+1)…(aₖ+1)</span>.</p>
+    <p>Bảng dưới liệt kê 12 ước của <span class="math">72 = 2³ · 3²</span>: cột là số mũ của 2 (4 cách), hàng là số mũ của 3 (3 cách), nên có <span class="math">4 · 3 = 12</span> ô, mỗi ô là một ước. Với <span class="math">360 = 72 · 5</span>, mỗi ô lại có hai lựa chọn: nhân thêm <span class="math">5⁰</span> hoặc <span class="math">5¹</span>, nên có <span class="math">12 · 2 = 24</span> ước.</p>
+    <div class="grid-viz" style="--cols:5" role="img" aria-label="Bảng 12 ước của 72 theo số mũ của 2 và 3">
+      <span class="g h">×</span><span class="g h">2⁰</span><span class="g h">2¹</span><span class="g h">2²</span><span class="g h">2³</span>
+      <span class="g h">3⁰</span><span class="g">1</span><span class="g">2</span><span class="g">4</span><span class="g">8</span>
+      <span class="g h">3¹</span><span class="g">3</span><span class="g">6</span><span class="g">12</span><span class="g">24</span>
+      <span class="g h">3²</span><span class="g">9</span><span class="g">18</span><span class="g">36</span><span class="g is-path">72</span>
+    </div>
+
+    <h3>Vì sao công thức tổng ước đúng</h3>
+    <p>Lấy <span class="math">12 = 2² · 3</span>. Nhân phá ngoặc <span class="math">(1 + 2 + 4)(1 + 3)</span> ta được <span class="math">1·1 + 1·3 + 2·1 + 2·3 + 4·1 + 4·3 = 1 + 3 + 2 + 6 + 4 + 12</span>: mỗi số hạng là một ước của 12, và mỗi ước xuất hiện đúng một lần (lại là quy tắc nhân). Tổng bằng <span class="math">7 · 4 = 28</span>, đúng bằng <span class="math">1+2+3+4+6+12</span>. Tổng quát, mỗi ngoặc <span class="math">1 + p + … + pᵃ</span> còn viết gọn được là <span class="frac"><span>pᵃ⁺¹ − 1</span><span>p − 1</span></span>.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <ul>
+      <li>Liệt kê ước và kiểm tra nguyên tố: vòng lặp chạy khoảng <span class="math">√n</span> lần, mỗi lần một phép chia lấy dư.</li>
+      <li>Phân tích thừa số: tệ nhất cũng khoảng <span class="math">√n</span> lần (khi <span class="math">n</span> là số nguyên tố). Mỗi lần chia được, <span class="math">n</span> giảm ít nhất một nửa, nên tổng số lần chia “thành công” không quá <span class="math">log₂ n</span> (khoảng 40 với <span class="math">n = 10¹²</span>). Và vì <span class="math">n</span> nhỏ dần, điều kiện <span class="math">p · p ≤ n</span> thường dừng sớm hơn nhiều: với 360, vòng lặp dừng ngay ở <span class="math">p = 4</span>.</li>
+      <li>Có phân tích rồi, số ước và tổng ước tính trong vài phép nhân, không cần duyệt lại.</li>
+    </ul>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Ba hàm <code>isPrime</code>, <code>divisors</code>, <code>factorize</code> em nên gõ thuộc lòng như bảng cửu chương. Gần như đề thi nào cũng cần ít nhất một trong ba.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Ta chạy tay hai ví dụ nhỏ. Ví dụ 1 liệt kê ước của 36: hàng <b>d</b> là các giá trị vòng lặp đi qua (chỉ đến 6 vì 7 · 7 &gt; 36), hàng <b>nhỏ</b> và <b>lớn</b> là hai nửa danh sách ước. Bấm nút để xem từng bước.</p>
+    <div class="stepper" data-title="Ví dụ 1: liệt kê ước của 36 trong O(√n)">
+      <div class="frame" data-caption="&lt;b&gt;d = 1.&lt;/b&gt; 1 · 1 = 1 ≤ 36 và 36 mod 1 = 0: 1 là ước. Thêm 1 vào nửa nhỏ và bạn cặp 36 / 1 = 36 vào nửa lớn.">
+        <div class="arr"><span class="arr-label">d</span><span class="cell is-active" data-ptr="d">1</span><span class="cell is-dim">2</span><span class="cell is-dim">3</span><span class="cell is-dim">4</span><span class="cell is-dim">5</span><span class="cell is-dim">6</span></div><div class="arr"><span class="arr-label">nhỏ</span><span class="cell is-ok">1</span></div><div class="arr"><span class="arr-label">lớn</span><span class="cell is-cmp">36</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;d = 2.&lt;/b&gt; 2 · 2 = 4 ≤ 36 và 36 mod 2 = 0: 2 là ước. Thêm 2 vào nửa nhỏ và bạn cặp 36 / 2 = 18 vào nửa lớn.">
+        <div class="arr"><span class="arr-label">d</span><span class="cell is-ok">1</span><span class="cell is-active" data-ptr="d">2</span><span class="cell is-dim">3</span><span class="cell is-dim">4</span><span class="cell is-dim">5</span><span class="cell is-dim">6</span></div><div class="arr"><span class="arr-label">nhỏ</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span></div><div class="arr"><span class="arr-label">lớn</span><span class="cell is-cmp">36</span><span class="cell is-cmp">18</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;d = 3.&lt;/b&gt; 3 · 3 = 9 ≤ 36 và 36 mod 3 = 0: 3 là ước. Thêm 3 vào nửa nhỏ và bạn cặp 36 / 3 = 12 vào nửa lớn.">
+        <div class="arr"><span class="arr-label">d</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-active" data-ptr="d">3</span><span class="cell is-dim">4</span><span class="cell is-dim">5</span><span class="cell is-dim">6</span></div><div class="arr"><span class="arr-label">nhỏ</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span></div><div class="arr"><span class="arr-label">lớn</span><span class="cell is-cmp">36</span><span class="cell is-cmp">18</span><span class="cell is-cmp">12</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;d = 4.&lt;/b&gt; 4 · 4 = 16 ≤ 36 và 36 mod 4 = 0: 4 là ước. Thêm 4 vào nửa nhỏ và bạn cặp 36 / 4 = 9 vào nửa lớn.">
+        <div class="arr"><span class="arr-label">d</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-active" data-ptr="d">4</span><span class="cell is-dim">5</span><span class="cell is-dim">6</span></div><div class="arr"><span class="arr-label">nhỏ</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span></div><div class="arr"><span class="arr-label">lớn</span><span class="cell is-cmp">36</span><span class="cell is-cmp">18</span><span class="cell is-cmp">12</span><span class="cell is-cmp">9</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;d = 5.&lt;/b&gt; 5 · 5 = 25 ≤ 36 nhưng 36 mod 5 = 1 ≠ 0: 5 không phải ước, bỏ qua.">
+        <div class="arr"><span class="arr-label">d</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span><span class="cell is-active" data-ptr="d">5</span><span class="cell is-dim">6</span></div><div class="arr"><span class="arr-label">nhỏ</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span></div><div class="arr"><span class="arr-label">lớn</span><span class="cell is-cmp">36</span><span class="cell is-cmp">18</span><span class="cell is-cmp">12</span><span class="cell is-cmp">9</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;d = 6.&lt;/b&gt; 6 · 6 = 36 ≤ 36 và 36 mod 6 = 0. Nhưng 36 / 6 = 6 = d: ước này ghép cặp với chính nó, chỉ thêm một lần vào nửa nhỏ.">
+        <div class="arr"><span class="arr-label">d</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span><span class="cell is-bad">5</span><span class="cell is-active" data-ptr="d">6</span></div><div class="arr"><span class="arr-label">nhỏ</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span><span class="cell is-ok">6</span></div><div class="arr"><span class="arr-label">lớn</span><span class="cell is-cmp">36</span><span class="cell is-cmp">18</span><span class="cell is-cmp">12</span><span class="cell is-cmp">9</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;d = 7.&lt;/b&gt; 7 · 7 = 49 &amp;gt; 36: dừng vòng lặp. Nối nửa nhỏ với nửa lớn đảo ngược, được 9 ước tăng dần: 1 2 3 4 6 9 12 18 36. Chỉ tốn 6 phép chia thay vì 36.">
+        <div class="arr"><span class="arr-label">d</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span><span class="cell is-bad">5</span><span class="cell is-ok">6</span></div><div class="arr"><span class="arr-label">ước</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span><span class="cell is-ok">6</span><span class="cell is-cmp">9</span><span class="cell is-cmp">12</span><span class="cell is-cmp">18</span><span class="cell is-cmp">36</span></div>
+      </div>
+    </div>
+
+    <p>Ví dụ 2 phân tích <span class="math">360</span> bằng chia thử. Hàng <b>n</b> là phần còn lại của n sau mỗi bước; hàng <b>thừa số</b> là các thừa số nguyên tố đã rút ra.</p>
+    <div class="stepper" data-title="Ví dụ 2: chia thử để phân tích 360">
+      <div class="frame" data-caption="&lt;b&gt;Khởi đầu.&lt;/b&gt; n = 360, chưa có thừa số nào, bắt đầu thử p = 2.">
+        <div class="arr"><span class="arr-label">n</span><span class="cell is-active">360</span></div><div class="arr"><span class="arr-label">thừa số</span><span class="cell is-dim">chưa có</span></div>
+        <table class="trace"><thead><tr><th>p</th><th>p · p ≤ n?</th><th>Chia liên tục</th><th>Số mũ</th><th>Đã có</th></tr></thead><tbody><tr><td>2</td><td>?</td><td>…</td><td>…</td><td>—</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;p = 2.&lt;/b&gt; 2 · 2 = 4 ≤ 360 và 360 chia hết cho 2. Chia liên tục: 360 → 180 → 90 → 45, được 3 lần. Ghi thừa số 2³. Giờ n = 45 (số lẻ, không còn thừa số 2).">
+        <div class="arr"><span class="arr-label">n</span><span class="cell is-active">45</span></div><div class="arr"><span class="arr-label">thừa số</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span></div>
+        <table class="trace"><thead><tr><th>p</th><th>p · p ≤ n?</th><th>Chia liên tục</th><th>Số mũ</th><th>Đã có</th></tr></thead><tbody><tr class="hl"><td>2</td><td>4 ≤ 360</td><td>360 → 180 → 90 → 45</td><td>3</td><td>2³</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;p = 3.&lt;/b&gt; 3 · 3 = 9 ≤ 45 và 45 chia hết cho 3. Chia liên tục: 45 → 15 → 5, được 2 lần. Ghi 3². Giờ n = 5.">
+        <div class="arr"><span class="arr-label">n</span><span class="cell is-active">5</span></div><div class="arr"><span class="arr-label">thừa số</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">3</span></div>
+        <table class="trace"><thead><tr><th>p</th><th>p · p ≤ n?</th><th>Chia liên tục</th><th>Số mũ</th><th>Đã có</th></tr></thead><tbody><tr><td>2</td><td>4 ≤ 360</td><td>360 → 180 → 90 → 45</td><td>3</td><td>2³</td></tr><tr class="hl"><td>3</td><td>9 ≤ 45</td><td>45 → 15 → 5</td><td>2</td><td>2³ · 3²</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;p = 4.&lt;/b&gt; 4 · 4 = 16 &amp;gt; 5: điều kiện p · p ≤ n sai, vòng lặp dừng. Để ý: vòng lặp không cần thử 4 có chia hết không, và cũng không cần thử 5, 6, …, 18 như khi duyệt đến √360 ≈ 18,97.">
+        <div class="arr"><span class="arr-label">n</span><span class="cell is-active">5</span></div><div class="arr"><span class="arr-label">thừa số</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">3</span></div>
+        <table class="trace"><thead><tr><th>p</th><th>p · p ≤ n?</th><th>Chia liên tục</th><th>Số mũ</th><th>Đã có</th></tr></thead><tbody><tr><td>2</td><td>4 ≤ 360</td><td>360 → 180 → 90 → 45</td><td>3</td><td>2³</td></tr><tr><td>3</td><td>9 ≤ 45</td><td>45 → 15 → 5</td><td>2</td><td>2³ · 3²</td></tr><tr class="hl"><td>4</td><td>16 &gt; 5</td><td>dừng vòng lặp</td><td>—</td><td>2³ · 3²</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Phần còn lại.&lt;/b&gt; n = 5 &amp;gt; 1 nên 5 là số nguyên tố (nó không có ước nào ≤ √5). Ghi 5¹. Kết quả: 360 = 2³ · 3² · 5.">
+        <div class="arr"><span class="arr-label">n</span><span class="cell is-active">1</span></div><div class="arr"><span class="arr-label">thừa số</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">3</span><span class="cell is-ok">5</span></div>
+        <table class="trace"><thead><tr><th>p</th><th>p · p ≤ n?</th><th>Chia liên tục</th><th>Số mũ</th><th>Đã có</th></tr></thead><tbody><tr><td>2</td><td>4 ≤ 360</td><td>360 → 180 → 90 → 45</td><td>3</td><td>2³</td></tr><tr><td>3</td><td>9 ≤ 45</td><td>45 → 15 → 5</td><td>2</td><td>2³ · 3²</td></tr><tr><td>4</td><td>16 &gt; 5</td><td>dừng vòng lặp</td><td>—</td><td>2³ · 3²</td></tr><tr class="hl"><td>sau vòng lặp</td><td>—</td><td>n = 5 &gt; 1</td><td>1</td><td>2³ · 3² · 5</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Dùng công thức.&lt;/b&gt; Số ước = (3+1)(2+1)(1+1) = 4 · 3 · 2 = 24. Tổng ước = (1+2+4+8)(1+3+9)(1+5) = 15 · 13 · 6 = 1170. Không cần liệt kê 24 ước mà vẫn biết chính xác.">
+        <div class="arr"><span class="arr-label">n</span><span class="cell is-active">1</span></div><div class="arr"><span class="arr-label">thừa số</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">3</span><span class="cell is-ok">5</span></div>
+        <table class="trace"><thead><tr><th>p</th><th>p · p ≤ n?</th><th>Chia liên tục</th><th>Số mũ</th><th>Đã có</th></tr></thead><tbody><tr><td>2</td><td>4 ≤ 360</td><td>360 → 180 → 90 → 45</td><td>3</td><td>2³</td></tr><tr><td>3</td><td>9 ≤ 45</td><td>45 → 15 → 5</td><td>2</td><td>2³ · 3²</td></tr><tr><td>4</td><td>16 &gt; 5</td><td>dừng vòng lặp</td><td>—</td><td>2³ · 3²</td></tr><tr><td>sau vòng lặp</td><td>—</td><td>n = 5 &gt; 1</td><td>1</td><td>2³ · 3² · 5</td></tr></tbody></table><div class="math-block">τ(360) = 4 · 3 · 2 = 24 &nbsp;&nbsp; σ(360) = 15 · 13 · 6 = 1170</div>
+      </div>
+    </div>
+
+    <p>Có thể vẽ quá trình chia thử thành một <strong>cây phân tích</strong>: mỗi lần tách được một thừa số nguyên tố (lá màu xanh), phần còn lại đi tiếp xuống dưới. Các lá chính là phân tích thừa số nguyên tố.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 460 365" width="460" role="img" aria-label="Cây phân tích 360 thành 2 nhân 2 nhân 2 nhân 3 nhân 3 nhân 5">
+        <line class="edge" x1="70" y1="35" x2="30" y2="95"/><line class="edge" x1="70" y1="35" x2="120" y2="95"/>
+        <line class="edge" x1="120" y1="95" x2="80" y2="155"/><line class="edge" x1="120" y1="95" x2="170" y2="155"/>
+        <line class="edge" x1="170" y1="155" x2="130" y2="215"/><line class="edge" x1="170" y1="155" x2="220" y2="215"/>
+        <line class="edge" x1="220" y1="215" x2="180" y2="275"/><line class="edge" x1="220" y1="215" x2="270" y2="275"/>
+        <line class="edge" x1="270" y1="275" x2="230" y2="335"/><line class="edge" x1="270" y1="275" x2="320" y2="335"/>
+        <circle class="node is-active" cx="70" cy="35" r="21"/><text x="70" y="40" text-anchor="middle">360</text>
+        <circle class="node is-ok" cx="30" cy="95" r="18"/><text x="30" y="100" text-anchor="middle">2</text>
+        <circle class="node" cx="120" cy="95" r="21"/><text x="120" y="100" text-anchor="middle">180</text>
+        <circle class="node is-ok" cx="80" cy="155" r="18"/><text x="80" y="160" text-anchor="middle">2</text>
+        <circle class="node" cx="170" cy="155" r="21"/><text x="170" y="160" text-anchor="middle">90</text>
+        <circle class="node is-ok" cx="130" cy="215" r="18"/><text x="130" y="220" text-anchor="middle">2</text>
+        <circle class="node" cx="220" cy="215" r="21"/><text x="220" y="220" text-anchor="middle">45</text>
+        <circle class="node is-ok" cx="180" cy="275" r="18"/><text x="180" y="280" text-anchor="middle">3</text>
+        <circle class="node" cx="270" cy="275" r="21"/><text x="270" y="280" text-anchor="middle">15</text>
+        <circle class="node is-ok" cx="230" cy="335" r="18"/><text x="230" y="340" text-anchor="middle">3</text>
+        <circle class="node is-ok" cx="320" cy="335" r="18"/><text x="320" y="340" text-anchor="middle">5</text>
+        <text class="label-pen" x="230" y="60">360 = 2³ · 3² · 5</text>
+        <text class="label-sm" x="230" y="84">lá xanh: số nguyên tố</text>
+        <text class="label-sm" x="345" y="300">5 là “phần còn lại &gt; 1”</text>
+      </svg>
+      <figcaption>Hình 2. Cây phân tích 360. Mỗi tầng tách một thừa số nguyên tố nhỏ nhất của phần còn lại.</figcaption>
+    </figure>
+
+    <div class="playground" id="viz-divisors-primes">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: ước, thừa số và số phép chia</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="dp-n">Số n (1 ≤ n ≤ 10¹²) <input type="text" id="dp-n" value="360" inputmode="numeric" autocomplete="off"></label>
+          <button type="button" data-act="run">Phân tích</button>
+          <button type="button" class="ghost" data-act="rand">Số ngẫu nhiên</button>
+        </div>
+        <div class="dp-cells"></div>
+        <div class="out" aria-live="polite">Nhập n rồi bấm “Phân tích”.</div>
+      </div>
+    </div>
+    <p>Gợi ý thử: 36 (số chính phương, số ước lẻ), 97 (nguyên tố), 28 và 496 (số hoàn hảo), 999999999989 (số nguyên tố lớn gần 10¹²), 963761198400 (số ≤ 10¹² có nhiều ước nhất: 6720 ước). Để ý cột “số phép chia”: cách duyệt √n luôn nhỏ hơn cách ngây thơ hàng nghìn, hàng triệu lần.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Chương trình dưới đây gói cả bốn thuật toán: đọc một số <span class="math">n ≤ 10¹²</span>, in ra <span class="math">n</span> có là số nguyên tố không, phân tích thừa số, số ước, tổng ước và danh sách ước tăng dần. Mọi biến liên quan đến <span class="math">n</span> đều dùng <code>long long</code>, kể cả biến chạy <code>d</code> và <code>p</code>, để <code>d * d</code> không tràn số.</p>
+    <figure class="code">
+      <figcaption><span class="fn">uoc_nguyen_to.cpp</span> Kiểm tra nguyên tố, phân tích thừa số, số ước, tổng ước, liệt kê ước</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+
+// Kiểm tra nguyên tố O(√n), chỉ thử 2, 3 và các số dạng 6k-1, 6k+1
+bool isPrime(ll n) {
+    if (n &lt; 2) return false;              // 0 và 1 không là số nguyên tố
+    if (n &lt; 4) return true;               // 2 và 3 là số nguyên tố
+    if (n % 2 == 0 || n % 3 == 0) return false;
+    for (ll d = 5; d * d &lt;= n; d += 6)    // d = 6k-1, d + 2 = 6k+1
+        if (n % d == 0 || n % (d + 2) == 0) return false;
+    return true;
+}
+
+// Liệt kê ước tăng dần: nửa nhỏ (d &lt;= √n) theo thứ tự tăng,
+// nửa lớn (n/d) lấy ngược lại cũng sẽ tăng dần
+vector&lt;ll&gt; divisors(ll n) {
+    vector&lt;ll&gt; small, big;
+    for (ll d = 1; d * d &lt;= n; d++)
+        if (n % d == 0) {
+            small.push_back(d);
+            if (d != n / d) big.push_back(n / d);   // tránh đếm √n hai lần
+        }
+    for (int i = (int)big.size() - 1; i &gt;= 0; i--) small.push_back(big[i]);
+    return small;
+}
+
+// Phân tích thừa số nguyên tố bằng chia thử: trả về các cặp (p, số mũ)
+vector&lt;pair&lt;ll,int&gt;&gt; factorize(ll n) {
+    vector&lt;pair&lt;ll,int&gt;&gt; f;
+    for (ll p = 2; p * p &lt;= n; p++)
+        if (n % p == 0) {
+            int c = 0;
+            while (n % p == 0) { n /= p; c++; }
+            f.push_back({p, c});
+        }
+    if (n &gt; 1) f.push_back({n, 1});       // phần còn lại &gt; 1 chắc chắn là số nguyên tố
+    return f;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    ll n;
+    if (!(cin &gt;&gt; n) || n &lt; 1) return 0;
+
+    cout &lt;&lt; "Nguyen to: " &lt;&lt; (isPrime(n) ? "YES" : "NO") &lt;&lt; '\n';
+
+    vector&lt;pair&lt;ll,int&gt;&gt; f = factorize(n);
+    ll cnt = 1, sum = 1;
+    cout &lt;&lt; "Phan tich: ";
+    if (f.empty()) cout &lt;&lt; 1;             // n = 1 không có thừa số nguyên tố
+    for (size_t i = 0; i &lt; f.size(); i++) {
+        ll p = f[i].first; int a = f[i].second;
+        if (i) cout &lt;&lt; " * ";
+        cout &lt;&lt; p;
+        if (a &gt; 1) cout &lt;&lt; '^' &lt;&lt; a;
+        cnt *= (a + 1);                   // công thức số ước
+        ll term = 1, pw = 1;              // term = 1 + p + p^2 + ... + p^a
+        for (int j = 1; j &lt;= a; j++) { pw *= p; term += pw; }
+        sum *= term;                      // công thức tổng ước
+    }
+    cout &lt;&lt; '\n';
+    cout &lt;&lt; "So uoc: " &lt;&lt; cnt &lt;&lt; '\n';
+    cout &lt;&lt; "Tong uoc: " &lt;&lt; sum &lt;&lt; '\n';
+
+    vector&lt;ll&gt; d = divisors(n);
+    cout &lt;&lt; "Cac uoc:";
+    for (ll x : d) cout &lt;&lt; ' ' &lt;&lt; x;
+    cout &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">360</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">Nguyen to: NO
+Phan tich: 2^3 * 3^2 * 5
+So uoc: 24
+Tong uoc: 1170
+Cac uoc: 1 2 3 4 5 6 8 9 10 12 15 18 20 24 30 36 40 45 60 72 90 120 180 360</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">999999999989</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">Nguyen to: YES
+Phan tich: 999999999989
+So uoc: 2
+Tong uoc: 999999999990
+Cac uoc: 1 999999999989</code></pre></div>
+    </div>
+    <p>Với số nguyên tố 999 999 999 989 (gần 10¹²), cả ba vòng lặp đều chạy hết đến <span class="math">√n ≈ 10⁶</span>; chương trình vẫn chạy chưa tới 0,02 giây.</p>
+    <p><strong>Đọc code thế nào?</strong></p>
+    <ul>
+      <li><code>isPrime</code>: xử lý riêng <span class="math">n &lt; 4</span> và bội của 2, 3; sau đó <code>d</code> nhảy 5, 11, 17… và mỗi lần thử cả <code>d</code> lẫn <code>d + 2</code>.</li>
+      <li><code>divisors</code>: hai mảng <code>small</code>, <code>big</code>; câu <code>if (d != n / d)</code> chặn việc thêm <span class="math">√n</span> hai lần khi <span class="math">n</span> là số chính phương.</li>
+      <li><code>factorize</code>: trả về <code>vector</code> các cặp (thừa số, số mũ). Lưu ý vòng <code>for</code> so sánh <code>p * p &lt;= n</code> với <code>n</code> <em>đã bị chia nhỏ</em>, nên dừng rất sớm.</li>
+      <li>Trong <code>main</code>, <code>cnt *= (a + 1)</code> là công thức số ước; <code>term</code> cộng dồn <span class="math">1 + p + … + pᵃ</span> cho công thức tổng ước.</li>
+    </ul>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thao tác</th><th>Thời gian</th><th>Bộ nhớ</th><th>Ghi chú</th></tr></thead>
+      <tbody>
+        <tr><td>Kiểm tra nguyên tố (thử mọi d)</td><td><span class="bigo">O(√n)</span></td><td><span class="bigo">O(1)</span></td><td>khoảng √n phép chia</td></tr>
+        <tr><td>Kiểm tra nguyên tố (6k ± 1)</td><td><span class="bigo">O(√n)</span></td><td><span class="bigo">O(1)</span></td><td>khoảng √n / 3 phép chia</td></tr>
+        <tr><td>Đếm ước, tổng ước bằng duyệt cặp</td><td><span class="bigo">O(√n)</span></td><td><span class="bigo">O(1)</span></td><td>không cần lưu ước</td></tr>
+        <tr><td>Liệt kê ước tăng dần</td><td><span class="bigo">O(√n)</span></td><td><span class="bigo">O(τ(n))</span></td><td>τ(n) ≤ 6720 khi n ≤ 10¹²</td></tr>
+        <tr><td>Phân tích thừa số bằng chia thử</td><td><span class="bigo">O(√n)</span></td><td><span class="bigo">O(log n)</span></td><td>tệ nhất khi n nguyên tố hoặc có thừa số lớn</td></tr>
+        <tr><td>Số ước, tổng ước từ phân tích</td><td><span class="bigo">O(log n)</span></td><td><span class="bigo">O(1)</span></td><td>chỉ vài phép nhân</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Chọn cách theo giới hạn.</strong> Quy ước máy chấm làm được khoảng 10⁸ phép tính mỗi giây:</p>
+    <table>
+      <thead><tr><th>Đề bài</th><th>Số phép tính với O(√n)</th><th>Kết luận</th></tr></thead>
+      <tbody>
+        <tr><td>1 số, n ≤ 10⁹</td><td>khoảng 31 623</td><td>rất nhanh</td></tr>
+        <tr><td>1 số, n ≤ 10¹²</td><td>10⁶</td><td>nhanh, nhớ dùng <code>long long</code></td></tr>
+        <tr><td>1 số, n ≤ 10¹⁶</td><td>10⁸</td><td>sát giới hạn, nên dùng 6k ± 1 hoặc chỉ chia cho số nguyên tố</td></tr>
+        <tr><td>1 số, n ≤ 10¹⁸</td><td>10⁹</td><td>quá chậm, cần thuật toán khác (xem Biến thể)</td></tr>
+        <tr><td>10⁵ số, mỗi số ≤ 10⁶</td><td>10⁵ · 10³ = 10⁸</td><td>vừa kịp; dùng sàng sẽ an toàn hơn</td></tr>
+        <tr><td>10⁶ số, mỗi số ≤ 10⁷</td><td>10⁶ · 3 163 ≈ 3 · 10⁹</td><td>quá chậm, phải dùng <a href="sieve.html">sàng</a></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Một số có thể có bao nhiêu ước?</strong> Ít hơn em tưởng rất nhiều. Số ≤ 10⁶ có nhiều ước nhất là 720 720 với 240 ước; số ≤ 10⁹ nhiều ước nhất là 735 134 400 với 1344 ước; số ≤ 10¹² nhiều ước nhất là 963 761 198 400 với 6720 ước. Vì vậy mảng chứa toàn bộ ước luôn nhỏ, và các thuật toán “duyệt qua mọi ước” chạy nhanh.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Ước thứ k theo thứ tự tăng dần</h3>
+    <p>Liệt kê ước tăng dần như hàm <code>divisors</code>, rồi lấy phần tử thứ k (nếu có ít hơn k ước thì trả về −1). Mẹo: không cần ghép mảng. Nếu <span class="math">k ≤</span> độ dài nửa nhỏ thì đáp án là <code>small[k-1]</code>; ngược lại đáp án là <span class="math">n / small[τ(n) − k]</span>, vì ước thứ k tính từ đầu ghép cặp với ước thứ <span class="math">τ(n) − k + 1</span> tính từ đầu. Đây là bài Codeforces 762A trong phần bài tập.</p>
+
+    <h3>Số chính phương: mọi số mũ chẵn, số ước lẻ</h3>
+    <p>Số <span class="math">n</span> là <strong>số chính phương</strong> (perfect square) nếu <span class="math">n = m²</span> với <span class="math">m</span> nguyên. Ba điều sau tương đương:</p>
+    <ol>
+      <li><span class="math">n</span> là số chính phương.</li>
+      <li>Trong phân tích <span class="math">n = p₁<sup>a₁</sup> … pₖ<sup>aₖ</sup></span>, mọi số mũ <span class="math">aᵢ</span> đều chẵn. (Vì <span class="math">m² = p₁<sup>2b₁</sup> … pₖ<sup>2bₖ</sup></span>, và phân tích là duy nhất.)</li>
+      <li><span class="math">n</span> có số ước lẻ. (Vì <span class="math">τ(n) = (a₁+1)…(aₖ+1)</span> lẻ khi và chỉ khi mọi thừa số <span class="math">aᵢ + 1</span> lẻ, tức mọi <span class="math">aᵢ</span> chẵn. Cũng có thể nhìn hình 1: các ước ghép thành cặp, chỉ có ước <span class="math">√n</span> “đứng một mình” khi n chính phương.)</li>
+    </ol>
+    <p>Ví dụ: <span class="math">36 = 2² · 3²</span> có 9 ước; <span class="math">72 = 2³ · 3²</span> có 12 ước và không chính phương. Khi chỉ cần kiểm tra chính phương, dùng căn nguyên rồi sửa sai số:</p>
+    <figure class="code">
+      <figcaption><span class="fn">is_square.cpp</span> Kiểm tra số chính phương an toàn đến 10¹⁸</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+// Kiểm tra n có là số chính phương không, an toàn với n đến 10^18
+bool isSquare(ll n) {
+    if (n &lt; 0) return false;
+    ll r = sqrtl((long double)n);         // ước lượng bằng số thực
+    while (r * r &gt; n) r--;                // sửa sai số xuống
+    while ((r + 1) * (r + 1) &lt;= n) r++;   // sửa sai số lên
+    return r * r == n;
+}</code></pre>
+    </figure>
+    <p>Một bài hỏi ngược lại: “n có chia hết cho số chính phương nào lớn hơn 1 không?” chính là hỏi “trong phân tích của n có số mũ nào ≥ 2 không?”.</p>
+
+    <h3>Số hoàn hảo</h3>
+    <p>Số <span class="math">n</span> là <strong>số hoàn hảo</strong> (perfect number) nếu tổng các ước <em>khác chính nó</em> bằng <span class="math">n</span>, tức là <span class="math">σ(n) = 2n</span>. Bốn số hoàn hảo đầu tiên là 6, 28, 496, 8128. Kiểm tra bằng công thức: <span class="math">28 = 2² · 7</span> nên <span class="math">σ(28) = (1+2+4)(1+7) = 7 · 8 = 56 = 2 · 28</span>; <span class="math">496 = 2⁴ · 31</span> nên <span class="math">σ(496) = 31 · 32 = 992 = 2 · 496</span>.</p>
+    <p>Cách làm cho <span class="math">n ≤ 10¹²</span>: tính <span class="math">σ(n)</span> bằng duyệt cặp ước trong <span class="math">O(√n)</span> (hoặc bằng phân tích), so với <span class="math">2n</span>. Nhớ dùng <code>long long</code> vì <span class="math">σ(n)</span> có thể lớn hơn <span class="math">n</span> vài lần. (Mọi số hoàn hảo chẵn đều có dạng <span class="math">2<sup>p−1</sup>(2<sup>p</sup> − 1)</span> với <span class="math">2<sup>p</sup> − 1</span> là số nguyên tố; người ta chưa biết có số hoàn hảo lẻ nào không.)</p>
+
+    <h3>Số có đúng 3, 4, 9 ước</h3>
+    <p>Công thức số ước giúp “đoán dạng” của số:</p>
+    <ul>
+      <li><strong>Đúng 3 ước:</strong> <span class="math">3</span> là số nguyên tố, nên chỉ có thể là <span class="math">(2 + 1)</span>: <span class="math">n = p²</span>. Kiểm tra: n chính phương và <span class="math">√n</span> là số nguyên tố.</li>
+      <li><strong>Đúng 4 ước:</strong> <span class="math">4 = (3+1) = (1+1)(1+1)</span>: <span class="math">n = p³</span> hoặc <span class="math">n = p · q</span> với <span class="math">p ≠ q</span>.</li>
+      <li><strong>Đúng 9 ước:</strong> <span class="math">9 = (8+1) = (2+1)(2+1)</span>: <span class="math">n = p⁸</span> hoặc <span class="math">n = p² q²</span>. Cả hai đều là số chính phương, nên với <span class="math">n ≤ 10¹⁸</span> chỉ cần lấy <span class="math">m = √n ≤ 10⁹</span> rồi phân tích <span class="math">m</span> trong <span class="math">√m ≤ 31 623</span> bước.</li>
+    </ul>
+
+    <h3>Chỉ chia thử bằng số nguyên tố</h3>
+    <p>Khi phải phân tích nhiều số lớn (ví dụ 100 số, mỗi số ≤ 10¹²), hãy <a href="sieve.html">sàng</a> trước các số nguyên tố ≤ 10⁶ (có 78 498 số). Mỗi lần phân tích chỉ thử chia cho các số nguyên tố này: tốn khoảng 78 498 phép chia thay vì 10⁶, nhanh hơn khoảng 12 lần.</p>
+
+    <h3>Rất nhiều truy vấn: chuyển sang sàng</h3>
+    <p>Nếu đề hỏi số ước của <span class="math">10⁵</span> đến <span class="math">10⁶</span> số, mỗi số ≤ <span class="math">10⁶</span>, hãy tính trước số ước cho <strong>mọi</strong> số bằng cách đi theo bội: mỗi <span class="math">d</span> cộng 1 vào <code>cnt</code> của <span class="math">d, 2d, 3d, …</span> Tổng số bước là <span class="math">N/1 + N/2 + … + N/N ≈ N ln N</span>, với <span class="math">N = 10⁶</span> là khoảng <span class="math">1,4 · 10⁷</span>. Sau đó mỗi truy vấn trả lời trong <span class="math">O(1)</span>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_uoc_nhieu.cpp</span> Đếm ước cho mọi số ≤ 10⁶ trong O(N log N)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const int MAXV = 1000000;
+int cnt[MAXV + 1];                        // cnt[m] = số ước của m
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    // Mỗi d "đóng góp" 1 vào số ước của các bội d, 2d, 3d, ...
+    for (int d = 1; d &lt;= MAXV; d++)
+        for (int m = d; m &lt;= MAXV; m += d)
+            cnt[m]++;
+    int q; cin &gt;&gt; q;
+    while (q--) {
+        int x; cin &gt;&gt; x;
+        cout &lt;&lt; cnt[x] &lt;&lt; '\n';           // trả lời mỗi truy vấn trong O(1)
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+16
+17
+18</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">5
+2
+6</code></pre></div>
+    </div>
+    <p>Muốn phân tích thừa số thật nhanh cho rất nhiều số, dùng sàng lưu <strong>ước nguyên tố nhỏ nhất</strong> của mọi số; khi đó phân tích một số chỉ tốn <span class="math">O(log n)</span>. Kỹ thuật này học ở bài <a href="sieve.html">Sàng nguyên tố</a>.</p>
+
+    <h3>Nâng cao: n đến 10¹⁸</h3>
+    <p>Với <span class="math">n ≤ 10¹⁸</span>, <span class="math">√n = 10⁹</span> phép chia là quá chậm. Người ta dùng kiểm tra nguyên tố Miller–Rabin (vài chục phép lũy thừa theo modulo) và thuật toán Pollard rho để phân tích. Đây là kiến thức ngoài chương trình THCS; em chỉ cần biết chúng tồn tại và cần <a href="modular-power.html">lũy thừa nhanh theo modulo</a>.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Tràn số ở d * d</p><p>Viết <code>for (int d = 2; d * d &lt;= n; d++)</code> với <code>n</code> kiểu <code>long long</code> cỡ 10¹²: khi <code>d</code> vượt 46 340, <code>d * d</code> tính bằng <code>int</code> bị tràn thành số âm hoặc số rác, vòng lặp chạy sai. <strong>Sửa:</strong> khai báo <code>long long d</code>, hoặc viết điều kiện <code>d &lt;= n / d</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Quên phần còn lại sau khi chia thử</p><p>Thiếu dòng <code>if (n &gt; 1) f.push_back({n, 1});</code> thì 14 = 2 · 7 chỉ được phân tích thành “2”, và mọi số nguyên tố lớn đều bị phân tích thành rỗng. <strong>Sửa:</strong> luôn kiểm tra phần còn lại sau vòng lặp.</p></div>
+    <div class="callout danger"><p class="callout-title">Đếm √n hai lần</p><p>Khi <span class="math">n</span> là số chính phương, <span class="math">d = √n</span> ghép cặp với chính nó. Nếu luôn cộng 2 cho mỗi ước tìm được, em sẽ đếm 36 có 10 ước (sai, đúng là 9). <strong>Sửa:</strong> <code>if (d != n / d)</code> mới cộng thêm ước thứ hai.</p></div>
+    <div class="callout warn"><p class="callout-title">Coi 1 là số nguyên tố, hoặc quên số âm</p><p>Hàm kiểm tra nguyên tố phải trả về “không” với 0, 1 và mọi số âm. Một số đề (như bài KT Số nguyên tố ở dưới) cho cả <span class="math">n</span> âm. <strong>Sửa:</strong> dòng đầu tiên <code>if (n &lt; 2) return false;</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Dùng sqrt số thực làm cận vòng lặp</p><p><code>for (d = 1; d &lt;= sqrt(n); d++)</code> vừa có nguy cơ sai số làm mất ước cuối, vừa gọi lại <code>sqrt</code> ở mỗi vòng. Trong hàm phân tích thì còn nguy hiểm hơn nếu em tính <code>sqrt(n)</code> một lần trước khi chia nhỏ n (vẫn đúng nhưng chậm hơn nhiều). <strong>Sửa:</strong> dùng <code>d * d &lt;= n</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Tổng ước bị tràn int</p><p>Tổng ước của số cỡ 2 · 10⁹ đã vượt giới hạn <code>int</code> (khoảng 2,1 · 10⁹). <strong>Sửa:</strong> biến tổng luôn là <code>long long</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Dùng √n cho quá nhiều truy vấn</p><p>10⁶ truy vấn, mỗi số đến 10⁷, mỗi truy vấn tốn khoảng 3 163 phép chia: tổng 3 · 10⁹, chắc chắn quá thời gian. <strong>Sửa:</strong> tính trước bằng sàng.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo kiểm tra code</p><p>Viết thêm một hàm ngây thơ (thử mọi d từ 1 đến n), chạy cả hai hàm với mọi n từ 1 đến 10 000 và so kết quả. Chỉ mất một phút mà bắt được gần hết các lỗi ở trên.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Để kiểm tra n = 10¹² có phải số nguyên tố không bằng cách thử chia đến √n, vòng lặp chạy khoảng bao nhiêu lần?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 10¹² lần</button>
+        <button type="button" class="quiz-opt">B. 5 · 10¹¹ lần</button>
+        <button type="button" class="quiz-opt" data-correct>C. 10⁶ lần</button>
+        <button type="button" class="quiz-opt">D. 40 lần</button>
+      </div>
+      <p class="quiz-explain">√(10¹²) = 10⁶. Chỉ cần thử d với d · d ≤ n, tức là d ≤ 10⁶.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Số 2⁴ · 3 · 7² có bao nhiêu ước dương?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 7</button>
+        <button type="button" class="quiz-opt">B. 8</button>
+        <button type="button" class="quiz-opt" data-correct>C. 30</button>
+        <button type="button" class="quiz-opt">D. 24</button>
+      </div>
+      <p class="quiz-explain">(4 + 1)(1 + 1)(2 + 1) = 5 · 2 · 3 = 30. Phương án A là tổng các số mũ, B là tổng các (số mũ + 1): đều sai.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Số nào dưới đây có số ước là số lẻ?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 48</button>
+        <button type="button" class="quiz-opt" data-correct>B. 144</button>
+        <button type="button" class="quiz-opt">C. 200</button>
+        <button type="button" class="quiz-opt">D. 1000</button>
+      </div>
+      <p class="quiz-explain">Số có số ước lẻ khi và chỉ khi là số chính phương. 144 = 12² = 2⁴ · 3², có (4+1)(2+1) = 15 ước. 48 = 2⁴ · 3 có 10 ước, 200 = 2³ · 5² có 12 ước, 1000 = 2³ · 5³ có 16 ước.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Chạy chia thử với n = 2 · 3 · 1009 = 6054. Sau khi chia hết 2 và 3, phần còn lại là 1009. Vòng lặp dừng khi nào và kết luận gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Dừng ở p = 4, phần còn lại 1009 bị bỏ qua.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Dừng ở p = 32 (vì 32 · 32 = 1024 &gt; 1009), và 1009 là thừa số nguyên tố.</button>
+        <button type="button" class="quiz-opt">C. Phải thử đến p = 1009 mới biết 1009 là số nguyên tố.</button>
+      </div>
+      <p class="quiz-explain">31 · 31 = 961 ≤ 1009 nhưng 32 · 32 = 1024 &gt; 1009. Không p nào từ 4 đến 31 chia hết 1009, nên phần còn lại 1009 &gt; 1 là số nguyên tố. Kết quả 6054 = 2 · 3 · 1009.</p>
+    </div>
+    <p><strong>Câu 5.</strong> Tính tay số ước và tổng các ước của 540. Kiểm tra 540 có phải số hoàn hảo không.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>540 = 2² · 3³ · 5. Số ước: (2+1)(3+1)(1+1) = 3 · 4 · 2 = 24. Tổng ước: (1+2+4)(1+3+9+27)(1+5) = 7 · 40 · 6 = 1680. Vì 1680 ≠ 2 · 540 = 1080 nên 540 không phải số hoàn hảo (tổng ước lớn hơn 2n, người ta gọi là số “dư”).</p></details>
+    <p><strong>Câu 6.</strong> Bạn An viết <code>for (int d = 1; d * d &lt;= n; d++) if (n % d == 0) cnt += 2;</code> để đếm ước của <code>long long n</code> (n ≤ 10¹²). Đoạn code có mấy lỗi? Sửa thế nào?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Hai lỗi. (1) <code>d</code> là <code>int</code> nên <code>d * d</code> tràn khi d &gt; 46 340, mà n ≤ 10¹² cần d chạy tới 10⁶: phải khai báo <code>long long d</code>. (2) Luôn cộng 2 nên đếm thừa 1 khi n là số chính phương: sửa thành <code>cnt += (d == n / d) ? 1 : 2;</code>.</p></details>
+    <p><strong>Câu 7.</strong> Vì sao trong hàm phân tích, khi vòng lặp xét đến p = 6 thì chắc chắn 6 không chia hết n (phần còn lại)?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Khi đến p = 6, mọi thừa số 2 và 3 đã bị chia hết khỏi n ở các lượt p = 2 và p = 3. Nếu 6 chia hết n thì 2 cũng chia hết n, mâu thuẫn. Tổng quát, mọi hợp số p đều có ước nguyên tố nhỏ hơn p đã bị rút sạch, nên vòng lặp chỉ “bắt” được số nguyên tố.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó; 12 trên 14 bài có đề tiếng Việt. Ba bài đầu chỉ cần đúng khuôn mẫu trong bài học. Các bài Vận dụng thêm số lớn (long long), số âm, phần còn lại sau chia thử. Các bài Nâng cao cần kết hợp công thức số ước với suy luận.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://ltoj.edu.vn/problem/for4">FOR4 – Kiểm tra số nguyên tố</a>
+          <span class="judge">LTOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho 1 ≤ N ≤ 10⁹, in YES nếu N là số nguyên tố, ngược lại in NO.</p>
+        <p class="ex-skill"><b>Luyện:</b> kiểm tra nguyên tố O(√n), điều kiện d * d &lt;= n.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xử lý riêng N = 1. Thử d từ 2 khi d · d ≤ N; √(10⁹) ≈ 31 623 nên chạy rất nhanh.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/for03">FOR03 – Ước số của n</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Nhập n ≤ 10⁷, in tất cả các ước của n theo thứ tự tăng dần (ví dụ 36 → 1 2 3 4 6 9 12 18 36).</p>
+        <p class="ex-skill"><b>Luyện:</b> liệt kê ước tăng dần bằng hai nửa.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lưu nửa nhỏ d và nửa lớn n/d vào hai mảng; in nửa nhỏ xuôi rồi in nửa lớn ngược. Nhớ không in √n hai lần.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/for04">FOR04 – Số lượng ước số của n</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Nhập n ≤ 10⁷, in số lượng ước của n (ví dụ 10 có 4 ước, 36 có 9 ước).</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm ước theo cặp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mỗi d ≤ √n chia hết cho n đóng góp 2 ước, trừ khi d · d = n thì chỉ đóng góp 1.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/divisor">DIVISOR – Ước số và tổng ước số</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho N ≤ 2 · 10⁹, in số lượng ước và tổng các ước của N (10 → 4 18).</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm ước, tổng ước, dùng long long.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Duyệt cặp (d, N/d) như đếm ước, cộng cả hai vào tổng. Tổng có thể vượt int nên dùng long long.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/for05">FOR05 – Số hoàn hảo</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 10¹², in YES nếu tổng các ước của n bằng 2n (số hoàn hảo), ngược lại NO. Giới hạn 0,5 giây.</p>
+        <p class="ex-skill"><b>Luyện:</b> tính σ(n) trong O(√n) với n lớn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>√(10¹²) = 10⁶ phép chia, đủ nhanh. Cẩn thận long long cho cả biến chạy và tổng. Có thể dừng sớm khi tổng đã vượt 2n.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/ktprime">KTPRIME – KT Số nguyên tố</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho n với |n| ≤ 10¹², kiểm tra n có phải số nguyên tố không.</p>
+        <p class="ex-skill"><b>Luyện:</b> kiểm tra nguyên tố với n lớn và n âm.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Số âm, 0, 1 đều trả lời NO. Biến chạy phải là long long; thử thêm bản 6k ± 1 cho nhanh.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/factor">FACTOR – Phân tích thừa số nguyên tố</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho N ≤ 2 · 10⁹, in phân tích thừa số của N dạng 2*2*5*5 và số lượng ước của N.</p>
+        <p class="ex-skill"><b>Luyện:</b> chia thử, phần còn lại &gt; 1, công thức số ước.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mỗi lần chia được cho p thì in p một lần. Đếm số mũ để tính (a₁+1)(a₂+1)… Đừng quên thừa số cuối cùng lớn hơn √N.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/14ts10dna1">14TS10DNA1 – Tổng các ước nguyên tố (TS10 LQĐ Đà Nẵng 2014)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho k (k ≤ 10¹⁰, mở rộng đến 10¹⁶), in tổng các ước nguyên tố khác nhau của k (21 → 3 + 7 = 10).</p>
+        <p class="ex-skill"><b>Luyện:</b> phân tích thừa số, mỗi thừa số cộng một lần.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chia thử, mỗi p chia hết thì cộng p một lần rồi chia hết p khỏi k. Cộng cả phần còn lại nếu &gt; 1. Với 10¹⁶ cần √k = 10⁸ bước: nên chỉ thử 2, 3 và các số 6k ± 1.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/tflsqdiv">TFLSQDIV – Ước chính phương (Thi thử HSG9 TFL)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 10⁹, kiểm tra n có ước nào là số chính phương lớn hơn 1 hay không (12 → YES vì 4 | 12).</p>
+        <p class="ex-skill"><b>Luyện:</b> liên hệ số chính phương với số mũ trong phân tích.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>n có ước chính phương lớn hơn 1 khi và chỉ khi có số nguyên tố p mà p² | n, tức có số mũ ≥ 2 trong phân tích.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/762/A">762A – k-th divisor</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 10¹⁵ và k ≤ 10⁹, in ước nhỏ thứ k của n, hoặc −1 nếu n có ít hơn k ước.</p>
+        <p class="ex-skill"><b>Luyện:</b> liệt kê ước tăng dần, chỉ số ghép cặp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>√(10¹⁵) ≈ 3,2 · 10⁷ phép chia, vẫn kịp. Xem mẹo “ước thứ k” ở mục Biến thể để khỏi ghép mảng.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1713">Counting Divisors</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho tới 10⁵ số x ≤ 10⁶, in số ước của từng số.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhiều truy vấn: so sánh O(√x) mỗi số với tính trước bằng duyệt bội.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Cách √x tốn khoảng 10⁸ phép chia, sát giới hạn. Cách an toàn: tính cnt[] cho mọi số ≤ 10⁶ bằng vòng lặp theo bội (mục Biến thể), mỗi truy vấn O(1).</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/bonuoc">BONUOC – Số bốn ước</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 10⁶, đếm số ước d của n sao cho d có đúng 4 ước (8 → chỉ có d = 8).</p>
+        <p class="ex-skill"><b>Luyện:</b> kết hợp liệt kê ước với công thức số ước.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Liệt kê mọi ước d của n (tối đa 240 ước), đếm số ước của từng d. Hoặc dùng dạng: d = p³ hoặc d = p · q với p ≠ q nguyên tố.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/bedao_r21_a">BEDAO_R21_A – Số chín ước</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho T ≤ 10 số X ≤ 10¹⁸, với mỗi số in YES nếu X có đúng 9 ước, ngược lại NO.</p>
+        <p class="ex-skill"><b>Luyện:</b> suy dạng số từ công thức số ước, số chính phương.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>9 = 9 · 1 = 3 · 3 nên X = p⁸ hoặc X = p² q². Cả hai đều chính phương: kiểm tra X chính phương, lấy m = √X ≤ 10⁹ rồi phân tích m; m phải là p⁴ hoặc p · q.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/ndivisors">NDIVISORS – Tìm số có n ước</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 1000, tìm số nguyên dương nhỏ nhất có đúng n ước (đảm bảo đáp số ≤ 10¹⁸).</p>
+        <p class="ex-skill"><b>Luyện:</b> công thức số ước, quay lui trên số mũ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Số nhỏ nhất dùng các số nguyên tố nhỏ nhất 2, 3, 5, 7… với số mũ không tăng. Quay lui chọn số mũ cho từng số nguyên tố sao cho tích (aᵢ + 1) = n, chặn khi tích vượt 10¹⁸.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/translate/he/Number-Theory-2">VNOI Wiki – Số học 2: Số nguyên tố, Sàng Eratosthenes</a> (tiếng Việt)</li>
+      <li><a href="https://wiki.vnoi.info/algo/algebra/prime_sieve">VNOI Wiki – Sàng nguyên tố</a> (tiếng Việt, có danh sách bài luyện tập)</li>
+      <li><a href="https://cp-algorithms.com/algebra/divisors.html">CP-Algorithms – Number of divisors / sum of divisors</a> (tiếng Anh)</li>
+      <li><a href="https://cp-algorithms.com/algebra/factorization.html">CP-Algorithms – Integer factorization</a> (tiếng Anh, có cả chia thử, Pollard rho)</li>
+      <li><a href="https://cp-algorithms.com/algebra/primality_tests.html">CP-Algorithms – Primality tests</a> (tiếng Anh, có Miller–Rabin)</li>
+      <li><a href="https://usaco.guide/gold/divisibility">USACO Guide – Divisibility</a> (tiếng Anh)</li>
+      <li>Giáo án “Toán &amp; Thuật toán cho học sinh THCS thi Lập trình thi đấu”, Chuyên đề 2, Buổi 1.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Ước đi theo cặp <span class="math">(d, n/d)</span>, trong mỗi cặp có một số ≤ √n: chỉ duyệt <code>d * d &lt;= n</code>, biến chạy kiểu <code>long long</code>.</li>
+        <li>Kiểm tra nguyên tố: n &lt; 2 là “không”; thử ước đến √n; bản nhanh thử 2, 3 rồi các số 6k ± 1.</li>
+        <li>Chia thử: chia hết từng p rồi tăng p; mỗi p ghi nhận đều nguyên tố; phần còn lại &gt; 1 là thừa số nguyên tố cuối cùng.</li>
+        <li><span class="math">n = p₁<sup>a₁</sup>…pₖ<sup>aₖ</sup></span> thì số ước là <span class="math">(a₁+1)…(aₖ+1)</span> (quy tắc nhân), tổng ước là tích các <span class="math">(1 + p + … + pᵃ)</span>.</li>
+        <li>Số chính phương ⇔ mọi số mũ chẵn ⇔ số ước lẻ. Số hoàn hảo: <span class="math">σ(n) = 2n</span> (6, 28, 496, 8128).</li>
+        <li>Độ phức tạp <span class="bigo">O(√n)</span>: n ≤ 10¹² chỉ 10⁶ bước. Rất nhiều truy vấn với số ≤ 10⁶ – 10⁷: chuyển sang <a href="sieve.html">sàng</a>.</li>
+        <li>Lỗi hay gặp: tràn <code>d * d</code>, đếm √n hai lần, quên phần còn lại, coi 1 là số nguyên tố.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/divisors-primes.js"></script>
+</body>
+</html>

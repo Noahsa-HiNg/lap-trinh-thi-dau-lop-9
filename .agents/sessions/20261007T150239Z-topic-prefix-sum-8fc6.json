@@ -1,0 +1,12 @@
+{
+  "id": "20261007T150239Z-topic-prefix-sum-8fc6",
+  "agent": "topic-prefix-sum",
+  "task": "Soạn chủ đề prefix-sum",
+  "topic": "prefix-sum",
+  "status": "done",
+  "host": "MyPC",
+  "started_at": "2026-10-07T15:02:39Z",
+  "heartbeat_at": "2026-10-07T15:13:48Z",
+  "ended_at": "2026-10-07T15:13:48Z",
+  "summary": "10 bài tập (8 VI), ~6500 từ, 2 stepper (16 khung), 1 SVG, widget có"
+}

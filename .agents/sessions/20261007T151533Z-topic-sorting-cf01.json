@@ -1,0 +1,12 @@
+{
+  "id": "20261007T151533Z-topic-sorting-cf01",
+  "agent": "topic-sorting",
+  "task": "Soạn chủ đề sorting",
+  "topic": "sorting",
+  "status": "active",
+  "host": "MyPC",
+  "started_at": "2026-10-07T15:15:33Z",
+  "heartbeat_at": "2026-10-07T15:18:57Z",
+  "ended_at": null,
+  "summary": null
+}

@@ -1,0 +1,12 @@
+{
+  "id": "20261007T150241Z-topic-modular-power-e79f",
+  "agent": "topic-modular-power",
+  "task": "Soạn chủ đề modular-power",
+  "topic": "modular-power",
+  "status": "done",
+  "host": "MyPC",
+  "started_at": "2026-10-07T15:02:41Z",
+  "heartbeat_at": "2026-10-07T15:16:31Z",
+  "ended_at": "2026-10-07T15:16:31Z",
+  "summary": "10 bài tập (9 VI), ~6100 từ, 1 stepper 6 khung + 2 SVG, widget có (BigInt)"
+}

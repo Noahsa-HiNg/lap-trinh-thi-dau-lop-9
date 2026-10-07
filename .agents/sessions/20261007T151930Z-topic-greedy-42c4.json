@@ -1,0 +1,12 @@
+{
+  "id": "20261007T151930Z-topic-greedy-42c4",
+  "agent": "topic-greedy",
+  "task": "Soạn chủ đề greedy",
+  "topic": "greedy",
+  "status": "active",
+  "host": "MyPC",
+  "started_at": "2026-10-07T15:19:30Z",
+  "heartbeat_at": "2026-10-07T15:19:30Z",
+  "ended_at": null,
+  "summary": null
+}

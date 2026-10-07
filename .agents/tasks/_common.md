@@ -62,8 +62,12 @@ Nếu `topics/SLUG.html` hoặc `$SP/SLUG/exercises.md` đã tồn tại: **đ�
 ## 5. Kiểm tra
 
 - `python3 scripts/validate.py topics/SLUG.html` phải hết lỗi (✗); xử lý cảnh báo hợp lý.
-- Tùy chọn, tối đa 1 lần: chụp ảnh để soát giao diện
-  `~/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1300,2600 --virtual-time-budget=5000 --screenshot=$SP/SLUG/shot.png "file:///home/hieu/personal/thidaulaptrinh/topics/SLUG.html#truc-quan"` rồi Read ảnh.
+- Tùy chọn, tối đa 1 lần: chụp riêng phần Minh họa trực quan (ảnh chụp không tự cuộn theo `#…`, nên tạo bản sao chỉ hiện section đó):
+  ```bash
+  sed -e 's|<head>|<head><base href="file:///home/hieu/personal/thidaulaptrinh/topics/"><style>#lesson>section:not(#truc-quan),.lesson-hero,.toc{display:none!important}.page{grid-template-columns:minmax(0,1fr)!important}</style>|' topics/SLUG.html > $SP/SLUG/viz.html
+  ~/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1200,2400 --virtual-time-budget=5000 --screenshot=$SP/SLUG/shot.png "file://$SP/SLUG/viz.html"
+  ```
+  rồi Read ảnh `$SP/SLUG/shot.png`.
 
 ## 6. Đóng phiên
 
