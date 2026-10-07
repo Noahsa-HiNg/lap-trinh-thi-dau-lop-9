@@ -1,0 +1,12 @@
+{
+  "id": "20261007T114325Z-topic-gcd-lcm-bac3",
+  "agent": "topic-gcd-lcm",
+  "task": "Soạn chủ đề gcd-lcm",
+  "topic": "gcd-lcm",
+  "status": "aborted",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:43:25Z",
+  "heartbeat_at": "2026-10-07T11:43:25Z",
+  "ended_at": "2026-10-07T14:58:08Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:25Z (agent dừng do giới hạn sử dụng API (HTTP 429))"
+}

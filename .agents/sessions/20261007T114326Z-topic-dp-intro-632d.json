@@ -1,0 +1,12 @@
+{
+  "id": "20261007T114326Z-topic-dp-intro-632d",
+  "agent": "topic-dp-intro",
+  "task": "Soạn chủ đề dp-intro",
+  "topic": "dp-intro",
+  "status": "aborted",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:43:26Z",
+  "heartbeat_at": "2026-10-07T11:43:26Z",
+  "ended_at": "2026-10-07T14:58:08Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:44:07Z (agent dừng do giới hạn sử dụng API (HTTP 429))"
+}

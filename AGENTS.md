@@ -32,10 +32,13 @@ Nguồn dữ liệu duy nhất của lộ trình: `data/roadmap.js` (slug, tiêu
 | `.agents/worklog/*.jsonl` | Mọi agent (chỉ nối thêm) | Chỉ ghi qua `agentctl.py log …`. |
 | `.agents/locks/*.lock` | Chủ khóa | Chỉ ghi qua `agentctl.py lock …`. Không commit. |
 | `.agents/inbox/*.md` | Người gửi | Mỗi yêu cầu một file mới, tên `<UTC>-<agent>.md`. |
+| `.agents/tasks/*.md` | **Dùng chung** (điều phối) | Bảng việc: `_common.md` (quy trình chung) + đề bài từng chủ đề. |
 
 Cần sửa file dùng chung mà không phải điều phối? **Đừng sửa.** Ghi yêu cầu vào `.agents/inbox/` (mô tả thay đổi, lý do, đoạn CSS/JS đề xuất) và ghi nhật ký `--kind handoff`.
 
 ## 4. Quy trình của agent chủ đề
+
+Đề bài từng chủ đề nằm ở `.agents/tasks/<slug>.md`; các bước chi tiết (đọc gì, tìm bài tập, viết từng phần) ở `.agents/tasks/_common.md`. Tóm tắt:
 
 ```bash
 A=topic-<slug>                                    # tên agent, ví dụ topic-sieve
@@ -58,7 +61,19 @@ Quy tắc bắt buộc:
 2. **Không sửa file dùng chung**, không xóa file của agent khác.
 3. Phiên dài hơn 2 giờ: gia hạn khóa bằng `lock renew`.
 4. Gặp lỗi không tự xử lý được: `log --kind blocked "…"`, `session end --status failed --summary "…"`.
-5. Bắt đầu lại sau khi bị ngắt: mở phiên mới, `lock acquire` lại (khóa của chính tên agent sẽ được gia hạn).
+5. Bắt đầu lại sau khi bị ngắt: mở phiên mới, `lock acquire` lại (khóa của chính tên agent sẽ được gia hạn), **đọc file đang viết dở và `$SP/<slug>/exercises.md` để viết tiếp**.
+6. Viết trang theo từng phần (dòng đánh dấu `<!-- @@TIEP@@ -->`), lưu danh sách bài tập ngay khi tìm xong, để công sức không mất nếu bị ngắt (hết hạn mức API, mất mạng…).
+
+### Khi agent bị ngắt giữa chừng
+
+Phiên của agent đó vẫn ở trạng thái `active` và khóa còn giữ tới khi hết hạn (mặc định 2 giờ). Điều phối dọn bằng:
+
+```bash
+python3 scripts/agentctl.py session reap --idle 30 --keep <phiên-điều-phối> --reason "…"   # đóng phiên im lặng > 30 phút, nhả khóa
+python3 scripts/agentctl.py lock gc                                                       # dọn khóa hết hạn còn sót
+```
+
+Mỗi lệnh `agentctl.py log --session …` cập nhật `heartbeat_at` của phiên, nên phiên đang làm việc thật sẽ không bị thu hồi.
 
 ## 5. Chuẩn nội dung một trang chủ đề
 

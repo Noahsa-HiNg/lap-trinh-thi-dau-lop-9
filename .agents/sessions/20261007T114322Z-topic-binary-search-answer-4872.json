@@ -1,0 +1,12 @@
+{
+  "id": "20261007T114322Z-topic-binary-search-answer-4872",
+  "agent": "topic-binary-search-answer",
+  "task": "Soạn chủ đề binary-search-answer",
+  "topic": "binary-search-answer",
+  "status": "aborted",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:43:22Z",
+  "heartbeat_at": "2026-10-07T11:43:22Z",
+  "ended_at": "2026-10-07T14:58:08Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:22Z (agent dừng do giới hạn sử dụng API (HTTP 429))"
+}

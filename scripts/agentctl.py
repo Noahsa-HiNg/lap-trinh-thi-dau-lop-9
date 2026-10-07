@@ -273,6 +273,33 @@ def cmd_session(a: argparse.Namespace) -> int:
                    f"Đóng phiên ({a.status})" + (f": {a.summary}" if a.summary else ""), s["id"], s.get("topic"))
         print(f"đã đóng phiên {s['id']} ({a.status})")
         return 0
+    if a.action == "reap":
+        logs = read_all_logs()
+        last = {}
+        for e in logs:
+            if e.get("session"):
+                last[e["session"]] = max(last.get(e["session"], ""), e["ts"])
+        limit = now().timestamp() - a.idle * 60
+        n = 0
+        for p in sorted(SESSION_DIR.glob("*.json")):
+            s = read_json(p)
+            if not s or s.get("status") != "active" or s["id"] == a.keep:
+                continue
+            seen = max(s.get("heartbeat_at") or s["started_at"], last.get(s["id"], ""))
+            if parse_iso(seen).timestamp() > limit:
+                continue
+            s["status"] = "aborted"
+            s["ended_at"] = iso()
+            s["summary"] = f"Tự động đóng bởi {a.agent}: không có tín hiệu từ {seen}" + (f" ({a.reason})" if a.reason else "")
+            write_atomic(p, json.dumps(s, ensure_ascii=False, indent=2))
+            for info in all_locks():
+                if info.get("session") == s["id"]:
+                    lock_path(info["resource"]).unlink(missing_ok=True)
+            append_log(a.agent, "note", f"Thu hồi phiên {s['id']} của {s['agent']}: {s['summary']}", s["id"], s.get("topic"))
+            print(f"đã thu hồi {s['id']} ({s['agent']}, lần cuối {seen})")
+            n += 1
+        print(f"thu hồi {n} phiên")
+        return 0
     if a.action == "list":
         rows = []
         for p in sorted(SESSION_DIR.glob("*.json")):
@@ -343,6 +370,12 @@ def cmd_lock(a: argparse.Namespace) -> int:
 def cmd_log(a: argparse.Namespace) -> int:
     files = [f.strip() for f in a.files.split(",") if f.strip()] if a.files else None
     e = append_log(a.agent, a.kind, " ".join(a.message), a.session, a.topic, files)
+    if a.session:  # mỗi dòng nhật ký cũng là một nhịp sống (heartbeat) của phiên
+        sp = session_path(a.session)
+        s = read_json(sp)
+        if s and s.get("agent") == a.agent and s.get("status") == "active":
+            s["heartbeat_at"] = e["ts"]
+            write_atomic(sp, json.dumps(s, ensure_ascii=False, indent=2))
     if not a.quiet:
         print(f"[{e['ts']}] {e['agent']} {e['kind']}: {e['msg']}")
     return 0
@@ -436,6 +469,9 @@ def main(argv: list[str] | None = None) -> int:
     x = ss.add_parser("heartbeat"); x.add_argument("sid")
     x = ss.add_parser("show"); x.add_argument("sid")
     x = ss.add_parser("list"); x.add_argument("--active", action="store_true"); x.add_argument("--json", action="store_true")
+    x = ss.add_parser("reap", help="đóng các phiên active không có tín hiệu quá --idle phút, nhả khóa của chúng")
+    x.add_argument("--idle", type=int, default=60); x.add_argument("--agent", default="orchestrator")
+    x.add_argument("--keep", help="mã phiên không được thu hồi"); x.add_argument("--reason")
 
     l = sub.add_parser("lock", help="giữ / nhả / kiểm tra khóa tài nguyên")
     ls = l.add_subparsers(dest="action", required=True)

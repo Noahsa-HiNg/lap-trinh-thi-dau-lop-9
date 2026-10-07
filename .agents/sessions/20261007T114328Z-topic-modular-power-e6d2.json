@@ -1,0 +1,12 @@
+{
+  "id": "20261007T114328Z-topic-modular-power-e6d2",
+  "agent": "topic-modular-power",
+  "task": "Soạn chủ đề modular-power",
+  "topic": "modular-power",
+  "status": "aborted",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:43:28Z",
+  "heartbeat_at": "2026-10-07T11:43:28Z",
+  "ended_at": "2026-10-07T14:58:08Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:28Z (agent dừng do giới hạn sử dụng API (HTTP 429))"
+}

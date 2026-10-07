@@ -1,0 +1,12 @@
+{
+  "id": "20261007T114330Z-topic-backtracking-d983",
+  "agent": "topic-backtracking",
+  "task": "Soạn chủ đề backtracking",
+  "topic": "backtracking",
+  "status": "aborted",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:43:30Z",
+  "heartbeat_at": "2026-10-07T11:43:30Z",
+  "ended_at": "2026-10-07T14:58:08Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:30Z (agent dừng do giới hạn sử dụng API (HTTP 429))"
+}

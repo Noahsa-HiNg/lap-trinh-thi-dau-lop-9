@@ -1,0 +1,12 @@
+{
+  "id": "20261007T114332Z-topic-brute-force-formula-241e",
+  "agent": "topic-brute-force-formula",
+  "task": "Soạn chủ đề brute-force-formula",
+  "topic": "brute-force-formula",
+  "status": "aborted",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:43:32Z",
+  "heartbeat_at": "2026-10-07T11:43:32Z",
+  "ended_at": "2026-10-07T14:58:08Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:32Z (agent dừng do giới hạn sử dụng API (HTTP 429))"
+}

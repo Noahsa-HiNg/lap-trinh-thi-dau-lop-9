@@ -1,0 +1,12 @@
+{
+  "id": "20261007T114324Z-topic-counting-653a",
+  "agent": "topic-counting",
+  "task": "Soạn chủ đề counting",
+  "topic": "counting",
+  "status": "aborted",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:43:24Z",
+  "heartbeat_at": "2026-10-07T11:43:24Z",
+  "ended_at": "2026-10-07T14:58:08Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:44:00Z (agent dừng do giới hạn sử dụng API (HTTP 429))"
+}

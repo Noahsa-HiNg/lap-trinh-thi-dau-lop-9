@@ -1,0 +1,12 @@
+{
+  "id": "20261007T114328Z-topic-prefix-sum-83a4",
+  "agent": "topic-prefix-sum",
+  "task": "Soạn chủ đề prefix-sum",
+  "topic": "prefix-sum",
+  "status": "aborted",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:43:28Z",
+  "heartbeat_at": "2026-10-07T11:43:28Z",
+  "ended_at": "2026-10-07T14:58:08Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:44:01Z (agent dừng do giới hạn sử dụng API (HTTP 429))"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "20261007T114353Z-topic-complexity-25ed",
+  "agent": "topic-complexity",
+  "task": "Soạn chủ đề complexity",
+  "topic": "complexity",
+  "status": "aborted",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:43:53Z",
+  "heartbeat_at": "2026-10-07T11:43:53Z",
+  "ended_at": "2026-10-07T14:58:08Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:53Z (agent dừng do giới hạn sử dụng API (HTTP 429))"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "20261007T114320Z-topic-recursion-38f6",
+  "agent": "topic-recursion",
+  "task": "Soạn chủ đề recursion",
+  "topic": "recursion",
+  "status": "aborted",
+  "host": "MyPC",
+  "started_at": "2026-10-07T11:43:20Z",
+  "heartbeat_at": "2026-10-07T11:43:20Z",
+  "ended_at": "2026-10-07T14:58:08Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:20Z (agent dừng do giới hạn sử dụng API (HTTP 429))"
+}
