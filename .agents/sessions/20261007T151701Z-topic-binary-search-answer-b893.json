@@ -3,10 +3,10 @@
   "agent": "topic-binary-search-answer",
   "task": "Soạn chủ đề binary-search-answer",
   "topic": "binary-search-answer",
-  "status": "active",
+  "status": "aborted",
   "host": "MyPC",
   "started_at": "2026-10-07T15:17:01Z",
   "heartbeat_at": "2026-10-07T15:17:01Z",
-  "ended_at": null,
-  "summary": null
+  "ended_at": "2026-10-08T03:25:42Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:17:01Z (agent dừng do hết hạn mức API (HTTP 429))"
 }

@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Khung bài thi C++ · Thi đấu lớp 9</title>
+<meta name="description" content="Khung bài thi C++ chuẩn: chọn kiểu dữ liệu, tránh tràn số, chia số âm, số thực, nhập xuất nhanh, freopen cho Themis, đọc đến hết dữ liệu và danh sách kiểm tra trước khi nộp.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="cpp-contest-basics">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Viết thuộc lòng khung bài thi C++ chuẩn và giải thích được từng dòng trong đó.</li>
+      <li>Ước lượng đáp án lớn nhất để chọn đúng kiểu <code>int</code>, <code>long long</code> hay <code>double</code>; nhận ra và sửa được lỗi tràn số.</li>
+      <li>Tính đúng phép chia nguyên, chia dư với số âm và phép chia làm tròn lên <code>(a + b - 1) / b</code>.</li>
+      <li>So sánh số thực bằng sai số cho phép <code>eps</code> và in số thực đúng số chữ số thập phân.</li>
+      <li>Dùng nhập xuất nhanh, <code>freopen</code> cho máy chấm Themis, đọc dữ liệu đến hết tệp và đọc cả dòng bằng <code>getline</code> mà không bị lỗi.</li>
+      <li>Kiểm tra bài theo một danh sách cố định trước khi nộp và biết cách đối chiếu chéo (stress test) hai lời giải.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Mỗi bài thi lập trình đều bắt đầu bằng cùng một bộ khung: vài dòng <code>#include</code>, một dòng bật nhập xuất nhanh, có thể thêm hai dòng mở tệp. Bộ khung này không giải bài giúp em. Nó giúp em <em>không mất điểm oan</em> vì những lỗi chẳng liên quan gì tới thuật toán.</p>
+    <p>Rất nhiều học sinh nghĩ đúng thuật toán nhưng vẫn được 0 điểm. Lý do thường rất nhỏ: quên <code>long long</code>, sai tên tệp, in bằng <code>endl</code> nên chạy quá thời gian, quên rằng <code>-7 % 3</code> trong C++ bằng <code>-1</code>. Bài này gom tất cả những “cái bẫy nhỏ” đó lại, giải thích vì sao chúng xảy ra, và cho em một thói quen kiểm tra để tránh chúng.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> trước khi cất cánh, phi công luôn đọc to một danh sách kiểm tra (checklist): nhiên liệu, cánh tà, phanh… Phi công giỏi không phải vì họ bỏ qua bước này, mà vì họ <em>không bao giờ</em> bỏ qua nó. Đi thi cũng vậy. Em mang đủ bút, thước, máy tính, và kiểm tra lại tên, số báo danh trước khi nộp. Khung bài thi C++ chính là “đồ dùng mang vào phòng thi” và danh sách kiểm tra chính là “đọc lại bài trước khi nộp”.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>Khung bài thi</strong> (template) là đoạn mã em viết sẵn ở đầu mọi bài: nạp thư viện, đặt tên kiểu ngắn, bật nhập xuất nhanh, mở tệp vào/ra nếu đề yêu cầu. <strong>Tràn số</strong> (overflow) là khi kết quả một phép tính vượt khỏi khoảng giá trị mà kiểu dữ liệu chứa được; khi đó máy vẫn chạy tiếp nhưng giá trị bị sai.</p>
+    </div>
+
+    <p>Đây là khung bài thi chuẩn mà em sẽ dùng suốt lộ trình:</p>
+    <figure class="code">
+      <figcaption><span class="fn">khung.cpp</span> Khung bài thi chuẩn</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;      // nạp toàn bộ thư viện chuẩn
+using namespace std;
+using ll = long long;            // gõ ll thay cho long long
+
+int main() {
+    ios::sync_with_stdio(false); // nhập xuất nhanh
+    cin.tie(nullptr);
+    // freopen("BAI.INP", "r", stdin);   // bỏ chú thích nếu đề cho tệp
+    // freopen("BAI.OUT", "w", stdout);
+
+    // ... lời giải ...
+    return 0;
+}</code></pre>
+    </figure>
+    <p>Bài học này đi qua từng dòng trong khung trên, rồi đến các kiến thức “sống còn” về kiểu dữ liệu. Phần đánh giá thuật toán nhanh hay chậm nằm ở bài <a href="complexity.html">Độ phức tạp thuật toán</a>; em nên học hai bài này cùng nhau.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Kiến thức trong bài dùng cho <strong>mọi</strong> bài thi, không riêng một dạng nào. Mỗi phần chặn một kiểu mất điểm:</p>
+    <table>
+      <thead><tr><th>Phần của khung</th><th>Chặn lỗi gì</th><th>Hậu quả nếu quên</th></tr></thead>
+      <tbody>
+        <tr><td><code>long long</code>, <code>1LL * a * b</code></td><td>Tràn số</td><td>Sai đáp án (WA) mà không có báo lỗi nào</td></tr>
+        <tr><td>Chia làm tròn lên, chia số âm</td><td>Lệch 1 đơn vị</td><td>Sai ở test có số âm hoặc chia không hết</td></tr>
+        <tr><td><code>fixed</code>, <code>setprecision</code>, <code>eps</code></td><td>Sai số số thực</td><td>In sai định dạng, so sánh bằng nhau bị sai</td></tr>
+        <tr><td><code>sync_with_stdio</code>, <code>'\n'</code></td><td>Nhập xuất chậm</td><td>Quá thời gian (TLE) dù thuật toán đúng</td></tr>
+        <tr><td><code>freopen</code></td><td>Sai cách đọc ghi tệp</td><td>Máy chấm Themis cho 0 điểm cả bài</td></tr>
+        <tr><td>Mảng toàn cục</td><td>Tràn ngăn xếp (stack overflow)</td><td>Chương trình chết (RTE) khi mảng lớn</td></tr>
+      </tbody>
+    </table>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết trong đề</p>
+      <ul>
+        <li>Giới hạn có <span class="math">10<sup>9</sup></span> hoặc <span class="math">10<sup>18</sup></span>: nghĩ ngay tới <code>long long</code> và tràn số khi nhân, khi cộng nhiều số.</li>
+        <li>Đề có câu “dữ liệu vào từ tệp <code>BAI.INP</code>, kết quả ghi ra tệp <code>BAI.OUT</code>”: phải dùng <code>freopen</code> đúng tên.</li>
+        <li>Có cụm “làm tròn đến 2 chữ số sau dấu phẩy”: dùng <code>fixed</code> và <code>setprecision(2)</code>.</li>
+        <li>Có “số nguyên có thể âm” cùng phép chia hay chia dư: cẩn thận quy tắc chia của C++.</li>
+        <li>Số lượng số cần đọc tới <span class="math">10<sup>5</sup></span>–<span class="math">10<sup>6</sup></span>: bắt buộc nhập xuất nhanh.</li>
+        <li>“Không biết trước số dòng”, “đọc đến hết tệp”: dùng vòng <code>while (cin &gt;&gt; x)</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p>Xét một bài rất dễ: <em>cho <span class="math">n ≤ 10<sup>5</sup></span>, tính tổng 1 + 2 + … + n</em>. Em biết công thức <span class="math">n(n+1)/2</span> nên viết ngay:</p>
+<pre><code class="language-cpp">int n; cin &gt;&gt; n;
+long long s = n * (n + 1) / 2;   // tưởng là đã dùng long long rồi!
+cout &lt;&lt; s;</code></pre>
+    <p>Với <span class="math">n = 100000</span>, đáp án đúng là <span class="math">5 000 050 000</span>. Nhưng chương trình in ra <span class="math">705 082 704</span>. Vì sao? Vì <code>n</code> là <code>int</code>, nên phép nhân <code>n * (n + 1)</code> được tính <em>trong kiểu <code>int</code></em>. Kết quả thật <span class="math">10 000 100 000</span> lớn hơn giới hạn <span class="math">2 147 483 647</span> của <code>int</code>, bị quay vòng thành <span class="math">1 410 165 408</span>, chia 2 được <span class="math">705 082 704</span>. Gán vào <code>long long</code> lúc đó đã muộn: số đã sai từ trước.</p>
+    <p>Lỗi thứ hai là tốc độ. Thầy cô đã đo một chương trình đọc <span class="math">10<sup>6</sup></span> số rồi in lại từng số trên một dòng:</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Viết “tự nhiên”</h4><p>Không bật nhập xuất nhanh, in bằng <code>endl</code>. Mỗi <code>endl</code> ép xả bộ đệm, tức <span class="math">10<sup>6</sup></span> lần gọi hệ điều hành. Đo được khoảng <strong>0,93 giây</strong>, sát giới hạn 1 giây, chỉ riêng việc nhập xuất. Còn dòng <code>n * (n + 1)</code> cho kết quả sai.</p></div>
+      <div class="good-side"><h4>Dùng khung bài thi</h4><p>Bật <code>sync_with_stdio(false)</code>, <code>cin.tie(nullptr)</code>, in bằng <code>'\n'</code>: bộ đệm chỉ xả khi đầy, vài nghìn lần thay vì một triệu lần. Đo được khoảng <strong>0,12 giây</strong>, nhanh gấp gần 8 lần. Viết <code>1LL * n * (n + 1) / 2</code> cho đúng <span class="math">5 000 050 000</span>.</p></div>
+    </div>
+    <p>Hai lỗi trên không làm chương trình báo lỗi biên dịch, cũng không làm nó chết. Em chạy thử với ví dụ nhỏ trong đề (<span class="math">n = 3</span> ra 6) vẫn thấy đúng. Chỉ khi máy chấm chạy test lớn, điểm mới mất. Vì vậy em cần <strong>thói quen</strong>, không thể trông vào may mắn.</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trong các kỳ thi học sinh giỏi, lỗi quên <code>long long</code> và sai tên tệp làm mất điểm nhiều hơn hẳn lỗi nghĩ sai thuật toán. Mười giây kiểm tra cứu được cả trăm điểm.</p></div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Bài này không có một thuật toán duy nhất. Thay vào đó là một <strong>quy trình làm bài</strong> và vài “công thức nhỏ” em cần thuộc. Mỗi công thức có các bước riêng bên dưới.</p>
+
+    <h3>Quy trình làm một bài thi</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Đọc đề và giới hạn.</strong> Gạch chân giới hạn của từng đại lượng (<span class="math">n</span>, giá trị <span class="math">a<sub>i</sub></span>), tên tệp vào/ra, yêu cầu định dạng đầu ra.</div></li>
+      <li><div><strong>Ước lượng đáp án lớn nhất.</strong> Thay giới hạn lớn nhất vào công thức hoặc lập luận “trường hợp xấu nhất”. Từ đó chọn kiểu dữ liệu.</div></li>
+      <li><div><strong>Dựng khung.</strong> Chép khung chuẩn, bật nhập xuất nhanh, điền <code>freopen</code> đúng tên tệp nếu đề yêu cầu.</div></li>
+      <li><div><strong>Viết lời giải.</strong> Biến nào có thể vượt <span class="math">2·10<sup>9</sup></span> thì khai báo <code>long long</code>; phép nhân hai <code>int</code> thì viết <code>1LL *</code>.</div></li>
+      <li><div><strong>Tự kiểm tra.</strong> Chạy ví dụ mẫu, rồi test biên: <span class="math">n = 1</span>, <span class="math">n</span> lớn nhất, số âm, mọi phần tử bằng nhau.</div></li>
+      <li><div><strong>Soát trước khi nộp.</strong> Đi hết danh sách kiểm tra ở mục <a href="#loi-thuong-gap">Lỗi thường gặp</a>.</div></li>
+    </ol>
+
+    <h3>Chọn kiểu số nguyên</h3>
+<pre class="pseudo"><b>hàm</b> ChonKieu(M):         <i>// M = giá trị lớn nhất (theo trị tuyệt đối) mà biến hoặc phép tính có thể đạt</i>
+    <b>nếu</b> M ≤ 2·10⁹  <b>thì</b> <b>trả về</b> int
+    <b>nếu</b> M ≤ 9·10¹⁸ <b>thì</b> <b>trả về</b> long long
+    <b>nếu</b> 0 ≤ giá trị ≤ 1,8·10¹⁹ <b>thì</b> <b>trả về</b> unsigned long long
+    <b>trả về</b> "số lớn"       <i>// xâu chữ số hoặc __int128, xem bài Số lớn</i></pre>
+
+    <h3>Chia làm tròn lên</h3>
+<pre class="pseudo"><b>hàm</b> ChiaLen(a, b):         <i>// a ≥ 0, b &gt; 0, trả về ⌈a / b⌉</i>
+    <b>trả về</b> (a + b − 1) / b      <i>// phép chia nguyên của C++</i></pre>
+
+    <h3>Chia lấy phần nguyên và số dư kiểu Toán (cho cả số âm)</h3>
+<pre class="pseudo"><b>hàm</b> ChiaXuong(a, b):       <i>// trả về ⌊a / b⌋</i>
+    q ← a / b                   <i>// C++ làm tròn về phía 0</i>
+    <b>nếu</b> a % b ≠ 0 <b>và</b> (a &lt; 0) ≠ (b &lt; 0) <b>thì</b> q ← q − 1
+    <b>trả về</b> q
+
+<b>hàm</b> DuKhongAm(a, m):       <i>// m &gt; 0, trả về số dư trong [0, m − 1]</i>
+    <b>trả về</b> ((a % m) + m) % m</pre>
+
+    <h3>So sánh hai số thực</h3>
+<pre class="pseudo"><b>hằng</b> EPS ← 10⁻⁹
+<b>hàm</b> BangNhau(x, y):
+    <b>trả về</b> |x − y| &lt; EPS          <i>// không bao giờ viết x == y</i></pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Phần này giải thích <em>vì sao</em> từng quy tắc đúng. Hiểu cơ chế bên trong, em sẽ tự nhận ra lỗi ở cả những tình huống chưa gặp.</p>
+
+    <h3>1. Từng dòng của khung bài thi</h3>
+    <ul>
+      <li><code>#include &lt;bits/stdc++.h&gt;</code> nạp mọi thư viện chuẩn (<code>iostream</code>, <code>vector</code>, <code>algorithm</code>, <code>cmath</code>…) trong một dòng. Trình biên dịch GCC trên máy chấm đều hỗ trợ. Nhược điểm duy nhất là biên dịch chậm hơn một chút, không ảnh hưởng thời gian chạy.</li>
+      <li><code>using namespace std;</code> cho phép viết <code>cout</code> thay vì <code>std::cout</code>.</li>
+      <li><code>using ll = long long;</code> đặt tên ngắn cho kiểu. Em viết <code>ll s = 0;</code> cho nhanh, đỡ lười dùng <code>long long</code>.</li>
+      <li><code>ios::sync_with_stdio(false); cin.tie(nullptr);</code> bật nhập xuất nhanh (giải thích ở mục 5 bên dưới).</li>
+      <li>Hai dòng <code>freopen</code> chuyển “bàn phím” thành tệp <code>.INP</code> và “màn hình” thành tệp <code>.OUT</code>.</li>
+    </ul>
+
+    <h3>2. Kiểu dữ liệu và giới hạn</h3>
+    <p>Mỗi kiểu dùng một số byte cố định, nên chỉ chứa được một khoảng giá trị. Bảng dưới là giá trị trên máy chấm thông dụng (GCC, 64 bit). Em nên chép vào vở.</p>
+    <table>
+      <thead><tr><th>Kiểu</th><th>Kích thước</th><th>Khoảng giá trị</th><th>Nhớ nhanh</th></tr></thead>
+      <tbody>
+        <tr><td><code>bool</code></td><td>1 byte</td><td><code>false</code>, <code>true</code></td><td>đúng / sai</td></tr>
+        <tr><td><code>char</code></td><td>1 byte</td><td>−128 … 127</td><td>một ký tự, mã ASCII</td></tr>
+        <tr><td><code>int</code></td><td>4 byte</td><td>−2 147 483 648 … 2 147 483 647</td><td>khoảng <span class="math">2,1·10<sup>9</sup></span></td></tr>
+        <tr><td><code>unsigned int</code></td><td>4 byte</td><td>0 … 4 294 967 295</td><td>khoảng <span class="math">4,3·10<sup>9</sup></span></td></tr>
+        <tr><td><code>long long</code></td><td>8 byte</td><td>−9 223 372 036 854 775 808 … 9 223 372 036 854 775 807</td><td>khoảng <span class="math">9,2·10<sup>18</sup></span></td></tr>
+        <tr><td><code>unsigned long long</code></td><td>8 byte</td><td>0 … 18 446 744 073 709 551 615</td><td>khoảng <span class="math">1,8·10<sup>19</sup></span></td></tr>
+        <tr><td><code>double</code></td><td>8 byte</td><td>tới khoảng <span class="math">1,8·10<sup>308</sup></span></td><td>chính xác 15–16 chữ số</td></tr>
+        <tr><td><code>long double</code></td><td>16 byte (GCC trên x86)</td><td>tới khoảng <span class="math">10<sup>4932</sup></span></td><td>chính xác 18–19 chữ số</td></tr>
+      </tbody>
+    </table>
+    <p>Mẹo nhớ: <code>int</code> chứa chắc chắn mọi số có <strong>9 chữ số</strong>; <code>long long</code> chứa chắc chắn mọi số có <strong>18 chữ số</strong>. Vì <span class="math">10<sup>9</sup> &lt; 2,1·10<sup>9</sup></span> và <span class="math">10<sup>18</sup> &lt; 9,2·10<sup>18</sup></span>. Kiểu <code>char</code> thực chất là một số nhỏ: <code>'A' + 1</code> cho số 66, còn <code>(char)('A' + 1)</code> mới là chữ <code>B</code>.</p>
+
+    <h3>3. Vì sao tràn số quay vòng và vì sao nó “im lặng”</h3>
+    <p>Máy tính lưu <code>int</code> bằng 32 bit theo cách gọi là <strong>bù 2</strong> (two's complement). Hình dung đồng hồ công tơ mét trên xe máy có 6 chữ số: đi quá 999 999 km thì nó quay về 000 000. Một <code>int</code> giống công tơ mét có <span class="math">2<sup>32</sup> = 4 294 967 296</span> vị trí. Nửa đầu là số không âm 0 … 2 147 483 647, nửa sau được hiểu là số âm −2 147 483 648 … −1. Vì vậy cộng 1 vào 2 147 483 647 thì kim “nhảy” sang −2 147 483 648.</p>
+    <p>Nói chính xác: phép tính trên <code>int</code> cho ra kết quả thật, rồi máy chỉ giữ lại <span class="math">kết quả mod 2<sup>32</sup></span>, sau đó đọc nó trong khoảng −2<sup>31</sup> … 2<sup>31</sup> − 1. Ví dụ <span class="math">100 000 × 100 000 = 10<sup>10</sup></span>. Ta có <span class="math">10<sup>10</sup> − 2 × 4 294 967 296 = 1 410 065 408</span>, nằm trong khoảng của <code>int</code>, nên máy in ra 1 410 065 408. Còn <span class="math">50 000 × 50 000 = 2,5·10<sup>9</sup></span>, trừ đi <span class="math">2<sup>32</sup></span> được <span class="math">−1 794 967 296</span>: một số âm, dù em nhân hai số dương!</p>
+    <p><strong>Vì sao im lặng?</strong> Bộ xử lý thực hiện phép cộng, nhân trên đúng 32 bit, phần thừa bị bỏ đi. Để báo lỗi, máy phải kiểm tra sau mỗi phép tính, làm chương trình chậm đi. C++ ưu tiên tốc độ nên không kiểm tra. Hơn nữa, theo chuẩn C++, tràn số với kiểu có dấu là <strong>hành vi không xác định</strong> (undefined behavior): trình biên dịch được phép giả định nó không bao giờ xảy ra. Trên máy chấm, em thường thấy kết quả quay vòng như trên, nhưng đôi khi còn kỳ lạ hơn. Với kiểu không dấu (<code>unsigned</code>), chuẩn C++ đảm bảo quay vòng theo mod <span class="math">2<sup>32</sup></span> hoặc <span class="math">2<sup>64</sup></span>.</p>
+
+    <h3>4. Vì sao <code>1LL * a * b</code> sửa được tràn số</h3>
+    <p>C++ tính biểu thức <code>1LL * a * b</code> từ trái sang phải: trước hết <code>1LL * a</code>. Hằng <code>1LL</code> có kiểu <code>long long</code>, nên <code>a</code> được “nâng” lên <code>long long</code> rồi mới nhân. Kết quả là <code>long long</code>, nhân tiếp với <code>b</code> cũng trong <code>long long</code>. Không bước nào bị giới hạn 32 bit nữa.</p>
+    <p>Ngược lại, <code>a * b * 1LL</code> <strong>vẫn sai</strong>: <code>a * b</code> được tính trước, trong <code>int</code>, đã tràn rồi mới nhân với <code>1LL</code>. Tương tự, <code>long long s = a * b;</code> sai vì phép nhân xảy ra trước phép gán. Quy tắc: kiểu của phép tính do <em>các toán hạng</em> quyết định, không do biến nhận kết quả quyết định.</p>
+    <p><strong>Ước lượng đáp án lớn nhất</strong> là bước quan trọng nhất. Ví dụ đề cho <span class="math">n ≤ 10<sup>5</sup></span> số, mỗi số <span class="math">|a<sub>i</sub>| ≤ 10<sup>9</sup></span>, hỏi tổng. Tổng lớn nhất là <span class="math">10<sup>5</sup> × 10<sup>9</sup> = 10<sup>14</sup></span>, vượt <code>int</code>, nằm trong <code>long long</code>. Đề hỏi số cặp <span class="math">(i, j)</span> với <span class="math">i &lt; j</span>: có tới <span class="math">n(n − 1)/2 ≈ 5·10<sup>9</sup></span> cặp, cũng vượt <code>int</code>.</p>
+
+    <h3>5. Phép chia nguyên và chia dư với số âm</h3>
+    <p>Trong C++, khi chia hai số nguyên, thương bị <strong>cắt bỏ phần thập phân</strong>, tức làm tròn về phía 0. Số dư được chọn sao cho luôn đúng đẳng thức</p>
+    <div class="math-block">a = (a / b) × b + (a % b)</div>
+    <p>Hệ quả: dấu của <code>a % b</code> luôn giống dấu của <code>a</code>. Thử vài ví dụ (thầy cô đã chạy trên máy):</p>
+    <table>
+      <thead><tr><th>Biểu thức</th><th>C++ cho</th><th>Toán học (phần nguyên, dư không âm)</th></tr></thead>
+      <tbody>
+        <tr><td><code>7 / 2</code>, <code>7 % 2</code></td><td>3, 1</td><td>3, 1</td></tr>
+        <tr><td><code>-7 / 2</code>, <code>-7 % 2</code></td><td>−3, −1</td><td>⌊−3,5⌋ = −4, dư 1</td></tr>
+        <tr><td><code>7 / -2</code>, <code>7 % -2</code></td><td>−3, 1</td><td>−4 (khi dùng ⌊ ⌋)</td></tr>
+        <tr><td><code>-7 % 3</code></td><td>−1</td><td>2</td></tr>
+      </tbody>
+    </table>
+    <p>Vì vậy, khi đề cho số âm và hỏi “phần nguyên” theo nghĩa Toán (số nguyên lớn nhất không vượt quá), em phải trừ thương đi 1 trong trường hợp chia không hết và hai số trái dấu, đúng như hàm <code>ChiaXuong</code> ở trên. Khi cần số dư trong đoạn <span class="math">[0, m − 1]</span>, ví dụ để làm chỉ số mảng hoặc tính ngày trong tuần, dùng <code>((a % m) + m) % m</code>. Vì <code>a % m</code> nằm trong <span class="math">(−m, m)</span>, cộng thêm <span class="math">m</span> được số trong <span class="math">(0, 2m)</span>, lấy dư cho <span class="math">m</span> lần nữa được đúng số trong <span class="math">[0, m − 1]</span>.</p>
+
+    <h3>6. Vì sao <code>(a + b − 1) / b</code> là chia làm tròn lên</h3>
+    <p>Với <span class="math">a ≥ 0</span>, <span class="math">b &gt; 0</span>, viết <span class="math">a = q·b + r</span> với <span class="math">0 ≤ r &lt; b</span>. Có hai trường hợp:</p>
+    <ul>
+      <li><span class="math">r = 0</span> (chia hết): <span class="math">a + b − 1 = q·b + (b − 1)</span>, chia nguyên cho <span class="math">b</span> được <span class="math">q</span>. Đúng, vì <span class="math">⌈a/b⌉ = q</span>.</li>
+      <li><span class="math">r ≥ 1</span>: <span class="math">a + b − 1 = (q + 1)·b + (r − 1)</span> với <span class="math">0 ≤ r − 1 &lt; b</span>, chia nguyên được <span class="math">q + 1</span>. Đúng, vì còn dư nên phải làm tròn lên.</li>
+    </ul>
+    <p>Ví dụ: cần chở 23 bạn bằng xe 4 chỗ. <span class="math">(23 + 4 − 1)/4 = 26/4 = 6</span> xe. Với 24 bạn: <span class="math">27/4 = 6</span> xe. Cách này không dùng số thực nên không bao giờ bị sai số. Chú ý <span class="math">a + b − 1</span> có thể tràn nếu <span class="math">a</span> sát giới hạn kiểu; khi đó dùng <code>a / b + (a % b != 0)</code>.</p>
+
+    <h3>7. Số thực: vì sao 0,1 + 0,2 khác 0,3</h3>
+    <p>Máy lưu <code>double</code> ở dạng nhị phân với khoảng 53 bit cho phần chữ số. Số 0,1 trong hệ nhị phân là phân số vô hạn tuần hoàn (giống 1/3 = 0,333… trong hệ thập phân), nên máy chỉ lưu được giá trị <em>gần đúng</em>. Thầy cô in <code>0.1 + 0.2</code> với 20 chữ số và được <code>0.30000000000000004441</code>. Phép so sánh <code>0.1 + 0.2 == 0.3</code> cho <code>false</code>.</p>
+    <p>Cách sửa: coi hai số là bằng nhau nếu chúng chênh nhau ít hơn một số rất nhỏ <code>EPS</code> (thường <span class="math">10<sup>−9</sup></span>). Tương tự, “<span class="math">x &lt; y</span>” viết thành <code>x &lt; y - EPS</code>. Một hệ quả khác: <code>double</code> chỉ chính xác khoảng 15–16 chữ số, nên <code>1e16 + 1</code> vẫn bằng <code>1e16</code>. Đừng dùng <code>double</code> để lưu số nguyên lớn; dùng <code>long long</code>.</p>
+    <p>Để in số thực đúng định dạng: <code>cout &lt;&lt; fixed &lt;&lt; setprecision(2) &lt;&lt; x;</code> in đúng 2 chữ số sau dấu phẩy. Thiếu <code>fixed</code> thì <code>setprecision(2)</code> lại hiểu là “2 chữ số có nghĩa” và có thể in <code>1.2e+02</code>. Lưu ý <code>2.675</code> in với 2 chữ số ra <code>2.67</code> chứ không phải <code>2.68</code>, vì máy thật ra lưu 2,67499999…</p>
+
+    <h3>8. Vì sao nhập xuất nhanh lại nhanh</h3>
+    <p>Mặc định, <code>cin</code>/<code>cout</code> được <strong>đồng bộ</strong> với <code>scanf</code>/<code>printf</code> của ngôn ngữ C, để em trộn hai kiểu mà thứ tự vẫn đúng. Cái giá là <code>cin</code> phải đọc từng ký tự qua lớp đồng bộ, rất chậm. Lệnh <code>ios::sync_with_stdio(false)</code> tắt đồng bộ, cho <code>cin</code>/<code>cout</code> dùng bộ đệm (buffer) riêng: đọc cả khối lớn một lần rồi lấy dần.</p>
+    <p>Mặc định <code>cin</code> còn bị “buộc” (tie) với <code>cout</code>: trước mỗi lần đọc, <code>cout</code> bị xả bộ đệm, để câu hỏi “Nhập n:” hiện ra trước khi em gõ. Máy chấm không cần điều đó, nên <code>cin.tie(nullptr)</code> bỏ buộc.</p>
+    <p>Cuối cùng, <code>endl</code> = xuống dòng <em>và</em> xả bộ đệm. Xả bộ đệm là gọi hệ điều hành ghi ra thiết bị, tốn hơn rất nhiều so với chép một ký tự vào bộ đệm. In <span class="math">10<sup>6</sup></span> dòng bằng <code>endl</code> là <span class="math">10<sup>6</sup></span> lần xả. Dùng <code>'\n'</code> thì bộ đệm chỉ xả khi đầy (mỗi lần vài nghìn byte), tổng cộng chỉ vài nghìn lần. Sau khi tắt đồng bộ, <strong>không được</strong> trộn <code>cin</code> với <code>scanf</code> hoặc <code>cout</code> với <code>printf</code> nữa, vì thứ tự in ra có thể bị đảo.</p>
+
+    <h3>9. <code>freopen</code> và máy chấm Themis</h3>
+    <p>Ở nhiều kỳ thi học sinh giỏi tỉnh, bài được chấm bằng phần mềm <strong>Themis</strong>. Themis đặt tệp <code>BAI.INP</code> cạnh chương trình, chạy chương trình, rồi đọc tệp <code>BAI.OUT</code> để so đáp án. Lệnh <code>freopen("BAI.INP", "r", stdin)</code> “nối” luồng nhập chuẩn với tệp: mọi lệnh <code>cin</code> sau đó đọc từ tệp. Tương tự với <code>stdout</code> và <code>"w"</code> (ghi). Em không phải sửa gì khác trong code. Tên tệp phải <strong>đúng từng chữ</strong> như đề (thường viết hoa, đuôi <code>.INP</code>/<code>.OUT</code>); sai một ký tự là 0 điểm. Mẹo hay: bọc trong <code>if (fopen("BAI.INP", "r")) { … }</code> để khi không có tệp (lúc em tự chạy thử, hoặc nộp lên VNOJ) chương trình vẫn đọc bàn phím.</p>
+
+    <h3>10. Đọc đến hết dữ liệu, <code>getline</code> và cái bẫy khi trộn với <code>cin</code></h3>
+    <p>Biểu thức <code>cin &gt;&gt; x</code> trả về chính <code>cin</code>, và <code>cin</code> được coi là “đúng” khi lần đọc vừa rồi thành công. Hết dữ liệu thì lần đọc thất bại, nên <code>while (cin &gt;&gt; x) { … }</code> tự dừng đúng lúc. Đây là cách đọc khi đề không cho biết trước số lượng.</p>
+    <p><code>getline(cin, s)</code> đọc <em>cả một dòng</em>, kể cả dấu cách, tới ký tự xuống dòng. Bẫy: sau <code>cin &gt;&gt; n</code>, ký tự xuống dòng ngay sau số <span class="math">n</span> vẫn còn nằm trong bộ đệm. Lệnh <code>getline</code> tiếp theo gặp nó ngay, trả về một dòng <strong>rỗng</strong>. Thầy cô chạy thử với dữ liệu “5 ↵ Nguyen Van An” và <code>getline</code> đầu tiên trả về chuỗi rỗng thật. Cách sửa: viết <code>cin &gt;&gt; n &gt;&gt; ws;</code> (bỏ mọi khoảng trắng còn lại) hoặc <code>cin.ignore();</code> trước <code>getline</code>.</p>
+
+    <h3>11. Mảng toàn cục và mảng cục bộ</h3>
+    <p>Biến khai báo <em>trong</em> hàm (kể cả <code>main</code>) nằm trên <strong>ngăn xếp</strong> (stack), vùng nhớ nhỏ, thường chỉ 1–8 MB tùy máy chấm. Khai báo <code>int a[1000000];</code> trong <code>main</code> chiếm 4 MB, có thể làm chương trình chết ngay khi chạy. Hơn nữa, mảng cục bộ <strong>không</strong> được tự gán 0: nó chứa “rác” còn lại trong bộ nhớ.</p>
+    <p>Biến khai báo <em>ngoài</em> mọi hàm (toàn cục) nằm ở vùng nhớ tĩnh, được dùng tới giới hạn bộ nhớ của đề (thường 256 MB) và được <strong>tự động gán 0</strong> trước khi <code>main</code> chạy. Vì vậy dân thi đấu luôn khai báo mảng lớn ở ngoài <code>main</code>.</p>
+    <p>Khi cần gán lại cả mảng (ví dụ bài nhiều test), dùng <code>fill(a, a + n, x)</code> gán mọi phần tử bằng <span class="math">x</span>. Còn <code>memset(a, v, sizeof a)</code> gán từng <strong>byte</strong> bằng <span class="math">v</span>, nên chỉ dùng đúng với <span class="math">v = 0</span> (mọi số bằng 0), <span class="math">v = −1</span> (mọi bit bằng 1, số bằng −1) hoặc <span class="math">v = 0x3f</span> (mỗi <code>int</code> thành 1 061 109 567, dùng làm “vô cùng”). <code>memset(a, 1, sizeof a)</code> <em>không</em> cho các số 1 mà cho 16 843 009.</p>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <h3>“Đồng hồ” của kiểu int 32 bit</h3>
+    <p>Hãy tưởng tượng mọi giá trị của <code>int</code> xếp thành một vòng tròn. Đi theo chiều kim đồng hồ là cộng thêm. Tới đỉnh dương lớn nhất, bước thêm một bước là rơi xuống số âm nhỏ nhất.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 440 300" width="440" role="img" aria-label="Vòng tròn giá trị của int 32 bit: từ 2147483647 cộng 1 nhảy sang -2147483648">
+        <circle class="edge" cx="220" cy="150" r="100" fill="none"/>
+        <path class="edge is-ok" d="M 220 50 A 100 100 0 0 1 220 250" fill="none"/>
+        <path class="edge is-bad" d="M 220 250 A 100 100 0 0 1 220 50" fill="none"/>
+        <circle class="node" cx="220" cy="50" r="7"/>
+        <circle class="node" cx="320" cy="150" r="7"/>
+        <circle class="node is-bad" cx="220" cy="250" r="9"/>
+        <circle class="node" cx="120" cy="150" r="7"/>
+        <text x="220" y="32" text-anchor="middle">0</text>
+        <text x="332" y="155">1 073 741 824</text>
+        <text x="108" y="155" text-anchor="end">−1 073 741 824</text>
+        <text x="232" y="276">2 147 483 647</text>
+        <text x="208" y="276" text-anchor="end">−2 147 483 648</text>
+        <text class="label-sm" x="244" y="292">INT_MAX</text>
+        <text class="label-sm" x="196" y="292" text-anchor="end">INT_MIN</text>
+        <text class="label-pen" x="300" y="80">số dương</text>
+        <text class="label-pen" x="85" y="80">số âm</text>
+        <text class="label-pen" x="220" y="215" text-anchor="middle">+1 là nhảy!</text>
+        <text class="label-sm" x="230" y="70">−1 ngay trước 0</text>
+      </svg>
+      <figcaption>Hình 1. Kiểu <code>int</code> có <span class="math">2<sup>32</sup></span> giá trị xếp vòng tròn. Nửa phải là số không âm, nửa trái là số âm. Cộng 1 vào <code>INT_MAX</code> cho <code>INT_MIN</code>.</figcaption>
+    </figure>
+
+    <h3>Chạy tay phép nhân 100 000 × 100 000</h3>
+    <p>Ta theo dõi số trong máy ở dạng thập lục phân (hex), mỗi chữ số hex ứng với 4 bit. Kiểu <code>int</code> chỉ có 32 bit, tức đúng 8 chữ số hex.</p>
+    <div class="stepper" data-title="100 000 × 100 000 trong int và long long">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Khai báo &lt;code&gt;int a = 100000, b = 100000;&lt;/code&gt;. Mỗi số chỉ cần 5 chữ số hex (0x186A0), nằm gọn trong 8 ô của int.">
+        <div class="arr">
+          <span class="arr-label">a</span>
+          <span class="cell is-dim" data-i="7">0</span><span class="cell is-dim" data-i="6">0</span><span class="cell is-dim" data-i="5">0</span><span class="cell" data-i="4">1</span><span class="cell" data-i="3">8</span><span class="cell" data-i="2">6</span><span class="cell" data-i="1">A</span><span class="cell" data-i="0">0</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Kết quả thật là 10 000 000 000 = 0x2540BE400: cần &lt;b&gt;9&lt;/b&gt; chữ số hex (34 bit). Nó lớn gấp hơn 4 lần INT_MAX = 2 147 483 647.">
+        <div class="bars" style="--max:10">
+          <span class="bar is-ok" style="--v:2.15" data-v="2,1 tỉ (INT_MAX)"></span>
+          <span class="bar is-cmp" style="--v:10" data-v="10 tỉ (a×b)"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; Phép nhân &lt;code&gt;a * b&lt;/code&gt; tính trong int: chỉ có 8 ô, chữ số hex cao nhất (2) &lt;b&gt;bị cắt bỏ&lt;/b&gt;, không có thông báo nào.">
+        <div class="arr">
+          <span class="arr-label">a*b</span>
+          <span class="cell is-bad" data-ptr="bị cắt">2</span><span class="cell is-active" data-i="7">5</span><span class="cell is-active" data-i="6">4</span><span class="cell is-active" data-i="5">0</span><span class="cell is-active" data-i="4">B</span><span class="cell is-active" data-i="3">E</span><span class="cell is-active" data-i="2">4</span><span class="cell is-active" data-i="1">0</span><span class="cell is-active" data-i="0">0</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; Còn lại 0x540BE400 = 1 410 065 408. Chữ số đầu 5 = 0101, bit dấu là 0 nên máy hiểu là số dương. Chương trình in &lt;b&gt;1410065408&lt;/b&gt;: sai mà trông rất “bình thường”.">
+        <table class="trace">
+          <thead><tr><th>Đại lượng</th><th>Giá trị</th></tr></thead>
+          <tbody>
+            <tr><td>Kết quả thật</td><td>10 000 000 000</td></tr>
+            <tr><td>Trừ 2 × 2<sup>32</sup></td><td>− 8 589 934 592</td></tr>
+            <tr class="hl"><td>int giữ lại</td><td>1 410 065 408</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; Đổi thành &lt;code&gt;1LL * a * b&lt;/code&gt;: &lt;code&gt;a&lt;/code&gt; được nâng lên long long, có 16 ô hex (64 bit). Phép nhân tính trong 64 bit.">
+        <div class="arr">
+          <span class="arr-label">ll</span>
+          <span class="cell is-dim">0</span><span class="cell is-dim">0</span><span class="cell is-dim">0</span><span class="cell is-dim">0</span><span class="cell is-dim">0</span><span class="cell is-dim">0</span><span class="cell is-dim">0</span><span class="cell is-ok">2</span><span class="cell is-ok">5</span><span class="cell is-ok">4</span><span class="cell is-ok">0</span><span class="cell is-ok">B</span><span class="cell is-ok">E</span><span class="cell is-ok">4</span><span class="cell is-ok">0</span><span class="cell is-ok">0</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 6.&lt;/b&gt; Đủ chỗ cho cả 9 chữ số hex, còn dư 7 ô. Kết quả &lt;b&gt;10000000000&lt;/b&gt; đúng. long long chứa được tới khoảng 9,2·10&lt;sup&gt;18&lt;/sup&gt;.">
+        <table class="trace">
+          <thead><tr><th>Cách viết</th><th>In ra</th><th>Đúng?</th></tr></thead>
+          <tbody>
+            <tr><td><code>int p = a * b;</code></td><td>1410065408</td><td>Sai</td></tr>
+            <tr><td><code>long long p = a * b;</code></td><td>1410065408</td><td>Sai</td></tr>
+            <tr class="hl"><td><code>long long p = 1LL * a * b;</code></td><td>10000000000</td><td>Đúng</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 7 (thêm).&lt;/b&gt; Với 50 000 × 50 000 = 2 500 000 000 = 0x9502F900: chữ số đầu 9 = 1001, bit dấu bằng 1, nên int đọc thành số &lt;b&gt;âm&lt;/b&gt; −1 794 967 296.">
+        <div class="arr">
+          <span class="arr-label">int</span>
+          <span class="cell is-bad" data-ptr="bit dấu = 1">9</span><span class="cell">5</span><span class="cell">0</span><span class="cell">2</span><span class="cell">F</span><span class="cell">9</span><span class="cell">0</span><span class="cell">0</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>Chạy tay cái bẫy getline</h3>
+    <p>Dữ liệu vào gồm hai dòng: số <code>5</code> và tên <code>An Binh</code>. Bộ đệm nhập chứa các ký tự dưới đây (↵ là ký tự xuống dòng, · là dấu cách). Con trỏ <code>p</code> chỉ vị trí sẽ đọc tiếp.</p>
+    <div class="stepper" data-title="cin &gt;&gt; n rồi getline">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Chưa đọc gì. Con trỏ ở đầu bộ đệm.">
+        <div class="arr"><span class="cell is-active" data-i="0" data-ptr="p">5</span><span class="cell" data-i="1">↵</span><span class="cell" data-i="2">A</span><span class="cell" data-i="3">n</span><span class="cell" data-i="4">·</span><span class="cell" data-i="5">B</span><span class="cell" data-i="6">i</span><span class="cell" data-i="7">n</span><span class="cell" data-i="8">h</span><span class="cell" data-i="9">↵</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; &lt;code&gt;cin &amp;gt;&amp;gt; n&lt;/code&gt; đọc số 5 rồi &lt;b&gt;dừng trước&lt;/b&gt; ký tự ↵. Ký tự ↵ vẫn nằm trong bộ đệm.">
+        <div class="arr"><span class="cell is-ok" data-i="0">5</span><span class="cell is-active" data-i="1" data-ptr="p">↵</span><span class="cell" data-i="2">A</span><span class="cell" data-i="3">n</span><span class="cell" data-i="4">·</span><span class="cell" data-i="5">B</span><span class="cell" data-i="6">i</span><span class="cell" data-i="7">n</span><span class="cell" data-i="8">h</span><span class="cell" data-i="9">↵</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; &lt;code&gt;getline(cin, s)&lt;/code&gt; đọc tới ↵ đầu tiên. Nó gặp ↵ ngay lập tức, nên &lt;code&gt;s&lt;/code&gt; là chuỗi &lt;b&gt;rỗng&lt;/b&gt;. Tên bị bỏ lỡ!">
+        <div class="arr"><span class="cell is-dim" data-i="0">5</span><span class="cell is-bad" data-i="1">↵</span><span class="cell is-active" data-i="2" data-ptr="p">A</span><span class="cell" data-i="3">n</span><span class="cell" data-i="4">·</span><span class="cell" data-i="5">B</span><span class="cell" data-i="6">i</span><span class="cell" data-i="7">n</span><span class="cell" data-i="8">h</span><span class="cell" data-i="9">↵</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; Cách sửa: &lt;code&gt;cin &amp;gt;&amp;gt; n &amp;gt;&amp;gt; ws;&lt;/code&gt;. &lt;code&gt;ws&lt;/code&gt; nuốt mọi khoảng trắng và ↵, con trỏ nhảy tới chữ A.">
+        <div class="arr"><span class="cell is-ok" data-i="0">5</span><span class="cell is-dim" data-i="1">↵</span><span class="cell is-active" data-i="2" data-ptr="p">A</span><span class="cell" data-i="3">n</span><span class="cell" data-i="4">·</span><span class="cell" data-i="5">B</span><span class="cell" data-i="6">i</span><span class="cell" data-i="7">n</span><span class="cell" data-i="8">h</span><span class="cell" data-i="9">↵</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; Bây giờ &lt;code&gt;getline&lt;/code&gt; đọc đúng “An Binh” (giữ cả dấu cách) và bỏ ký tự ↵ ở cuối dòng.">
+        <div class="arr"><span class="cell is-dim" data-i="0">5</span><span class="cell is-dim" data-i="1">↵</span><span class="cell is-ok" data-i="2">A</span><span class="cell is-ok" data-i="3">n</span><span class="cell is-ok" data-i="4">·</span><span class="cell is-ok" data-i="5">B</span><span class="cell is-ok" data-i="6">i</span><span class="cell is-ok" data-i="7">n</span><span class="cell is-ok" data-i="8">h</span><span class="cell is-dim" data-i="9">↵</span></div>
+      </div>
+    </div>
+
+    <h3>Tự tay thử: máy kiểm tra tràn số</h3>
+    <p>Nhập hai số nguyên, chọn phép tính và kiểu dữ liệu. Máy tính kết quả <em>đúng</em> bằng số nguyên không giới hạn, rồi cho em thấy C++ sẽ lưu ra sao nếu dùng kiểu đó. Với phép <code>/</code> và <code>%</code>, máy còn so quy tắc của C++ với quy tắc Toán học.</p>
+    <div class="playground" id="viz-cpp-contest-basics">
+      <div class="viz-head"><p class="viz-title">Máy kiểm tra tràn số</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="ccb-a">a <input type="text" id="ccb-a" value="100000" inputmode="numeric" autocomplete="off"></label>
+          <label for="ccb-op">phép <select id="ccb-op">
+            <option value="*" selected>a × b</option>
+            <option value="+">a + b</option>
+            <option value="-">a − b</option>
+            <option value="/">a / b</option>
+            <option value="%">a % b</option>
+          </select></label>
+          <label for="ccb-b">b <input type="text" id="ccb-b" value="100000" inputmode="numeric" autocomplete="off"></label>
+          <label for="ccb-type">kiểu <select id="ccb-type">
+            <option value="i32" selected>int (32 bit)</option>
+            <option value="u32">unsigned int</option>
+            <option value="i64">long long (64 bit)</option>
+            <option value="u64">unsigned long long</option>
+          </select></label>
+          <button type="button" id="ccb-run">Tính</button>
+          <button type="button" class="ghost" data-ex="2147483647 + 1">INT_MAX + 1</button>
+          <button type="button" class="ghost" data-ex="-7 % 3">−7 % 3</button>
+          <button type="button" class="ghost" data-ex="1000000000 * 1000000000">10⁹ × 10⁹</button>
+        </div>
+        <div class="out" id="ccb-out" aria-live="polite">Bấm “Tính” để xem kết quả.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Ta ghép mọi thứ vào một bài hoàn chỉnh, kiểu đề thi học sinh giỏi tỉnh.</p>
+    <div class="definition" data-label="Đề bài: LÁT GẠCH (LATGACH.*)">
+      <p>Có <span class="math">t</span> sân hình chữ nhật (<span class="math">t ≤ 10<sup>5</sup></span>). Sân thứ <span class="math">i</span> kích thước <span class="math">n × m</span> mét, cần lát bằng gạch vuông cạnh <span class="math">k</span> mét (<span class="math">1 ≤ n, m, k ≤ 10<sup>9</sup></span>). Gạch không được cắt, được phép lát tràn ra ngoài sân, cạnh gạch song song cạnh sân. Hỏi mỗi sân cần ít nhất bao nhiêu viên. Dữ liệu vào từ tệp <code>LATGACH.INP</code>, kết quả ghi ra tệp <code>LATGACH.OUT</code>.</p>
+    </div>
+    <p><strong>Phân tích.</strong> Theo chiều dài cần <span class="math">⌈n/k⌉</span> hàng gạch, theo chiều rộng cần <span class="math">⌈m/k⌉</span> cột. Đáp án là tích hai số đó. Ước lượng đáp án lớn nhất: <span class="math">n = m = 10<sup>9</sup></span>, <span class="math">k = 1</span> cho <span class="math">10<sup>18</sup></span> viên, vượt xa <code>int</code> nhưng nằm trong <code>long long</code>. Số bộ test tới <span class="math">10<sup>5</sup></span> nên cần nhập xuất nhanh.</p>
+    <figure class="code">
+      <figcaption><span class="fn">LATGACH.cpp</span> Khung bài thi áp dụng vào một bài thật</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+using ll = long long;                 // viết ll cho gọn
+
+int main() {
+    ios::sync_with_stdio(false);      // tắt đồng bộ với scanf/printf
+    cin.tie(nullptr);                 // cin không phải đợi cout xả trước
+    // Chấm bằng Themis: đọc LATGACH.INP, ghi LATGACH.OUT.
+    // Chỉ mở tệp khi tệp tồn tại, nên chạy thử bằng bàn phím vẫn được.
+    if (fopen("LATGACH.INP", "r")) {
+        freopen("LATGACH.INP", "r", stdin);
+        freopen("LATGACH.OUT", "w", stdout);
+    }
+
+    int t;                            // số bộ dữ liệu
+    cin &gt;&gt; t;
+    while (t--) {
+        ll n, m, k;                   // n, m, k có thể tới 1e9
+        cin &gt;&gt; n &gt;&gt; m &gt;&gt; k;
+        ll hang = (n + k - 1) / k;    // làm tròn lên n / k
+        ll cot  = (m + k - 1) / k;    // làm tròn lên m / k
+        cout &lt;&lt; hang * cot &lt;&lt; '\n';   // tích có thể tới 1e18: vẫn vừa long long
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input (LATGACH.INP)</div><pre><code class="language-text">3
+6 6 4
+7 3 2
+1000000000 1000000000 1</code></pre></div>
+      <div><div class="io-k">Output (LATGACH.OUT)</div><pre><code class="language-text">4
+8
+1000000000000000000</code></pre></div>
+    </div>
+    <p>Kiểm tra tay: sân 6 × 6, gạch 4: <span class="math">⌈6/4⌉ = 2</span>, tích 4. Sân 7 × 3, gạch 2: <span class="math">⌈7/2⌉ = 4</span>, <span class="math">⌈3/2⌉ = 2</span>, tích 8. Test thứ ba là test “lớn nhất” do em tự nghĩ ra: nếu khai báo <code>int</code>, chương trình sẽ in <code>-1486618624</code> (thầy cô đã chạy thử).</p>
+    <div class="callout note"><p class="callout-title">Về cảnh báo của trình biên dịch</p><p>Biên dịch với <code>-Wall</code>, GCC có thể cảnh báo “ignoring return value of freopen”. Đây chỉ là cảnh báo, không phải lỗi; chương trình vẫn chạy đúng.</p></div>
+
+    <h3>Mẫu đọc đến hết dữ liệu</h3>
+    <p>Khi đề chỉ nói “tệp gồm nhiều số nguyên”, không cho trước số lượng:</p>
+<pre><code class="language-cpp">long long x, tong = 0;
+int dem = 0;
+while (cin &gt;&gt; x) {      // dừng khi hết dữ liệu hoặc gặp chữ không phải số
+    tong += x;
+    dem++;
+}
+cout &lt;&lt; dem &lt;&lt; ' ' &lt;&lt; tong &lt;&lt; '\n';   // "1 2 3 ↵ 4 5" in ra: 5 15</code></pre>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <p>Mọi thứ trong khung bài thi chạy trong <span class="bigo">O(1)</span>: một phép chia làm tròn lên, một lần <code>freopen</code>, một phép nhân <code>1LL *</code> đều tốn thời gian không đổi. Bài LÁT GẠCH ở trên tốn <span class="bigo">O(t)</span> thời gian và <span class="bigo">O(1)</span> bộ nhớ. Thứ thật sự tốn thời gian ở bài này là <strong>nhập xuất</strong>. Bảng dưới là số đo của thầy cô khi đọc <span class="math">10<sup>6</sup></span> số rồi in lại mỗi số một dòng (máy chấm khác có thể nhanh chậm hơn, nhưng tỉ lệ tương tự):</p>
+    <table>
+      <thead><tr><th>Cách viết</th><th>Thời gian đo được</th><th>So với nhanh nhất</th></tr></thead>
+      <tbody>
+        <tr><td>Không bật nhập xuất nhanh, in bằng <code>endl</code></td><td>khoảng 0,93 s</td><td>gần 8 lần</td></tr>
+        <tr><td>Bật nhập xuất nhanh, in bằng <code>endl</code></td><td>khoảng 0,56 s</td><td>gần 5 lần</td></tr>
+        <tr><td>Không bật nhập xuất nhanh, in bằng <code>'\n'</code></td><td>khoảng 0,46 s</td><td>gần 4 lần</td></tr>
+        <tr class="hl"><td>Bật nhập xuất nhanh, in bằng <code>'\n'</code></td><td>khoảng 0,12 s</td><td>1 lần</td></tr>
+      </tbody>
+    </table>
+    <p>Nhìn hàng thứ hai: bật nhập xuất nhanh mà vẫn dùng <code>endl</code> thì vẫn chậm, vì <code>endl</code> xả bộ đệm <span class="math">10<sup>6</sup></span> lần. Cần <strong>cả hai</strong> thói quen.</p>
+    <h3>Bộ nhớ của mảng</h3>
+    <p>Giới hạn bộ nhớ thường là 256 MB. Em ước lượng bằng “số phần tử × số byte mỗi phần tử”:</p>
+    <table>
+      <thead><tr><th>Khai báo (toàn cục)</th><th>Bộ nhớ</th><th>Nhận xét</th></tr></thead>
+      <tbody>
+        <tr><td><code>int a[1000000];</code></td><td>4 MB</td><td>Thoải mái. Đặt trong <code>main</code> thì có thể tràn ngăn xếp.</td></tr>
+        <tr><td><code>long long a[1000000];</code></td><td>8 MB</td><td>Thoải mái.</td></tr>
+        <tr><td><code>int a[10000000];</code></td><td>40 MB</td><td>Được, nếu giới hạn 256 MB.</td></tr>
+        <tr><td><code>int a[5000][5000];</code></td><td>100 MB</td><td>Sát giới hạn khi có thêm mảng khác.</td></tr>
+        <tr><td><code>long long a[10000][10000];</code></td><td>800 MB</td><td>Vượt giới hạn, phải đổi cách làm.</td></tr>
+      </tbody>
+    </table>
+    <p>Quy tắc nhanh: 256 MB chứa được khoảng <span class="math">6·10<sup>7</sup></span> số <code>int</code> hoặc <span class="math">3·10<sup>7</sup></span> số <code>long long</code>. Muốn biết thuật toán chạy kịp không, em xem bảng tra giới hạn trong bài <a href="complexity.html">Độ phức tạp thuật toán</a>.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Đối chiếu chéo (stress test)</h3>
+    <p><strong>Là gì.</strong> Em viết <em>hai</em> lời giải cho cùng một bài: một lời giải “trâu” (brute force) chậm nhưng chắc chắn đúng, và lời giải chính nhanh nhưng có thể có lỗi. Một chương trình thứ ba sinh test nhỏ ngẫu nhiên. Em cho cả hai lời giải chạy trên hàng trăm test và so kết quả. Khác nhau ở test nào thì em đã có ngay một test nhỏ làm lộ lỗi.</p>
+    <p><strong>Vì sao cần.</strong> Ví dụ trong đề thường rất ít và rất “hiền”. Tự nghĩ test biên giúp được một phần, nhưng máy sinh 500 test chỉ mất vài giây và thường tìm ra những trường hợp em không nghĩ tới. Đây là bước 5 trong “Chiến thuật phòng thi” của khóa học. Lời giải trâu cũng chính là cách lấy điểm các subtask nhỏ (xem bài <a href="brute-force-formula.html">Vét cạn và công thức</a>).</p>
+    <ol class="algo-steps">
+      <li><div><strong>Viết lời giải trâu</strong> <code>brute.cpp</code>: càng đơn giản càng tốt, chỉ cần đúng với test nhỏ.</div></li>
+      <li><div><strong>Viết bộ sinh test</strong> <code>gen.cpp</code>: nhận số hạt giống (seed), in ra một test nhỏ ngẫu nhiên.</div></li>
+      <li><div><strong>Lặp:</strong> sinh test, chạy cả hai lời giải, so hai đầu ra.</div></li>
+      <li><div><strong>Dừng khi khác nhau</strong>, in test đó ra để em chạy tay và tìm lỗi.</div></li>
+    </ol>
+    <p>Với bài LÁT GẠCH, lời giải trâu đặt từng hàng gạch cho tới khi phủ kín:</p>
+    <figure class="code">
+      <figcaption><span class="fn">brute.cpp</span> Lời giải trâu</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+using ll = long long;
+// Đặt từng hàng, từng cột gạch cho tới khi phủ kín. Chậm nhưng chắc đúng.
+int main() {
+    int t; cin &gt;&gt; t;
+    while (t--) {
+        ll n, m, k; cin &gt;&gt; n &gt;&gt; m &gt;&gt; k;
+        ll hang = 0, cot = 0;
+        for (ll phu = 0; phu &lt; n; phu += k) hang++;   // thêm 1 hàng gạch
+        for (ll phu = 0; phu &lt; m; phu += k) cot++;    // thêm 1 cột gạch
+        cout &lt;&lt; hang * cot &lt;&lt; '\n';
+    }
+}</code></pre>
+    </figure>
+    <figure class="code">
+      <figcaption><span class="fn">gen.cpp</span> Bộ sinh test nhỏ</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+// Sinh test nhỏ ngẫu nhiên; hạt giống (seed) lấy từ tham số dòng lệnh.
+int main(int argc, char* argv[]) {
+    mt19937 rng(atoi(argv[1]));
+    auto rnd = [&amp;](int l, int r) { return (int)(rng() % (r - l + 1)) + l; };
+    int t = rnd(1, 5);
+    cout &lt;&lt; t &lt;&lt; '\n';
+    for (int i = 0; i &lt; t; i++)
+        cout &lt;&lt; rnd(1, 30) &lt;&lt; ' ' &lt;&lt; rnd(1, 30) &lt;&lt; ' ' &lt;&lt; rnd(1, 10) &lt;&lt; '\n';
+}</code></pre>
+    </figure>
+    <figure class="code">
+      <figcaption><span class="fn">stress.sh</span> Vòng lặp đối chiếu (chạy trên Linux; Windows dùng tệp .bat tương tự)</figcaption>
+<pre><code class="language-bash">#!/bin/bash
+g++ -std=c++17 -O2 LATGACH.cpp -o fast
+g++ -std=c++17 -O2 brute.cpp -o brute
+g++ -std=c++17 -O2 gen.cpp -o gen
+for i in $(seq 1 500); do
+    ./gen $i &gt; test.inp
+    ./fast  &lt; test.inp &gt; fast.out
+    ./brute &lt; test.inp &gt; brute.out
+    if ! cmp -s fast.out brute.out; then
+        echo "SAI o test $i:"; cat test.inp
+        exit 1
+    fi
+done
+echo "Ca 500 test deu khop"</code></pre>
+    </figure>
+    <p>Thầy cô đã chạy đúng ba tệp trên và nhận được dòng <code>Ca 500 test deu khop</code>. Thử cố ý làm sai lời giải chính (ví dụ viết <code>n / k</code> thay vì làm tròn lên), vòng lặp sẽ dừng ngay ở test đầu tiên có một cạnh sân không chia hết cho <span class="math">k</span>.</p>
+
+    <h3>Khi long long cũng không đủ: <code>__int128</code></h3>
+    <p>Tích hai số tới <span class="math">10<sup>18</sup></span> có thể tới <span class="math">10<sup>36</sup></span>. GCC có kiểu <code>__int128</code> (128 bit, tới khoảng <span class="math">1,7·10<sup>38</sup></span>). Nó dùng được để tính, nhưng <code>cin</code>/<code>cout</code> không đọc in trực tiếp được, phải tự in từng chữ số. Số còn lớn hơn nữa (hàng trăm chữ số) thì phải lưu bằng xâu; xem bài <a href="big-numbers.html">Số lớn</a>.</p>
+<pre><code class="language-cpp">void in128(__int128 x) {            // in một số __int128
+    if (x &lt; 0) { cout &lt;&lt; '-'; x = -x; }
+    string s;
+    do { s += char('0' + x % 10); x /= 10; } while (x &gt; 0);
+    reverse(s.begin(), s.end());
+    cout &lt;&lt; s;
+}
+// ll a = 1e18, b = 1e18;  in128((__int128)a * b);  in ra 1 và 36 chữ số 0</code></pre>
+
+    <h3>Kiểm tra tràn trước khi nhân</h3>
+    <p>Với <span class="math">a, b &gt; 0</span>, tích <span class="math">a·b</span> vượt <code>LLONG_MAX</code> khi và chỉ khi <span class="math">a &gt; ⌊LLONG_MAX / b⌋</span>. Phép chia không bao giờ tràn, nên đây là cách kiểm tra an toàn. Ví dụ <span class="math">4·10<sup>9</sup> × 3·10<sup>9</sup> = 1,2·10<sup>19</sup></span> bị phát hiện là tràn.</p>
+<pre><code class="language-cpp">if (a &gt; LLONG_MAX / b) cout &lt;&lt; "tran\n";
+else cout &lt;&lt; a * b &lt;&lt; '\n';</code></pre>
+
+    <h3>Số thực đổi sang số nguyên: căn bậc hai chính xác</h3>
+    <p><code>sqrt</code> trả về <code>double</code>, chỉ chính xác khoảng 16 chữ số. Với <span class="math">n = 10<sup>18</sup> − 1</span>, <code>(long long)sqrt(n)</code> cho 1 000 000 000, trong khi đáp án đúng là 999 999 999 (thầy cô đã chạy thử). Cách an toàn: lấy giá trị gần đúng, rồi sửa bằng số nguyên. So sánh bằng phép chia để chính việc sửa không bị tràn:</p>
+<pre><code class="language-cpp">ll canNguyen(ll n) {                       // số r lớn nhất với r*r &lt;= n
+    ll r = (ll)sqrtl((long double)n);      // ước lượng, có thể lệch 1
+    while (r &gt; 0 &amp;&amp; r &gt; n / r) r--;        // r*r &gt; n: giảm
+    while (r + 1 &lt;= n / (r + 1)) r++;      // (r+1)*(r+1) &lt;= n: tăng
+    return r;
+}</code></pre>
+    <p>Tương tự, làm tròn số thực dương <span class="math">x</span> tới số nguyên gần nhất dùng <code>llround(x)</code>; đừng ép kiểu <code>(int)x</code> vì nó cắt bỏ phần thập phân: <code>(int)2.9999999</code> bằng 2.</p>
+
+    <h3>Bài nhiều bộ test: nhớ xóa dữ liệu cũ</h3>
+    <p>Khi đề có <span class="math">t</span> bộ test và em dùng mảng toàn cục, mảng vẫn giữ dữ liệu của bộ test trước. Trước mỗi bộ test, xóa đúng <span class="math">n</span> phần tử đầu bằng <code>fill(a, a + n + 1, 0)</code>. Đừng <code>memset</code> cả mảng <span class="math">10<sup>6</sup></span> phần tử trong mỗi bộ test: với <span class="math">t = 10<sup>5</sup></span> bộ là <span class="math">10<sup>11</sup></span> thao tác. Dùng <code>vector</code> khai báo bên trong vòng lặp cũng là cách gọn (xem bài <a href="stl.html">Thư viện STL</a>).</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Nhân hai int rồi mới gán vào long long</p><p><code>long long s = a * b;</code> vẫn tràn vì phép nhân làm trong <code>int</code>. Sửa: <code>1LL * a * b</code>, đặt <code>1LL</code> <strong>ở đầu</strong>. Hoặc khai báo luôn <code>a</code>, <code>b</code> là <code>long long</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Biến đếm, biến tổng để int</p><p>Tổng <span class="math">10<sup>5</sup></span> số, mỗi số tới <span class="math">10<sup>9</sup></span>, lên tới <span class="math">10<sup>14</sup></span>. Số cặp trong <span class="math">10<sup>5</sup></span> phần tử khoảng <span class="math">5·10<sup>9</sup></span>. Biến tổng, biến đếm cặp gần như luôn cần <code>long long</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Sai tên tệp hoặc quên bỏ chú thích freopen</p><p>Đề yêu cầu <code>LATGACH.INP</code> mà em viết <code>latgach.inp</code> hay <code>LATGACH.IN</code> là 0 điểm trên Themis (trên Windows tên tệp không phân biệt hoa thường, nhưng đừng trông chờ vào điều đó). Ngược lại, nộp lên VNOJ mà <em>còn</em> <code>freopen</code> không bọc <code>if</code> thì chương trình không đọc được gì. Dùng mẫu <code>if (fopen(…))</code> ở phần cài đặt để an toàn cả hai nơi.</p></div>
+    <div class="callout warn"><p class="callout-title">Dùng endl trong vòng lặp lớn</p><p>Mỗi <code>endl</code> xả bộ đệm. In <span class="math">10<sup>6</sup></span> dòng bằng <code>endl</code> chậm gấp nhiều lần. Luôn dùng <code>'\n'</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Trộn scanf/printf với cin/cout sau khi tắt đồng bộ</p><p>Sau <code>sync_with_stdio(false)</code>, hai hệ thống có bộ đệm riêng; dữ liệu in ra có thể lộn thứ tự. Chọn một trong hai và dùng suốt bài.</p></div>
+    <div class="callout warn"><p class="callout-title">So sánh số thực bằng ==</p><p><code>0.1 + 0.2 == 0.3</code> là <code>false</code>. Dùng <code>fabs(x - y) &lt; 1e-9</code>. Và đừng quên <code>fixed</code> trước <code>setprecision</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Chia và chia dư với số âm</p><p><code>-7 / 2</code> là −3 và <code>-7 % 3</code> là −1 trong C++. Khi cần phần nguyên kiểu Toán hoặc số dư không âm, dùng hàm <code>ChiaXuong</code> và công thức <code>((a % m) + m) % m</code>. Tương tự, kiểm tra số lẻ bằng <code>x % 2 != 0</code>, đừng viết <code>x % 2 == 1</code> vì số lẻ âm cho dư −1.</p></div>
+    <div class="callout warn"><p class="callout-title">getline đọc ra chuỗi rỗng</p><p>Sau <code>cin &gt;&gt; n</code>, ký tự xuống dòng còn lại làm <code>getline</code> trả về chuỗi rỗng. Thêm <code>cin &gt;&gt; ws;</code> trước <code>getline</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Mảng lớn khai báo trong main</p><p>Mảng <span class="math">10<sup>6</sup></span> phần tử trong <code>main</code> có thể làm tràn ngăn xếp và chứa giá trị rác. Đưa ra ngoài thành mảng toàn cục. Và <code>memset</code> chỉ dùng với 0, −1 hoặc <code>0x3f</code>.</p></div>
+    <div class="callout tip"><p class="callout-title">Danh sách kiểm tra trước khi nộp</p>
+      <ol>
+        <li>Tên tệp nguồn và tên tệp <code>.INP</code>/<code>.OUT</code> đúng từng chữ như đề; dòng <code>freopen</code> đã bỏ chú thích (thi Themis) hoặc được bọc <code>if</code>.</li>
+        <li>Đã ước lượng đáp án lớn nhất; mọi biến tổng, tích, đếm có thể vượt <span class="math">2·10<sup>9</sup></span> là <code>long long</code>; phép nhân hai <code>int</code> có <code>1LL *</code>.</li>
+        <li>Có <code>ios::sync_with_stdio(false); cin.tie(nullptr);</code>, không còn <code>endl</code> trong vòng lặp.</li>
+        <li>Định dạng đầu ra đúng đề: số chữ số thập phân, dấu cách, xuống dòng, chữ hoa thường (“YES” khác “Yes”).</li>
+        <li>Đã xóa mọi dòng in gỡ lỗi (debug), mọi dòng “Nhập n:”.</li>
+        <li>Đã chạy ví dụ mẫu và test biên: <span class="math">n = 1</span>, <span class="math">n</span> lớn nhất, số âm, các phần tử bằng nhau.</li>
+        <li>Mảng đủ lớn (thêm vài phần tử dư), khai báo toàn cục; nhiều bộ test thì đã xóa dữ liệu cũ.</li>
+        <li><code>main</code> kết thúc bằng <code>return 0;</code>, không có <code>system("pause")</code>.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Chương trình <code>int a = 50000; long long x = a * a; cout &lt;&lt; x;</code> in ra gì (trên máy chấm thông thường)?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 2500000000</button>
+        <button type="button" class="quiz-opt" data-correct>B. -1794967296</button>
+        <button type="button" class="quiz-opt">C. Báo lỗi biên dịch</button>
+        <button type="button" class="quiz-opt">D. 9223372036854775807</button>
+      </div>
+      <p class="quiz-explain"><code>a * a</code> được tính trong <code>int</code> trước khi gán. 2 500 000 000 vượt INT_MAX, quay vòng thành 2 500 000 000 − 4 294 967 296 = −1 794 967 296. Không có lỗi biên dịch nào.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Trong C++, <code>-17 % 5</code> bằng bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 3</button>
+        <button type="button" class="quiz-opt" data-correct>B. -2</button>
+        <button type="button" class="quiz-opt">C. 2</button>
+        <button type="button" class="quiz-opt">D. -3</button>
+      </div>
+      <p class="quiz-explain"><code>-17 / 5</code> làm tròn về 0 được −3, và −17 = (−3)·5 + (−2), nên số dư là −2. Số dư mang dấu của số bị chia. Muốn số dư không âm (bằng 3), dùng <code>((-17 % 5) + 5) % 5</code>.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Với <code>int a, b;</code> đều tới <span class="math">10<sup>9</sup></span>, cách viết nào tính đúng tích <span class="math">a·b</span>?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. <code>long long p = a * b;</code></button>
+        <button type="button" class="quiz-opt">B. <code>long long p = a * b * 1LL;</code></button>
+        <button type="button" class="quiz-opt" data-correct>C. <code>long long p = 1LL * a * b;</code></button>
+        <button type="button" class="quiz-opt">D. <code>long long p = (long long)(a * b);</code></button>
+      </div>
+      <p class="quiz-explain">Chỉ ở C, <code>1LL * a</code> được tính đầu tiên trong <code>long long</code>. Ở A, B, D, phép <code>a * b</code> đều xảy ra trong <code>int</code> và đã tràn trước khi đổi kiểu.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Đề cho <span class="math">n ≤ 10<sup>5</sup></span> số, mỗi số <span class="math">0 ≤ a<sub>i</sub> ≤ 10<sup>9</sup></span>. Hỏi tổng bình phương <span class="math">a<sub>1</sub><sup>2</sup> + … + a<sub>n</sub><sup>2</sup></span> (in chính xác). Kiểu nào đủ cho biến tổng?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. <code>long long</code></button>
+        <button type="button" class="quiz-opt">B. <code>double</code></button>
+        <button type="button" class="quiz-opt" data-correct>C. <code>__int128</code></button>
+        <button type="button" class="quiz-opt">D. <code>unsigned long long</code></button>
+      </div>
+      <p class="quiz-explain">Tổng lớn nhất là <span class="math">10<sup>5</sup> × 10<sup>18</sup> = 10<sup>23</sup></span>, vượt cả <code>long long</code> (khoảng <span class="math">9,2·10<sup>18</sup></span>) và <code>unsigned long long</code> (khoảng <span class="math">1,8·10<sup>19</sup></span>). <code>double</code> chứa được độ lớn nhưng chỉ đúng 15–16 chữ số, không in chính xác được. <code>__int128</code> chứa tới khoảng <span class="math">1,7·10<sup>38</sup></span>. Bài học: luôn ước lượng trước, đừng nghĩ “cứ long long là đủ”.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Muốn in <code>x = 3.14159</code> thành <code>3.14</code>, viết thế nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. <code>cout &lt;&lt; setprecision(2) &lt;&lt; x;</code></button>
+        <button type="button" class="quiz-opt" data-correct>B. <code>cout &lt;&lt; fixed &lt;&lt; setprecision(2) &lt;&lt; x;</code></button>
+        <button type="button" class="quiz-opt">C. <code>cout &lt;&lt; (int)(x * 100);</code></button>
+      </div>
+      <p class="quiz-explain">Không có <code>fixed</code>, <code>setprecision(2)</code> hiểu là 2 chữ số có nghĩa và in <code>3.1</code>. Phương án C in <code>314</code>.</p>
+    </div>
+
+    <p><strong>Câu 6.</strong> Tính tay: <code>(23 + 4 - 1) / 4</code>, <code>(24 + 4 - 1) / 4</code>, <code>((-7 % 3) + 3) % 3</code>. Mỗi biểu thức có ý nghĩa gì?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p><code>26 / 4 = 6</code> và <code>27 / 4 = 6</code>: số xe 4 chỗ cần để chở 23 và 24 bạn, tức <span class="math">⌈23/4⌉ = ⌈24/4⌉ = 6</span>. Còn <code>-7 % 3 = -1</code>, cộng 3 được 2, lấy dư cho 3 được 2: số dư không âm của −7 khi chia cho 3 (vì −7 = (−3)·3 + 2).</p>
+    </details>
+
+    <p><strong>Câu 7.</strong> Đề yêu cầu đọc tệp <code>TONG.INP</code>, ghi tệp <code>TONG.OUT</code>, với <span class="math">n ≤ 10<sup>6</sup></span>, <span class="math">|a<sub>i</sub>| ≤ 10<sup>9</sup></span>, in tổng dãy. Tìm ít nhất 4 lỗi trong bài làm sau.</p>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+int main() {
+    freopen("tong.inp", "r", stdin);
+    int n; cin &gt;&gt; n;
+    int a[1000000];
+    int s = 0;
+    for (int i = 1; i &lt;= n; i++) { cin &gt;&gt; a[i]; s += a[i]; }
+    cout &lt;&lt; "Tong la: " &lt;&lt; s &lt;&lt; endl;
+}</code></pre>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <ol>
+        <li>Tên tệp sai (<code>tong.inp</code> thay vì <code>TONG.INP</code>) và thiếu <code>freopen("TONG.OUT", "w", stdout)</code>.</li>
+        <li>Thiếu <code>ios::sync_with_stdio(false); cin.tie(nullptr);</code>: đọc <span class="math">10<sup>6</sup></span> số sẽ chậm.</li>
+        <li>Mảng <code>a[1000000]</code> khai báo trong <code>main</code>: 4 MB trên ngăn xếp, dễ chết chương trình. Hơn nữa chỉ số chạy từ 1 tới <span class="math">n = 10<sup>6</sup></span> nên <code>a[1000000]</code> <strong>vượt mảng</strong>. Khai báo toàn cục <code>int a[1000005];</code> (thực ra bài này không cần mảng).</li>
+        <li><code>int s</code>: tổng có thể tới <span class="math">10<sup>15</sup></span>, phải là <code>long long</code>.</li>
+        <li>In thêm chữ <code>"Tong la: "</code> làm sai định dạng; máy chấm chỉ cần con số.</li>
+      </ol>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Các bài dưới đây đều dễ về thuật toán. Mục tiêu là làm <strong>đúng hết test ngay lần nộp đầu</strong>: chọn đúng kiểu, nhập xuất nhanh, đúng định dạng. Trước khi nộp, em đi lại danh sách kiểm tra ở mục trên.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/aplusb">A cộng B</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Có tới <span class="math">10<sup>5</sup></span> cặp số nguyên, mỗi số có trị tuyệt đối không quá <span class="math">10<sup>9</sup></span>. In tổng của từng cặp.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra tràn số ở phép cộng; nhập xuất nhanh.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tổng lớn nhất là <span class="math">2·10<sup>9</sup></span>, lớn hơn INT_MAX = 2 147 483 647 một chút. Thử tay cặp <code>1000000000 1000000000</code> với kiểu <code>int</code> để thấy lỗi.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cdl1p9">PHEPCHIA – Tìm phần nguyên, phần dư phép chia</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho hai số nguyên <span class="math">a, b</span> với <span class="math">|a|, |b| ≤ 10<sup>6</sup></span>. In phần nguyên và phần dư của phép chia <span class="math">a/b</span>.</p>
+        <p class="ex-skill"><b>Luyện:</b> phép <code>/</code> và <code>%</code> khi có số âm.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Với số dương, <code>a / b</code> và <code>a % b</code> là đủ. Với số âm, C++ làm tròn về 0. Nếu bài bị sai ở test có số âm, hãy đổi sang quy ước Toán học (hàm ChiaXuong và số dư không âm) và tự kiểm tra lại đẳng thức <span class="math">a = q·b + r</span>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1068">CSES – Weird Algorithm | Thuật toán lạ</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Bắt đầu từ <span class="math">n ≤ 10<sup>6</sup></span>: nếu chẵn thì chia đôi, nếu lẻ thì nhân 3 cộng 1, lặp tới khi bằng 1. In mọi giá trị đã đi qua. Bản gốc tiếng Anh: <a href="https://cses.fi/problemset/task/1068">CSES 1068</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> giá trị trung gian lớn hơn đầu vào; in nhiều số nhanh.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đầu vào nhỏ nhưng giá trị trên đường đi có thể vượt <code>int</code>: với <span class="math">n ≤ 10<sup>6</sup></span>, giá trị lớn nhất là 56 991 483 520 (khi <span class="math">n = 704 511</span>). Dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/4/A">4A – Watermelon</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Quả dưa nặng <span class="math">w</span> kg (<span class="math">1 ≤ w ≤ 100</span>). Có chia được thành hai phần, mỗi phần nặng một số chẵn dương kg không? In YES hoặc NO.</p>
+        <p class="ex-skill"><b>Luyện:</b> tự nghĩ test biên trước khi nộp; in đúng chữ hoa.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chẵn là điều kiện cần, nhưng chưa đủ. Thử tay <span class="math">w = 2</span>: mỗi phần phải dương.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/av04">Tính trung bình cộng</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho <span class="math">n ≤ 10<sup>4</sup></span> số nguyên, <span class="math">|A<sub>i</sub>| ≤ 10<sup>9</sup></span>. In trung bình cộng các số âm, lấy 2 chữ số sau dấu phẩy; không có số âm thì in −1.</p>
+        <p class="ex-skill"><b>Luyện:</b> tổng cần <code>long long</code>; chia ra số thực; <code>fixed</code> và <code>setprecision</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tổng có thể tới <span class="math">10<sup>13</sup></span>. Đổi sang số thực trước khi chia: <code>(double)tong / dem</code>, nếu không phép chia sẽ là chia nguyên.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/1/A">1A – Theatre Square</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Lát quảng trường <span class="math">n × m</span> bằng gạch vuông cạnh <span class="math">a</span> (<span class="math">1 ≤ n, m, a ≤ 10<sup>9</sup></span>), không cắt gạch, được lát tràn. Cần ít nhất bao nhiêu viên?</p>
+        <p class="ex-skill"><b>Luyện:</b> chia làm tròn lên bằng số nguyên; tích tới <span class="math">10<sup>18</sup></span>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giống hệt bài LÁT GẠCH ở phần cài đặt, nhưng chỉ một bộ test và không có tệp. Đừng dùng <code>ceil</code> với số thực.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/aplusb2">A + B (tới 10<sup>6</sup> câu hỏi)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có tới <span class="math">10<sup>6</sup></span> câu hỏi, mỗi câu cho hai số nguyên dương <span class="math">A, B ≤ 10<sup>18</sup></span>, in <span class="math">A + B</span>.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhập xuất nhanh thật sự cần thiết; dùng <code>'\n'</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tổng tới <span class="math">2·10<sup>18</sup></span> vẫn vừa <code>long long</code>. Thử in bằng <code>endl</code> và bằng <code>'\n'</code> để so thời gian chạy.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/rounding">Làm tròn</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Có tới 500 số tự nhiên <span class="math">n ≤ 10<sup>120</sup></span>. Làm tròn mỗi số thành số tận cùng bằng 0 gần nhất; nếu có hai số gần như nhau thì lấy số nhỏ hơn.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra khi <em>không kiểu số nào</em> chứa nổi; xử lý số dạng xâu.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đọc <span class="math">n</span> vào <code>string</code>. Chỉ chữ số cuối quyết định: từ 0 tới 5 thì thay bằng 0; từ 6 tới 9 thì thay bằng 0 và cộng 1 vào phần trước, nhớ trường hợp nhớ liên tiếp như 996 thành 1000.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/tpn">Tổng phần nguyên (TS10 LQĐ 2015)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Tính <span class="math">[∛1] + [∛2] + … + [∛n]</span>, với <span class="math">n &lt; 10<sup>12</sup></span> (subtask mở rộng <span class="math">n &lt; 10<sup>18</sup></span>), trong đó <span class="math">[x]</span> là phần nguyên của <span class="math">x</span>.</p>
+        <p class="ex-skill"><b>Luyện:</b> sai số khi lấy căn bằng số thực; ước lượng đáp án để chọn kiểu.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Các số <span class="math">i</span> từ <span class="math">k<sup>3</sup></span> tới <span class="math">(k+1)<sup>3</sup> − 1</span> đều có phần nguyên căn bậc ba bằng <span class="math">k</span>, gồm <span class="math">3k<sup>2</sup> + 3k + 1</span> số. Cộng theo từng nhóm, nhóm cuối có thể thiếu. Tìm <span class="math">k</span> lớn nhất bằng số nguyên (sửa lại như hàm <code>canNguyen</code>), không tin <code>cbrt</code>. Với <span class="math">n</span> tới <span class="math">10<sup>18</sup></span>, đáp án cỡ <span class="math">10<sup>24</sup></span>: cần <code>__int128</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/bignum">BIGNUM – Xử lý số nguyên lớn</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho hai số nguyên dương <span class="math">A, B</span> có tới 1000 chữ số. In <span class="math">A + B</span>, <span class="math">A − B</span> và <span class="math">A × B</span>.</p>
+        <p class="ex-skill"><b>Luyện:</b> vượt mọi kiểu có sẵn; cộng, trừ, nhân theo cột như tính tay.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lưu mỗi số là mảng chữ số, đảo ngược để hàng đơn vị ở đầu. Hiệu có thể âm: so sánh trước, trừ số lớn cho số nhỏ rồi thêm dấu. Xem bài <a href="big-numbers.html">Số lớn</a>.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/basic/computational-complexity">VNOI Wiki – Độ phức tạp thời gian</a> (tiếng Việt): mốc số phép tính mỗi giây, cách chọn thuật toán theo giới hạn.</li>
+      <li><a href="https://viblo.asia/p/cac-ki-nang-thi-cu-101-ki-thuat-toi-uu-toc-do-chuong-trinh-c-Yym40njjL91">Viblo – Các kĩ năng thi cử 10.1: Kĩ thuật tối ưu tốc độ chương trình C++</a> (tiếng Việt): nhập xuất nhanh và các mẹo tăng tốc.</li>
+      <li><a href="https://viblo.asia/p/bai-16-nhap-xuat-du-lieu-bang-file-va-ki-nang-debug-code-tren-codeblocks-924lJRnXlPM">Viblo – Nhập xuất dữ liệu bằng file và Debug code trên Code::Blocks</a> (tiếng Việt): <code>freopen</code> và gỡ lỗi.</li>
+      <li><a href="https://en.cppreference.com/w/cpp/language/types">cppreference – Fundamental types</a> (tiếng Anh): kích thước và khoảng giá trị các kiểu.</li>
+      <li><a href="https://en.cppreference.com/w/cpp/io/ios_base/sync_with_stdio">cppreference – std::ios_base::sync_with_stdio</a> (tiếng Anh).</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer's Handbook</a> (tiếng Anh, miễn phí), chương 1 “Introduction”.</li>
+      <li>Hồ Sĩ Đàm (chủ biên), <em>Tài liệu giáo khoa chuyên Tin</em>; Lê Minh Hoàng, <em>Giải thuật và lập trình</em>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Khung chuẩn: <code>bits/stdc++.h</code>, <code>using ll = long long;</code>, <code>ios::sync_with_stdio(false); cin.tie(nullptr);</code>, <code>freopen</code> đúng tên tệp (bọc <code>if (fopen(…))</code>).</li>
+        <li><code>int</code> ≈ <span class="math">2,1·10<sup>9</sup></span> (chắc chắn đủ 9 chữ số), <code>long long</code> ≈ <span class="math">9,2·10<sup>18</sup></span> (đủ 18 chữ số). Luôn ước lượng đáp án lớn nhất trước khi chọn kiểu.</li>
+        <li>Tràn số quay vòng im lặng. Nhân hai <code>int</code>: viết <code>1LL * a * b</code>, <code>1LL</code> ở đầu.</li>
+        <li>C++ chia nguyên làm tròn về 0, số dư cùng dấu số bị chia. Làm tròn lên: <code>(a + b - 1) / b</code>. Dư không âm: <code>((a % m) + m) % m</code>.</li>
+        <li>Số thực: so sánh bằng <code>fabs(x - y) &lt; 1e-9</code>; in bằng <code>fixed &lt;&lt; setprecision(k)</code>; số nguyên lớn đừng để <code>double</code>.</li>
+        <li>In bằng <code>'\n'</code>, không dùng <code>endl</code>. Đọc đến hết: <code>while (cin &gt;&gt; x)</code>. Trước <code>getline</code> sau <code>cin</code>: <code>cin &gt;&gt; ws</code>.</li>
+        <li>Mảng lớn đặt toàn cục (tự bằng 0, không tràn ngăn xếp). <code>memset</code> chỉ với 0, −1, <code>0x3f</code>.</li>
+        <li>Trước khi nộp: đi hết danh sách kiểm tra; còn thời gian thì đối chiếu chéo với lời giải trâu.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/cpp-contest-basics.js"></script>
+</body>
+</html>

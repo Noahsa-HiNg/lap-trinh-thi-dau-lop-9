@@ -3,10 +3,10 @@
   "agent": "topic-recursion",
   "task": "Soạn chủ đề recursion",
   "topic": "recursion",
-  "status": "active",
+  "status": "aborted",
   "host": "MyPC",
   "started_at": "2026-10-07T15:17:10Z",
   "heartbeat_at": "2026-10-07T15:17:10Z",
-  "ended_at": null,
-  "summary": null
+  "ended_at": "2026-10-08T03:25:42Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:17:10Z (agent dừng do hết hạn mức API (HTTP 429))"
 }

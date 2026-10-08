@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Độ phức tạp thuật toán · Thi đấu lớp 9</title>
+<meta name="description" content="Big-O, cách đếm số phép tính của vòng lặp và đệ quy, quy tắc 10⁸ phép tính mỗi giây, bảng tra giới hạn n → thuật toán và độ phức tạp bộ nhớ.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  svg .curve-cmp { stroke: var(--cmp); stroke-width: 3; fill: none; }
+  svg .curve-info { stroke: var(--info); stroke-width: 3; fill: none; }
+  svg .curve-pen { stroke: var(--pen); stroke-width: 3; fill: none; }
+  svg .axis { stroke: var(--ink-3); stroke-width: 1.5; fill: none; }
+  svg .gridline { stroke: var(--rule); stroke-width: 1; fill: none; }
+</style>
+</head>
+<body data-page="topic" data-topic="complexity">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được Big-O là gì và rút gọn được một biểu thức như 3n² + 5n + 7 thành <span class="bigo">O(n²)</span>.</li>
+      <li>Đếm được số phép tính của vòng lặp đơn, vòng lặp lồng nhau, vòng lặp chia đôi, vòng lặp bước nhảy <code>j += i</code> và đệ quy hai nhánh.</li>
+      <li>Dùng quy tắc “khoảng 10⁸ phép tính mỗi giây” để biết lời giải có chạy kịp hay không trước khi viết code.</li>
+      <li>Tra được bảng “giới hạn n → độ phức tạp → thuật toán” và đọc subtask để chọn hướng giải.</li>
+      <li>Ước lượng được bộ nhớ của mảng một chiều, hai chiều so với giới hạn 256 MB.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Độ phức tạp thuật toán cho biết chương trình phải làm <strong>bao nhiêu việc</strong> khi dữ liệu lớn dần. Ta không đo bằng giây, vì giây phụ thuộc vào máy. Ta đếm <strong>số phép tính</strong> theo kích thước dữ liệu n, rồi chỉ giữ lại phần tăng nhanh nhất.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> cô giáo nhờ em tìm tên bạn Minh trong danh sách lớp 40 bạn. Nếu danh sách lộn xộn, em phải dò từng dòng: tệ nhất 40 lần nhìn. Nếu danh sách xếp theo vần ABC, em mở giữa, thấy chữ “L”, biết Minh nằm nửa sau, rồi lại mở giữa nửa đó… chỉ khoảng 6 lần là xong. Với danh sách cả trường 2 000 bạn, cách thứ nhất cần tới 2 000 lần nhìn, cách thứ hai chỉ khoảng 11 lần. Độ phức tạp chính là cách mô tả “số lần nhìn tăng thế nào khi danh sách dài ra”.</p></div>
+    </div>
+
+    <p>Trong lập trình thi đấu, đề bài luôn cho <strong>giới hạn thời gian</strong> (thường 1 giây) và <strong>giới hạn dữ liệu</strong> (ví dụ n ≤ 10⁵). Code chạy đúng với ví dụ nhỏ chưa đủ. Máy chấm sẽ thử cả test lớn nhất. Vì vậy em phải biết trước: với n lớn nhất, chương trình của em làm bao nhiêu phép tính?</p>
+
+    <div class="definition" data-label="Định nghĩa (Big-O)">
+      <p>Gọi f(n) là số phép tính chương trình thực hiện với dữ liệu kích thước n. Ta viết <span class="math">f(n) = O(g(n))</span> nếu có một hằng số c &gt; 0 và một mốc n₀ sao cho <span class="math">f(n) ≤ c · g(n)</span> với mọi n ≥ n₀.</p>
+      <p>Nói đơn giản: khi n đủ lớn, f(n) tăng <strong>không nhanh hơn</strong> g(n), nếu không tính hệ số nhân.</p>
+    </div>
+
+    <p>Ví dụ: một chương trình làm <span class="math">f(n) = 3n² + 5n + 7</span> phép tính. Với mọi n ≥ 1 ta có 5n ≤ 5n² và 7 ≤ 7n², nên <span class="math">f(n) ≤ 3n² + 5n² + 7n² = 15n²</span>. Chọn c = 15, n₀ = 1 là thỏa định nghĩa. Vậy <span class="math">3n² + 5n + 7 = O(n²)</span>.</p>
+
+    <p>Từ định nghĩa rút ra hai quy tắc rút gọn mà em sẽ dùng hằng ngày:</p>
+    <ul>
+      <li><strong>Bỏ hằng số nhân:</strong> 3n² và n² cùng là <span class="bigo">O(n²)</span>; 100n cũng chỉ là <span class="bigo">O(n)</span>.</li>
+      <li><strong>Bỏ bậc thấp:</strong> trong n² + 5n + 7, phần n² lớn áp đảo khi n lớn, nên chỉ giữ n².</li>
+    </ul>
+    <p>Vì sao bỏ được? Với n = 10⁶: 3n² = 3·10¹², còn 5n + 7 chỉ khoảng 5·10⁶, chưa tới một phần triệu.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Big-O là <strong>ngôn ngữ chung</strong> để so sánh hai lời giải trước khi viết code. Khi em nói “lời giải của mình là O(n log n)”, bạn em hiểu ngay nó chạy được với n khoảng 10⁶. Khi nói “O(n²)”, bạn em biết nó chỉ ổn với n khoảng vài nghìn.</p>
+    <p>Kiến thức này dùng cho <strong>mọi</strong> bài thi, vì bài nào cũng có giới hạn. Cụ thể, em dùng nó để:</p>
+    <ul>
+      <li><strong>Đoán thuật toán từ giới hạn.</strong> Thấy n ≤ 20, em nghĩ ngay tới duyệt mọi tập con (<span class="bigo">O(2ⁿ)</span>). Thấy n ≤ 10⁵, em biết hai vòng lặp lồng nhau sẽ quá thời gian. Thấy n ≤ 10¹⁸, em biết phải có công thức hoặc thuật toán <span class="bigo">O(log n)</span>.</li>
+      <li><strong>Lấy điểm từng phần.</strong> Đề học sinh giỏi hay chia subtask: “40% test có n ≤ 1 000, còn lại n ≤ 10⁶”. Lời giải <span class="bigo">O(n²)</span> đã chắc 40% điểm.</li>
+      <li><strong>Kiểm tra bộ nhớ.</strong> Mảng 10⁴ × 10⁴ số <code>int</code> cần 400 MB, vượt giới hạn 256 MB. Biết trước thì không bị lỗi tràn bộ nhớ.</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Mọi đề đều có dòng “Giới hạn” hoặc “Ràng buộc”. Hãy đọc dòng đó <strong>trước</strong> khi nghĩ thuật toán. Con số lớn nhất của n (và số truy vấn q, số test T) quyết định độ phức tạp em được phép dùng.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho số nguyên dương n (n ≤ 10¹²). Tính tổng S = 1 + 2 + 3 + … + n.</p>
+    <p>Cách đầu tiên ai cũng nghĩ ra là một vòng lặp cộng dồn. Vòng lặp chạy n lần, mỗi lần một phép cộng và một phép so sánh. Với n = 10¹² là khoảng 10¹² lần lặp. Máy chấm làm được khoảng 10⁸ phép tính đơn giản mỗi giây, nên cần khoảng 10¹² : 10⁸ = 10⁴ giây, tức gần <strong>2 giờ 47 phút</strong>. Giới hạn chỉ là 1 giây.</p>
+    <p>Cách thứ hai dùng công thức Gauss: <span class="math">S = n(n + 1) / 2</span>. Chỉ một phép cộng, một phép nhân, một phép chia. Dù n = 10¹² hay n = 10, chương trình đều xong ngay.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ: vòng lặp</h4><p>Cộng lần lượt từ 1 đến n. Độ phức tạp <span class="bigo">O(n)</span>. Với n = 10¹² là 10¹² phép tính, khoảng 10⁴ giây. Quá thời gian.</p></div>
+      <div class="good-side"><h4>Dùng công thức</h4><p>Tính n(n+1)/2. Độ phức tạp <span class="bigo">O(1)</span>, chỉ 3 phép tính với mọi n. Chạy ngay lập tức.</p></div>
+    </div>
+    <p>Bài học thứ nhất: <strong>toán học giúp tăng tốc thuật toán</strong>. Trước khi viết vòng lặp, hãy tự hỏi “có công thức không?”.</p>
+    <p>Bài học thứ hai: độ phức tạp quan trọng hơn mọi mẹo tối ưu nhỏ. So sánh hai lời giải với n = 10⁶:</p>
+    <table>
+      <thead><tr><th>Lời giải</th><th>Số phép tính khi n = 10⁶</th><th>Thời gian ước lượng</th></tr></thead>
+      <tbody>
+        <tr><td><span class="bigo">O(n²)</span></td><td>10¹²</td><td>khoảng 10⁴ giây (gần 3 giờ)</td></tr>
+        <tr><td><span class="bigo">O(n log n)</span></td><td>khoảng 2·10⁷</td><td>khoảng 0,2 giây</td></tr>
+      </tbody>
+    </table>
+    <p>Chênh lệch là 50 000 lần. Dù em viết lời giải O(n²) khéo đến đâu, nhanh gấp 5 hay 10 lần, nó vẫn thua xa. Đó là lý do Big-O bỏ qua hằng số: khi n lớn, <strong>dạng của hàm</strong> quyết định tất cả.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Chủ đề này không có một thuật toán duy nhất, mà có hai quy trình em sẽ làm ở mọi bài: <strong>đánh giá độ phức tạp của một đoạn code</strong> và <strong>chọn thuật toán từ giới hạn n</strong>.</p>
+
+    <h3>Quy trình 1. Đánh giá độ phức tạp của một đoạn code</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Xác định biến kích thước.</strong> Dữ liệu lớn dần theo biến nào: n (số phần tử), q (số truy vấn), giá trị lớn nhất V…? Có thể có nhiều biến.</div></li>
+      <li><div><strong>Tìm phần lặp nhiều nhất.</strong> Đó thường là thân của vòng lặp sâu nhất, hoặc một lời gọi đệ quy. Phép gán, phép so sánh, phép cộng lẻ tẻ bên ngoài chỉ là <span class="bigo">O(1)</span>.</div></li>
+      <li><div><strong>Đếm số lần chạy phần đó.</strong> Vòng lặp tuần tự thì <em>cộng</em> số lần; vòng lặp lồng nhau thì <em>nhân</em>; vòng chia đôi cho log n; bước nhảy j += i cho tổng điều hòa; đệ quy thì vẽ cây lời gọi.</div></li>
+      <li><div><strong>Rút gọn.</strong> Bỏ hằng số nhân và các số hạng bậc thấp. Kết quả là Big-O.</div></li>
+      <li><div><strong>Thay giới hạn lớn nhất vào.</strong> Tính ra số phép tính, so với mốc khoảng 10⁸ mỗi giây.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> DanhGia(đoạn code):
+    xác định các biến kích thước (n, q, …)
+    <b>với mỗi</b> khối lệnh <b>trong</b> đoạn code:
+        <b>nếu</b> là vòng lặp:   số lần = (số vòng lặp) × (số lần của thân)
+        <b>nếu</b> là đệ quy:     số lần = tổng số nút trên cây lời gọi
+        <b>ngược lại</b>:          số lần = 1            <i>// O(1)</i>
+    tổng = cộng số lần của các khối nối tiếp nhau
+    <b>trả về</b> số hạng lớn nhất của tổng, bỏ hằng số  <i>// Big-O</i></pre>
+
+    <h3>Quy trình 2. Chọn thuật toán từ giới hạn n</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Đọc giới hạn.</strong> Ghi ra n lớn nhất (và q, T nếu có). Đọc cả giới hạn của từng subtask.</div></li>
+      <li><div><strong>Tra bảng.</strong> Dùng bảng tra ở mục <a href="#bang-tra">Bảng tra giới hạn</a> để biết độ phức tạp tối đa được phép.</div></li>
+      <li><div><strong>Liệt kê ứng viên.</strong> Nghĩ các thuật toán có độ phức tạp đó: duyệt, sắp xếp, cộng dồn, chặt nhị phân, công thức…</div></li>
+      <li><div><strong>Kiểm tra bằng số.</strong> Thay n lớn nhất vào độ phức tạp của ứng viên. Nếu ≤ khoảng 10⁸ là an toàn; 10⁸ đến 10⁹ là rủi ro; trên 10⁹ là gần như chắc chắn quá thời gian.</div></li>
+      <li><div><strong>Kiểm tra bộ nhớ và kiểu dữ liệu.</strong> Mảng có vừa 256 MB không? Đáp án có vượt <code>int</code> không?</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> ChonThuatToan(giới hạn n, giới hạn thời gian = 1 giây):
+    ngân sách = 10^8 × (số giây)
+    <b>với mỗi</b> ứng viên <b>theo thứ tự</b> từ dễ cài nhất:
+        phép = độ_phức_tạp(ứng viên) thay n lớn nhất
+        <b>nếu</b> phép ≤ ngân sách <b>và</b> bộ nhớ ≤ giới hạn:
+            <b>trả về</b> ứng viên          <i>// dễ cài mà vẫn kịp</i>
+    <b>trả về</b> "cần nghĩ thuật toán nhanh hơn"</pre>
+    <div class="callout tip"><p class="callout-title">Chọn cách dễ nhất mà vẫn kịp</p><p>Nếu n ≤ 1 000 thì lời giải <span class="bigo">O(n²)</span> chỉ 10⁶ phép, quá đủ. Không cần cố viết <span class="bigo">O(n log n)</span> phức tạp và dễ sai hơn.</p></div>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Phần này giải thích từng kiểu đoạn code hay gặp: vì sao nó có độ phức tạp đó. Em nên đọc chậm và tự đếm lại với n nhỏ.</p>
+
+    <h3>1. Vòng lặp đơn: O(n)</h3>
+<pre><code class="language-cpp">for (int i = 1; i &lt;= n; i++) tong += a[i];</code></pre>
+    <p>Thân vòng lặp chạy đúng n lần. Mỗi lần làm vài phép (so sánh i ≤ n, cộng, tăng i), tức một hằng số c phép. Tổng cộng c·n phép, nên là <span class="bigo">O(n)</span>.</p>
+    <p>Hai vòng <strong>nối tiếp</strong>, mỗi vòng n lần, cho 2n, vẫn là <span class="bigo">O(n)</span>. Nối tiếp thì <strong>cộng</strong> và giữ số hạng lớn nhất: O(n) + O(n²) = O(n²).</p>
+
+    <h3>2. Vòng lặp lồng nhau: O(n²), O(n³)</h3>
+<pre><code class="language-cpp">for (int i = 1; i &lt;= n; i++)
+    for (int j = 1; j &lt;= n; j++)
+        dem++;</code></pre>
+    <p>Với mỗi giá trị của i, vòng j chạy n lần. Có n giá trị của i, nên thân chạy n · n = n² lần. Lồng nhau thì <strong>nhân</strong>. Ba vòng lồng nhau, mỗi vòng n lần, cho n³.</p>
+    <p>Nếu vòng trong chỉ chạy từ j = i + 1 (để duyệt mỗi <strong>cặp</strong> một lần), số lần là (n − 1) + (n − 2) + … + 1 + 0 = n(n − 1)/2. Con số này khoảng n²/2, bỏ hằng số 1/2 thì vẫn là <span class="bigo">O(n²)</span>. Với n = 10⁵ là khoảng 5·10⁹ cặp, quá thời gian.</p>
+
+    <h3>3. Vòng lặp chia đôi: O(log n)</h3>
+<pre><code class="language-cpp">for (int i = n; i &gt;= 1; i /= 2) dem++;</code></pre>
+    <p>Mỗi lần lặp, i giảm còn một nửa. Bắt đầu từ n = 8: i lần lượt là 8, 4, 2, 1, rồi 0 thì dừng. Chỉ 4 lần. Bắt đầu từ n = 10⁶ chỉ khoảng 20 lần.</p>
+    <p><strong>Vì sao là log n?</strong> Sau k lần chia đôi, i còn khoảng n / 2ᵏ. Vòng lặp dừng khi n / 2ᵏ &lt; 1, tức 2ᵏ &gt; n, tức k &gt; log₂ n. Vậy số lần lặp chính xác là ⌊log₂ n⌋ + 1. <strong>Logarit cơ số 2 của n</strong> trả lời câu hỏi: “phải chia đôi n bao nhiêu lần thì còn 1?”.</p>
+    <p>Vòng nhân đôi <code>for (i = 1; i &lt;= n; i *= 2)</code> cũng là <span class="bigo">O(log n)</span> theo cùng lý do. Chặt nhị phân (xem <a href="binary-search.html">Tìm kiếm nhị phân</a>) mỗi bước bỏ đi một nửa đoạn tìm kiếm, nên cũng là <span class="bigo">O(log n)</span>.</p>
+    <div class="callout note"><p class="callout-title">Cơ số của log không quan trọng</p><p>log₂ n = log₁₀ n × log₂ 10 ≈ 3,32 × log₁₀ n. Hai loại log chỉ khác nhau một hằng số nhân, nên trong Big-O ta chỉ viết log n. Khi ước lượng, em nhớ: log₂(10³) ≈ 10, log₂(10⁶) ≈ 20, log₂(10⁹) ≈ 30, log₂(10¹⁸) ≈ 60.</p></div>
+
+    <h3>4. Vòng lặp đến căn: O(√n)</h3>
+<pre><code class="language-cpp">for (long long i = 1; i * i &lt;= n; i++)
+    if (n % i == 0) dem += (i * i == n ? 1 : 2);   // đếm ước của n</code></pre>
+    <p>Vòng lặp dừng khi i² &gt; n, tức i &gt; √n. Số lần là ⌊√n⌋. Với n = 10¹², √n = 10⁶, rất nhanh. Đây là kỹ thuật đếm ước và kiểm tra số nguyên tố, sẽ học kỹ ở <a href="divisors-primes.html">Ước số và số nguyên tố</a>.</p>
+
+    <h3>5. Vòng lặp bước nhảy j += i: O(n log n)</h3>
+<pre><code class="language-cpp">for (int i = 1; i &lt;= n; i++)
+    for (int j = i; j &lt;= n; j += i)
+        dem++;</code></pre>
+    <p>Trông như hai vòng lồng nhau, nhưng <strong>không phải</strong> O(n²). Khi i = 1, j chạy n lần; i = 2, j nhảy bước 2 nên chạy khoảng n/2 lần; i = 3, khoảng n/3 lần… Tổng là:</p>
+    <div class="math-block">n/1 + n/2 + n/3 + … + n/n = n × (1 + 1/2 + 1/3 + … + 1/n)</div>
+    <p>Tổng trong ngoặc gọi là <strong>tổng điều hòa</strong> (harmonic sum) H(n). Ta chứng minh H(n) ≤ 1 + log₂ n bằng cách gom nhóm:</p>
+    <ul>
+      <li>Nhóm 1: 1 ≤ 1.</li>
+      <li>Nhóm 2: 1/2 + 1/3 ≤ 1/2 + 1/2 = 1.</li>
+      <li>Nhóm 3: 1/4 + 1/5 + 1/6 + 1/7 ≤ 4 × 1/4 = 1.</li>
+      <li>Nhóm 4: 1/8 + … + 1/15 (8 số hạng) ≤ 8 × 1/8 = 1. Và cứ thế.</li>
+    </ul>
+    <p>Mỗi nhóm có tổng không quá 1, và số nhóm khoảng log₂ n + 1. Vậy H(n) ≤ log₂ n + 1, và tổng số lần lặp không quá n(log₂ n + 1), tức <span class="bigo">O(n log n)</span>. Thật ra H(n) xấp xỉ ln n, nên với n = 10⁶ số lần lặp khoảng 1,4·10⁷. Đây chính là lý do sàng Eratosthenes (xem <a href="sieve.html">Sàng nguyên tố</a>) chạy rất nhanh.</p>
+
+    <h3>6. Đệ quy hai nhánh: O(2ⁿ)</h3>
+<pre><code class="language-cpp">void thu(int i) {             // xét phần tử thứ i: chọn hoặc không chọn
+    if (i == n) { dem++; return; }
+    thu(i + 1);               // nhánh 1: không chọn phần tử i
+    thu(i + 1);               // nhánh 2: chọn phần tử i
+}</code></pre>
+    <p>Mỗi lời gọi sinh ra 2 lời gọi mới, sâu n tầng. Tầng 0 có 1 lời gọi, tầng 1 có 2, tầng 2 có 4, …, tầng n có 2ⁿ lời gọi. Tổng là 1 + 2 + 4 + … + 2ⁿ = 2ⁿ⁺¹ − 1, tức <span class="bigo">O(2ⁿ)</span>. Mỗi lá là một <strong>tập con</strong>. n = 20 cho khoảng 10⁶ lá, ổn; n = 40 cho khoảng 10¹², không kịp. Em sẽ gặp lại ở <a href="backtracking.html">Quay lui</a>.</p>
+
+    <h3>7. Sinh hoán vị: O(n!)</h3>
+    <p>Có n cách chọn phần tử đứng đầu, n − 1 cách chọn phần tử thứ hai, … nên có n! = 1 · 2 · … · n hoán vị. 10! = 3 628 800, vẫn ổn. 12! = 479 001 600, đã nguy hiểm. 20! ≈ 2,4·10¹⁸, không thể duyệt hết.</p>
+
+    <h3>Vì sao bỏ hằng số mà vẫn đúng</h3>
+    <p>Big-O mô tả <strong>tốc độ tăng</strong>. 2n² và 10n² đều tăng gấp 4 khi n gấp đôi, còn n log n chỉ tăng khoảng gấp 2. Khi n đủ lớn, lời giải có Big-O nhỏ hơn <strong>luôn</strong> thắng, bất kể hằng số. Hằng số chỉ quan trọng khi hai lời giải cùng Big-O.</p>
+
+    <h3>Vì sao lấy mốc 10⁸ phép mỗi giây</h3>
+    <p>Máy chấm thực tế làm được khoảng 10⁸ đến 10⁹ phép đơn giản (cộng, so sánh, truy cập mảng) mỗi giây. Lấy <strong>10⁸</strong> làm mốc là an toàn: dưới mốc này gần như chắc chắn kịp; từ 10⁸ đến 10⁹ thì tùy code có gọn hay không; trên 10⁹ gần như chắc chắn quá thời gian.</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi gõ dòng code đầu tiên, hãy viết ra giấy một dòng: “n ≤ …, lời giải O(…), khoảng … phép”. Một dòng đó cứu em khỏi rất nhiều lần nộp bài bị TLE (quá thời gian).</p></div>
+  </section>
+
+  <section id="cac-lop">
+    <h2>Các lớp độ phức tạp thường gặp</h2>
+    <p>Hầu hết lời giải trong đề thi THCS rơi vào một trong các lớp dưới đây, xếp từ nhanh nhất đến chậm nhất. Bảng cho biết số phép tính <strong>xấp xỉ</strong> với vài giá trị n. Ô có dấu “—” nghĩa là con số quá lớn, không có ý nghĩa thực tế.</p>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Lớp</th><th>Tên gọi</th><th>n = 10</th><th>n = 1 000</th><th>n = 10⁵</th><th>n = 10⁶</th><th>Ví dụ</th></tr></thead>
+      <tbody>
+        <tr><td><span class="bigo">O(1)</span></td><td>hằng số</td><td>1</td><td>1</td><td>1</td><td>1</td><td>công thức n(n+1)/2</td></tr>
+        <tr><td><span class="bigo">O(log n)</span></td><td>logarit</td><td>3</td><td>10</td><td>17</td><td>20</td><td>chặt nhị phân, lũy thừa nhanh</td></tr>
+        <tr><td><span class="bigo">O(√n)</span></td><td>căn</td><td>3</td><td>32</td><td>316</td><td>1 000</td><td>đếm ước, kiểm tra nguyên tố</td></tr>
+        <tr><td><span class="bigo">O(n)</span></td><td>tuyến tính</td><td>10</td><td>1 000</td><td>10⁵</td><td>10⁶</td><td>một vòng lặp, cộng dồn</td></tr>
+        <tr><td><span class="bigo">O(n log n)</span></td><td>n log n</td><td>33</td><td>10⁴</td><td>1,7·10⁶</td><td>2·10⁷</td><td>sắp xếp, sàng nguyên tố</td></tr>
+        <tr><td><span class="bigo">O(n²)</span></td><td>bình phương</td><td>100</td><td>10⁶</td><td>10¹⁰</td><td>10¹²</td><td>hai vòng lặp lồng</td></tr>
+        <tr><td><span class="bigo">O(n³)</span></td><td>lập phương</td><td>1 000</td><td>10⁹</td><td>10¹⁵</td><td>10¹⁸</td><td>ba vòng lặp lồng</td></tr>
+        <tr><td><span class="bigo">O(2ⁿ)</span></td><td>mũ</td><td>1 024</td><td>—</td><td>—</td><td>—</td><td>duyệt mọi tập con</td></tr>
+        <tr><td><span class="bigo">O(n!)</span></td><td>giai thừa</td><td>3 628 800</td><td>—</td><td>—</td><td>—</td><td>duyệt mọi hoán vị</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Em để ý: đi từ một dòng xuống dòng dưới, với n = 10⁶ con số nhảy vọt rất nhanh. Từ <span class="bigo">O(n log n)</span> lên <span class="bigo">O(n²)</span> là gấp 50 000 lần. Còn <span class="bigo">O(2ⁿ)</span> và <span class="bigo">O(n!)</span> chỉ dùng được khi n rất nhỏ.</p>
+    <p>Một cách nhớ khác: nếu n <strong>tăng gấp đôi</strong> thì</p>
+    <ul>
+      <li><span class="bigo">O(log n)</span> chỉ thêm 1 bước;</li>
+      <li><span class="bigo">O(n)</span> gấp đôi thời gian;</li>
+      <li><span class="bigo">O(n²)</span> gấp 4 lần; <span class="bigo">O(n³)</span> gấp 8 lần;</li>
+      <li><span class="bigo">O(2ⁿ)</span> thì <strong>bình phương</strong> số phép tính (2²ⁿ = 2ⁿ · 2ⁿ). Chỉ cần n tăng thêm 1 là đã gấp đôi.</li>
+    </ul>
+  </section>
+
+  <section id="bang-tra">
+    <h2>Bảng tra: giới hạn n → độ phức tạp → thuật toán</h2>
+    <p>Đây là bảng quan trọng nhất của bài. Em hãy <strong>chép vào vở</strong> và tra mỗi khi đọc đề. Bảng giả sử giới hạn thời gian 1 giây và mốc khoảng 10⁸ phép tính mỗi giây. Cột “Số phép” là khi thay n lớn nhất vào.</p>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Giới hạn n</th><th>Độ phức tạp chấp nhận</th><th>Số phép (n lớn nhất)</th><th>Thuật toán điển hình</th></tr></thead>
+      <tbody>
+        <tr><td>n ≤ 10</td><td><span class="bigo">O(n!)</span>, <span class="bigo">O(n · n!)</span></td><td>10! ≈ 3,6·10⁶</td><td>sinh mọi hoán vị</td></tr>
+        <tr><td>n ≤ 20</td><td><span class="bigo">O(2ⁿ)</span>, <span class="bigo">O(n · 2ⁿ)</span></td><td>2²⁰ ≈ 10⁶; 20 · 2²⁰ ≈ 2·10⁷</td><td>duyệt tập con, quay lui</td></tr>
+        <tr><td>n ≤ 500</td><td><span class="bigo">O(n³)</span></td><td>500³ = 1,25·10⁸</td><td>ba vòng lặp lồng, Floyd</td></tr>
+        <tr><td>n ≤ 5 000</td><td><span class="bigo">O(n²)</span></td><td>2,5·10⁷</td><td>hai vòng lặp, quy hoạch động hai chiều</td></tr>
+        <tr><td>n ≤ 10⁶</td><td><span class="bigo">O(n log n)</span></td><td>khoảng 2·10⁷</td><td>sắp xếp, chặt nhị phân, sàng</td></tr>
+        <tr><td>n ≤ 10⁸</td><td><span class="bigo">O(n)</span></td><td>10⁸</td><td>một vòng lặp, cộng dồn, hai con trỏ</td></tr>
+        <tr><td>n ≤ 10¹²</td><td><span class="bigo">O(√n)</span></td><td>10⁶</td><td>duyệt ước đến √n, kiểm tra nguyên tố</td></tr>
+        <tr><td>n ≤ 10¹⁸</td><td><span class="bigo">O(log n)</span>, <span class="bigo">O(1)</span></td><td>khoảng 60</td><td>công thức, lũy thừa nhanh, Euclid</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="callout warn"><p class="callout-title">Cẩn thận với n ≤ 10¹⁸</p><p>Giáo án gộp “O(log n) hoặc O(√n)” cho n ≤ 10¹⁸. Nhưng √(10¹⁸) = 10⁹, tức khoảng 10 giây, <strong>không kịp</strong>. Vì vậy thầy tách riêng: <span class="bigo">O(√n)</span> dùng tốt tới n khoảng 10¹²–10¹⁴; còn n tới 10¹⁸ thì phải có công thức <span class="bigo">O(1)</span> hoặc thuật toán <span class="bigo">O(log n)</span>.</p></div>
+    <p><strong>Đọc bảng theo hai chiều.</strong> Chiều thứ nhất: thấy giới hạn, đoán thuật toán. “n ≤ 20” gần như là lời gợi ý “hãy duyệt tập con”. Chiều thứ hai: có ý tưởng rồi, kiểm tra xem có kịp không. Em định dùng hai vòng lặp cho n ≤ 2·10⁵? Thay vào: 4·10¹⁰, không kịp, phải nghĩ tiếp.</p>
+    <div class="callout note"><p class="callout-title">Khi có nhiều biến</p><p>Đề có n phần tử và q truy vấn, mỗi truy vấn duyệt cả mảng: số phép là n · q. Với n = q = 10⁵ là 10¹⁰, không kịp. Nếu tiền xử lý <span class="bigo">O(n)</span> rồi trả lời mỗi truy vấn <span class="bigo">O(1)</span> thì chỉ còn n + q = 2·10⁵ phép. Đó là ý tưởng của <a href="prefix-sum.html">Mảng cộng dồn</a>.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Ta chạy tay bốn đoạn code với cùng n = 8 và đếm xem thân vòng lặp chạy bao nhiêu lần. Biến <code>dem</code> tăng 1 mỗi lần thân vòng lặp chạy.</p>
+    <ul>
+      <li>Đoạn A: <code>for (i = 1; i &lt;= n; i++) dem++;</code></li>
+      <li>Đoạn B: <code>for (i = 1; i &lt;= n; i++) for (j = 1; j &lt;= n; j++) dem++;</code></li>
+      <li>Đoạn C: <code>for (i = n; i &gt;= 1; i /= 2) dem++;</code></li>
+      <li>Đoạn D: <code>for (i = 1; i &lt;= n; i++) for (j = i; j &lt;= n; j += i) dem++;</code></li>
+    </ul>
+
+    <div class="stepper" data-title="Đếm số lần lặp của bốn đoạn code với n = 8">
+      <div class="frame" data-caption="&lt;b&gt;Đoạn A, giữa chừng.&lt;/b&gt; Mỗi ô là một giá trị của i. Ba ô xanh đã chạy xong, ô tím là lần lặp hiện tại i = 4. Lúc này dem = 4.">
+        <div class="arr">
+          <span class="arr-label">i</span>
+          <span class="cell is-ok" data-i="1">1</span>
+          <span class="cell is-ok" data-i="2">2</span>
+          <span class="cell is-ok" data-i="3">3</span>
+          <span class="cell is-active" data-i="4" data-ptr="i">4</span>
+          <span class="cell" data-i="5">5</span>
+          <span class="cell" data-i="6">6</span>
+          <span class="cell" data-i="7">7</span>
+          <span class="cell" data-i="8">8</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Đoạn A, xong.&lt;/b&gt; i chạy từ 1 đến 8, thân vòng lặp chạy đúng &lt;b&gt;8 lần&lt;/b&gt;. Tổng quát là n lần: O(n).">
+        <div class="arr">
+          <span class="arr-label">i</span>
+          <span class="cell is-ok" data-i="1">1</span>
+          <span class="cell is-ok" data-i="2">2</span>
+          <span class="cell is-ok" data-i="3">3</span>
+          <span class="cell is-ok" data-i="4">4</span>
+          <span class="cell is-ok" data-i="5">5</span>
+          <span class="cell is-ok" data-i="6">6</span>
+          <span class="cell is-ok" data-i="7">7</span>
+          <span class="cell is-ok" data-i="8">8</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Đoạn B, giữa chừng.&lt;/b&gt; Mỗi ô (i, j) là một lần chạy thân. Hàng i = 1, 2, 3 đã xong, mỗi hàng 8 ô. Ô tím là i = 4, j = 5: đây là lần đếm thứ 3 · 8 + 5 = &lt;b&gt;29&lt;/b&gt;.">
+          <div class="grid-viz" style="--cols:9">
+          <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span><span class="g h">6</span><span class="g h">7</span><span class="g h">8</span>
+          <span class="g h">1</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          <span class="g h">2</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          <span class="g h">3</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          <span class="g h">4</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-active"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g h">5</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g h">6</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g h">7</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g h">8</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Đoạn B, xong.&lt;/b&gt; Có 8 hàng, mỗi hàng 8 ô: 8 · 8 = &lt;b&gt;64 lần&lt;/b&gt;. Tổng quát là n · n = n²: O(n²). n tăng gấp đôi thì số ô tăng gấp 4.">
+          <div class="grid-viz" style="--cols:9">
+          <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span><span class="g h">6</span><span class="g h">7</span><span class="g h">8</span>
+          <span class="g h">1</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          <span class="g h">2</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          <span class="g h">3</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          <span class="g h">4</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          <span class="g h">5</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          <span class="g h">6</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          <span class="g h">7</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          <span class="g h">8</span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span><span class="g is-ok"></span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Đoạn C, giữa chừng.&lt;/b&gt; i bắt đầu bằng 8, mỗi lần chia đôi (chia nguyên). Đã chạy với i = 8 và i = 4, đang chạy với i = 2. dem = 3.">
+        <div class="arr">
+          <span class="arr-label">i</span>
+          <span class="cell is-ok" data-i="lần 1">8</span>
+          <span class="cell is-ok" data-i="lần 2">4</span>
+          <span class="cell is-active" data-i="lần 3" data-ptr="i">2</span>
+          <span class="cell is-dim" data-i="lần 4">1</span>
+          <span class="cell is-dim">0</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Đoạn C, xong.&lt;/b&gt; Sau i = 1, phép chia cho i = 0, điều kiện i ≥ 1 sai nên dừng. Chỉ &lt;b&gt;4 lần&lt;/b&gt; = ⌊log₂ 8⌋ + 1. Với n = 10⁶ cũng chỉ 20 lần: O(log n).">
+        <div class="arr">
+          <span class="arr-label">i</span>
+          <span class="cell is-ok" data-i="lần 1">8</span>
+          <span class="cell is-ok" data-i="lần 2">4</span>
+          <span class="cell is-ok" data-i="lần 3">2</span>
+          <span class="cell is-ok" data-i="lần 4">1</span>
+          <span class="cell is-bad" data-ptr="dừng">0</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Đoạn D.&lt;/b&gt; Với mỗi i, j nhảy từ i với bước i. Số lần của từng hàng là ⌊8 / i⌋. Tổng 8 + 4 + 2 + 2 + 1 + 1 + 1 + 1 = &lt;b&gt;20 lần&lt;/b&gt;, ít hơn nhiều so với 64 của đoạn B.">
+        <table class="trace">
+          <thead><tr><th>i</th><th>Các giá trị của j</th><th>Số lần</th><th>Cộng dồn</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>1 2 3 4 5 6 7 8</td><td>8</td><td>8</td></tr>
+            <tr><td>2</td><td>2 4 6 8</td><td>4</td><td>12</td></tr>
+            <tr><td>3</td><td>3 6</td><td>2</td><td>14</td></tr>
+            <tr><td>4</td><td>4 8</td><td>2</td><td>16</td></tr>
+            <tr><td>5</td><td>5</td><td>1</td><td>17</td></tr>
+            <tr><td>6</td><td>6</td><td>1</td><td>18</td></tr>
+            <tr><td>7</td><td>7</td><td>1</td><td>19</td></tr>
+            <tr class="hl"><td>8</td><td>8</td><td>1</td><td>20</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;So sánh.&lt;/b&gt; Cùng n = 8: C chạy 4 lần, A chạy 8 lần, D chạy 20 lần, B chạy 64 lần. Với n = 10⁶ khoảng cách còn lớn hơn rất nhiều: 20; 10⁶; khoảng 1,4·10⁷; 10¹².">
+        <div class="bars" style="--max:64">
+          <span class="bar is-ok" style="--v:4" data-v="C: 4"></span>
+          <span class="bar" style="--v:8" data-v="A: 8"></span>
+          <span class="bar is-cmp" style="--v:20" data-v="D: 20"></span>
+          <span class="bar is-bad" style="--v:64" data-v="B: 64"></span>
+        </div>
+      </div>
+    </div>
+
+    <h3>Đồ thị tăng trưởng</h3>
+    <p>Hình dưới vẽ số phép tính của năm hàm khi n đi từ 0 đến 20 (trục dọc cắt ở 100). Đường 2ⁿ vượt 100 khi n mới bằng 7; đường n² vượt 100 khi n = 10; còn n log n tới n = 20 vẫn chưa tới 100; n và log n gần như nằm sát đáy.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 520 300" width="520" role="img" aria-label="Đồ thị số phép tính theo n của các hàm log n, n, n log n, n bình phương và 2 mũ n, với n từ 0 đến 20">
+<line class="gridline" x1="50" y1="260" x2="450" y2="260"/>
+<text class="label-sm" x="42" y="264" text-anchor="end">0</text>
+<line class="gridline" x1="50" y1="212" x2="450" y2="212"/>
+<text class="label-sm" x="42" y="216" text-anchor="end">20</text>
+<line class="gridline" x1="50" y1="164" x2="450" y2="164"/>
+<text class="label-sm" x="42" y="168" text-anchor="end">40</text>
+<line class="gridline" x1="50" y1="116" x2="450" y2="116"/>
+<text class="label-sm" x="42" y="120" text-anchor="end">60</text>
+<line class="gridline" x1="50" y1="68" x2="450" y2="68"/>
+<text class="label-sm" x="42" y="72" text-anchor="end">80</text>
+<line class="gridline" x1="50" y1="20" x2="450" y2="20"/>
+<text class="label-sm" x="42" y="24" text-anchor="end">100</text>
+<text class="label-sm" x="50" y="278" text-anchor="middle">0</text>
+<text class="label-sm" x="150" y="278" text-anchor="middle">5</text>
+<text class="label-sm" x="250" y="278" text-anchor="middle">10</text>
+<text class="label-sm" x="350" y="278" text-anchor="middle">15</text>
+<text class="label-sm" x="450" y="278" text-anchor="middle">20</text>
+<line class="axis" x1="50" y1="260" x2="455" y2="260"/><line class="axis" x1="50" y1="260" x2="50" y2="15"/>
+<text class="label-sm" x="470" y="264">n</text><text class="label-sm" x="56" y="14">số phép tính</text>
+<polyline class="curve-info" points="70,260.0 90,257.6 110,256.2 130,255.2 150,254.4 170,253.8 190,253.3 210,252.8 230,252.4 250,252.0 270,251.7 290,251.4 310,251.1 330,250.9 350,250.6 370,250.4 390,250.2 410,250.0 430,249.8 450,249.6"/>
+<text x="456" y="254">log n</text>
+<polyline class="edge is-ok" points="50,260.0 70,257.6 90,255.2 110,252.8 130,250.4 150,248.0 170,245.6 190,243.2 210,240.8 230,238.4 250,236.0 270,233.6 290,231.2 310,228.8 330,226.4 350,224.0 370,221.6 390,219.2 410,216.8 430,214.4 450,212.0"/>
+<text x="456" y="216">n</text>
+<polyline class="edge is-active" points="70,260.0 90,255.2 110,248.6 130,240.8 150,232.1 170,222.8 190,212.8 210,202.4 230,191.5 250,180.3 270,168.7 290,156.8 310,144.5 330,132.1 350,119.4 370,106.4 390,93.2 410,79.9 430,66.3 450,52.5"/>
+<text x="456" y="57">n log n</text>
+<polyline class="curve-cmp" points="50,260.0 70,257.6 90,250.4 110,238.4 130,221.6 150,200.0 170,173.6 190,142.4 210,106.4 230,65.6 250,20.0 250,20.0"/>
+<text x="256" y="34">n²</text>
+<polyline class="curve-pen" points="50,257.6 70,255.2 90,250.4 110,240.8 130,221.6 150,183.2 170,106.4 183,20.0"/>
+<text x="177" y="24" text-anchor="end">2ⁿ</text>
+<text class="label-pen" x="268" y="84">2ⁿ tăng vọt</text>
+</svg>
+      <figcaption>Hình 1. Số phép tính của log n, n, n log n, n² và 2ⁿ với n từ 0 đến 20.</figcaption>
+    </figure>
+
+    <h3>Cây lời gọi của đệ quy hai nhánh</h3>
+    <p>Với hàm <code>thu(i)</code> ở mục Cách hoạt động và n = 3, mỗi nút là một lời gọi, số trong nút là tham số i. Tầng 0 có 1 nút, tầng 1 có 2, tầng 2 có 4, tầng 3 có 8 lá. Tổng 1 + 2 + 4 + 8 = 15 = 2⁴ − 1 lời gọi.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 330 230" width="330" role="img" aria-label="Cây lời gọi đệ quy hai nhánh với n bằng 3: 1, 2, 4, 8 lời gọi ở các tầng, tổng 15 lời gọi, 8 lá">
+<line class="edge" x1="165" y1="25" x2="85" y2="80"/>
+<line class="edge" x1="165" y1="25" x2="245" y2="80"/>
+<line class="edge" x1="85" y1="80" x2="45" y2="135"/>
+<line class="edge" x1="85" y1="80" x2="125" y2="135"/>
+<line class="edge" x1="245" y1="80" x2="205" y2="135"/>
+<line class="edge" x1="245" y1="80" x2="285" y2="135"/>
+<line class="edge" x1="45" y1="135" x2="25" y2="190"/>
+<line class="edge" x1="45" y1="135" x2="65" y2="190"/>
+<line class="edge" x1="125" y1="135" x2="105" y2="190"/>
+<line class="edge" x1="125" y1="135" x2="145" y2="190"/>
+<line class="edge" x1="205" y1="135" x2="185" y2="190"/>
+<line class="edge" x1="205" y1="135" x2="225" y2="190"/>
+<line class="edge" x1="285" y1="135" x2="265" y2="190"/>
+<line class="edge" x1="285" y1="135" x2="305" y2="190"/>
+<circle class="node" cx="165" cy="25" r="13"/><text x="165" y="30" text-anchor="middle">0</text>
+<circle class="node" cx="85" cy="80" r="13"/><text x="85" y="85" text-anchor="middle">1</text>
+<circle class="node" cx="245" cy="80" r="13"/><text x="245" y="85" text-anchor="middle">1</text>
+<circle class="node" cx="45" cy="135" r="13"/><text x="45" y="140" text-anchor="middle">2</text>
+<circle class="node" cx="125" cy="135" r="13"/><text x="125" y="140" text-anchor="middle">2</text>
+<circle class="node" cx="205" cy="135" r="13"/><text x="205" y="140" text-anchor="middle">2</text>
+<circle class="node" cx="285" cy="135" r="13"/><text x="285" y="140" text-anchor="middle">2</text>
+<circle class="node is-ok" cx="25" cy="190" r="13"/><text x="25" y="195" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="65" cy="190" r="13"/><text x="65" y="195" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="105" cy="190" r="13"/><text x="105" y="195" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="145" cy="190" r="13"/><text x="145" y="195" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="185" cy="190" r="13"/><text x="185" y="195" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="225" cy="190" r="13"/><text x="225" y="195" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="265" cy="190" r="13"/><text x="265" y="195" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="305" cy="190" r="13"/><text x="305" y="195" text-anchor="middle">3</text>
+<text class="label-sm" x="165" y="222" text-anchor="middle">tầng 3: 8 lá = 8 tập con của {a, b, c}</text>
+</svg>
+      <figcaption>Hình 2. Mỗi tầng gấp đôi tầng trước: n tầng cho 2ⁿ lá, tức O(2ⁿ).</figcaption>
+    </figure>
+
+    <h3>Máy đếm phép tính</h3>
+    <p>Em nhập n (tới 10¹⁸), chọn một đoạn code mẫu. Máy sẽ tính <strong>chính xác</strong> số lần thân vòng lặp chạy (hoặc xấp xỉ khi quá lớn), ước lượng thời gian với mốc 10⁸ phép mỗi giây, và so sánh mọi lớp độ phức tạp với cùng n.</p>
+    <div class="playground" id="viz-complexity">
+      <div class="viz-head"><p class="viz-title">Máy đếm phép tính</p></div>
+      <div class="playground-body">
+        <noscript><p>Cần bật JavaScript để dùng máy đếm.</p></noscript>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Khung bài thi chuẩn</h3>
+    <p>Mọi bài thi đều nên bắt đầu từ khung dưới đây. Hai dòng <code>ios::sync_with_stdio(false); cin.tie(nullptr);</code> làm nhập xuất nhanh hơn nhiều lần, rất quan trọng khi đọc 10⁶ số. In xuống dòng bằng <code>'\n'</code> thay cho <code>endl</code>, vì <code>endl</code> ép xả bộ đệm mỗi lần in, rất chậm khi in nhiều dòng. Hai dòng <code>freopen</code> chỉ bật khi đề yêu cầu đọc/ghi file.</p>
+    <figure class="code">
+      <figcaption><span class="fn">khung.cpp</span> Khung bài thi, kèm vòng lặp O(n) tính 1 + 2 + … + n</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+using ll = long long;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    // freopen("BAI.INP", "r", stdin);
+    // freopen("BAI.OUT", "w", stdout);
+    int n;
+    cin &gt;&gt; n;
+    ll s = 0;                              // tổng có thể vượt int
+    for (int i = 1; i &lt;= n; i++) s += i;   // O(n)
+    cout &lt;&lt; s &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+
+    <h3>Tổng 1 + 2 + … + n: từ O(n) xuống O(1)</h3>
+    <p>Chương trình dưới làm bài toán mở đầu với n ≤ 10¹². Nó chỉ chạy vòng lặp khi n ≤ 10⁷ (để em so sánh hai cách cho cùng kết quả), còn công thức thì chạy với mọi n. Chú ý: với n = 10¹², tổng xấp xỉ 5·10²³, <strong>vượt</strong> cả <code>long long</code> (lớn nhất khoảng 9,2·10¹⁸). Vì vậy ta tính bằng <code>__int128</code>, kiểu số nguyên 128 bit của trình biên dịch GCC, và tự viết hàm in.</p>
+    <figure class="code">
+      <figcaption><span class="fn">tong.cpp</span> So sánh vòng lặp O(n) với công thức O(1)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+using ll = long long;
+
+// In một số __int128 (cout không in trực tiếp được kiểu này)
+void inSo(__int128 x) {
+    if (x == 0) { cout &lt;&lt; 0; return; }
+    string s;
+    while (x &gt; 0) { s += char('0' + x % 10); x /= 10; }
+    reverse(s.begin(), s.end());
+    cout &lt;&lt; s;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    ll n;
+    cin &gt;&gt; n;                       // 1 &lt;= n &lt;= 10^12
+
+    // Cách 1: vòng lặp O(n). Chỉ chạy khi n nhỏ, vì n = 10^12 cần khoảng 10^4 giây.
+    if (n &lt;= 10000000) {
+        ll s = 0;
+        for (ll i = 1; i &lt;= n; i++) s += i;
+        cout &lt;&lt; "Vong lap:  " &lt;&lt; s &lt;&lt; '\n';
+    }
+
+    // Cách 2: công thức Gauss O(1): 1 + 2 + ... + n = n(n+1)/2.
+    // Với n = 10^12, kết quả khoảng 5 * 10^23, vượt long long (khoảng 9,2 * 10^18),
+    // nên phải tính bằng __int128 (số nguyên 128 bit, tới khoảng 1,7 * 10^38).
+    __int128 t = (__int128)n * (n + 1) / 2;
+    cout &lt;&lt; "Cong thuc: ";
+    inSo(t);
+    cout &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">10</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">Vong lap:  55
+Cong thuc: 55</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">1000000000000</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">Cong thuc: 500000000000500000000000</code></pre></div>
+    </div>
+
+    <h3>Chương trình đếm số lần lặp</h3>
+    <p>Chương trình này chạy thật bốn đoạn code A, B, C, D ở mục Minh họa và in ra số lần thân vòng lặp chạy. Em thử n = 8 để khớp với hình minh họa, rồi thử n = 1 000, n = 10 000 để thấy đoạn B tăng nhanh thế nào. Đừng thử n quá 10⁵ vì đoạn B sẽ chạy rất lâu.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem.cpp</span> Đếm số lần lặp của bốn kiểu vòng lặp</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+using ll = long long;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    ll n;
+    cin &gt;&gt; n;                        // nên thử n &lt;= 10^4 để chạy nhanh
+
+    // Đoạn A: một vòng lặp, O(n)
+    ll demA = 0;
+    for (ll i = 1; i &lt;= n; i++) demA++;
+
+    // Đoạn B: hai vòng lặp lồng nhau, O(n^2)
+    ll demB = 0;
+    for (ll i = 1; i &lt;= n; i++)
+        for (ll j = 1; j &lt;= n; j++) demB++;
+
+    // Đoạn C: vòng lặp chia đôi, O(log n)
+    ll demC = 0;
+    for (ll i = n; i &gt;= 1; i /= 2) demC++;
+
+    // Đoạn D: bước nhảy j += i, tổng n/1 + n/2 + ... + n/n, O(n log n)
+    ll demD = 0;
+    for (ll i = 1; i &lt;= n; i++)
+        for (ll j = i; j &lt;= n; j += i) demD++;
+
+    cout &lt;&lt; "A (mot vong):     " &lt;&lt; demA &lt;&lt; '\n';
+    cout &lt;&lt; "B (hai vong):     " &lt;&lt; demB &lt;&lt; '\n';
+    cout &lt;&lt; "C (chia doi):     " &lt;&lt; demC &lt;&lt; '\n';
+    cout &lt;&lt; "D (j += i):       " &lt;&lt; demD &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">A (mot vong):     8
+B (hai vong):     64
+C (chia doi):     4
+D (j += i):       20</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">1000</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">A (mot vong):     1000
+B (hai vong):     1000000
+C (chia doi):     10
+D (j += i):       7069</code></pre></div>
+    </div>
+    <p>Với n = 1 000: đoạn D chạy 7 069 lần, gần với n · ln n ≈ 1 000 × 6,9 ≈ 6 908; đoạn C chạy 10 lần vì 2⁹ = 512 ≤ 1 000 &lt; 1 024 = 2¹⁰.</p>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <h3>Độ phức tạp thời gian của các chương trình trong bài</h3>
+    <table>
+      <thead><tr><th>Đoạn code</th><th>Số lần lặp chính xác</th><th>Big-O</th><th>n = 10⁶</th></tr></thead>
+      <tbody>
+        <tr><td>Công thức n(n+1)/2</td><td>1</td><td><span class="bigo">O(1)</span></td><td>1</td></tr>
+        <tr><td>C: chia đôi</td><td>⌊log₂ n⌋ + 1</td><td><span class="bigo">O(log n)</span></td><td>20</td></tr>
+        <tr><td>Duyệt đến √n</td><td>⌊√n⌋</td><td><span class="bigo">O(√n)</span></td><td>1 000</td></tr>
+        <tr><td>A: một vòng</td><td>n</td><td><span class="bigo">O(n)</span></td><td>10⁶</td></tr>
+        <tr><td>D: j += i</td><td>⌊n/1⌋ + ⌊n/2⌋ + … + ⌊n/n⌋</td><td><span class="bigo">O(n log n)</span></td><td>13 970 034</td></tr>
+        <tr><td>Duyệt mọi cặp i &lt; j</td><td>n(n − 1)/2</td><td><span class="bigo">O(n²)</span></td><td>khoảng 5·10¹¹</td></tr>
+        <tr><td>B: hai vòng</td><td>n²</td><td><span class="bigo">O(n²)</span></td><td>10¹²</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Độ phức tạp bộ nhớ</h3>
+    <p>Ngoài thời gian, đề còn giới hạn <strong>bộ nhớ</strong>, thường là 256 MB. Độ phức tạp bộ nhớ đếm số ô nhớ chương trình dùng, cũng viết bằng Big-O. Mảng n phần tử là <span class="bigo">O(n)</span>; mảng hai chiều n × m là <span class="bigo">O(n · m)</span>.</p>
+    <p>Để đổi ra byte, em nhớ kích thước các kiểu:</p>
+    <table>
+      <thead><tr><th>Kiểu</th><th>Kích thước</th><th>Giá trị lớn nhất</th><th>Số phần tử vừa 256 MB</th></tr></thead>
+      <tbody>
+        <tr><td><code>char</code>, <code>bool</code></td><td>1 byte</td><td>—</td><td>khoảng 2,7·10⁸</td></tr>
+        <tr><td><code>int</code></td><td>4 byte</td><td>2 147 483 647 ≈ 2,1·10⁹</td><td>khoảng 6,7·10⁷</td></tr>
+        <tr><td><code>long long</code></td><td>8 byte</td><td>≈ 9,2·10¹⁸</td><td>khoảng 3,3·10⁷</td></tr>
+        <tr><td><code>double</code></td><td>8 byte</td><td>—</td><td>khoảng 3,3·10⁷</td></tr>
+      </tbody>
+    </table>
+    <p>Phép tính: 256 MB = 256 × 1 024 × 1 024 = 268 435 456 byte. Chia cho 4 được 67 108 864, tức khoảng <strong>6·10⁷ số int</strong>. Thực tế chương trình còn cần bộ nhớ cho việc khác, nên em nên giữ tổng dung lượng mảng dưới khoảng 200 MB.</p>
+    <p><strong>Ví dụ với mảng hai chiều:</strong></p>
+    <ul>
+      <li><code>int a[1000][1000]</code>: 10⁶ số × 4 byte = 4 MB. Thoải mái.</li>
+      <li><code>int a[5000][5000]</code>: 2,5·10⁷ số × 4 byte = 10⁸ byte ≈ 95 MB. Vẫn vừa, nhưng đã khá nặng.</li>
+      <li><code>long long a[5000][5000]</code>: gấp đôi, khoảng 191 MB. Sát giới hạn.</li>
+      <li><code>int a[10000][10000]</code>: 10⁸ số × 4 byte = 400 MB. <strong>Vượt</strong> 256 MB, bị lỗi MLE (quá bộ nhớ).</li>
+    </ul>
+    <div class="callout tip"><p class="callout-title">Khai báo mảng lớn ở ngoài hàm</p><p>Mảng khai báo <strong>trong</strong> hàm <code>main</code> nằm trên vùng nhớ ngăn xếp (stack), thường chỉ vài MB. Mảng 10⁶ số <code>int</code> trong <code>main</code> có thể làm chương trình chết ngay. Hãy khai báo mảng lớn là <strong>biến toàn cục</strong> (ngoài mọi hàm) hoặc dùng <code>vector</code>.</p></div>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Trường hợp tốt nhất, xấu nhất và trung bình</h3>
+    <p>Cùng một chương trình, số phép tính có thể khác nhau tùy dữ liệu. Ví dụ tìm vị trí đầu tiên của x trong mảng n phần tử bằng cách dò từ trái sang:</p>
+    <ul>
+      <li><strong>Tốt nhất (best case):</strong> x nằm ngay đầu mảng, chỉ 1 phép so sánh, <span class="bigo">O(1)</span>.</li>
+      <li><strong>Xấu nhất (worst case):</strong> x nằm cuối hoặc không có, phải so sánh cả n phần tử, <span class="bigo">O(n)</span>.</li>
+      <li><strong>Trung bình (average case):</strong> nếu x có trong mảng và mỗi vị trí đều có khả năng như nhau, trung bình cần (1 + 2 + … + n)/n = (n + 1)/2 phép, vẫn là <span class="bigo">O(n)</span>.</li>
+    </ul>
+    <figure class="code">
+      <figcaption><span class="fn">tim_kiem.cpp</span> Dò tuyến tính, in vị trí và số phép so sánh</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, x;
+    cin &gt;&gt; n &gt;&gt; x;
+    vector&lt;int&gt; a(n);
+    for (int &amp;v : a) cin &gt;&gt; v;
+    // Tìm vị trí đầu tiên của x: tốt nhất 1 phép so sánh, xấu nhất n phép
+    int soSanh = 0, viTri = -1;
+    for (int i = 0; i &lt; n; i++) {
+        soSanh++;
+        if (a[i] == x) { viTri = i + 1; break; }
+    }
+    cout &lt;&lt; viTri &lt;&lt; ' ' &lt;&lt; soSanh &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">6 7
+7 3 9 1 5 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1 1</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">6 4
+7 3 9 1 5 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">-1 6</code></pre></div>
+    </div>
+    <p>Test thứ nhất là trường hợp tốt nhất (1 phép), test thứ hai là trường hợp xấu nhất (6 phép, không tìm thấy). <strong>Trong thi đấu luôn tính theo trường hợp xấu nhất</strong>, vì người ra đề chắc chắn sẽ có test xấu nhất.</p>
+
+    <h3>Đọc subtask để chọn thuật toán</h3>
+    <p>Xét bài <a href="https://ltoj.edu.vn/problem/tchan">Cặp tổng chẵn</a>: cho dãy n số nguyên dương, đếm số cặp (i, j) với i &lt; j mà a<sub>i</sub> + a<sub>j</sub> chẵn. Giả sử đề chia subtask như sau:</p>
+    <table>
+      <thead><tr><th>Subtask</th><th>Giới hạn</th><th>Ý tưởng</th><th>Số phép</th></tr></thead>
+      <tbody>
+        <tr><td>1 (40% điểm)</td><td>n ≤ 1 000</td><td>Duyệt mọi cặp, <span class="bigo">O(n²)</span></td><td>khoảng 5·10⁵, kịp</td></tr>
+        <tr><td>2 (60% điểm)</td><td>n ≤ 10⁵</td><td>Duyệt mọi cặp</td><td>khoảng 5·10⁹, không kịp</td></tr>
+      </tbody>
+    </table>
+    <p>Với subtask 2 cần ý tưởng mới. Tổng hai số là chẵn khi và chỉ khi hai số <strong>cùng tính chẵn lẻ</strong>. Gọi c là số phần tử chẵn, l là số phần tử lẻ. Số cặp cần tìm là c(c − 1)/2 + l(l − 1)/2. Chỉ cần một vòng lặp đếm c và l: <span class="bigo">O(n)</span>. Đáp án có thể tới khoảng 5·10⁹, vượt <code>int</code>, nên dùng <code>long long</code>.</p>
+    <p>Kiểm tra với dãy 2 7 1 4 2: có c = 3 số chẵn (2, 4, 2) và l = 2 số lẻ (7, 1). Số cặp là 3 · 2 / 2 + 2 · 1 / 2 = 3 + 1 = 4. Khớp với ví dụ của đề.</p>
+    <div class="callout tip"><p class="callout-title">Chiến thuật trong phòng thi</p><p>Viết lời giải chậm cho subtask nhỏ trước để chắc điểm. Lời giải chậm còn dùng để <strong>kiểm tra</strong> lời giải nhanh: sinh nhiều test nhỏ ngẫu nhiên, so kết quả hai chương trình. Kỹ thuật này gọi là đối chiếu (stress test), học kỹ ở <a href="brute-force-formula.html">Vét cạn và công thức</a>.</p></div>
+
+    <h3>Thay vòng lặp bằng công thức (nâng cao)</h3>
+    <p><strong>Số chữ số 0 tận cùng của n!</strong> Mỗi chữ số 0 ở cuối đến từ một thừa số 10 = 2 × 5. Trong n! số thừa số 2 luôn nhiều hơn thừa số 5, nên chỉ cần đếm thừa số 5. Các số chia hết cho 5 góp ít nhất một thừa số 5: có ⌊n/5⌋ số. Các số chia hết cho 25 góp thêm một: ⌊n/25⌋ số. Rồi 125, 625… Vậy</p>
+    <div class="math-block">số chữ số 0 = ⌊n/5⌋ + ⌊n/25⌋ + ⌊n/125⌋ + …</div>
+    <p>Ví dụ n = 100: 20 + 4 = 24. n = 20: 4 (đúng, vì 20! = 2 432 902 008 176 640 000). Cách ngây thơ tính n! rồi đếm số 0 là không thể, vì 100! có 158 chữ số. Cách duyệt từng số từ 1 đến n và đếm thừa số 5 của nó là <span class="bigo">O(n)</span>: với n = 10⁹ cần hơn 10⁹ phép chia lấy dư, quá 1 giây. Công thức chỉ cần khoảng log₅ n bước, với n = 10⁹ là 12 bước: <span class="bigo">O(log n)</span>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">so0.cpp</span> Đếm chữ số 0 tận cùng của n! trong O(log n)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+using ll = long long;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    ll n;
+    cin &gt;&gt; n;
+    // Số chữ số 0 tận cùng của n! = số thừa số 5 trong n!
+    // = n/5 + n/25 + n/125 + ...   (mỗi lần chia 5, nên chỉ O(log n) bước)
+    ll dem = 0;
+    for (ll p = 5; p &lt;= n; p *= 5) dem += n / p;
+    cout &lt;&lt; dem &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">1000000000</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">249999998</code></pre></div>
+    </div>
+
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Quên long long, tràn số “im lặng”</p><p><code>int</code> chỉ chứa tới khoảng 2,1·10⁹. Vượt quá thì giá trị quay vòng thành số âm mà chương trình không báo lỗi. Tích hai số 10⁵ là 10¹⁰, đã tràn. Số cặp của 10⁵ phần tử là khoảng 5·10⁹, cũng tràn. <strong>Cách sửa:</strong> ước lượng đáp án lớn nhất trước khi chọn kiểu; dùng <code>long long</code>; khi nhân hai biến <code>int</code> thì viết <code>1LL * a * b</code>. Viết <code>long long x = a * b;</code> vẫn sai, vì <code>a * b</code> đã tràn trước khi gán.</p></div>
+    <div class="callout danger"><p class="callout-title">Hàm có sẵn cũng tốn thời gian</p><p><code>for (int i = 0; i &lt; strlen(s); i++)</code> gọi <code>strlen</code> ở mỗi vòng, mà <code>strlen</code> tự duyệt cả xâu, nên cả vòng lặp thành <span class="bigo">O(n²)</span>. Tương tự: <code>v.erase(v.begin())</code> dời cả mảng, mất <span class="bigo">O(n)</span>; <code>s = s + c</code> tạo xâu mới mỗi lần, mất <span class="bigo">O(n)</span>. <strong>Cách sửa:</strong> lưu độ dài vào biến trước vòng lặp; dùng <code>s += c</code> hoặc <code>s.push_back(c)</code>; tránh xóa ở đầu <code>vector</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Truyền vector theo giá trị</p><p>Hàm <code>int f(vector&lt;int&gt; a)</code> sao chép cả mảng mỗi lần được gọi, mất <span class="bigo">O(n)</span>. Gọi f một triệu lần là một triệu lần sao chép. <strong>Cách sửa:</strong> truyền tham chiếu <code>const vector&lt;int&gt; &amp;a</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Dùng endl khi in nhiều dòng</p><p><code>endl</code> vừa xuống dòng vừa xả bộ đệm. In 10⁶ dòng bằng <code>endl</code> có thể chậm gấp nhiều lần so với <code>'\n'</code>. Quên hai dòng <code>ios::sync_with_stdio(false); cin.tie(nullptr);</code> cũng làm đọc dữ liệu lớn bị chậm.</p></div>
+    <div class="callout warn"><p class="callout-title">Coi 10⁸ là con số tuyệt đối</p><p>Mốc 10⁸ là cho phép tính <strong>đơn giản</strong>. Phép chia lấy dư, <code>map</code>, <code>set</code>, đệ quy sâu có hằng số lớn hơn nhiều. Lời giải 3·10⁸ phép với <code>map</code> rất dễ quá thời gian. Ngược lại, 3·10⁸ phép cộng trên mảng thường vẫn kịp. Khi ở vùng 10⁸–10⁹, hãy cố giảm hằng số hoặc tìm thuật toán tốt hơn.</p></div>
+    <div class="callout warn"><p class="callout-title">Xóa cả mảng ở mỗi test</p><p>Đề có T ≤ 10⁴ test và hứa “tổng n không quá 2·10⁵”. Nếu mỗi test em <code>memset</code> cả mảng 10⁵ phần tử thì tốn T × 10⁵ = 10⁹ phép dù mỗi test rất nhỏ. Chỉ xóa đúng n phần tử đã dùng.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo nhận biết nhanh</p><p>Đếm số vòng lặp lồng nhau mà mỗi vòng chạy tới n: một vòng là O(n), hai vòng là O(n²). Nhưng hãy nhìn kỹ bước nhảy: <code>i /= 2</code> hay <code>i *= 2</code> cho log n; <code>j += i</code> cho n log n; <code>i * i &lt;= n</code> cho √n.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Một chương trình thực hiện 5n² + 100n log n + 10⁶ phép tính. Độ phức tạp của nó là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. O(10⁶)</button>
+        <button type="button" class="quiz-opt">B. O(n log n)</button>
+        <button type="button" class="quiz-opt" data-correct>C. O(n²)</button>
+        <button type="button" class="quiz-opt">D. O(5n²)</button>
+      </div>
+      <p class="quiz-explain">n² tăng nhanh nhất nên giữ 5n², rồi bỏ hằng số 5. Viết O(5n²) không đúng quy ước rút gọn.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Đề cho n ≤ 2·10⁵, giới hạn 1 giây. Độ phức tạp nào là lựa chọn an toàn?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. O(n²)</button>
+        <button type="button" class="quiz-opt" data-correct>B. O(n log n)</button>
+        <button type="button" class="quiz-opt">C. O(n³)</button>
+        <button type="button" class="quiz-opt">D. O(2ⁿ)</button>
+      </div>
+      <p class="quiz-explain">n log n ≈ 2·10⁵ × 18 ≈ 3,6·10⁶ phép, rất an toàn. Còn n² = 4·10¹⁰, quá chậm khoảng 400 lần.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Đoạn <code>for (int i = 1; i &lt;= n; i *= 3) dem++;</code> có độ phức tạp gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. O(n)</button>
+        <button type="button" class="quiz-opt">B. O(n / 3)</button>
+        <button type="button" class="quiz-opt" data-correct>C. O(log n)</button>
+        <button type="button" class="quiz-opt">D. O(√n)</button>
+      </div>
+      <p class="quiz-explain">i lần lượt là 1, 3, 9, 27…, sau k lần là 3ᵏ. Dừng khi 3ᵏ &gt; n, tức k khoảng log₃ n. Cơ số không quan trọng, nên là O(log n).</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Đoạn <code>for (i = 1; i &lt;= n; i++) for (j = 1; j &lt;= 100; j++) dem++;</code> có độ phức tạp gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt" data-correct>A. O(n)</button>
+        <button type="button" class="quiz-opt">B. O(n²)</button>
+        <button type="button" class="quiz-opt">C. O(100)</button>
+      </div>
+      <p class="quiz-explain">Vòng trong luôn chạy 100 lần, không phụ thuộc n. Tổng 100n, tức O(n). Hai vòng lồng nhau chưa chắc là O(n²).</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Giới hạn bộ nhớ 256 MB. Khai báo <code>int a[20000][20000];</code> có được không?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Được, chỉ khoảng 80 MB</button>
+        <button type="button" class="quiz-opt" data-correct>B. Không, cần khoảng 1,6 GB</button>
+        <button type="button" class="quiz-opt">C. Được nếu khai báo toàn cục</button>
+      </div>
+      <p class="quiz-explain">20 000 × 20 000 = 4·10⁸ số, mỗi số 4 byte, tổng 1,6·10⁹ byte ≈ 1,5 GB. Khai báo toàn cục chỉ tránh lỗi tràn stack, không làm mảng nhỏ đi.</p>
+    </div>
+
+    <p><strong>Câu 6.</strong> Với n = 5, thân vòng lặp <code>for (i = 1; i &lt;= n; i++) for (j = i; j &lt;= n; j++) dem++;</code> chạy bao nhiêu lần? Tổng quát với n bất kỳ là bao nhiêu, độ phức tạp gì?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Khi i = 1, j chạy 5 lần; i = 2 chạy 4 lần; … ; i = 5 chạy 1 lần. Tổng 5 + 4 + 3 + 2 + 1 = 15. Tổng quát là n + (n − 1) + … + 1 = n(n + 1)/2, khoảng n²/2, nên là O(n²).</p></details>
+
+    <p><strong>Câu 7.</strong> Đề cho n ≤ 20. Em định duyệt mọi tập con, với mỗi tập con tính tổng các phần tử bằng một vòng lặp. Có kịp 1 giây không?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Có 2²⁰ = 1 048 576 tập con, mỗi tập con tốn tối đa 20 phép cộng. Tổng khoảng 20 × 1 048 576 ≈ 2,1·10⁷ phép, dưới 10⁸ nhiều, nên kịp. Độ phức tạp là O(n · 2ⁿ).</p></details>
+
+    <p><strong>Câu 8.</strong> Một lời giải O(n log n) chạy mất 0,5 giây với n = 10⁶. Ước lượng thời gian với n = 2·10⁶.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Tỉ số số phép là (2·10⁶ × log₂(2·10⁶)) / (10⁶ × log₂ 10⁶) ≈ 2 × 20,9 / 19,9 ≈ 2,1. Vậy thời gian khoảng 0,5 × 2,1 ≈ 1,05 giây. Nếu là O(n²) thì sẽ gấp 4, tức khoảng 2 giây.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Luyện đọc giới hạn, ước lượng số phép tính và thay vòng lặp bằng công thức. Bài CSES dùng bản dịch tiếng Việt trên HNCode, kèm link gốc.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://hncode.edu.vn/problem/cdl1p10">SUMN – Tổng N số đầu tiên</a>
+          <span class="judge">HNCode</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho N ≤ 10⁹, tính 1 + 2 + … + N. Đúng bài toán mở đầu của bài học.</p>
+        <p class="ex-skill"><b>Luyện:</b> thay vòng lặp O(n) bằng công thức O(1); chọn kiểu <code>long long</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Vòng lặp 10⁹ lần là quá rủi ro. Dùng n(n+1)/2. Kết quả tới khoảng 5·10¹⁷, phải dùng <code>long long</code> cho cả n.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://hncode.edu.vn/problem/cses1068">Thuật toán lạ (Weird Algorithm)</a>
+          <span class="judge">HNCode</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Bắt đầu từ n ≤ 10⁶: n chẵn thì chia 2, n lẻ thì nhân 3 cộng 1, cho tới khi bằng 1; in mọi giá trị. Bản gốc: <a href="https://cses.fi/problemset/task/1068">CSES 1068</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> mô phỏng; nhận ra giá trị trung gian vượt <code>int</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mô phỏng đúng như đề là đủ nhanh. Nhưng 3n + 1 có thể vượt 2,1·10⁹ ở bước giữa, nên khai báo n là <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://hncode.edu.vn/problem/cses1083">Số còn thiếu (Missing Number)</a>
+          <span class="judge">HNCode</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho n − 1 số khác nhau trong đoạn 1..n (n ≤ 2·10⁵), tìm số bị thiếu. Bản gốc: <a href="https://cses.fi/problemset/task/1083">CSES 1083</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> dùng công thức tổng để có lời giải O(n), tránh O(n²).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Với mỗi số từ 1 đến n đi tìm trong mảng là O(n²) = 4·10¹⁰. Thay vào đó: số thiếu = n(n+1)/2 − (tổng các số đã cho). Tổng khoảng 2·10¹⁰, dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://hncode.edu.vn/problem/cses1094">Dãy tăng (Increasing Array)</a>
+          <span class="judge">HNCode</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Mỗi bước được tăng một phần tử thêm 1. Tìm số bước ít nhất để dãy n ≤ 2·10⁵ phần tử thành không giảm. Bản gốc: <a href="https://cses.fi/problemset/task/1094">CSES 1094</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> một vòng lặp O(n); đáp án lớn cần <code>long long</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đừng tăng từng đơn vị (có thể tới 10⁹ lần mỗi phần tử). Đi từ trái sang: nếu a[i] &lt; a[i−1] thì cộng a[i−1] − a[i] vào đáp án và gán a[i] = a[i−1]. Đáp án có thể tới khoảng 2·10¹⁴.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://ltoj.edu.vn/problem/tchan">Cặp tổng chẵn</a>
+          <span class="judge">LTOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho dãy N ≤ 10⁵ số nguyên dương, đếm số cách chọn hai phần tử có tổng chẵn.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra O(n²) không kịp, dùng toán đếm để có O(n).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xem mục Biến thể: đếm số phần tử chẵn c và lẻ l, đáp án là c(c−1)/2 + l(l−1)/2. Nhớ dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://hncode.edu.vn/problem/cses1621">Giá trị phân biệt (Distinct Numbers)</a>
+          <span class="judge">HNCode</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Đếm số giá trị khác nhau trong dãy n ≤ 2·10⁵ số, mỗi số tới 10⁹. Bản gốc: <a href="https://cses.fi/problemset/task/1621">CSES 1621</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> thay hai vòng lặp O(n²) bằng sắp xếp O(n log n).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>So mỗi số với mọi số đứng trước là 2·10¹⁰ phép. Hãy sắp xếp (xem <a href="sorting.html">Sắp xếp</a>), rồi đếm các vị trí mà a[i] khác a[i−1]. Giá trị tới 10⁹ nên không dùng mảng đánh dấu được.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://hncode.edu.vn/problem/cses1071">Xoắn ốc số (Number Spiral)</a>
+          <span class="judge">HNCode</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Các số 1, 2, 3… được xếp vào lưới vô hạn theo hình xoắn ốc. Với tới 10⁵ truy vấn (hàng y, cột x ≤ 10⁹), in số ở ô đó. Bản gốc: <a href="https://cses.fi/problemset/task/1071">CSES 1071</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> tìm công thức O(1) khi không thể dựng lưới 10⁹ × 10⁹.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Vẽ lưới 5 × 5 ra giấy. Gọi z = max(x, y): ô nằm trên “vòng” thứ z, và số lớn nhất của vòng đó là z². Số z² nằm ở đầu hàng hay đầu cột tùy z chẵn hay lẻ. Từ đó cộng hoặc trừ theo khoảng cách. Kết quả tới 10¹⁸, dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://ltoj.edu.vn/problem/chuso0tancung">Chữ số 0 tận cùng</a>
+          <span class="judge">LTOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Đếm số chữ số 0 tận cùng của N!. Subtask 1: N ≤ 10³; subtask 2: N ≤ 10⁹. Bài tương tự: <a href="https://cses.fi/problemset/task/1618">CSES 1618 Trailing Zeros</a> (bản tiếng Việt <a href="https://hncode.edu.vn/problem/cses1618">trên HNCode</a>).</p>
+        <p class="ex-skill"><b>Luyện:</b> đọc subtask; từ O(n) xuống O(log n) nhờ toán.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Không tính N! được (1000! có hơn 2 500 chữ số). Subtask 1: đếm thừa số 5 của từng số từ 1 đến N. Subtask 2: dùng công thức ⌊N/5⌋ + ⌊N/25⌋ + … trong mục Biến thể. Chú ý N có thể bằng 0.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://hncode.edu.vn/problem/cses1623">Chia táo (Apple Division)</a>
+          <span class="judge">HNCode</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Chia n ≤ 20 quả táo (khối lượng tới 10⁹) thành hai nhóm sao cho chênh lệch tổng khối lượng nhỏ nhất. Bản gốc: <a href="https://cses.fi/problemset/task/1623">CSES 1623</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra n ≤ 20 nghĩa là duyệt 2ⁿ tập con.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mỗi quả vào nhóm 1 hoặc nhóm 2: 2²⁰ ≈ 10⁶ cách. Dùng đệ quy hai nhánh như hàm <code>thu(i)</code> trong bài, hoặc duyệt các số từ 0 đến 2ⁿ − 1 bằng bit (xem <a href="backtracking.html">Quay lui</a>). Tổng tới 2·10¹⁰, dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://ltoj.edu.vn/problem/hsg9bn2526tonguoc">HSG9 Bắc Ninh 2025-2026 – Tổng ước</a>
+          <span class="judge">LTOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho ba số a, b, c ≤ 10¹², tìm giá trị lớn nhất trong ba tổng ước dương của chúng. Subtask 70%: a, b, c ≤ 10⁶. Đọc/ghi file <code>TONGUOC.INP</code>/<code>TONGUOC.OUT</code>.</p>
+        <p class="ex-skill"><b>Luyện:</b> đọc subtask; từ O(n) lên O(√n); đọc ghi file.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Subtask 1: thử mọi i từ 1 đến a, O(a) = 10⁶. Subtask 2: O(a) = 10¹² không kịp; ước luôn đi theo cặp (i, a/i) với i ≤ √a, nên chỉ duyệt i tới 10⁶. Cẩn thận khi i · i = a (chỉ cộng một lần). Dùng <code>long long</code> và nhớ <code>freopen</code>.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/basic/computational-complexity">VNOI Wiki – Độ phức tạp thời gian</a> (tiếng Việt): định nghĩa Big-O, cách đánh giá và bảng giới hạn.</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer’s Handbook</a> (tiếng Anh), chương 2 “Time complexity”: các lớp độ phức tạp và ước lượng hiệu quả.</li>
+      <li><a href="https://usaco.guide/bronze/time-comp">USACO Guide – Time Complexity</a> (tiếng Anh): nhiều ví dụ đếm vòng lặp và bảng giới hạn n.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Big-O đếm số phép tính theo n, <strong>bỏ hằng số và bậc thấp</strong>: 3n² + 5n + 7 = O(n²).</li>
+        <li>Nối tiếp thì cộng, lồng nhau thì nhân; chia đôi cho log n; <code>j += i</code> cho n log n; <code>i * i &lt;= n</code> cho √n; đệ quy hai nhánh cho 2ⁿ.</li>
+        <li>Máy chấm làm khoảng <strong>10⁸ phép đơn giản mỗi giây</strong>. Thay n lớn nhất vào để kiểm tra.</li>
+        <li>Bảng tra: n ≤ 10 → n!; n ≤ 20 → 2ⁿ; n ≤ 500 → n³; n ≤ 5 000 → n²; n ≤ 10⁶ → n log n; n ≤ 10⁸ → n; n ≤ 10¹² → √n; n ≤ 10¹⁸ → log n hoặc công thức.</li>
+        <li>256 MB ≈ 6·10⁷ số <code>int</code>. <code>int a[5000][5000]</code> ≈ 95 MB vừa; <code>int a[10⁴][10⁴]</code> = 400 MB quá.</li>
+        <li><code>int</code> tới khoảng 2,1·10⁹, <code>long long</code> tới khoảng 9,2·10¹⁸. Ước lượng đáp án trước khi chọn kiểu.</li>
+        <li>Luôn tính theo trường hợp xấu nhất; đọc subtask để lấy điểm từng phần.</li>
+        <li>Trước khi viết vòng lặp, hãy hỏi: “có công thức không?”.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/complexity.js"></script>
+</body>
+</html>

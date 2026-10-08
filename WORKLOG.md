@@ -32,20 +32,20 @@
 | `20261007T150239Z-topic-prefix-sum-8fc6` | topic-prefix-sum | prefix-sum | done | 2026-10-07T15:02:39Z | 2026-10-07T15:13:48Z | 10 bài tập (8 VI), ~6500 từ, 2 stepper (16 khung), 1 SVG, widget có |
 | `20261007T150241Z-topic-modular-power-e79f` | topic-modular-power | modular-power | done | 2026-10-07T15:02:41Z | 2026-10-07T15:16:31Z | 10 bài tập (9 VI), ~6100 từ, 1 stepper 6 khung + 2 SVG, widget có (BigInt) |
 | `20261007T150241Z-topic-divisors-primes-9d62` | topic-divisors-primes | divisors-primes | done | 2026-10-07T15:02:41Z | 2026-10-07T15:16:09Z | 14 bài tập (12 VI, 2 EN), 6927 từ, 2 stepper 13 khung, 2 SVG, widget có |
-| `20261007T150243Z-topic-cpp-contest-basics-3acb` | topic-cpp-contest-basics | cpp-contest-basics | active | 2026-10-07T15:02:43Z | — |  |
+| `20261007T150243Z-topic-cpp-contest-basics-3acb` | topic-cpp-contest-basics | cpp-contest-basics | done | 2026-10-07T15:02:43Z | 2026-10-07T15:19:46Z | 10 bài tập (8 VI, 2 EN), 7291 từ, 2 stepper (12 khung), 1 SVG, widget có (máy kiểm tra tràn số) |
 | `20261007T150243Z-topic-binomial-190a` | topic-binomial | binomial | done | 2026-10-07T15:02:43Z | 2026-10-07T15:15:42Z | 11 bài tập (6 VI), ~6900 từ, 2 stepper (13 khung), widget có |
 | `20261007T150244Z-topic-counting-3c9b` | topic-counting | counting | done | 2026-10-07T15:02:44Z | 2026-10-07T15:18:19Z | 8 bài tập (8 VI, LQDOJ; 4 bản dịch CSES), ~6000 từ, 2 stepper (11 khung), 2 SVG, bảng vết, widget có (counting.js) |
-| `20261007T150244Z-topic-complexity-c32f` | topic-complexity | complexity | active | 2026-10-07T15:02:44Z | — |  |
+| `20261007T150244Z-topic-complexity-c32f` | topic-complexity | complexity | aborted | 2026-10-07T15:02:44Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:17:11Z (agent dừng do hết hạn mức API (HTTP 429)) |
 | `20261007T150246Z-topic-brute-force-formula-cd59` | topic-brute-force-formula | brute-force-formula | done | 2026-10-07T15:02:46Z | 2026-10-07T15:18:32Z | 10 bài tập (7 VI, 3 EN), 6779 từ, 2 stepper + 2 SVG, widget có |
 | `20261007T150255Z-topic-gcd-lcm-b0ca` | topic-gcd-lcm | gcd-lcm | done | 2026-10-07T15:02:55Z | 2026-10-07T15:15:59Z | 9 bài tập (6 VI, 3 EN), ~6050 từ (validate), 1 stepper 5 khung SVG 21x15, widget Euclid từng bước có |
-| `20261007T151446Z-topic-difference-array-75cd` | topic-difference-array | difference-array | active | 2026-10-07T15:14:46Z | — |  |
-| `20261007T151533Z-topic-sorting-cf01` | topic-sorting | sorting | active | 2026-10-07T15:15:33Z | — |  |
-| `20261007T151630Z-topic-two-pointers-4138` | topic-two-pointers | two-pointers | active | 2026-10-07T15:16:30Z | — |  |
-| `20261007T151644Z-topic-binary-search-ef8f` | topic-binary-search | binary-search | active | 2026-10-07T15:16:44Z | — |  |
-| `20261007T151701Z-topic-binary-search-answer-b893` | topic-binary-search-answer | binary-search-answer | active | 2026-10-07T15:17:01Z | — |  |
-| `20261007T151710Z-topic-recursion-d323` | topic-recursion | recursion | active | 2026-10-07T15:17:10Z | — |  |
-| `20261007T151920Z-topic-backtracking-0dda` | topic-backtracking | backtracking | active | 2026-10-07T15:19:20Z | — |  |
-| `20261007T151930Z-topic-greedy-42c4` | topic-greedy | greedy | active | 2026-10-07T15:19:30Z | — |  |
+| `20261007T151446Z-topic-difference-array-75cd` | topic-difference-array | difference-array | aborted | 2026-10-07T15:14:46Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:15:17Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261007T151533Z-topic-sorting-cf01` | topic-sorting | sorting | aborted | 2026-10-07T15:15:33Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:18:57Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261007T151630Z-topic-two-pointers-4138` | topic-two-pointers | two-pointers | aborted | 2026-10-07T15:16:30Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:16:30Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261007T151644Z-topic-binary-search-ef8f` | topic-binary-search | binary-search | aborted | 2026-10-07T15:16:44Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:16:44Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261007T151701Z-topic-binary-search-answer-b893` | topic-binary-search-answer | binary-search-answer | aborted | 2026-10-07T15:17:01Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:17:01Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261007T151710Z-topic-recursion-d323` | topic-recursion | recursion | aborted | 2026-10-07T15:17:10Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:17:10Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261007T151920Z-topic-backtracking-0dda` | topic-backtracking | backtracking | aborted | 2026-10-07T15:19:20Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:19:20Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261007T151930Z-topic-greedy-42c4` | topic-greedy | greedy | aborted | 2026-10-07T15:19:30Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:19:30Z (agent dừng do hết hạn mức API (HTTP 429)) |
 
 ## Dòng thời gian
 
@@ -192,3 +192,18 @@
 - `15:19:30` **topic-greedy** · `greedy` · _bắt đầu_: Mở phiên: Soạn chủ đề greedy
 - `15:19:30` **orchestrator** · _tiến độ_: Nút stepper dùng icon SVG thay ký tự ⏮ thiếu phông; công thức chụp riêng phần minh họa — assets/js/main.js, .agents/tasks/_common.md
 - `15:19:44` **orchestrator** · _commit_: Commit 8 chủ đề đã xong: prefix-sum sieve binomial gcd-lcm divisors-primes modular-power counting brute-force-formula
+- `15:19:46` **topic-cpp-contest-basics** · `cpp-contest-basics` · _hoàn thành_: Đóng phiên (done): 10 bài tập (8 VI, 2 EN), 7291 từ, 2 stepper (12 khung), 1 SVG, widget có (máy kiểm tra tràn số)
+
+### 2026-10-08
+
+- `03:25:42` **orchestrator** · `complexity` · _ghi chú_: Thu hồi phiên 20261007T150244Z-topic-complexity-c32f của topic-complexity: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:17:11Z (agent dừng do hết hạn mức API (HTTP 429))
+- `03:25:42` **orchestrator** · `difference-array` · _ghi chú_: Thu hồi phiên 20261007T151446Z-topic-difference-array-75cd của topic-difference-array: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:15:17Z (agent dừng do hết hạn mức API (HTTP 429))
+- `03:25:42` **orchestrator** · `sorting` · _ghi chú_: Thu hồi phiên 20261007T151533Z-topic-sorting-cf01 của topic-sorting: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:18:57Z (agent dừng do hết hạn mức API (HTTP 429))
+- `03:25:42` **orchestrator** · `two-pointers` · _ghi chú_: Thu hồi phiên 20261007T151630Z-topic-two-pointers-4138 của topic-two-pointers: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:16:30Z (agent dừng do hết hạn mức API (HTTP 429))
+- `03:25:42` **orchestrator** · `binary-search` · _ghi chú_: Thu hồi phiên 20261007T151644Z-topic-binary-search-ef8f của topic-binary-search: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:16:44Z (agent dừng do hết hạn mức API (HTTP 429))
+- `03:25:42` **orchestrator** · `binary-search-answer` · _ghi chú_: Thu hồi phiên 20261007T151701Z-topic-binary-search-answer-b893 của topic-binary-search-answer: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:17:01Z (agent dừng do hết hạn mức API (HTTP 429))
+- `03:25:42` **orchestrator** · `recursion` · _ghi chú_: Thu hồi phiên 20261007T151710Z-topic-recursion-d323 của topic-recursion: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:17:10Z (agent dừng do hết hạn mức API (HTTP 429))
+- `03:25:42` **orchestrator** · `backtracking` · _ghi chú_: Thu hồi phiên 20261007T151920Z-topic-backtracking-0dda của topic-backtracking: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:19:20Z (agent dừng do hết hạn mức API (HTTP 429))
+- `03:25:42` **orchestrator** · `greedy` · _ghi chú_: Thu hồi phiên 20261007T151930Z-topic-greedy-42c4 của topic-greedy: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:19:30Z (agent dừng do hết hạn mức API (HTTP 429))
+- `03:26:01` **orchestrator** · `complexity` · _hoàn thành_: complexity hoàn chỉnh trước khi agent bị ngắt (429); điều phối kiểm tra lại: validate OK, node --check OK
+- `03:26:01` **orchestrator** · _commit_: Commit complexity, cpp-contest-basics

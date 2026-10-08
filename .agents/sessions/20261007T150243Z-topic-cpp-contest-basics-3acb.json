@@ -3,10 +3,10 @@
   "agent": "topic-cpp-contest-basics",
   "task": "Soạn chủ đề cpp-contest-basics",
   "topic": "cpp-contest-basics",
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-10-07T15:02:43Z",
   "heartbeat_at": "2026-10-07T15:19:23Z",
-  "ended_at": null,
-  "summary": null
+  "ended_at": "2026-10-07T15:19:46Z",
+  "summary": "10 bài tập (8 VI, 2 EN), 7291 từ, 2 stepper (12 khung), 1 SVG, widget có (máy kiểm tra tràn số)"
 }

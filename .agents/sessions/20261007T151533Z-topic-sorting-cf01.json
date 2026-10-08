@@ -3,10 +3,10 @@
   "agent": "topic-sorting",
   "task": "Soạn chủ đề sorting",
   "topic": "sorting",
-  "status": "active",
+  "status": "aborted",
   "host": "MyPC",
   "started_at": "2026-10-07T15:15:33Z",
   "heartbeat_at": "2026-10-07T15:18:57Z",
-  "ended_at": null,
-  "summary": null
+  "ended_at": "2026-10-08T03:25:42Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:18:57Z (agent dừng do hết hạn mức API (HTTP 429))"
 }
