@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đồ thị &amp; DFS · Thi đấu lớp 9</title>
+<meta name="description" content="Đồ thị là gì, cách lưu bằng ma trận kề, danh sách kề, danh sách cạnh; duyệt theo chiều sâu DFS, đếm thành phần liên thông, tô hai màu, phát hiện chu trình, DFS trên cây.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  .gd-row{display:flex;flex-wrap:wrap;gap:.75rem 1.5rem;align-items:flex-start;justify-content:center;margin-top:.5rem}
+  .gd-row .arr{margin:0}
+  .gd-svg{display:block;max-width:100%;height:auto;margin:0 auto}
+</style>
+</head>
+<body data-page="topic" data-topic="graph-dfs">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được các khái niệm đỉnh, cạnh, vô hướng, có hướng, trọng số, bậc, đường đi, chu trình, liên thông.</li>
+      <li>Mô hình hóa một bài toán thành đồ thị bằng cách trả lời hai câu hỏi: “đỉnh là gì? cạnh là gì?”.</li>
+      <li>Lưu được đồ thị bằng ma trận kề, danh sách kề, danh sách cạnh và biết chọn cách nào theo giới hạn n, m.</li>
+      <li>Cài đặt DFS bằng đệ quy và bằng ngăn xếp tự quản; chứng minh được DFS thăm hết một thành phần trong <span class="bigo">O(n + m)</span>.</li>
+      <li>Dùng DFS để đếm thành phần liên thông, trả lời “u và v có thông nhau không”, tô hai màu, phát hiện chu trình, tính độ sâu và kích thước cây con.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Đồ thị (graph) là một cách vẽ lại bài toán bằng những <b>chấm tròn</b> và những <b>đoạn nối</b> giữa chúng. Chấm tròn gọi là <b>đỉnh</b>, đoạn nối gọi là <b>cạnh</b>. Rất nhiều bài thi trông như bài về thành phố, bạn bè, ô bàn cờ, nhưng khi vẽ ra thì đều là đồ thị. DFS (Depth-First Search, duyệt theo chiều sâu) là cách đơn giản nhất để <b>đi thăm mọi đỉnh</b> mà ta tới được từ một đỉnh xuất phát.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div>
+        <p><strong>Hình dung 1, bản đồ thành phố:</strong> mỗi thành phố là một đỉnh, mỗi con đường nối hai thành phố là một cạnh. Câu hỏi “từ Hà Nội có đi ô tô tới Đà Nẵng được không?” là câu hỏi về đường đi trên đồ thị.</p>
+        <p><strong>Hình dung 2, mạng bạn bè:</strong> mỗi bạn trong lớp là một đỉnh, hai bạn quen nhau thì nối một cạnh. Câu hỏi “tin đồn của Lan có lan tới Minh không?” cũng là câu hỏi về đường đi.</p>
+        <p><strong>Hình dung 3, đi mê cung:</strong> DFS giống như em đi trong mê cung và luôn giữ một quy tắc: gặp lối rẽ chưa đi thì cứ <b>đi sâu vào trước</b>, tới ngõ cụt thì <b>quay lui</b> về ngã rẽ gần nhất còn lối chưa đi. Em đánh dấu phấn ở mỗi chỗ đã qua để không đi vòng mãi.</p>
+      </div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Một <b>đồ thị</b> G gồm tập <b>đỉnh</b> V (thường đánh số 1, 2, …, n) và tập <b>cạnh</b> E (có m cạnh). Mỗi cạnh nối hai đỉnh u và v.</p>
+      <ul>
+        <li><b>Vô hướng</b> (undirected): cạnh u–v đi được cả hai chiều, như đường hai chiều. <b>Có hướng</b> (directed): cạnh u→v chỉ đi từ u sang v, như đường một chiều hoặc “u theo dõi v” trên mạng xã hội.</li>
+        <li><b>Có trọng số</b> (weighted): mỗi cạnh mang một con số, ví dụ độ dài con đường, tiền vé. Không ghi số thì coi mọi cạnh như nhau.</li>
+        <li><b>Bậc</b> (degree) của đỉnh u: số cạnh chạm vào u. Hai đỉnh có cạnh nối gọi là <b>kề nhau</b> (adjacent).</li>
+        <li><b>Đường đi</b> (path) từ u tới v: dãy đỉnh u = x₀, x₁, …, x<sub>k</sub> = v mà hai đỉnh liên tiếp luôn kề nhau. k là <b>độ dài</b> đường đi (số cạnh).</li>
+        <li><b>Chu trình</b> (cycle): đường đi có ít nhất 3 cạnh, không lặp cạnh, quay về đúng đỉnh xuất phát.</li>
+        <li>Hai đỉnh <b>thông nhau</b> (liên thông) nếu có đường đi giữa chúng. Một <b>thành phần liên thông</b> (connected component) là một nhóm lớn nhất các đỉnh đôi một thông nhau. Đồ thị <b>liên thông</b> nếu chỉ có một thành phần.</li>
+      </ul>
+    </div>
+
+    <figure class="diagram">
+      <svg class="gd-svg" viewBox="0 0 600 180" width="600" role="img" aria-label="Ba loại đồ thị: vô hướng có ghi bậc, có hướng và có trọng số">
+        <!-- Đồ thị vô hướng -->
+        <line class="edge" x1="40" y1="40" x2="150" y2="40"/>
+        <line class="edge" x1="40" y1="40" x2="40" y2="130"/>
+        <line class="edge" x1="150" y1="40" x2="40" y2="130"/>
+        <line class="edge" x1="40" y1="130" x2="150" y2="130"/>
+        <circle class="node" cx="40" cy="40" r="16"/><text x="40" y="45" text-anchor="middle">A</text>
+        <circle class="node" cx="150" cy="40" r="16"/><text x="150" y="45" text-anchor="middle">B</text>
+        <circle class="node is-active" cx="40" cy="130" r="16"/><text x="40" y="135" text-anchor="middle">C</text>
+        <circle class="node" cx="150" cy="130" r="16"/><text x="150" y="135" text-anchor="middle">D</text>
+        <text class="label-pen" x="64" y="118">bậc 3</text>
+        <text class="label-sm" x="95" y="170" text-anchor="middle">Vô hướng</text>
+        <!-- Đồ thị có hướng -->
+        <line class="edge" x1="256" y1="40" x2="334" y2="40"/>
+        <polyline class="edge" fill="none" points="326,34 334,40 326,46"/>
+        <line class="edge" x1="341.7" y1="53.6" x2="303.3" y2="116.4"/>
+        <polyline class="edge" fill="none" points="312.3,111.3 303.3,116.4 303.7,106.1"/>
+        <line class="edge" x1="286.7" y1="116.4" x2="248.3" y2="53.6"/>
+        <polyline class="edge" fill="none" points="257.3,58.7 248.3,53.6 248.7,63.9"/>
+        <circle class="node" cx="240" cy="40" r="16"/><text x="240" y="45" text-anchor="middle">P</text>
+        <circle class="node" cx="350" cy="40" r="16"/><text x="350" y="45" text-anchor="middle">Q</text>
+        <circle class="node" cx="295" cy="130" r="16"/><text x="295" y="135" text-anchor="middle">R</text>
+        <text class="label-sm" x="295" y="170" text-anchor="middle">Có hướng</text>
+        <!-- Đồ thị có trọng số -->
+        <line class="edge" x1="440" y1="40" x2="560" y2="40"/>
+        <line class="edge" x1="560" y1="40" x2="500" y2="130"/>
+        <line class="edge" x1="440" y1="40" x2="500" y2="130"/>
+        <circle class="node" cx="440" cy="40" r="16"/><text x="440" y="45" text-anchor="middle">X</text>
+        <circle class="node" cx="560" cy="40" r="16"/><text x="560" y="45" text-anchor="middle">Y</text>
+        <circle class="node" cx="500" cy="130" r="16"/><text x="500" y="135" text-anchor="middle">Z</text>
+        <text class="label-pen" x="500" y="30" text-anchor="middle">5</text>
+        <text class="label-pen" x="542" y="92">2</text>
+        <text class="label-pen" x="452" y="92">4</text>
+        <text class="label-sm" x="500" y="170" text-anchor="middle">Có trọng số</text>
+      </svg>
+      <figcaption>Hình 1. Trái: đồ thị vô hướng 4 đỉnh, 4 cạnh; bậc A = 2, B = 2, C = 3, D = 1. Giữa: đồ thị có hướng P→Q→R→P là một chu trình có hướng. Phải: mỗi cạnh mang một trọng số.</figcaption>
+    </figure>
+
+    <p>Ở đồ thị bên trái, em cộng các bậc: 2 + 2 + 3 + 1 = 8, đúng bằng 2 × 4 cạnh. Đây không phải trùng hợp. Mỗi cạnh có hai đầu, nên khi đếm bậc, mỗi cạnh được đếm đúng hai lần. Ta có <b>bổ đề bắt tay</b>: tổng bậc của mọi đỉnh luôn bằng 2m. Hệ quả: số đỉnh có bậc lẻ luôn là số chẵn. Bổ đề này cũng là lý do danh sách kề của đồ thị vô hướng có tổng độ dài đúng 2m, em sẽ gặp lại ở phần độ phức tạp.</p>
+    <p>Trong đồ thị trái còn có chu trình A–B–C–A (3 cạnh). Đường đi A → C → D có độ dài 2. Cả 4 đỉnh thông nhau, nên đồ thị này liên thông.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Đồ thị là “ngôn ngữ chung” cho mọi bài toán có <b>đối tượng</b> và <b>quan hệ giữa hai đối tượng</b>. Khi đã vẽ được đồ thị, em dùng lại được cả kho thuật toán có sẵn mà không phải nghĩ lại từ đầu.</p>
+
+    <h3>Mô hình hóa: đỉnh là gì? cạnh là gì?</h3>
+    <p>Trước khi code bất kỳ bài đồ thị nào, em luôn viết ra giấy hai dòng: <b>đỉnh là …</b>, <b>cạnh là …</b>. Một vài ví dụ:</p>
+    <table>
+      <thead><tr><th>Bài toán</th><th>Đỉnh là</th><th>Cạnh là</th><th>Câu hỏi trở thành</th></tr></thead>
+      <tbody>
+        <tr><td>Bản đồ n thành phố, m con đường</td><td>Thành phố</td><td>Con đường (vô hướng)</td><td>Có đi được từ u tới v không?</td></tr>
+        <tr><td>Lớp học, ai quen ai</td><td>Học sinh</td><td>Hai bạn quen nhau</td><td>Có bao nhiêu nhóm bạn tách biệt?</td></tr>
+        <tr><td>Chia lớp thành 2 đội, bạn thân phải khác đội</td><td>Học sinh</td><td>Hai bạn thân</td><td>Tô được hai màu không?</td></tr>
+        <tr><td>Bảng ô vuông có ô trống, ô tường</td><td>Ô trống</td><td>Hai ô trống chung cạnh</td><td>Đếm số vùng (xem <a href="flood-fill.html">loang trên lưới</a>)</td></tr>
+        <tr><td>Công ty: ai là sếp trực tiếp của ai</td><td>Nhân viên</td><td>Sếp → nhân viên (cây)</td><td>Mỗi người có bao nhiêu cấp dưới?</td></tr>
+        <tr><td>Trò chơi đổ nước giữa các bình</td><td>Một trạng thái các bình</td><td>Một lần đổ</td><td>Từ trạng thái đầu có tới trạng thái đích không?</td></tr>
+      </tbody>
+    </table>
+    <p>Dòng cuối cho thấy đỉnh không nhất thiết là “vật” nhìn thấy được. Đỉnh có thể là một <b>trạng thái</b> và cạnh là một <b>bước biến đổi</b>. Khi đã quen, em sẽ thấy đồ thị ở khắp nơi.</p>
+
+    <h3>DFS giải được những gì</h3>
+    <ul>
+      <li>Liệt kê mọi đỉnh tới được từ một đỉnh s.</li>
+      <li>Kiểm tra hai đỉnh u, v có thông nhau không.</li>
+      <li>Đếm số thành phần liên thông, kích thước từng thành phần.</li>
+      <li>Kiểm tra đồ thị có tô được hai màu (đồ thị hai phía) không.</li>
+      <li>Phát hiện chu trình trong đồ thị vô hướng.</li>
+      <li>Trên cây: tính độ sâu mỗi đỉnh, kích thước cây con, đỉnh cha.</li>
+    </ul>
+    <p>DFS <b>không</b> cho đường đi ngắn nhất. Muốn số bước ít nhất trên đồ thị không trọng số, em dùng <a href="bfs.html">BFS</a>; có trọng số thì dùng <a href="dijkstra.html">Dijkstra</a>.</p>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề có “n thành phố, m con đường”, “quen nhau”, “nối với nhau”, “có đến được không”, “bao nhiêu nhóm / vùng / khu vực”, “chia thành hai nhóm sao cho…”. Giới hạn thường là n, m ≤ 10⁵ hoặc 2·10⁵, tức là cần thuật toán <span class="bigo">O(n + m)</span>.</p></div>
+  </section>
+
+  <section id="bieu-dien">
+    <h2>Lưu đồ thị trong máy</h2>
+    <p>Đề bài thường cho đồ thị như sau: dòng đầu là n và m, sau đó m dòng, mỗi dòng hai số u v là một cạnh. Từ đó em có ba cách lưu. Ta dùng chung một đồ thị cho cả ba cách: <b>8 đỉnh, 7 cạnh</b> là 1–2, 1–3, 2–4, 3–4, 4–5, 6–7, 7–8. Đồ thị này cũng sẽ được dùng trong phần minh họa.</p>
+
+    <figure class="diagram">
+      <svg class="gd-svg" viewBox="0 0 520 215" width="520" role="img" aria-label="Đồ thị mẫu 8 đỉnh 7 cạnh gồm hai thành phần liên thông">
+        <line class="edge" x1="60" y1="50" x2="170" y2="40"/>
+        <line class="edge" x1="60" y1="50" x2="80" y2="160"/>
+        <line class="edge" x1="170" y1="40" x2="200" y2="140"/>
+        <line class="edge" x1="80" y1="160" x2="200" y2="140"/>
+        <line class="edge" x1="200" y1="140" x2="300" y2="180"/>
+        <line class="edge" x1="370" y1="50" x2="430" y2="140"/>
+        <line class="edge" x1="430" y1="140" x2="480" y2="50"/>
+        <circle class="node" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text>
+        <circle class="node" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text>
+        <circle class="node" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text>
+        <circle class="node" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text>
+        <circle class="node" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text>
+        <circle class="node" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text>
+        <circle class="node" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text>
+        <circle class="node" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text>
+        <text class="label-pen" x="130" y="208" text-anchor="middle">thành phần 1</text>
+        <text class="label-pen" x="425" y="200" text-anchor="middle">thành phần 2</text>
+      </svg>
+      <figcaption>Hình 2. Đồ thị mẫu: n = 8, m = 7. Thành phần thứ nhất {1, 2, 3, 4, 5} có chu trình 1–2–4–3–1; thành phần thứ hai {6, 7, 8} là một đường thẳng.</figcaption>
+    </figure>
+
+    <h3>Cách 1. Ma trận kề (adjacency matrix)</h3>
+    <p>Dùng mảng hai chiều <code>a[n+1][n+1]</code>: <code>a[u][v] = 1</code> nếu có cạnh u–v, ngược lại bằng 0. Đồ thị vô hướng thì ma trận đối xứng qua đường chéo: <code>a[u][v] = a[v][u]</code>. Tổng các số trên hàng u đúng bằng bậc của u.</p>
+    <table class="trace">
+      <thead><tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>bậc</th></tr></thead>
+      <tbody>
+        <tr><th>1</th><td>0</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2</td></tr>
+        <tr><th>2</th><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2</td></tr>
+        <tr><th>3</th><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>2</td></tr>
+        <tr class="hl"><th>4</th><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>3</td></tr>
+        <tr><th>5</th><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td></tr>
+        <tr><th>6</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
+        <tr><th>7</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>2</td></tr>
+        <tr><th>8</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
+      </tbody>
+    </table>
+    <p>Tổng bậc 2 + 2 + 2 + 3 + 1 + 1 + 2 + 1 = 14 = 2 × 7, đúng bổ đề bắt tay. Trong 64 ô chỉ có 14 ô bằng 1, phần lớn là số 0 bỏ phí.</p>
+
+    <h3>Cách 2. Danh sách kề (adjacency list)</h3>
+    <p>Mỗi đỉnh u giữ một danh sách <code>adj[u]</code> chứa các đỉnh kề với u. Trong C++ em khai báo <code>vector&lt;int&gt; adj[N];</code>. Đọc cạnh u v của đồ thị vô hướng thì làm <b>hai</b> lệnh: <code>adj[u].push_back(v)</code> và <code>adj[v].push_back(u)</code>.</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Danh sách kề của đồ thị mẫu (theo thứ tự đọc cạnh)</p></div>
+      <div class="viz-body">
+        <div class="arr"><span class="arr-label">adj[1]</span><span class="cell">2</span><span class="cell">3</span></div>
+        <div class="arr"><span class="arr-label">adj[2]</span><span class="cell">1</span><span class="cell">4</span></div>
+        <div class="arr"><span class="arr-label">adj[3]</span><span class="cell">1</span><span class="cell">4</span></div>
+        <div class="arr"><span class="arr-label">adj[4]</span><span class="cell">2</span><span class="cell">3</span><span class="cell">5</span></div>
+        <div class="arr"><span class="arr-label">adj[5]</span><span class="cell">4</span></div>
+        <div class="arr"><span class="arr-label">adj[6]</span><span class="cell">7</span></div>
+        <div class="arr"><span class="arr-label">adj[7]</span><span class="cell">6</span><span class="cell">8</span></div>
+        <div class="arr"><span class="arr-label">adj[8]</span><span class="cell">7</span></div>
+      </div>
+      <div class="viz-caption"><p>Tổng độ dài 8 danh sách là 2 + 2 + 2 + 3 + 1 + 1 + 2 + 1 = 14 = 2m. Không có ô nào bỏ phí.</p></div>
+    </div>
+
+    <h3>Cách 3. Danh sách cạnh (edge list)</h3>
+    <p>Chỉ lưu nguyên m cặp (u, v) vào một mảng, đúng như đề cho: <code>(1,2) (1,3) (2,4) (3,4) (4,5) (6,7) (7,8)</code>. Cách này không tìm nhanh được “các đỉnh kề của u”, nhưng rất tiện khi cần <b>sắp xếp các cạnh</b>, ví dụ theo trọng số trong thuật toán cây khung nhỏ nhất (xem <a href="dsu-mst.html">DSU và cây khung</a>).</p>
+
+    <h3>So sánh ba cách</h3>
+    <table>
+      <thead><tr><th>Tiêu chí</th><th>Ma trận kề</th><th>Danh sách kề</th><th>Danh sách cạnh</th></tr></thead>
+      <tbody>
+        <tr><td>Bộ nhớ</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n + m)</span></td><td><span class="bigo">O(m)</span></td></tr>
+        <tr><td>Hỏi “có cạnh u–v không?”</td><td><span class="bigo">O(1)</span></td><td><span class="bigo">O(bậc u)</span></td><td><span class="bigo">O(m)</span></td></tr>
+        <tr><td>Duyệt mọi đỉnh kề của u</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(bậc u)</span></td><td><span class="bigo">O(m)</span></td></tr>
+        <tr><td>DFS cả đồ thị</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n + m)</span></td><td>không dùng</td></tr>
+        <tr><td>Hợp với</td><td>n ≤ vài nghìn, đồ thị dày</td><td>n, m tới 10⁵–10⁶ (mặc định)</td><td>sắp xếp cạnh, DSU, Kruskal</td></tr>
+      </tbody>
+    </table>
+    <p>Tính cụ thể với n = 10⁵: ma trận kề cần 10⁵ × 10⁵ = 10¹⁰ ô; dù mỗi ô chỉ 1 byte cũng là 10 GB, không máy chấm nào cho. Danh sách kề với m = 10⁵ chỉ cần lưu khoảng n + 2m = 3·10⁵ số nguyên, tính cả phần phụ của <code>vector</code> cũng chỉ vài MB. Vì vậy trong bài này, và trong hầu hết bài thi, em dùng <b>danh sách kề</b>.</p>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><b>Bài toán mở đầu.</b> Có n = 10⁵ thành phố và m = 10⁵ con đường hai chiều. Hỏi các thành phố chia thành bao nhiêu “vùng” mà trong mỗi vùng đi lại được với nhau, còn giữa hai vùng khác nhau thì không có đường?</p>
+    <p><b>Cách ngây thơ.</b> Một cách nghĩ tự nhiên là “lan dần”: đánh dấu thành phố 1, rồi lặp lại việc quét toàn bộ m con đường, hễ đường nào có một đầu đã đánh dấu, đầu kia chưa thì đánh dấu thêm. Lặp tới khi một lượt quét không đánh dấu thêm được ai. Mỗi lượt quét tốn m phép, nhưng có thể chỉ thêm được đúng một thành phố (ví dụ các thành phố nối thành một hàng dài mà đường lại được liệt kê theo thứ tự ngược). Khi đó cần tới n lượt cho một vùng, tổng cộng khoảng n × m = 10⁵ × 10⁵ = 10¹⁰ phép tính. Máy chấm làm cỡ 10⁸ phép mỗi giây, nên mất khoảng 100 giây.</p>
+    <p>Một cách ngây thơ khác: với mỗi cặp thành phố (u, v), kiểm tra xem chúng có thông nhau không. Riêng số cặp đã là n(n − 1)/2 ≈ 5·10⁹, chưa kể chi phí kiểm tra mỗi cặp. Cũng quá chậm.</p>
+    <p><b>Dùng DFS.</b> Mỗi lần gặp một thành phố chưa đánh dấu, ta chạy DFS từ đó. DFS đi theo danh sách kề, mỗi thành phố chỉ được vào đúng một lần và mỗi con đường chỉ được nhìn đúng hai lần (một lần từ mỗi đầu). Tổng cộng khoảng n + 2m = 3·10⁵ thao tác. Số lần phải khởi động DFS mới chính là số vùng.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Quét lại toàn bộ cạnh nhiều lượt</h4><p>Mỗi lượt quét m cạnh, có thể cần tới n lượt. Độ phức tạp <span class="bigo">O(n · m)</span>, với n = m = 10⁵ là 10¹⁰ phép tính, khoảng 100 giây.</p></div>
+      <div class="good-side"><h4>DFS trên danh sách kề</h4><p>Mỗi đỉnh vào một lần, mỗi cạnh xét hai lần. Độ phức tạp <span class="bigo">O(n + m)</span>, chỉ khoảng 3·10⁵ phép tính, chưa tới 0,01 giây.</p></div>
+    </div>
+    <p>Chênh lệch là hơn ba vạn lần. Bí quyết nằm ở hai điều: <b>chỉ đi theo cạnh thật sự có</b> (nhờ danh sách kề), và <b>không bao giờ vào lại đỉnh đã thăm</b> (nhờ mảng đánh dấu).</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>DFS đệ quy từ một đỉnh</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Chuẩn bị.</strong> Lưu đồ thị bằng danh sách kề <code>adj</code>. Tạo mảng <code>visited[1..n]</code>, ban đầu toàn <code>false</code>.</div></li>
+      <li><div><strong>Vào đỉnh u.</strong> Gán <code>visited[u] = true</code> <b>ngay lập tức</b>, rồi xử lý u (in ra, đếm, ghi số thành phần…).</div></li>
+      <li><div><strong>Xét từng đỉnh kề.</strong> Với mỗi v trong <code>adj[u]</code>: nếu v chưa thăm thì gọi <code>dfs(v)</code>, tức là đi sâu vào v. Chỉ khi <code>dfs(v)</code> làm xong mới xét đỉnh kề tiếp theo của u.</div></li>
+      <li><div><strong>Quay lui.</strong> Hết đỉnh kề thì hàm <code>dfs(u)</code> kết thúc, máy tự quay về đỉnh đã gọi u. Đó chính là bước “quay về ngã rẽ” trong mê cung.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> dfs(u):
+    visited[u] ← <b>đúng</b>               <i>// đánh dấu trước khi đi tiếp</i>
+    <b>với mỗi</b> v <b>trong</b> adj[u]:
+        <b>nếu</b> <b>không</b> visited[v]:
+            dfs(v)                     <i>// đi sâu, xong mới quay lại</i></pre>
+
+    <h3>Đếm thành phần liên thông</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> <code>dem = 0</code>, mọi đỉnh chưa thăm.</div></li>
+      <li><div><strong>Quét đỉnh.</strong> Duyệt u từ 1 đến n. Gặp u chưa thăm: tăng <code>dem</code> lên 1, gán <code>comp_id</code> cho cả thành phần bằng cách gọi <code>dfs(u)</code>.</div></li>
+      <li><div><strong>Kết thúc.</strong> <code>dem</code> là số thành phần. Hai đỉnh u, v thông nhau khi và chỉ khi <code>comp[u] == comp[v]</code>.</div></li>
+    </ol>
+    <pre class="pseudo">dem ← 0
+<b>với</b> u <b>từ</b> 1 <b>đến</b> n:
+    <b>nếu</b> <b>không</b> visited[u]:
+        dem ← dem + 1
+        dfs(u)                         <i>// gán comp[x] = dem cho mọi x thăm được</i>
+<b>in</b> dem</pre>
+
+    <h3>DFS bằng ngăn xếp tự quản</h3>
+    <p>Đệ quy thực chất dùng một <a href="stack-queue.html">ngăn xếp</a> (stack) do máy quản lý. Ta có thể tự giữ ngăn xếp đó bằng <code>vector</code> để không lo tràn bộ nhớ ngăn xếp lời gọi khi đồ thị là một đường dài 10⁵–10⁶ đỉnh.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Ngăn xếp <code>st</code> chỉ chứa s.</div></li>
+      <li><div><strong>Lấy ra.</strong> Khi <code>st</code> còn phần tử: lấy đỉnh trên cùng u ra. Nếu u đã thăm thì bỏ qua (u có thể bị đẩy vào nhiều lần).</div></li>
+      <li><div><strong>Thăm và đẩy.</strong> Đánh dấu u, rồi đẩy mọi đỉnh kề chưa thăm của u vào <code>st</code>. Đẩy theo thứ tự ngược để đỉnh kề đầu tiên được lấy ra trước, giúp thứ tự thăm giống hệt bản đệ quy.</div></li>
+    </ol>
+    <pre class="pseudo">st ← [s]
+<b>khi</b> st <b>không rỗng</b>:
+    u ← st.lấy_đỉnh()
+    <b>nếu</b> visited[u]: <b>bỏ qua</b>           <i>// đã thăm qua đường khác</i>
+    visited[u] ← <b>đúng</b>
+    <b>với mỗi</b> v <b>trong</b> adj[u] (từ cuối về đầu):
+        <b>nếu</b> <b>không</b> visited[v]: st.đẩy(v)</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Hãy theo dõi DFS như theo dõi một bạn đi mê cung có cuộn chỉ. Bạn ấy đứng ở đỉnh u, nhìn lần lượt các lối ra (các đỉnh kề). Lối nào dẫn tới chỗ chưa có dấu phấn thì bước vào ngay và lặp lại y hệt ở đó. Khi mọi lối ra từ chỗ đang đứng đều dẫn tới chỗ đã có dấu, bạn ấy cuốn chỉ lùi về chỗ trước. Cuộn chỉ chính là <b>ngăn xếp lời gọi</b>: các đỉnh đang “mở dở”, chưa xét hết đỉnh kề.</p>
+
+    <h3>Vì sao đúng: DFS thăm hết thành phần chứa s</h3>
+    <p>Ta cần chứng minh hai điều.</p>
+    <p><b>(1) DFS chỉ thăm đỉnh thông với s.</b> DFS chỉ bước từ u sang v khi u–v là một cạnh. Nên mọi đỉnh được thăm đều nối với s bằng chuỗi cạnh mà DFS đã đi qua.</p>
+    <p><b>(2) Mọi đỉnh thông với s đều được thăm.</b> Giả sử ngược lại: có đỉnh x thông với s nhưng DFS không thăm. Lấy một đường đi s = x₀, x₁, …, x<sub>k</sub> = x. Đỉnh x₀ được thăm, x<sub>k</sub> thì không, nên phải có một chỗ đầu tiên mà x<sub>i</sub> được thăm còn x<sub>i+1</sub> thì không. Nhưng khi <code>dfs(x<sub>i</sub>)</code> chạy, nó duyệt <b>mọi</b> đỉnh kề của x<sub>i</sub>, trong đó có x<sub>i+1</sub>. Lúc đó, nếu x<sub>i+1</sub> chưa thăm thì DFS sẽ gọi <code>dfs(x<sub>i+1</sub>)</code>; nếu đã thăm thì càng tốt. Cả hai trường hợp đều mâu thuẫn với giả thiết. Vậy x được thăm.</p>
+    <p>Từ (1) và (2): một lần gọi <code>dfs(s)</code> thăm <b>đúng</b> thành phần liên thông chứa s, không thiếu, không thừa. Do đó trong vòng lặp đếm, mỗi lần gặp đỉnh chưa thăm là gặp một thành phần hoàn toàn mới, và số lần gọi bằng số thành phần.</p>
+
+    <h3>Vì sao dừng: mảng visited</h3>
+    <p>Đồ thị có chu trình 1–2–4–3–1. Nếu không đánh dấu, từ 1 sang 2, sang 4, sang 3, lại về 1, rồi lại sang 2… vòng mãi không dừng. Mảng <code>visited</code> bảo đảm mỗi đỉnh được gọi <code>dfs</code> <b>tối đa một lần</b>, nên tổng số lời gọi không quá n và thuật toán chắc chắn kết thúc.</p>
+    <p>Chú ý thời điểm: phải đánh dấu <b>ngay khi vào</b> u, trước khi xét đỉnh kề. Nếu đánh dấu muộn (khi ra khỏi u), DFS từ 1 vào 2, vào 4, vào 3, rồi từ 3 lại thấy 1 “chưa thăm” và đi vào lần nữa.</p>
+
+    <h3>Vì sao nhanh: O(n + m)</h3>
+    <p>Đếm công việc theo từng đỉnh. Mỗi đỉnh u được gọi <code>dfs(u)</code> đúng một lần, và trong lần đó vòng <code>for</code> chạy đúng <b>bậc của u</b> bước. Tổng số bước của mọi vòng <code>for</code> là tổng bậc = 2m (bổ đề bắt tay). Cộng thêm n lần vào đỉnh và n lần kiểm tra ở vòng lặp ngoài, tổng là khoảng 2n + 2m, tức <span class="bigo">O(n + m)</span>. Đồ thị có hướng thì tổng độ dài danh sách kề là m, vẫn <span class="bigo">O(n + m)</span>.</p>
+    <p>Nếu lưu bằng ma trận kề, vòng <code>for</code> ở mỗi đỉnh phải quét cả n cột để tìm đỉnh kề, nên tổng là n × n = <span class="bigo">O(n²)</span>. Với n = 10⁴ đã là 10⁸ phép; với n = 10⁵ là 10¹⁰ phép.</p>
+
+    <h3>Cây DFS</h3>
+    <p>Mỗi lần DFS bước từ u sang đỉnh chưa thăm v, ta gọi u là <b>cha</b> của v và cạnh u–v là <b>cạnh cây</b>. Các cạnh cây của một thành phần k đỉnh tạo thành một cây có k − 1 cạnh, gọi là <b>cây DFS</b> (DFS tree). Những cạnh còn lại của thành phần gọi là <b>cạnh ngược</b> (back edge). Trong đồ thị vô hướng, cạnh ngược luôn nối một đỉnh với một <b>tổ tiên</b> của nó trên cây, chứ không bao giờ nối hai nhánh khác nhau. Lý do: khi DFS đang ở u và thấy đỉnh kề v chưa thăm, nó sẽ đi vào v ngay, nên v trở thành con cháu của u. Mỗi cạnh ngược khép kín một chu trình, đây là cơ sở để phát hiện chu trình ở phần sau.</p>
+    <p>Trong đồ thị mẫu, thành phần {1, 2, 3, 4, 5} có 5 đỉnh và 5 cạnh. Cây DFS có 4 cạnh 1–2, 2–4, 4–3, 4–5; cạnh còn lại 3–1 là cạnh ngược, nối 3 với tổ tiên 1 và tạo chu trình 1–2–4–3–1.</p>
+
+    <h3>Đệ quy hay ngăn xếp tự quản?</h3>
+    <p>Hai cách thăm cùng tập đỉnh và cùng <span class="bigo">O(n + m)</span>. Khác biệt nằm ở bộ nhớ ngăn xếp. Đệ quy sâu bao nhiêu tầng thì chiếm bấy nhiêu khung lời gọi. Với đồ thị là một đường thẳng 10⁶ đỉnh, đệ quy sâu 10⁶ tầng, có thể vượt giới hạn ngăn xếp của máy chấm (trên Windows mặc định chỉ khoảng 1 MB) và chương trình bị dừng đột ngột. Bản ngăn xếp tự quản dùng <code>vector</code> nằm trên vùng nhớ heap rộng rãi, nên an toàn. Ở bản ngăn xếp, một đỉnh có thể bị đẩy vào nhiều lần, nhưng tổng số lần đẩy không quá 2m + 1, nên bộ nhớ vẫn là <span class="bigo">O(n + m)</span>.</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Ba dòng của DFS thì ai cũng thuộc. Điều làm nên người giỏi là thói quen viết ra “đỉnh là gì, cạnh là gì” trước khi code, và luôn tự hỏi “đánh dấu đã đúng chỗ chưa”.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Ta chạy tay DFS đệ quy kèm vòng đếm thành phần trên đồ thị mẫu ở Hình 2: n = 8, các cạnh 1–2, 1–3, 2–4, 3–4, 4–5, 6–7, 7–8. Danh sách kề lấy theo thứ tự đọc cạnh: adj[1] = 2, 3; adj[2] = 1, 4; adj[3] = 1, 4; adj[4] = 2, 3, 5; adj[5] = 4; adj[6] = 7; adj[7] = 6, 8; adj[8] = 7.</p>
+    <p>Quy ước màu: đỉnh <b>đang xử lý</b> tô đậm; đỉnh <b>đã vào nhưng chưa xong</b> (còn nằm trong ngăn xếp lời gọi) tô màu so sánh; đỉnh <b>đã xong</b> tô xanh. Cạnh xanh là cạnh cây, cạnh vừa đi qua tô đậm, cạnh đỏ là cạnh ngược.</p>
+
+    <div class="stepper" data-title="DFS đệ quy và đếm thành phần trên đồ thị mẫu">
+      <div class="frame" data-caption="&lt;b&gt;Bước 0.&lt;/b&gt; Đồ thị mẫu 8 đỉnh, 7 cạnh. Mọi đỉnh chưa thăm (visited toàn 0), ngăn xếp trống, dem = 0. Vòng lặp ngoài bắt đầu từ u = 1.">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp trống"><line class="edge" x1="60" y1="50" x2="170" y2="40"/><line class="edge" x1="60" y1="50" x2="80" y2="160"/><line class="edge" x1="170" y1="40" x2="200" y2="140"/><line class="edge" x1="80" y1="160" x2="200" y2="140"/><line class="edge" x1="200" y1="140" x2="300" y2="180"/><line class="edge" x1="370" y1="50" x2="430" y2="140"/><line class="edge" x1="430" y1="140" x2="480" y2="50"/><circle class="node" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell" data-i="1">0</span><span class="cell" data-i="2">0</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">0</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-dim">trống</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell is-dim">—</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">0</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; u = 1 chưa thăm: dem = 1, gọi dfs(1). Đánh dấu visited[1] = 1 ngay. Ngăn xếp lời gọi: [1]. adj[1] = 2, 3.">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp 1"><line class="edge" x1="60" y1="50" x2="170" y2="40"/><line class="edge" x1="60" y1="50" x2="80" y2="160"/><line class="edge" x1="170" y1="40" x2="200" y2="140"/><line class="edge" x1="80" y1="160" x2="200" y2="140"/><line class="edge" x1="200" y1="140" x2="300" y2="180"/><line class="edge" x1="370" y1="50" x2="430" y2="140"/><line class="edge" x1="430" y1="140" x2="480" y2="50"/><circle class="node is-active" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell is-active" data-i="1">1</span><span class="cell" data-i="2">0</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">0</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-active">1</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell">1</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Ở 1, đỉnh kề đầu tiên là 2, chưa thăm: đi sâu vào dfs(2). Cạnh 1–2 thành cạnh cây. adj[2] = 1, 4.">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp 1 2"><line class="edge is-active" x1="60" y1="50" x2="170" y2="40"/><line class="edge" x1="60" y1="50" x2="80" y2="160"/><line class="edge" x1="170" y1="40" x2="200" y2="140"/><line class="edge" x1="80" y1="160" x2="200" y2="140"/><line class="edge" x1="200" y1="140" x2="300" y2="180"/><line class="edge" x1="370" y1="50" x2="430" y2="140"/><line class="edge" x1="430" y1="140" x2="480" y2="50"/><circle class="node is-cmp" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node is-active" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-active" data-i="2">1</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">0</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-cmp">1</span><span class="cell is-active">2</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell">1</span><span class="cell">2</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; Ở 2: đỉnh kề 1 đã thăm, bỏ qua. Đỉnh kề 4 chưa thăm: gọi dfs(4). adj[4] = 2, 3, 5.">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp 1 2 4"><line class="edge is-ok" x1="60" y1="50" x2="170" y2="40"/><line class="edge" x1="60" y1="50" x2="80" y2="160"/><line class="edge is-active" x1="170" y1="40" x2="200" y2="140"/><line class="edge" x1="80" y1="160" x2="200" y2="140"/><line class="edge" x1="200" y1="140" x2="300" y2="180"/><line class="edge" x1="370" y1="50" x2="430" y2="140"/><line class="edge" x1="430" y1="140" x2="480" y2="50"/><circle class="node is-cmp" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node is-cmp" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node is-active" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-ok" data-i="2">1</span><span class="cell" data-i="3">0</span><span class="cell is-active" data-i="4">1</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">0</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-cmp">1</span><span class="cell is-cmp">2</span><span class="cell is-active">4</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell">1</span><span class="cell">2</span><span class="cell">4</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; Ở 4: đỉnh kề 2 đã thăm, bỏ qua. Đỉnh kề 3 chưa thăm: gọi dfs(3). Ngăn xếp sâu nhất: [1, 2, 4, 3].">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp 1 2 4 3"><line class="edge is-ok" x1="60" y1="50" x2="170" y2="40"/><line class="edge" x1="60" y1="50" x2="80" y2="160"/><line class="edge is-ok" x1="170" y1="40" x2="200" y2="140"/><line class="edge is-active" x1="80" y1="160" x2="200" y2="140"/><line class="edge" x1="200" y1="140" x2="300" y2="180"/><line class="edge" x1="370" y1="50" x2="430" y2="140"/><line class="edge" x1="430" y1="140" x2="480" y2="50"/><circle class="node is-cmp" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node is-cmp" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node is-active" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node is-cmp" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-active" data-i="3">1</span><span class="cell is-ok" data-i="4">1</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">0</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-cmp">1</span><span class="cell is-cmp">2</span><span class="cell is-cmp">4</span><span class="cell is-active">3</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell">1</span><span class="cell">2</span><span class="cell">4</span><span class="cell">3</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; Ở 3: đỉnh kề 1 &lt;b&gt;đã thăm&lt;/b&gt; và không phải cha (cha của 3 là 4). Cạnh 3–1 là &lt;b&gt;cạnh ngược&lt;/b&gt;, nó khép chu trình 1–2–4–3–1. Đỉnh kề 4 cũng đã thăm. Hết đỉnh kề: dfs(3) xong, quay lui về 4.">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp 1 2 4"><line class="edge is-ok" x1="60" y1="50" x2="170" y2="40"/><line class="edge is-bad" x1="60" y1="50" x2="80" y2="160"/><line class="edge is-ok" x1="170" y1="40" x2="200" y2="140"/><line class="edge is-ok" x1="80" y1="160" x2="200" y2="140"/><line class="edge" x1="200" y1="140" x2="300" y2="180"/><line class="edge" x1="370" y1="50" x2="430" y2="140"/><line class="edge" x1="430" y1="140" x2="480" y2="50"/><circle class="node is-cmp" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node is-cmp" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node is-ok" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node is-active" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-active" data-i="4">1</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">0</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-cmp">1</span><span class="cell is-cmp">2</span><span class="cell is-active">4</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell">1</span><span class="cell">2</span><span class="cell">4</span><span class="cell">3</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 6.&lt;/b&gt; Trở lại 4, xét tiếp đỉnh kề 5: chưa thăm, gọi dfs(5). adj[5] = 4.">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp 1 2 4 5"><line class="edge is-ok" x1="60" y1="50" x2="170" y2="40"/><line class="edge is-bad" x1="60" y1="50" x2="80" y2="160"/><line class="edge is-ok" x1="170" y1="40" x2="200" y2="140"/><line class="edge is-ok" x1="80" y1="160" x2="200" y2="140"/><line class="edge is-active" x1="200" y1="140" x2="300" y2="180"/><line class="edge" x1="370" y1="50" x2="430" y2="140"/><line class="edge" x1="430" y1="140" x2="480" y2="50"/><circle class="node is-cmp" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node is-cmp" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node is-ok" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node is-cmp" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node is-active" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">1</span><span class="cell is-active" data-i="5">1</span><span class="cell" data-i="6">0</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-cmp">1</span><span class="cell is-cmp">2</span><span class="cell is-cmp">4</span><span class="cell is-active">5</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell">1</span><span class="cell">2</span><span class="cell">4</span><span class="cell">3</span><span class="cell">5</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 7.&lt;/b&gt; Ở 5: đỉnh kề duy nhất 4 đã thăm, dfs(5) xong. Lần lượt dfs(4), dfs(2) hết đỉnh kề và kết thúc. Về 1, đỉnh kề còn lại 3 đã thăm, dfs(1) xong. Ngăn xếp trống: thành phần thứ nhất {1, 2, 4, 3, 5} đã thăm hết.">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp trống"><line class="edge is-ok" x1="60" y1="50" x2="170" y2="40"/><line class="edge is-bad" x1="60" y1="50" x2="80" y2="160"/><line class="edge is-ok" x1="170" y1="40" x2="200" y2="140"/><line class="edge is-ok" x1="80" y1="160" x2="200" y2="140"/><line class="edge is-ok" x1="200" y1="140" x2="300" y2="180"/><line class="edge" x1="370" y1="50" x2="430" y2="140"/><line class="edge" x1="430" y1="140" x2="480" y2="50"/><circle class="node is-ok" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node is-ok" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node is-ok" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node is-ok" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node is-ok" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">1</span><span class="cell is-ok" data-i="5">1</span><span class="cell" data-i="6">0</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-dim">trống</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell">1</span><span class="cell">2</span><span class="cell">4</span><span class="cell">3</span><span class="cell">5</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">1</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 8.&lt;/b&gt; Vòng lặp ngoài chạy tiếp: u = 2, 3, 4, 5 đều đã thăm nên bỏ qua. u = 6 chưa thăm: dem = 2, gọi dfs(6). adj[6] = 7.">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp 6"><line class="edge is-ok" x1="60" y1="50" x2="170" y2="40"/><line class="edge is-bad" x1="60" y1="50" x2="80" y2="160"/><line class="edge is-ok" x1="170" y1="40" x2="200" y2="140"/><line class="edge is-ok" x1="80" y1="160" x2="200" y2="140"/><line class="edge is-ok" x1="200" y1="140" x2="300" y2="180"/><line class="edge" x1="370" y1="50" x2="430" y2="140"/><line class="edge" x1="430" y1="140" x2="480" y2="50"/><circle class="node is-ok" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node is-ok" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node is-ok" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node is-ok" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node is-ok" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node is-active" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">1</span><span class="cell is-ok" data-i="5">1</span><span class="cell is-active" data-i="6">1</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-active">6</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell">1</span><span class="cell">2</span><span class="cell">4</span><span class="cell">3</span><span class="cell">5</span><span class="cell">6</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">2</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 9.&lt;/b&gt; Từ 6 sang 7 (chưa thăm). Ở 7: đỉnh kề 6 đã thăm, đỉnh kề 8 chưa thăm, gọi dfs(8). Ngăn xếp: [6, 7, 8].">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp 6 7 8"><line class="edge is-ok" x1="60" y1="50" x2="170" y2="40"/><line class="edge is-bad" x1="60" y1="50" x2="80" y2="160"/><line class="edge is-ok" x1="170" y1="40" x2="200" y2="140"/><line class="edge is-ok" x1="80" y1="160" x2="200" y2="140"/><line class="edge is-ok" x1="200" y1="140" x2="300" y2="180"/><line class="edge is-ok" x1="370" y1="50" x2="430" y2="140"/><line class="edge is-active" x1="430" y1="140" x2="480" y2="50"/><circle class="node is-ok" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node is-ok" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node is-ok" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node is-ok" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node is-ok" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node is-cmp" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node is-cmp" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node is-active" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">1</span><span class="cell is-ok" data-i="5">1</span><span class="cell is-ok" data-i="6">1</span><span class="cell is-ok" data-i="7">1</span><span class="cell is-active" data-i="8">1</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-cmp">6</span><span class="cell is-cmp">7</span><span class="cell is-active">8</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell">1</span><span class="cell">2</span><span class="cell">4</span><span class="cell">3</span><span class="cell">5</span><span class="cell">6</span><span class="cell">7</span><span class="cell">8</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">2</span></div></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 10.&lt;/b&gt; 8, 7, 6 lần lượt hết đỉnh kề, quay lui xong. u = 7, 8 đã thăm. Kết thúc: &lt;b&gt;dem = 2&lt;/b&gt; thành phần. Thứ tự thăm 1 2 4 3 5 6 7 8. Các cạnh xanh là cây DFS (4 + 2 = 6 cạnh), cạnh đỏ 1–3 là cạnh ngược duy nhất.">
+        <svg class="gd-svg" viewBox="0 0 520 210" width="520" role="img" aria-label="Bước DFS: ngăn xếp trống"><line class="edge is-ok" x1="60" y1="50" x2="170" y2="40"/><line class="edge is-bad" x1="60" y1="50" x2="80" y2="160"/><line class="edge is-ok" x1="170" y1="40" x2="200" y2="140"/><line class="edge is-ok" x1="80" y1="160" x2="200" y2="140"/><line class="edge is-ok" x1="200" y1="140" x2="300" y2="180"/><line class="edge is-ok" x1="370" y1="50" x2="430" y2="140"/><line class="edge is-ok" x1="430" y1="140" x2="480" y2="50"/><circle class="node is-ok" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text><circle class="node is-ok" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text><circle class="node is-ok" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text><circle class="node is-ok" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text><circle class="node is-ok" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text><circle class="node is-ok" cx="370" cy="50" r="17"/><text x="370" y="55" text-anchor="middle">6</text><circle class="node is-ok" cx="430" cy="140" r="17"/><text x="430" y="145" text-anchor="middle">7</text><circle class="node is-ok" cx="480" cy="50" r="17"/><text x="480" y="55" text-anchor="middle">8</text></svg><div class="gd-row"><div class="arr"><span class="arr-label">visited</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">1</span><span class="cell is-ok" data-i="5">1</span><span class="cell is-ok" data-i="6">1</span><span class="cell is-ok" data-i="7">1</span><span class="cell is-ok" data-i="8">1</span></div><div class="arr"><span class="arr-label">ngăn xếp</span><span class="cell is-dim">trống</span></div><div class="arr"><span class="arr-label">thứ tự</span><span class="cell">1</span><span class="cell">2</span><span class="cell">4</span><span class="cell">3</span><span class="cell">5</span><span class="cell">6</span><span class="cell">7</span><span class="cell">8</span></div><div class="arr"><span class="arr-label">dem</span><span class="cell is-ok">2</span></div></div>
+      </div>
+    </div>
+
+    <p>Em để ý ba điều. Thứ nhất, ngăn xếp lời gọi luôn là <b>đường đi trên cây DFS</b> từ đỉnh xuất phát tới đỉnh đang xử lý, ví dụ [1, 2, 4, 3] ở bước 4. Thứ hai, mỗi đỉnh chuyển màu đúng một lần từ “chưa thăm” sang “đang mở” rồi sang “xong”. Thứ ba, chỉ có 2 lần gọi DFS từ vòng lặp ngoài (u = 1 và u = 6), đúng bằng số thành phần.</p>
+
+    <h3>Cùng ví dụ với ngăn xếp tự quản</h3>
+    <p>Chạy bản ngăn xếp từ đỉnh 1 trên thành phần thứ nhất. Mỗi lượt lấy đỉnh trên cùng (viết ở cuối dãy), nếu chưa thăm thì thăm và đẩy các đỉnh kề chưa thăm theo thứ tự ngược.</p>
+    <table class="trace">
+      <thead><tr><th>Lượt</th><th>Lấy ra u</th><th>Xử lý</th><th>Đẩy vào</th><th>Ngăn xếp sau lượt</th><th>Thứ tự thăm</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>—</td><td>khởi tạo</td><td>1</td><td>[1]</td><td>—</td></tr>
+        <tr><td>1</td><td>1</td><td>thăm 1</td><td>3, 2</td><td>[3, 2]</td><td>1</td></tr>
+        <tr><td>2</td><td>2</td><td>thăm 2 (1 đã thăm)</td><td>4</td><td>[3, 4]</td><td>1 2</td></tr>
+        <tr><td>3</td><td>4</td><td>thăm 4 (2 đã thăm)</td><td>5, 3</td><td>[3, 5, 3]</td><td>1 2 4</td></tr>
+        <tr><td>4</td><td>3</td><td>thăm 3 (1, 4 đã thăm)</td><td>—</td><td>[3, 5]</td><td>1 2 4 3</td></tr>
+        <tr><td>5</td><td>5</td><td>thăm 5</td><td>—</td><td>[3]</td><td>1 2 4 3 5</td></tr>
+        <tr class="hl"><td>6</td><td>3</td><td><b>đã thăm, bỏ qua</b></td><td>—</td><td>[ ]</td><td>1 2 4 3 5</td></tr>
+      </tbody>
+    </table>
+    <p>Thứ tự thăm 1 2 4 3 5 giống hệt bản đệ quy. Đỉnh 3 bị đẩy vào <b>hai lần</b> (lượt 1 từ đỉnh 1, lượt 3 từ đỉnh 4), nên dòng <code>if (visited[u]) continue;</code> là bắt buộc. Nếu thiếu dòng đó, 3 bị “thăm” hai lần và kết quả đếm sai.</p>
+
+    <div class="playground" id="viz-graph-dfs">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: DFS từng bước trên đồ thị của em</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="gdfs-n">Số đỉnh n (1–12) <input type="number" id="gdfs-n" min="1" max="12" value="8"></label>
+          <label for="gdfs-edges">Các cạnh <input type="text" id="gdfs-edges" size="34" value="1 2, 1 3, 2 4, 3 4, 4 5, 6 7, 7 8"></label>
+          <label for="gdfs-s">Bắt đầu từ <input type="number" id="gdfs-s" min="1" max="12" value="1"></label>
+        </div>
+        <div class="controls">
+          <button type="button" data-act="reset">Đặt lại</button>
+          <button type="button" class="ghost" data-act="step">Bước tiếp</button>
+          <button type="button" class="ghost" data-act="play">Tự chạy</button>
+        </div>
+        <div data-role="stage"></div>
+        <div class="out" data-role="out">Nhập đồ thị rồi bấm “Bước tiếp” hoặc “Tự chạy”.</div>
+      </div>
+    </div>
+    <p>Widget chạy DFS đệ quy từ đỉnh em chọn, sau đó tiếp tục từ các đỉnh chưa thăm theo thứ tự 1, 2, …, n như vòng đếm thành phần. Mỗi cạnh viết dạng “u v”, các cạnh cách nhau bởi dấu phẩy. Em thử thêm cạnh “5 6” để nối hai thành phần, hoặc đổi đỉnh bắt đầu thành 4 và xem cây DFS thay đổi ra sao.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Chương trình dưới đây đọc đồ thị vô hướng n đỉnh, m cạnh, đếm số thành phần liên thông, in từng thành phần theo thứ tự DFS thăm, rồi trả lời q câu hỏi “u và v có thông nhau không?”. Mỗi đỉnh được gắn <code>comp[u]</code> là số thứ tự thành phần chứa nó, nên mỗi câu hỏi chỉ tốn <span class="bigo">O(1)</span>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_thanh_phan.cpp</span> Đếm thành phần liên thông và trả lời câu hỏi thông nhau</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const int MAXN = 100005;
+vector&lt;int&gt; adj[MAXN];      // adj[u] = danh sách các đỉnh kề với u
+bool visited[MAXN];         // visited[u] = true nếu đã thăm u
+int comp[MAXN];             // comp[u] = số thứ tự thành phần chứa u
+vector&lt;int&gt; order_;         // thứ tự thăm của thành phần đang xét
+
+void dfs(int u, int id) {
+    visited[u] = true;      // đánh dấu NGAY khi vừa vào đỉnh
+    comp[u] = id;
+    order_.push_back(u);
+    for (int v : adj[u])    // xét lần lượt từng đỉnh kề
+        if (!visited[v])
+            dfs(v, id);     // đi sâu vào v, xong mới quay lại
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    for (int i = 0; i &lt; m; i++) {
+        int u, v;
+        cin &gt;&gt; u &gt;&gt; v;
+        adj[u].push_back(v); // cạnh vô hướng: thêm cả hai chiều
+        adj[v].push_back(u);
+    }
+    vector&lt;vector&lt;int&gt;&gt; groups;
+    int cnt = 0;
+    for (int u = 1; u &lt;= n; u++) {
+        if (!visited[u]) {   // gặp đỉnh chưa thăm: một thành phần mới
+            cnt++;
+            order_.clear();
+            dfs(u, cnt);
+            groups.push_back(order_);
+        }
+    }
+    cout &lt;&lt; cnt &lt;&lt; '\n';
+    for (auto &amp;g : groups) {             // in từng thành phần theo thứ tự thăm
+        for (size_t i = 0; i &lt; g.size(); i++)
+            cout &lt;&lt; g[i] &lt;&lt; (i + 1 &lt; g.size() ? ' ' : '\n');
+    }
+    int q;                               // các câu hỏi: u và v có thông nhau không?
+    if (cin &gt;&gt; q) {
+        while (q--) {
+            int u, v;
+            cin &gt;&gt; u &gt;&gt; v;
+            cout &lt;&lt; (comp[u] == comp[v] ? "YES" : "NO") &lt;&lt; '\n';
+        }
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8 7
+1 2
+1 3
+2 4
+3 4
+4 5
+6 7
+7 8
+3
+1 5
+3 8
+6 8</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2
+1 2 4 3 5
+6 7 8
+YES
+NO
+YES</code></pre></div>
+    </div>
+    <p>Giải thích: có 2 thành phần. Đỉnh 1 và 5 cùng thành phần 1 nên YES; 3 thuộc thành phần 1, 8 thuộc thành phần 2 nên NO; 6 và 8 cùng thành phần 2 nên YES.</p>
+
+    <h3>Phiên bản ngăn xếp tự quản</h3>
+    <p>Dùng khi đồ thị có thể là một đường rất dài (n tới 10⁶) và em lo tràn ngăn xếp đệ quy. Chương trình in thứ tự thăm từ đỉnh 1; với đồ thị mẫu ở trên nó in <code>1 2 4 3 5</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dfs_stack.cpp</span> DFS không đệ quy</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vector&lt;vector&lt;int&gt;&gt; adj(n + 1);
+    for (int i = 0; i &lt; m; i++) {
+        int u, v;
+        cin &gt;&gt; u &gt;&gt; v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    vector&lt;bool&gt; visited(n + 1, false);
+    vector&lt;int&gt; st;                       // ngăn xếp tự quản
+    st.push_back(1);
+    while (!st.empty()) {
+        int u = st.back(); st.pop_back(); // lấy đỉnh trên cùng
+        if (visited[u]) continue;         // đã thăm rồi thì bỏ qua
+        visited[u] = true;
+        cout &lt;&lt; u &lt;&lt; ' ';
+        // đẩy ngược để đỉnh kề đầu tiên được lấy ra trước
+        for (int i = (int)adj[u].size() - 1; i &gt;= 0; i--)
+            if (!visited[adj[u][i]]) st.push_back(adj[u][i]);
+    }
+    cout &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="callout tip"><p class="callout-title">Mảng toàn cục hay vector?</p><p>Khai báo <code>vector&lt;int&gt; adj[MAXN]</code> và <code>bool visited[MAXN]</code> ở <b>ngoài</b> hàm <code>main</code> thì mảng tự khởi tạo bằng 0 và không chiếm ngăn xếp. Nếu đề có nhiều bộ test, nhớ xóa <code>adj[u].clear()</code> và đặt lại <code>visited</code> cho từng bộ.</p></div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thao tác</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Đọc đồ thị vào danh sách kề</td><td><span class="bigo">O(n + m)</span></td><td><span class="bigo">O(n + m)</span></td></tr>
+        <tr><td>DFS một thành phần / cả đồ thị (danh sách kề)</td><td><span class="bigo">O(n + m)</span></td><td><span class="bigo">O(n)</span> cho visited và ngăn xếp</td></tr>
+        <tr><td>DFS cả đồ thị (ma trận kề)</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n²)</span></td></tr>
+        <tr><td>Hỏi “u, v có thông nhau?” sau khi gán comp</td><td><span class="bigo">O(1)</span> mỗi câu</td><td>—</td></tr>
+        <tr><td>Tô hai màu, phát hiện chu trình, DFS trên cây</td><td><span class="bigo">O(n + m)</span></td><td><span class="bigo">O(n + m)</span></td></tr>
+      </tbody>
+    </table>
+    <p><b>Ví dụ số phép tính.</b> Với n = 2·10⁵ và m = 2·10⁵ (giới hạn hay gặp), DFS làm khoảng n + 2m = 6·10⁵ bước cơ bản, chạy trong vài mili giây. Thêm q = 2·10⁵ câu hỏi thông nhau, mỗi câu một phép so sánh, tổng vẫn dưới 10⁶. Nếu với mỗi câu hỏi lại chạy một DFS mới thì phải làm q × (n + 2m) = 2·10⁵ × 6·10⁵ = 1,2·10¹¹ bước, quá chậm. Bài học: <b>chạy DFS một lần, ghi kết quả lại, trả lời nhiều lần</b>.</p>
+    <p><b>Độ sâu đệ quy.</b> Trường hợp xấu nhất là đồ thị đường thẳng 1–2–3–…–n, đệ quy sâu n tầng. Trên Codeforces, CSES (Linux) ngăn xếp thường đủ cho 10⁶ tầng; trên máy chấm Windows hoặc Themis với cấu hình mặc định, khoảng vài chục nghìn tầng đã có thể tràn. Khi n lớn mà không chắc về máy chấm, hãy dùng ngăn xếp tự quản hoặc <a href="bfs.html">BFS</a>.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Kích thước từng thành phần</h3>
+    <p>Cho <code>dfs</code> trả về số đỉnh nó thăm được: <code>int dfs(u) { visited[u] = true; int c = 1; for (v : adj[u]) if (!visited[v]) c += dfs(v); return c; }</code>. Trên đồ thị mẫu, hai lần gọi trả về 5 và 3. Biết kích thước thì làm được nhiều câu: thành phần lớn nhất, số cặp đỉnh thông nhau (mỗi thành phần k đỉnh góp k(k − 1)/2 cặp; ở đồ thị mẫu là 10 + 3 = 13 cặp).</p>
+    <p><b>Nối các thành phần (bài Building Roads):</b> có c thành phần thì cần ít nhất c − 1 con đường mới để cả đồ thị liên thông. Lấy một đỉnh đại diện cho mỗi thành phần (chính là đỉnh u mà vòng lặp ngoài gọi DFS), rồi nối đại diện thứ i với đại diện thứ i + 1.</p>
+
+    <h3>2. Tô hai màu (kiểm tra đồ thị hai phía)</h3>
+    <p><b>Mô tả.</b> Đồ thị gọi là <b>hai phía</b> (bipartite) nếu tô được mỗi đỉnh một trong hai màu sao cho mọi cạnh nối hai đỉnh khác màu. Ví dụ: chia lớp thành hai đội mà hai bạn thân không cùng đội.</p>
+    <p><b>Cách làm.</b> DFS và tô màu xen kẽ: đỉnh xuất phát màu 1, con của đỉnh màu c thì nhận màu 3 − c. Khi gặp đỉnh kề <b>đã tô</b>, kiểm tra: nếu nó cùng màu với u thì có hai đỉnh kề nhau cùng màu, đồ thị không hai phía.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> <code>color[u] = 0</code> (chưa tô) với mọi u.</div></li>
+      <li><div><strong>Tô.</strong> Với mỗi u chưa tô, gọi <code>dfs(u, 1)</code>: gán màu, tô đỉnh kề chưa tô bằng màu ngược lại.</div></li>
+      <li><div><strong>Kiểm tra.</strong> Gặp đỉnh kề v đã tô mà <code>color[v] == color[u]</code> thì báo không tô được.</div></li>
+    </ol>
+    <p><b>Vì sao đúng.</b> Trong một thành phần, khi đã chọn màu cho đỉnh đầu, màu của mọi đỉnh khác bị ép buộc theo cây DFS (màu đổi ở mỗi bước). Nên nếu cách tô ép buộc này hỏng thì không có cách tô nào khác đúng. Tương đương, đồ thị là hai phía <b>khi và chỉ khi không có chu trình độ dài lẻ</b>: đi vòng quanh chu trình, màu đổi ở mỗi cạnh, quay về đỉnh đầu sau một số lẻ lần đổi thì phải khác màu chính nó, vô lý.</p>
+    <figure class="diagram">
+      <svg class="gd-svg" viewBox="0 0 520 200" width="520" role="img" aria-label="Tô hai màu: thành phần chu trình 4 đỉnh tô được, tam giác không tô được">
+        <line class="edge" x1="60" y1="50" x2="170" y2="40"/>
+        <line class="edge" x1="60" y1="50" x2="80" y2="160"/>
+        <line class="edge" x1="170" y1="40" x2="200" y2="140"/>
+        <line class="edge" x1="80" y1="160" x2="200" y2="140"/>
+        <line class="edge" x1="200" y1="140" x2="300" y2="180"/>
+        <circle class="node is-ok" cx="60" cy="50" r="17"/><text x="60" y="55" text-anchor="middle">1</text>
+        <circle class="node is-cmp" cx="170" cy="40" r="17"/><text x="170" y="45" text-anchor="middle">2</text>
+        <circle class="node is-cmp" cx="80" cy="160" r="17"/><text x="80" y="165" text-anchor="middle">3</text>
+        <circle class="node is-ok" cx="200" cy="140" r="17"/><text x="200" y="145" text-anchor="middle">4</text>
+        <circle class="node is-cmp" cx="300" cy="180" r="17"/><text x="300" y="185" text-anchor="middle">5</text>
+        <line class="edge" x1="400" y1="40" x2="350" y2="140"/>
+        <line class="edge" x1="400" y1="40" x2="460" y2="140"/>
+        <line class="edge is-bad" x1="350" y1="140" x2="460" y2="140"/>
+        <circle class="node is-ok" cx="400" cy="40" r="17"/><text x="400" y="45" text-anchor="middle">A</text>
+        <circle class="node is-cmp" cx="350" cy="140" r="17"/><text x="350" y="145" text-anchor="middle">B</text>
+        <circle class="node is-cmp" cx="460" cy="140" r="17"/><text x="460" y="145" text-anchor="middle">C</text>
+        <text class="label-pen" x="405" y="175" text-anchor="middle">B, C cùng màu!</text>
+      </svg>
+      <figcaption>Hình 3. Trái: thành phần {1, 2, 3, 4, 5} có chu trình chẵn 1–2–4–3–1, tô được: {1, 4} một màu, {2, 3, 5} màu kia. Phải: tam giác là chu trình lẻ, A màu 1 ép B và C cùng màu 2, cạnh B–C hỏng.</figcaption>
+    </figure>
+    <figure class="code">
+      <figcaption><span class="fn">to_hai_mau.cpp</span> In màu 1/2 của từng đỉnh hoặc IMPOSSIBLE</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int n, m;
+vector&lt;int&gt; adj[100005];
+int color_[100005];               // 0 = chưa tô, 1 hoặc 2 = màu
+bool ok = true;
+
+void dfs(int u, int c) {
+    color_[u] = c;
+    for (int v : adj[u]) {
+        if (color_[v] == 0) dfs(v, 3 - c);     // tô màu ngược lại
+        else if (color_[v] == c) ok = false;   // hai đầu một cạnh cùng màu
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin &gt;&gt; n &gt;&gt; m;
+    for (int i = 0; i &lt; m; i++) {
+        int u, v; cin &gt;&gt; u &gt;&gt; v;
+        adj[u].push_back(v); adj[v].push_back(u);
+    }
+    for (int u = 1; u &lt;= n; u++)
+        if (color_[u] == 0) dfs(u, 1);         // mỗi thành phần tô riêng
+    if (!ok) { cout &lt;&lt; "IMPOSSIBLE\n"; return 0; }
+    for (int u = 1; u &lt;= n; u++) cout &lt;&lt; color_[u] &lt;&lt; (u &lt; n ? ' ' : '\n');
+    return 0;
+}</code></pre>
+    </figure>
+    <p>Với đồ thị mẫu, chương trình in <code>1 2 2 1 2 1 2 1</code>. Thử thêm cạnh 1–4: chu trình 1–2–4–1 dài 3, chương trình in <code>IMPOSSIBLE</code>.</p>
+
+    <h3>3. Phát hiện chu trình trong đồ thị vô hướng</h3>
+    <p><b>Ý tưởng.</b> Theo phần cây DFS, đồ thị vô hướng có chu trình khi và chỉ khi DFS gặp một <b>cạnh ngược</b>: từ u nhìn thấy đỉnh kề v <b>đã thăm</b> mà v <b>không phải cha</b> của u. Vì sao phải loại cha? Vì cạnh cây u–cha được lưu cả hai chiều, nên từ u nhìn lại luôn thấy cha đã thăm, đó không phải chu trình.</p>
+    <pre class="pseudo"><b>hàm</b> coChuTrinh(u, cha):
+    visited[u] ← <b>đúng</b>
+    <b>với mỗi</b> v <b>trong</b> adj[u]:
+        <b>nếu</b> <b>không</b> visited[v]:
+            <b>nếu</b> coChuTrinh(v, u): <b>trả về</b> <b>đúng</b>
+        <b>ngược lại nếu</b> v ≠ cha:
+            <b>trả về</b> <b>đúng</b>              <i>// cạnh ngược u–v</i>
+    <b>trả về</b> <b>sai</b></pre>
+    <figure class="code">
+      <figcaption><span class="fn">chu_trinh.cpp</span> In YES nếu đồ thị vô hướng có chu trình</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+vector&lt;int&gt; adj[100005];
+bool visited[100005];
+
+// trả về true nếu thành phần chứa u có chu trình
+bool dfs(int u, int parent) {
+    visited[u] = true;
+    for (int v : adj[u]) {
+        if (!visited[v]) {
+            if (dfs(v, u)) return true;
+        } else if (v != parent) {
+            return true;           // gặp đỉnh đã thăm không phải cha: có chu trình
+        }
+    }
+    return false;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m; cin &gt;&gt; n &gt;&gt; m;
+    for (int i = 0; i &lt; m; i++) {
+        int u, v; cin &gt;&gt; u &gt;&gt; v;
+        adj[u].push_back(v); adj[v].push_back(u);
+    }
+    bool has = false;
+    for (int u = 1; u &lt;= n &amp;&amp; !has; u++)
+        if (!visited[u] &amp;&amp; dfs(u, 0)) has = true;
+    cout &lt;&lt; (has ? "YES" : "NO") &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <p>Với đồ thị mẫu, in <code>YES</code> (cạnh ngược 3–1 ở bước 5 của minh họa). Bỏ cạnh 3–4 đi (còn 6 cạnh) thì in <code>NO</code>.</p>
+    <p><b>Cách đếm nhanh.</b> Một thành phần k đỉnh không có chu trình là một cây, có đúng k − 1 cạnh. Nên cả đồ thị không có chu trình khi và chỉ khi m = n − c (c là số thành phần). Tổng quát hơn, số m − n + c cho biết cần bỏ ít nhất bao nhiêu cạnh để hết chu trình. Đồ thị mẫu: 7 − 8 + 2 = 1, đúng là chỉ cần bỏ một cạnh. Muốn <b>in ra</b> chu trình (bài Round Trip), em lưu <code>par[]</code> trong lúc DFS; khi gặp cạnh ngược u–v, đi ngược <code>par</code> từ u lên tới v.</p>
+
+    <h3>4. DFS trên cây: độ sâu và kích thước cây con (nâng cao)</h3>
+    <p>Cây là đồ thị liên thông không có chu trình, n đỉnh và n − 1 cạnh. Trên cây không cần mảng <code>visited</code>: chỉ cần nhớ đỉnh cha và không quay ngược lên cha. Chọn đỉnh 1 làm gốc:</p>
+    <ul>
+      <li><b>Độ sâu</b> <code>depth[v] = depth[u] + 1</code> khi đi từ u xuống con v (tính <b>trước</b> khi gọi đệ quy).</li>
+      <li><b>Kích thước cây con</b> <code>sz[u] = 1 + tổng sz[con]</code> (tính <b>sau</b> khi các con đã xong). Đây là kiểu “quy hoạch động trên cây” đầu tiên em gặp.</li>
+    </ul>
+    <figure class="diagram">
+      <svg class="gd-svg" viewBox="0 0 500 240" width="500" role="img" aria-label="Cây 7 đỉnh gốc 1, ghi độ sâu và kích thước cây con">
+        <line class="edge" x1="250" y1="30" x2="150" y2="90"/>
+        <line class="edge" x1="250" y1="30" x2="350" y2="90"/>
+        <line class="edge" x1="150" y1="90" x2="90" y2="150"/>
+        <line class="edge" x1="150" y1="90" x2="210" y2="150"/>
+        <line class="edge" x1="350" y1="90" x2="350" y2="150"/>
+        <line class="edge" x1="210" y1="150" x2="210" y2="210"/>
+        <circle class="node is-active" cx="250" cy="30" r="16"/><text x="250" y="35" text-anchor="middle">1</text>
+        <circle class="node" cx="150" cy="90" r="16"/><text x="150" y="95" text-anchor="middle">2</text>
+        <circle class="node" cx="350" cy="90" r="16"/><text x="350" y="95" text-anchor="middle">3</text>
+        <circle class="node" cx="90" cy="150" r="16"/><text x="90" y="155" text-anchor="middle">4</text>
+        <circle class="node" cx="210" cy="150" r="16"/><text x="210" y="155" text-anchor="middle">5</text>
+        <circle class="node" cx="350" cy="150" r="16"/><text x="350" y="155" text-anchor="middle">6</text>
+        <circle class="node" cx="210" cy="210" r="16"/><text x="210" y="215" text-anchor="middle">7</text>
+        <text class="label-sm" x="272" y="34">d=0, sz=7</text>
+        <text class="label-sm" x="40" y="94">d=1, sz=4</text>
+        <text class="label-sm" x="372" y="94">d=1, sz=2</text>
+        <text class="label-sm" x="20" y="174">d=2, sz=1</text>
+        <text class="label-sm" x="232" y="154">d=2, sz=2</text>
+        <text class="label-sm" x="372" y="154">d=2, sz=1</text>
+        <text class="label-sm" x="232" y="214">d=3, sz=1</text>
+      </svg>
+      <figcaption>Hình 4. Cây 7 đỉnh, gốc 1. Ví dụ sz[2] = 1 + sz[4] + sz[5] = 1 + 1 + 2 = 4; số cấp dưới của 2 (bài Subordinates) là sz[2] − 1 = 3.</figcaption>
+    </figure>
+    <figure class="code">
+      <figcaption><span class="fn">dfs_cay.cpp</span> Độ sâu và kích thước cây con</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+vector&lt;int&gt; adj[100005];
+int depth_[100005], sz[100005];
+
+void dfs(int u, int parent) {
+    sz[u] = 1;                         // cây con của u có ít nhất chính u
+    for (int v : adj[u]) {
+        if (v == parent) continue;     // không quay ngược lên cha
+        depth_[v] = depth_[u] + 1;
+        dfs(v, u);
+        sz[u] += sz[v];                // cộng kích thước cây con của v
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n; cin &gt;&gt; n;
+    for (int i = 0; i &lt; n - 1; i++) {
+        int u, v; cin &gt;&gt; u &gt;&gt; v;
+        adj[u].push_back(v); adj[v].push_back(u);
+    }
+    depth_[1] = 0;
+    dfs(1, 0);
+    for (int u = 1; u &lt;= n; u++)
+        cout &lt;&lt; u &lt;&lt; ": do sau " &lt;&lt; depth_[u] &lt;&lt; ", cay con " &lt;&lt; sz[u] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">7
+1 2
+1 3
+2 4
+2 5
+3 6
+5 7</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1: do sau 0, cay con 7
+2: do sau 1, cay con 4
+3: do sau 1, cay con 2
+4: do sau 2, cay con 1
+5: do sau 2, cay con 2
+6: do sau 2, cay con 1
+7: do sau 3, cay con 1</code></pre></div>
+    </div>
+    <p>Mang thêm thông tin theo đường từ gốc xuống cũng là một biến thể hay gặp: bài Kefa and Park truyền theo “số đỉnh có mèo liên tiếp tới đây” làm tham số thứ ba của <code>dfs</code>, và cắt nhánh khi số đó vượt m.</p>
+
+    <h3>5. Đồ thị có hướng và loang trên lưới</h3>
+    <p>Với đồ thị có hướng, chỉ thêm <code>adj[u].push_back(v)</code> một chiều; DFS từ s cho tập đỉnh <b>tới được từ s</b>, nhưng khái niệm “thành phần” phức tạp hơn (thành phần liên thông mạnh, học sau). Với bảng ô vuông, mỗi ô là một đỉnh và bốn ô xung quanh là đỉnh kề, không cần lập danh sách kề; xem bài <a href="flood-fill.html">loang trên lưới</a>.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Quên thêm cạnh chiều ngược lại</p><p>Đồ thị vô hướng mà chỉ viết <code>adj[u].push_back(v)</code>. Khi đó từ v không đi về u được, DFS thiếu đỉnh và đếm thừa thành phần. Sửa: luôn viết thêm <code>adj[v].push_back(u)</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Đánh dấu muộn hoặc quên đánh dấu</p><p>Đặt <code>visited[u] = true</code> ở cuối hàm, hoặc quên hẳn: DFS vào lại đỉnh cũ, đi vòng quanh chu trình mãi, chương trình chạy quá thời gian hoặc tràn ngăn xếp. Sửa: dòng đầu tiên của <code>dfs</code> là đánh dấu.</p></div>
+    <div class="callout warn"><p class="callout-title">Tràn ngăn xếp đệ quy</p><p>Đồ thị đường thẳng 10⁶ đỉnh làm đệ quy sâu 10⁶ tầng, chương trình dừng đột ngột (Runtime Error) dù thuật toán đúng. Sửa: dùng ngăn xếp tự quản hoặc BFS; tránh khai báo mảng lớn bên trong hàm đệ quy.</p></div>
+    <div class="callout warn"><p class="callout-title">Dùng ma trận kề khi n lớn</p><p><code>bool a[100005][100005]</code> cần 10¹⁰ byte, biên dịch lỗi hoặc vượt bộ nhớ. Sửa: n &gt; 5000 thì dùng danh sách kề.</p></div>
+    <div class="callout warn"><p class="callout-title">Không xóa dữ liệu giữa các bộ test</p><p>Đề có T bộ test mà không <code>adj[u].clear()</code> và đặt lại <code>visited</code>, cạnh của bộ cũ còn sót lại. Sửa: xóa từ 1 đến n (không phải cả MAXN) ở đầu mỗi bộ test.</p></div>
+    <div class="callout warn"><p class="callout-title">Kiểm tra cha sai khi có cạnh lặp</p><p>Trong phát hiện chu trình, nếu đề cho hai cạnh cùng nối u–v thì đó đã là một chu trình độ dài 2, nhưng phép thử <code>v != cha</code> bỏ qua nó. Sửa: lưu chỉ số cạnh, và chỉ bỏ qua đúng <b>cạnh</b> vừa đi xuống thay vì bỏ qua đỉnh cha.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo</p><p>Đọc kỹ đỉnh đánh số từ 0 hay từ 1, và vòng lặp ngoài chạy đúng khoảng đó. Khi debug, in thứ tự thăm và so với bản chạy tay trên giấy.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Một đồ thị vô hướng có 6 đỉnh, 4 cạnh và không có chu trình nào. Nó có bao nhiêu thành phần liên thông?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 1</button>
+        <button type="button" class="quiz-opt" data-correct>B. 2</button>
+        <button type="button" class="quiz-opt">C. 3</button>
+        <button type="button" class="quiz-opt">D. Chưa đủ dữ kiện</button>
+      </div>
+      <p class="quiz-explain">Không có chu trình thì mỗi thành phần k đỉnh là một cây có k − 1 cạnh. Cộng lại: m = n − c, nên c = 6 − 4 = 2.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Đồ thị vô hướng có 10 cạnh. Tổng bậc của mọi đỉnh bằng bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 10</button>
+        <button type="button" class="quiz-opt" data-correct>B. 20</button>
+        <button type="button" class="quiz-opt">C. Tùy số đỉnh</button>
+      </div>
+      <p class="quiz-explain">Bổ đề bắt tay: mỗi cạnh có hai đầu, được đếm hai lần khi cộng bậc, nên tổng bậc = 2m = 20, không phụ thuộc số đỉnh.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Đề cho n = 10⁵ đỉnh, m = 2·10⁵ cạnh. Nên lưu đồ thị thế nào để chạy DFS?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Ma trận kề <code>bool a[n+1][n+1]</code></button>
+        <button type="button" class="quiz-opt" data-correct>B. Danh sách kề <code>vector&lt;int&gt; adj[n+1]</code></button>
+        <button type="button" class="quiz-opt">C. Chỉ danh sách cạnh, mỗi bước DFS quét lại m cạnh</button>
+      </div>
+      <p class="quiz-explain">Ma trận cần 10¹⁰ ô, quá bộ nhớ. Danh sách cạnh làm mỗi bước DFS tốn O(m), tổng O(n·m) = 2·10¹⁰. Danh sách kề cho O(n + m) cả về thời gian lẫn bộ nhớ.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Trong bản DFS dùng ngăn xếp tự quản, vì sao cần dòng “lấy ra u, nếu u đã thăm thì bỏ qua”?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Để chương trình chạy nhanh hơn một chút, bỏ đi vẫn đúng</button>
+        <button type="button" class="quiz-opt" data-correct>B. Vì một đỉnh có thể bị đẩy vào ngăn xếp nhiều lần từ các đỉnh kề khác nhau</button>
+        <button type="button" class="quiz-opt">C. Vì ngăn xếp không cho chứa hai số giống nhau</button>
+      </div>
+      <p class="quiz-explain">Ở bảng vết, đỉnh 3 được đẩy từ đỉnh 1 rồi lại từ đỉnh 4. Lần lấy ra thứ hai, 3 đã thăm; thiếu dòng kiểm tra thì 3 bị xử lý hai lần.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Đồ thị là một chu trình 5 đỉnh 1–2–3–4–5–1. Có tô hai màu được không?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Được</button>
+        <button type="button" class="quiz-opt" data-correct>B. Không được</button>
+      </div>
+      <p class="quiz-explain">Tô 1 màu A thì 2 màu B, 3 màu A, 4 màu B, 5 màu A, nhưng 5 kề 1 cùng màu A. Chu trình độ dài lẻ không bao giờ tô hai màu được.</p>
+    </div>
+    <p><strong>Câu 6.</strong> Chạy tay DFS đệ quy trên đồ thị mẫu (Hình 2) nhưng <b>bắt đầu từ đỉnh 4</b>, danh sách kề như cũ. Ghi thứ tự thăm, các cạnh cây và cạnh ngược.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>adj[4] = 2, 3, 5. Từ 4 sang 2. Ở 2: adj[2] = 1, 4, sang 1. Ở 1: 2 đã thăm, sang 3. Ở 3: 1 và 4 đều đã thăm, quay lui. Về 1 xong, về 2: 4 đã thăm, xong. Về 4: 3 đã thăm, sang 5. Thứ tự thăm: <b>4 2 1 3 5</b>. Cạnh cây: 4–2, 2–1, 1–3, 4–5. Cạnh ngược: 3–4 (từ 3 thấy 4 đã thăm mà cha của 3 là 1). Đỉnh xuất phát khác cho cây DFS khác, nhưng tập đỉnh thăm được vẫn là {1, 2, 3, 4, 5}.</p>
+    </details>
+    <p><strong>Câu 7.</strong> Với cây ở Hình 4, nếu đổi gốc thành đỉnh 2 thì sz[1] bằng bao nhiêu? Độ sâu của đỉnh 6 bằng bao nhiêu?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Gốc 2 thì các con của 2 là 1, 4, 5. Cây con của 1 gồm 1, 3, 6, nên sz[1] = 3. Đường từ 2 tới 6 là 2–1–3–6, gồm 3 cạnh, nên độ sâu của 6 là 3. Kiểm tra: sz[1] + sz[4] + sz[5] + 1 = 3 + 1 + 2 + 1 = 7 = n.</p>
+    </details>
+    <p><strong>Câu 8.</strong> Có n học sinh và m cặp bạn thân. Thầy muốn biết có bao nhiêu cặp học sinh (không kể thứ tự) <b>không</b> thể nhắn tin cho nhau qua chuỗi bạn thân. Nêu cách làm trong <span class="bigo">O(n + m)</span>.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Đỉnh là học sinh, cạnh là cặp bạn thân. Dùng DFS tính kích thước k₁, k₂, …, k<sub>c</sub> của các thành phần. Số cặp thông nhau là tổng k<sub>i</sub>(k<sub>i</sub> − 1)/2. Đáp số = n(n − 1)/2 trừ tổng đó. Với đồ thị mẫu: 28 − 13 = 15 cặp, đúng bằng 5 × 3 cặp chọn một đỉnh ở mỗi thành phần. Nhớ dùng <code>long long</code> vì n(n − 1)/2 có thể tới 5·10⁹.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Với mỗi bài, em viết ra “đỉnh là gì, cạnh là gì” trước khi đọc gợi ý.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/dfs">DFS cơ bản</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho đồ thị vô hướng tới khoảng 10⁵ đỉnh và 10⁵ cạnh, đếm số thành phần liên thông.</p>
+        <p class="ex-skill"><b>Luyện:</b> danh sách kề, DFS, vòng lặp đếm thành phần.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đúng chương trình ở phần Cài đặt: đếm số lần vòng lặp ngoài phải gọi DFS mới.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1666">Building Roads</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">n thành phố, m con đường. Xây ít con đường mới nhất để mọi thành phố đi lại được với nhau, in số đường và các đường cần xây.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm thành phần, chọn đỉnh đại diện.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Có c thành phần thì cần c − 1 đường. Ghi lại đỉnh u mỗi lần vòng lặp ngoài gọi DFS, rồi nối các đại diện liên tiếp. n, m tới 2·10⁵.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1668">Building Teams</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Chia n học sinh thành hai đội sao cho hai bạn thân luôn khác đội; in đội của từng bạn hoặc IMPOSSIBLE.</p>
+        <p class="ex-skill"><b>Luyện:</b> tô hai màu, xử lý nhiều thành phần.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Dùng chương trình tô hai màu ở phần Biến thể; nhớ tô từng thành phần một, không chỉ từ đỉnh 1.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/bedao_m11_treecoloring">Bedao Mini Contest 11 - TREECOLORING</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cây n đỉnh (n ≤ 10⁵), mỗi cạnh có độ dài. Tô mỗi đỉnh màu 0 hoặc 1 sao cho hai đỉnh cùng màu luôn cách nhau một khoảng chẵn.</p>
+        <p class="ex-skill"><b>Luyện:</b> DFS trên cây mang thông tin từ gốc xuống, tính chẵn lẻ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tô mỗi đỉnh theo tính chẵn lẻ của khoảng cách từ gốc tới nó. Khoảng cách giữa u và v bằng d(u) + d(v) − 2·d(lca), cùng tính chẵn lẻ với d(u) + d(v). Chỉ cần lưu d mod 2.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/580/C">Kefa and Park</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cây gốc 1, một số đỉnh có mèo. Đếm số lá mà trên đường từ gốc tới lá không có quá m đỉnh có mèo liên tiếp.</p>
+        <p class="ex-skill"><b>Luyện:</b> DFS trên cây với tham số trạng thái, cắt nhánh, nhận biết lá.</p>
+        <details class="hint"><summary>Gợi ý</summary><p><code>dfs(u, cha, lienTiep)</code>: nếu u có mèo thì lienTiep + 1, không thì về 0; vượt m thì dừng nhánh. Lá là đỉnh khác gốc có đúng một đỉnh kề.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/ads">ADS – Quảng cáo</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">N đại lý (N ≤ 2000), M con đường (M ≤ 5000). Mỗi nhân viên đi một hành trình khép kín, mỗi hành trình phải có ít nhất một con đường mới. Tìm số nhân viên tối đa.</p>
+        <p class="ex-skill"><b>Luyện:</b> chu trình, cây DFS, công thức m − n + c.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mỗi cạnh ngược của cây DFS cho thêm đúng một chu trình mới. Số cạnh ngược = M − (N − C) với C là số thành phần. Ví dụ đề: 6 − 5 + 1 = 2.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1669">Round Trip</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Tìm một hành trình bắt đầu và kết thúc ở cùng thành phố, đi qua ít nhất hai thành phố khác, không đi lại con đường nào; in hành trình hoặc IMPOSSIBLE.</p>
+        <p class="ex-skill"><b>Luyện:</b> phát hiện chu trình bằng cạnh ngược, truy vết bằng mảng cha.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lưu <code>par[v] = u</code> khi đi xuống. Gặp cạnh ngược u–v (v đã thăm, v ≠ par[u]): in v, rồi đi theo par từ u lên tới v, rồi in v lần nữa.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1674">Subordinates</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Công ty n nhân viên, biết sếp trực tiếp của từng người (giám đốc là 1). Với mỗi nhân viên, đếm số cấp dưới (trực tiếp và gián tiếp).</p>
+        <p class="ex-skill"><b>Luyện:</b> kích thước cây con.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Thêm cạnh sếp → nhân viên, chạy DFS từ 1 tính sz như chương trình <code>dfs_cay.cpp</code>; đáp số của u là sz[u] − 1. n tới 2·10⁵ và cây có thể là một đường dài, nên chú ý độ sâu đệ quy.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/graph-theory/Depth-First-Search-Tree">VNOI Wiki – Cây DFS (Depth-First Search Tree) và ứng dụng</a> (tiếng Việt, đọc sau khi nắm bài này)</li>
+      <li><a href="https://wiki.vnoi.info/algo/graph-theory/breadth-first-search">VNOI Wiki – BFS (Breadth-first search)</a> (tiếng Việt, so sánh với DFS)</li>
+      <li><a href="https://lqdoj.edu.vn/post/166-cses-graph-algorithms">LQDOJ – CSES Graph Algorithms</a> (tiếng Việt, bài viết về bộ bài đồ thị CSES)</li>
+      <li><a href="https://cses.fi/problemset/">CSES Problem Set</a> – mục Graph Algorithms và Tree Algorithms (tiếng Anh)</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Trước khi code: “đỉnh là gì? cạnh là gì?”. Tổng bậc = 2m.</li>
+        <li>Mặc định lưu bằng danh sách kề <code>vector&lt;int&gt; adj[N]</code>; vô hướng thì thêm cả hai chiều. Ma trận kề chỉ khi n ≤ vài nghìn.</li>
+        <li>DFS: đánh dấu <code>visited[u]</code> ngay khi vào, rồi đi sâu vào từng đỉnh kề chưa thăm. Thăm đúng thành phần chứa đỉnh xuất phát.</li>
+        <li>Độ phức tạp <span class="bigo">O(n + m)</span>: mỗi đỉnh vào một lần, mỗi cạnh xét hai lần.</li>
+        <li>Số thành phần = số lần vòng lặp 1..n phải gọi DFS mới; u, v thông nhau ⇔ <code>comp[u] == comp[v]</code>.</li>
+        <li>Tô hai màu: con nhận màu ngược cha; hỏng ⇔ có chu trình lẻ. Chu trình vô hướng ⇔ gặp đỉnh đã thăm khác cha.</li>
+        <li>Trên cây: <code>depth</code> tính khi đi xuống, <code>sz</code> tính khi quay lên.</li>
+        <li>Đồ thị đường dài 10⁶ đỉnh: dùng ngăn xếp tự quản hoặc <a href="bfs.html">BFS</a> để tránh tràn ngăn xếp.</li>
+      </ul>
+    </div>
+  </section>
+
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/graph-dfs.js"></script>
+</body>
+</html>

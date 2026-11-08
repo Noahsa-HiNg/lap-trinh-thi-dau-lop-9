@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Số lớn · Thi đấu lớp 9</title>
+<meta name="description" content="Tính toán với số nguyên có hàng trăm, hàng nghìn chữ số: lưu chữ số ngược, so sánh, cộng có nhớ, trừ có mượn, nhân, chia cho số nhỏ, cơ số 10^9 và __int128.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  /* Các hàng của phép tính theo cột thẳng hàng nhau: nhãn có cùng độ rộng */
+  .bn-col .arr-label { min-width: 3.6rem; text-align: right; }
+  /* Hàng có chỉ số data-i phía trên cần thêm khoảng trống */
+  .bn-gap .arr + .arr { margin-top: 1.9rem; }
+  .bn-gap { width: max-content; max-width: 100%; margin: 0 auto; }
+  .bn-gap .arr { margin-left: 0; }
+  .bn-grid .g { min-width: 4.4rem; padding: 0 0.3rem; }
+  .bn-col .cell:empty:not([data-i]) { border-style: dashed; opacity: 0.35; }
+</style>
+</head>
+<body data-page="topic" data-topic="big-numbers">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Nhận ra khi nào kết quả vượt quá <code>long long</code> và cần tự cài đặt số lớn.</li>
+      <li>Biểu diễn số lớn bằng mảng chữ số lưu ngược và giải thích được vì sao lưu ngược.</li>
+      <li>Cài đặt được so sánh, cộng có nhớ, trừ có mượn, nhân với số nhỏ, nhân hai số lớn, chia số lớn cho số nhỏ.</li>
+      <li>Dùng số lớn để tính n! với n ≤ 1000, 2<sup>n</sup>, số Fibonacci lớn, kiểm tra chia hết của số rất dài.</li>
+      <li>Biết hai cách tăng tốc: cơ số 10<sup>9</sup> và kiểu <code>__int128</code> khi chỉ vượt <code>long long</code> một chút.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Kiểu <code>long long</code> chỉ chứa được số có tối đa 19 chữ số. Khi đề bài hỏi 50!, 2<sup>1000</sup> hay tổng của hai số có 1000 chữ số, máy tính không có sẵn kiểu nào đủ lớn. Lúc đó em tự làm lấy: cất từng chữ số vào một mảng, rồi bắt chương trình <strong>đặt tính rồi tính</strong> y như em đã học ở tiểu học. Kỹ thuật này gọi là <strong>số lớn</strong> (big number, bignum).</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> máy tính bỏ túi chỉ hiện được 10 chữ số, nhưng em vẫn cộng được hai số 30 chữ số trên giấy. Em viết hai số thẳng cột, cộng từ hàng đơn vị sang trái, cột nào quá 9 thì “viết 1, nhớ 1”. Tờ giấy có thể dài bao nhiêu cũng được. Mảng trong C++ chính là tờ giấy đó, còn vòng lặp là cây bút.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>Số lớn</strong> là cách biểu diễn một số nguyên không âm N có n chữ số bằng mảng <span class="math">a[0..n−1]</span>, trong đó <span class="math">a[i]</span> là chữ số ở hàng 10<sup>i</sup>:</p>
+      <div class="math-block">N = a[0]·10<sup>0</sup> + a[1]·10<sup>1</sup> + … + a[n−1]·10<sup>n−1</sup>,&nbsp;&nbsp; 0 ≤ a[i] ≤ 9,&nbsp; a[n−1] ≠ 0 (trừ khi N = 0).</div>
+      <p>Như vậy <span class="math">a[0]</span> là hàng đơn vị, <span class="math">a[1]</span> là hàng chục… Chữ số được <strong>lưu ngược</strong> so với cách viết.</p>
+    </div>
+
+    <h3>Vì sao lưu ngược?</h3>
+    <p>Số 9876 khi đọc vào là xâu <code>"9876"</code>: <code>s[0] = '9'</code> là hàng nghìn. Ta đảo lại để <code>a[0] = 6</code> là hàng đơn vị.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 420 170" width="420" role="img" aria-label="Xâu 9876 được đảo thành mảng 6 7 8 9, chỉ số i ứng với hàng 10 mũ i">
+        <text class="label-sm" x="10" y="38">xâu s</text>
+        <rect class="node" x="80" y="16" width="44" height="34" rx="5"/><text x="102" y="39" text-anchor="middle">9</text>
+        <rect class="node" x="124" y="16" width="44" height="34" rx="5"/><text x="146" y="39" text-anchor="middle">8</text>
+        <rect class="node" x="168" y="16" width="44" height="34" rx="5"/><text x="190" y="39" text-anchor="middle">7</text>
+        <rect class="node" x="212" y="16" width="44" height="34" rx="5"/><text x="234" y="39" text-anchor="middle">6</text>
+        <line class="edge" x1="102" y1="52" x2="234" y2="108"/>
+        <line class="edge" x1="146" y1="52" x2="190" y2="108"/>
+        <line class="edge" x1="190" y1="52" x2="146" y2="108"/>
+        <line class="edge is-active" x1="234" y1="52" x2="102" y2="108"/>
+        <text class="label-sm" x="10" y="132">mảng a</text>
+        <rect class="node is-active" x="80" y="110" width="44" height="34" rx="5"/><text x="102" y="133" text-anchor="middle">6</text>
+        <rect class="node" x="124" y="110" width="44" height="34" rx="5"/><text x="146" y="133" text-anchor="middle">7</text>
+        <rect class="node" x="168" y="110" width="44" height="34" rx="5"/><text x="190" y="133" text-anchor="middle">8</text>
+        <rect class="node" x="212" y="110" width="44" height="34" rx="5"/><text x="234" y="133" text-anchor="middle">9</text>
+        <text class="label-sm" x="102" y="162" text-anchor="middle">i=0</text>
+        <text class="label-sm" x="146" y="162" text-anchor="middle">i=1</text>
+        <text class="label-sm" x="190" y="162" text-anchor="middle">i=2</text>
+        <text class="label-sm" x="234" y="162" text-anchor="middle">i=3</text>
+        <text class="label-pen" x="272" y="128">a[0] = hàng đơn vị</text>
+      </svg>
+      <figcaption>Hình 1. Đảo xâu để chỉ số i của mảng trùng với số mũ của hàng 10<sup>i</sup>.</figcaption>
+    </figure>
+    <p>Lưu ngược có ba cái lợi:</p>
+    <ul>
+      <li><strong>Hai số thẳng cột tự nhiên.</strong> 9876 và 45 dài khác nhau, nhưng <code>a[0]</code> và <code>b[0]</code> luôn cùng là hàng đơn vị. Không phải canh lề phải.</li>
+      <li><strong>Số nhớ mọc thêm chữ số ở cuối mảng.</strong> 9876 + 2345 = 12221 dài hơn một chữ số; ta chỉ việc <code>push_back(1)</code>, rất rẻ. Nếu lưu xuôi, phải chèn vào đầu mảng và dời mọi phần tử.</li>
+      <li><strong>Công thức đẹp.</strong> Chữ số hàng 10<sup>i</sup> nhân chữ số hàng 10<sup>j</sup> rơi vào hàng 10<sup>i+j</sup>, tức ô <code>i + j</code>.</li>
+    </ul>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Mọi kiểu số nguyên của C++ đều có giới hạn. Em cần nhớ bảng sau:</p>
+    <table>
+      <thead><tr><th>Kiểu</th><th>Giá trị lớn nhất</th><th>Khoảng</th><th>Số chữ số</th></tr></thead>
+      <tbody>
+        <tr><td><code>int</code></td><td>2 147 483 647</td><td>≈ 2,1·10<sup>9</sup></td><td>10</td></tr>
+        <tr><td><code>long long</code></td><td>9 223 372 036 854 775 807</td><td>≈ 9,2·10<sup>18</sup></td><td>19</td></tr>
+        <tr><td><code>unsigned long long</code></td><td>18 446 744 073 709 551 615</td><td>≈ 1,8·10<sup>19</sup></td><td>20</td></tr>
+        <tr><td><code>__int128</code></td><td>2<sup>127</sup> − 1</td><td>≈ 1,7·10<sup>38</sup></td><td>39</td></tr>
+        <tr><td><code>double</code></td><td>≈ 1,8·10<sup>308</sup></td><td>nhưng chỉ đúng khoảng 15–16 chữ số đầu</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p>Một vài con số cho em cảm giác: 20! = 2 432 902 008 176 640 000 vừa lọt <code>long long</code>, nhưng 21! = 51 090 942 171 709 440 000 đã tràn. 50! có 65 chữ số, 100! có 158 chữ số, 1000! có 2 568 chữ số. 2<sup>1000</sup> có 302 chữ số. Số Fibonacci thứ 1000 có 209 chữ số.</p>
+    <p>Số lớn được dùng trong các bài:</p>
+    <ul>
+      <li>Cộng, trừ, nhân hai số cho dưới dạng xâu dài tới hàng nghìn chữ số.</li>
+      <li>In <strong>chính xác</strong> n!, 2<sup>n</sup>, số Fibonacci thứ n, số tổ hợp C(n, k) khi n lớn.</li>
+      <li>Kiểm tra một số dài 10<sup>5</sup> chữ số có chia hết cho k không, tính số dư của nó cho k.</li>
+      <li>Bài đếm mà đáp án rất lớn nhưng đề <strong>không</strong> cho lấy theo mô-đun.</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề cho số “có không quá 100 / 1000 / 10<sup>5</sup> chữ số” (khác hẳn “không quá 10<sup>18</sup>”), hoặc yêu cầu in đáp án đầy đủ mà không có câu “in phần dư khi chia cho 10<sup>9</sup>+7”. Nếu đề cho lấy dư, em nên dùng <a href="modular-power.html">đồng dư và lũy thừa nhanh</a> thay cho số lớn.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho hai số nguyên dương A, B, mỗi số có không quá 1000 chữ số. Tính A × B.</p>
+    <p><strong>Thử 1: dùng <code>long long</code>.</strong> Không đọc nổi A, chứ đừng nói tới tích. Với số 30 chữ số, <code>cin &gt;&gt; x</code> làm hỏng luồng nhập, x nhận giá trị sai. Ngay cả hai số 10 chữ số nhân nhau (tới 20 chữ số) cũng đã tràn và cho kết quả sai mà không báo lỗi.</p>
+    <p><strong>Thử 2: dùng <code>double</code>.</strong> <code>double</code> chứa được số cỡ 10<sup>308</sup>, nhưng chỉ nhớ khoảng 15–16 chữ số đầu, phần sau bị làm tròn. Đề cần đủ 2000 chữ số thì sai ngay.</p>
+    <p><strong>Thử 3: nhân bằng phép cộng lặp.</strong> Tự viết phép cộng số lớn, rồi cộng A vào tổng B lần. Đúng, nhưng B có thể cỡ 10<sup>999</sup> nên cần 10<sup>999</sup> phép cộng. Vũ trụ mới khoảng 4·10<sup>17</sup> giây tuổi.</p>
+    <p><strong>Cách đúng: đặt tính nhân như trên giấy.</strong> Mỗi chữ số của A nhân với mỗi chữ số của B đúng một lần: 1000 × 1000 = 10<sup>6</sup> phép nhân chữ số, máy làm trong vài mili giây.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p><code>long long</code> hoặc <code>double</code>: sai ngay khi quá 19 chữ số (hoặc quá 16 chữ số với <code>double</code>). Cộng lặp B lần: <span class="bigo">O(B·n)</span>, với B ≈ 10<sup>999</sup> là không bao giờ xong.</p></div>
+      <div class="good-side"><h4>Đặt tính theo cột</h4><p>Cộng, trừ: <span class="bigo">O(n)</span>, 1000 chữ số chỉ khoảng 1000 bước. Nhân: <span class="bigo">O(n·m)</span>, 10<sup>6</sup> bước. Chính xác tới từng chữ số.</p></div>
+    </div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Trong cả bài, số lớn là <code>vector&lt;int&gt;</code> chữ số lưu ngược, ví dụ 9876 → <code>{6, 7, 8, 9}</code>. Số 0 là <code>{0}</code>. Ta giả sử các số đều không âm; số âm xử lý ở phần <a href="#bien-the">Biến thể</a>.</p>
+
+    <h3>1. Đọc, in và so sánh</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Đọc.</strong> Đọc số vào một <code>string</code> s. Duyệt s từ cuối về đầu, đẩy <code>s[i] − '0'</code> vào mảng. Xóa các số 0 thừa ở cuối mảng (là số 0 ở đầu số, ví dụ <code>"007"</code>), nhưng giữ lại ít nhất một chữ số.</div></li>
+      <li><div><strong>In.</strong> In mảng từ ô cuối về ô 0.</div></li>
+      <li><div><strong>So sánh độ dài trước.</strong> Số nào nhiều chữ số hơn thì lớn hơn (vì đã bỏ số 0 thừa).</div></li>
+      <li><div><strong>Cùng độ dài thì so từ hàng cao.</strong> Duyệt i từ n−1 về 0; chữ số đầu tiên khác nhau quyết định kết quả. Không có chỗ khác thì hai số bằng nhau.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> SoSánh(a, b):         <i>// trả về -1, 0 hoặc 1</i>
+    <b>nếu</b> len(a) ≠ len(b): <b>trả về</b> (len(a) &lt; len(b)) ? -1 : 1
+    <b>với</b> i <b>từ</b> len(a)-1 <b>về</b> 0:
+        <b>nếu</b> a[i] ≠ b[i]: <b>trả về</b> (a[i] &lt; b[i]) ? -1 : 1
+    <b>trả về</b> 0</pre>
+
+    <h3>2. Cộng có nhớ</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> <code>nhớ = 0</code>, mảng kết quả c rỗng.</div></li>
+      <li><div><strong>Cộng từng cột.</strong> Với i = 0, 1, 2…: <code>s = a[i] + b[i] + nhớ</code> (ô nào không có thì coi là 0).</div></li>
+      <li><div><strong>Viết và nhớ.</strong> Viết <code>s % 10</code> vào c, <code>nhớ = s / 10</code> (luôn là 0 hoặc 1).</div></li>
+      <li><div><strong>Kết thúc.</strong> Dừng khi đã hết cả hai số <em>và</em> nhớ bằng 0.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Cộng(a, b):
+    nhớ ← 0;  c ← rỗng
+    <b>với</b> i <b>từ</b> 0, <b>khi</b> i &lt; max(len(a), len(b)) <b>hoặc</b> nhớ &gt; 0:
+        s ← nhớ + (a[i] nếu có) + (b[i] nếu có)
+        thêm s mod 10 vào cuối c
+        nhớ ← s div 10
+    <b>trả về</b> c</pre>
+
+    <h3>3. Trừ có mượn (a ≥ b)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Điều kiện.</strong> Hàm chỉ làm khi a ≥ b. Nếu a &lt; b, tính b − a rồi in thêm dấu “−”.</div></li>
+      <li><div><strong>Trừ từng cột.</strong> <code>d = a[i] − mượn − b[i]</code>.</div></li>
+      <li><div><strong>Mượn.</strong> Nếu d &lt; 0 thì <code>d += 10</code>, <code>mượn = 1</code>; ngược lại <code>mượn = 0</code>. Viết d vào c.</div></li>
+      <li><div><strong>Dọn số 0 thừa.</strong> Kết quả có thể ngắn hơn nhiều: 1000 − 999 = 0001. Xóa số 0 ở cuối mảng, giữ lại ít nhất một ô.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Trừ(a, b):                <i>// cần a ≥ b</i>
+    mượn ← 0;  c ← rỗng
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> len(a)-1:
+        d ← a[i] - mượn - (b[i] nếu có)
+        <b>nếu</b> d &lt; 0: d ← d + 10;  mượn ← 1   <b>ngược lại</b> mượn ← 0
+        thêm d vào cuối c
+    xóa số 0 thừa ở cuối c
+    <b>trả về</b> c</pre>
+
+    <h3>4. Nhân số lớn với số nhỏ</h3>
+    <p>“Số nhỏ” là số k vừa trong <code>int</code> hoặc <code>long long</code>, ví dụ k ≤ 10<sup>9</sup>. Không cần tách k thành chữ số.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Nhân từng ô.</strong> <code>cur = a[i]·k + nhớ</code>; ghi <code>a[i] = cur % 10</code>, <code>nhớ = cur / 10</code>.</div></li>
+      <li><div><strong>Đổ phần nhớ còn lại.</strong> Hết mảng mà nhớ vẫn &gt; 0 thì nhớ có thể có nhiều chữ số: lặp <code>push_back(nhớ % 10)</code>, <code>nhớ /= 10</code>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> NhânNhỏ(a, k):
+    nhớ ← 0
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> len(a)-1:
+        cur ← a[i]·k + nhớ
+        a[i] ← cur mod 10;  nhớ ← cur div 10
+    <b>khi</b> nhớ &gt; 0:  thêm nhớ mod 10 vào cuối a;  nhớ ← nhớ div 10</pre>
+
+    <h3>5. Nhân hai số lớn</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Mảng c dài <code>len(a) + len(b)</code>, toàn số 0. Tích của số n chữ số với số m chữ số có không quá n + m chữ số.</div></li>
+      <li><div><strong>Rải tích.</strong> Với mọi cặp (i, j): <code>c[i + j] += a[i]·b[j]</code>. Chưa xử lý nhớ, nên mỗi ô c có thể lớn hơn 9.</div></li>
+      <li><div><strong>Xử lý nhớ một lượt.</strong> Đi k từ 0 lên: <code>cur = c[k] + nhớ</code>, <code>c[k] = cur % 10</code>, <code>nhớ = cur / 10</code>.</div></li>
+      <li><div><strong>Dọn số 0 thừa</strong> ở cuối c (ví dụ 12 × 34 = 408 chỉ có 3 chữ số; 0 × 123 = 0).</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Nhân(a, b):
+    c ← mảng len(a)+len(b) số 0
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> len(a)-1:
+        <b>với</b> j <b>từ</b> 0 <b>đến</b> len(b)-1:
+            c[i+j] ← c[i+j] + a[i]·b[j]
+    nhớ ← 0
+    <b>với</b> k <b>từ</b> 0 <b>đến</b> len(c)-1:
+        cur ← c[k] + nhớ;  c[k] ← cur mod 10;  nhớ ← cur div 10
+    xóa số 0 thừa ở cuối c
+    <b>trả về</b> c</pre>
+
+    <h3>6. Chia số lớn cho số nhỏ và lấy dư</h3>
+    <p>Phép chia là phép duy nhất đi từ <strong>trái sang phải</strong> (từ hàng cao xuống), giống hệt chia tay: “9 chia 7 được 1, dư 2; hạ 8 được 28…”. Vì vậy ta làm thẳng trên xâu viết xuôi.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Số dư <code>r = 0</code>, xâu thương q rỗng.</div></li>
+      <li><div><strong>Hạ chữ số.</strong> Với từng chữ số d từ trái sang phải: <code>r = r·10 + d</code>.</div></li>
+      <li><div><strong>Chia.</strong> Viết chữ số thương <code>r / k</code> vào q, rồi <code>r = r % k</code>.</div></li>
+      <li><div><strong>Kết thúc.</strong> Xóa số 0 thừa ở đầu q. Số r cuối cùng là số dư.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> ChiaNhỏ(s, k):          <i>// s là xâu viết xuôi</i>
+    r ← 0;  q ← ""
+    <b>với</b> mỗi chữ số d <b>của</b> s <b>từ trái sang phải</b>:
+        r ← r·10 + d
+        thêm chữ số (r div k) vào cuối q
+        r ← r mod k
+    xóa số 0 thừa ở đầu q
+    <b>trả về</b> (q, r)</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Mọi thuật toán ở trên đều dựa vào một ý: <strong>giá trị theo hàng</strong>. Chữ số ở ô i có giá trị a[i]·10<sup>i</sup>. Mười đơn vị ở hàng 10<sup>i</sup> đúng bằng một đơn vị ở hàng 10<sup>i+1</sup>. Đó là lý do “viết 1 nhớ 1”, “mượn 1 bằng 10” đều đúng.</p>
+
+    <h3>So sánh: vì sao xét độ dài trước?</h3>
+    <p>Sau khi bỏ số 0 thừa, số có n chữ số nằm trong đoạn [10<sup>n−1</sup>, 10<sup>n</sup> − 1]. Mọi số n chữ số đều nhỏ hơn mọi số n + 1 chữ số. Nếu cùng độ dài, chữ số khác nhau đầu tiên tính từ trái có hàng lớn nhất: chênh 1 đơn vị ở hàng 10<sup>i</sup> lớn hơn mọi chênh lệch có thể có ở các hàng thấp hơn (tối đa 10<sup>i</sup> − 1).</p>
+    <p>Đây là chỗ học sinh hay sai: so sánh hai <code>string</code> bằng <code>&lt;</code> là so <strong>theo từ điển</strong>, nên <code>"9" &gt; "10"</code> vì ký tự '9' &gt; '1'. Chỉ khi hai xâu cùng độ dài (và không có số 0 thừa), so từ điển mới trùng so giá trị.</p>
+
+    <h3>Cộng: vì sao nhớ chỉ là 0 hoặc 1?</h3>
+    <p>Mỗi cột có tổng tối đa 9 + 9 + 1 = 19, nên chữ số viết xuống là <code>s % 10</code> và số nhớ <code>s / 10</code> chỉ có thể là 0 hoặc 1. Bằng quy nạp: nếu nhớ vào ≤ 1 thì tổng ≤ 19, nhớ ra ≤ 1. Phép biến đổi giữ nguyên giá trị: s·10<sup>i</sup> = (s mod 10)·10<sup>i</sup> + (s div 10)·10<sup>i+1</sup>.</p>
+    <p>Điều kiện lặp “<em>hoặc</em> nhớ &gt; 0” lo việc kết quả dài thêm một chữ số (999 + 1 = 1000). Quên điều kiện này là lỗi số một của phép cộng.</p>
+
+    <h3>Trừ: mượn 1 bằng 10</h3>
+    <p>Nếu a[i] − b[i] − mượn &lt; 0, ta lấy 1 đơn vị của hàng 10<sup>i+1</sup> đổi thành 10 đơn vị ở hàng 10<sup>i</sup>. Giá trị của a không đổi, chỉ đổi cách viết. Vì d ≥ 0 − 9 − 1 = −10 nên cộng thêm 10 luôn đưa d về [0, 9]. Điều kiện a ≥ b đảm bảo ở cột cao nhất không còn phải mượn; nếu a &lt; b thì sẽ thừa một lần mượn “không có chỗ trả”. Vì thế ta so sánh trước rồi mới trừ số lớn cho số nhỏ.</p>
+    <p>Kết quả trừ hay có số 0 thừa ở đầu: 10000 − 9999 = 00001. Phải xóa, nếu không em in ra <code>00001</code> và bị chấm sai.</p>
+
+    <h3>Nhân với số nhỏ: một lượt duyệt</h3>
+    <p>a·k = Σ a[i]·k·10<sup>i</sup>. Ta xử lý từ hàng thấp, cộng dồn số nhớ y như phép cộng. Khác với phép cộng, nhớ có thể lớn hơn 1. Ta chứng minh được nhớ luôn nhỏ hơn k: nếu nhớ cũ &lt; k thì cur ≤ 9k + (k − 1) &lt; 10k, nên nhớ mới = cur / 10 &lt; k. Với k ≤ 10<sup>9</sup>, cur có thể tới gần 10<sup>10</sup>, vượt <code>int</code>, nên ta cho <code>cur</code> là <code>long long</code>. Hết mảng, nhớ còn lại (có thể nhiều chữ số) được đổ ra cuối mảng bằng vòng <code>while</code>. Đây là phép dùng nhiều nhất: n! = 1·2·3·…·n chỉ là nhân liên tiếp với số nhỏ.</p>
+
+    <h3>Nhân hai số lớn: vì sao ô i + j?</h3>
+    <div class="math-block">A·B = (Σ<sub>i</sub> a[i]·10<sup>i</sup>)·(Σ<sub>j</sub> b[j]·10<sup>j</sup>) = Σ<sub>i,j</sub> a[i]·b[j]·10<sup>i+j</sup></div>
+    <p>Vậy tích a[i]·b[j] thuộc hàng 10<sup>i+j</sup>, tức ô <code>c[i+j]</code>. Đây cũng là điều em làm khi đặt tính nhân: hàng thứ hai được viết lùi sang trái một cột. Ta cứ cộng hết vào c rồi xử lý nhớ một lần ở cuối, đỡ rối hơn nhiều so với vừa nhân vừa nhớ.</p>
+    <p>Mỗi ô c[k] nhận tối đa min(n, m) tích, mỗi tích ≤ 81. Với n = m = 10<sup>5</sup>, c[k] ≤ 8,1·10<sup>6</sup>, vừa <code>int</code>. Code mẫu dùng <code>long long</code> cho chắc.</p>
+
+    <h3>Chia cho số nhỏ: vì sao đi từ trái?</h3>
+    <p>Gọi P là số tạo bởi các chữ số đã hạ. Ta luôn giữ: <strong>r = P mod k</strong>, và các chữ số thương đã viết là P div k. Khi hạ thêm chữ số d, số mới là P·10 + d, nên phần dư mới là (r·10 + d) mod k. Vì r &lt; k nên r·10 + d &lt; 10k, chữ số thương <code>(r·10 + d) / k</code> luôn từ 0 đến 9. Chia phải đi từ hàng cao vì phần dư của hàng cao “tràn” xuống hàng thấp, ngược chiều với số nhớ của phép cộng.</p>
+    <p>Nếu chỉ cần số dư (kiểm tra chia hết), em bỏ hẳn xâu q, chỉ giữ r. Một số dài 10<sup>6</sup> chữ số cũng chỉ tốn 10<sup>6</sup> phép tính.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Cộng, trừ, so sánh, nhân với số nhỏ, chia cho số nhỏ đều duyệt mỗi chữ số một lần: <span class="bigo">O(n)</span>. Nhân hai số lớn duyệt mọi cặp chữ số: <span class="bigo">O(n·m)</span>. So với số lần cộng lặp (cỡ giá trị của B, tức 10<sup>m</sup>), n·m nhỏ hơn không thể tưởng tượng được.</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi code, em hãy tự đặt tính một ví dụ trên giấy và đánh số các cột 0, 1, 2… từ phải sang. Code chỉ là chép lại đúng những gì tay em làm.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Em bấm qua từng khung hình. Ở ví dụ cộng và trừ, các ô xếp như khi đặt tính: hàng đơn vị (ô 0) ở bên phải, số nhỏ phía trên mỗi ô là chỉ số i trong mảng. Ô viền đứt là ô chưa có chữ số.</p>
+
+    <div class="stepper" data-title="Ví dụ 1: cộng 9876 + 2345 theo cột">
+      <div class="frame" data-caption="&lt;b&gt;Chuẩn bị.&lt;/b&gt; a = 9876, b = 2345, lưu ngược nên cột 0 (bên phải) là hàng đơn vị. Hàng trên cùng ghi số nhớ.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">nhớ</span><span class="cell" data-i="4"></span><span class="cell" data-i="3"></span><span class="cell" data-i="2"></span><span class="cell" data-i="1"></span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell"></span><span class="cell">9</span><span class="cell">8</span><span class="cell">7</span><span class="cell">6</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell">2</span><span class="cell">3</span><span class="cell">4</span><span class="cell">5</span></div>
+          <div class="arr"><span class="arr-label">a + b</span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cột 0.&lt;/b&gt; 6 + 5 + nhớ 0 = 11. Viết 1, nhớ 1.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">nhớ</span><span class="cell" data-i="4"></span><span class="cell" data-i="3"></span><span class="cell" data-i="2"></span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell"></span><span class="cell">9</span><span class="cell">8</span><span class="cell">7</span><span class="cell is-active">6</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell">2</span><span class="cell">3</span><span class="cell">4</span><span class="cell is-active">5</span></div>
+          <div class="arr"><span class="arr-label">a + b</span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell is-active" data-ptr="nhớ 1">1</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cột 1.&lt;/b&gt; 7 + 4 + nhớ 1 = 12. Viết 2, nhớ 1.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">nhớ</span><span class="cell" data-i="4"></span><span class="cell" data-i="3"></span><span class="cell is-cmp" data-i="2">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell"></span><span class="cell">9</span><span class="cell">8</span><span class="cell is-active">7</span><span class="cell">6</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell">2</span><span class="cell">3</span><span class="cell is-active">4</span><span class="cell">5</span></div>
+          <div class="arr"><span class="arr-label">a + b</span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell is-active" data-ptr="nhớ 1">2</span><span class="cell">1</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cột 2.&lt;/b&gt; 8 + 3 + nhớ 1 = 12. Viết 2, nhớ 1.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">nhớ</span><span class="cell" data-i="4"></span><span class="cell is-cmp" data-i="3">1</span><span class="cell is-cmp" data-i="2">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell"></span><span class="cell">9</span><span class="cell is-active">8</span><span class="cell">7</span><span class="cell">6</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell">2</span><span class="cell is-active">3</span><span class="cell">4</span><span class="cell">5</span></div>
+          <div class="arr"><span class="arr-label">a + b</span><span class="cell"></span><span class="cell"></span><span class="cell is-active" data-ptr="nhớ 1">2</span><span class="cell">2</span><span class="cell">1</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cột 3.&lt;/b&gt; 9 + 2 + nhớ 1 = 12. Viết 2, nhớ 1.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">nhớ</span><span class="cell is-cmp" data-i="4">1</span><span class="cell is-cmp" data-i="3">1</span><span class="cell is-cmp" data-i="2">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell"></span><span class="cell is-active">9</span><span class="cell">8</span><span class="cell">7</span><span class="cell">6</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell is-active">2</span><span class="cell">3</span><span class="cell">4</span><span class="cell">5</span></div>
+          <div class="arr"><span class="arr-label">a + b</span><span class="cell"></span><span class="cell is-active" data-ptr="nhớ 1">2</span><span class="cell">2</span><span class="cell">2</span><span class="cell">1</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cột 4.&lt;/b&gt; 0 + 0 + nhớ 1 = 1. Viết 1, nhớ 0.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">nhớ</span><span class="cell is-cmp" data-i="4">1</span><span class="cell is-cmp" data-i="3">1</span><span class="cell is-cmp" data-i="2">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell"></span><span class="cell">9</span><span class="cell">8</span><span class="cell">7</span><span class="cell">6</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell">2</span><span class="cell">3</span><span class="cell">4</span><span class="cell">5</span></div>
+          <div class="arr"><span class="arr-label">a + b</span><span class="cell is-active" data-ptr="nhớ 0">1</span><span class="cell">2</span><span class="cell">2</span><span class="cell">2</span><span class="cell">1</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kết quả.&lt;/b&gt; Hết chữ số và nhớ = 0 thì dừng. Đọc từ ô 4 về ô 0: 9876 + 2345 = &lt;b&gt;12221&lt;/b&gt;.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">nhớ</span><span class="cell is-cmp" data-i="4">1</span><span class="cell is-cmp" data-i="3">1</span><span class="cell is-cmp" data-i="2">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell"></span><span class="cell">9</span><span class="cell">8</span><span class="cell">7</span><span class="cell">6</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell">2</span><span class="cell">3</span><span class="cell">4</span><span class="cell">5</span></div>
+          <div class="arr"><span class="arr-label">a + b</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-ok">1</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p>Phép trừ có một điểm khó: mượn có thể “lan” qua nhiều số 0 liền nhau, như 1002 − 47.</p>
+
+    <div class="stepper" data-title="Ví dụ 2: trừ 1002 − 47, mượn liên tiếp">
+      <div class="frame" data-caption="&lt;b&gt;Chuẩn bị.&lt;/b&gt; a = 1002 ≥ b = 47 nên trừ được. Hàng trên cùng ghi số mượn mà cột đó phải trả.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">mượn</span><span class="cell" data-i="3"></span><span class="cell" data-i="2"></span><span class="cell" data-i="1"></span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell">1</span><span class="cell">0</span><span class="cell">0</span><span class="cell">2</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell"></span><span class="cell">4</span><span class="cell">7</span></div>
+          <div class="arr"><span class="arr-label">a − b</span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cột 0.&lt;/b&gt; 2 − mượn 0 − 7 = −5. Âm nên cộng 10 thành 5, mượn 1 ở cột 1.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">mượn</span><span class="cell" data-i="3"></span><span class="cell" data-i="2"></span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell">1</span><span class="cell">0</span><span class="cell">0</span><span class="cell is-active">2</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell"></span><span class="cell">4</span><span class="cell is-active">7</span></div>
+          <div class="arr"><span class="arr-label">a − b</span><span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell is-active" data-ptr="mượn 1">5</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cột 1.&lt;/b&gt; 0 − mượn 1 − 4 = −5. Âm nên cộng 10 thành 5, mượn 1 ở cột 2.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">mượn</span><span class="cell" data-i="3"></span><span class="cell is-cmp" data-i="2">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell">1</span><span class="cell">0</span><span class="cell is-active">0</span><span class="cell">2</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell"></span><span class="cell is-active">4</span><span class="cell">7</span></div>
+          <div class="arr"><span class="arr-label">a − b</span><span class="cell"></span><span class="cell"></span><span class="cell is-active" data-ptr="mượn 1">5</span><span class="cell">5</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cột 2.&lt;/b&gt; 0 − mượn 1 − 0 = −1. Âm nên cộng 10 thành 9, mượn 1 ở cột 3.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">mượn</span><span class="cell is-cmp" data-i="3">1</span><span class="cell is-cmp" data-i="2">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell">1</span><span class="cell is-active">0</span><span class="cell">0</span><span class="cell">2</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell"></span><span class="cell">4</span><span class="cell">7</span></div>
+          <div class="arr"><span class="arr-label">a − b</span><span class="cell"></span><span class="cell is-active" data-ptr="mượn 1">9</span><span class="cell">5</span><span class="cell">5</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cột 3.&lt;/b&gt; 1 − mượn 1 − 0 = 0. Không âm, viết 0, không mượn.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">mượn</span><span class="cell is-cmp" data-i="3">1</span><span class="cell is-cmp" data-i="2">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell is-active">1</span><span class="cell">0</span><span class="cell">0</span><span class="cell">2</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell"></span><span class="cell">4</span><span class="cell">7</span></div>
+          <div class="arr"><span class="arr-label">a − b</span><span class="cell is-active" data-ptr="mượn 0">0</span><span class="cell">9</span><span class="cell">5</span><span class="cell">5</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Dọn số 0 thừa.&lt;/b&gt; Mảng kết quả là 0955 (đọc từ ô 3). Ô 3 là số 0 ở đầu nên bị xóa: 1002 − 47 = &lt;b&gt;955&lt;/b&gt;.">
+        <div class="bn-col">
+          <div class="arr"><span class="arr-label">mượn</span><span class="cell is-cmp" data-i="3">1</span><span class="cell is-cmp" data-i="2">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="0"></span></div>
+          <div class="arr"><span class="arr-label">a</span><span class="cell">1</span><span class="cell">0</span><span class="cell">0</span><span class="cell">2</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell"></span><span class="cell"></span><span class="cell">4</span><span class="cell">7</span></div>
+          <div class="arr"><span class="arr-label">a − b</span><span class="cell is-dim">0</span><span class="cell is-ok">9</span><span class="cell is-ok">5</span><span class="cell is-ok">5</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p>Với phép nhân hai số lớn, em theo dõi mảng c: mỗi tích a[i]·b[j] được cộng vào ô i + j, sau đó mới xử lý nhớ một lượt từ ô 0.</p>
+
+    <div class="stepper" data-title="Ví dụ 3: nhân 123 × 45, cộng vào ô i + j">
+      <div class="frame" data-caption="&lt;b&gt;Chuẩn bị.&lt;/b&gt; a = 123 → {3, 2, 1}, b = 45 → {5, 4}. Mảng c dài 3 + 2 = 5 ô, toàn số 0. Ở đây mảng hiện theo chỉ số tăng từ trái sang phải.">
+        <div class="bn-col bn-gap">
+          <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">3</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">1</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">4</span></div>
+          <div class="arr"><span class="arr-label">c</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">0</span><span class="cell" data-i="2">0</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 0 (a[0] = 3).&lt;/b&gt; c[0] += 3·5 = 15; c[1] += 3·4 = 12. Bây giờ c = {15, 12, 0, 0, 0}.">
+        <div class="bn-col bn-gap">
+          <div class="arr"><span class="arr-label">a</span><span class="cell is-active" data-i="0">3</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">1</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell is-cmp" data-i="0">5</span><span class="cell is-cmp" data-i="1">4</span></div>
+          <div class="arr"><span class="arr-label">c</span><span class="cell is-active" data-i="0">15</span><span class="cell is-active" data-i="1">12</span><span class="cell" data-i="2">0</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 1 (a[1] = 2).&lt;/b&gt; c[1] += 2·5 = 10; c[2] += 2·4 = 8. Bây giờ c = {15, 22, 8, 0, 0}.">
+        <div class="bn-col bn-gap">
+          <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">3</span><span class="cell is-active" data-i="1">2</span><span class="cell" data-i="2">1</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell is-cmp" data-i="0">5</span><span class="cell is-cmp" data-i="1">4</span></div>
+          <div class="arr"><span class="arr-label">c</span><span class="cell" data-i="0">15</span><span class="cell is-active" data-i="1">22</span><span class="cell is-active" data-i="2">8</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 2 (a[2] = 1).&lt;/b&gt; c[2] += 1·5 = 5; c[3] += 1·4 = 4. Bây giờ c = {15, 22, 13, 4, 0}.">
+        <div class="bn-col bn-gap">
+          <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">3</span><span class="cell" data-i="1">2</span><span class="cell is-active" data-i="2">1</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell is-cmp" data-i="0">5</span><span class="cell is-cmp" data-i="1">4</span></div>
+          <div class="arr"><span class="arr-label">c</span><span class="cell" data-i="0">15</span><span class="cell" data-i="1">22</span><span class="cell is-active" data-i="2">13</span><span class="cell is-active" data-i="3">4</span><span class="cell" data-i="4">0</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Nhớ ở ô 0.&lt;/b&gt; 15 + nhớ 0 = 15. Giữ 5, nhớ 1 sang ô 1.">
+        <div class="bn-col bn-gap">
+          <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">3</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">1</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">4</span></div>
+          <div class="arr"><span class="arr-label">c</span><span class="cell is-active" data-i="0" data-ptr="nhớ 1">5</span><span class="cell" data-i="1">22</span><span class="cell" data-i="2">13</span><span class="cell" data-i="3">4</span><span class="cell" data-i="4">0</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Nhớ ở ô 1.&lt;/b&gt; 22 + nhớ 1 = 23. Giữ 3, nhớ 2 sang ô 2.">
+        <div class="bn-col bn-gap">
+          <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">3</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">1</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">4</span></div>
+          <div class="arr"><span class="arr-label">c</span><span class="cell is-ok" data-i="0">5</span><span class="cell is-active" data-i="1" data-ptr="nhớ 2">3</span><span class="cell" data-i="2">13</span><span class="cell" data-i="3">4</span><span class="cell" data-i="4">0</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Nhớ ở ô 2.&lt;/b&gt; 13 + nhớ 2 = 15. Giữ 5, nhớ 1 sang ô 3.">
+        <div class="bn-col bn-gap">
+          <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">3</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">1</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">4</span></div>
+          <div class="arr"><span class="arr-label">c</span><span class="cell is-ok" data-i="0">5</span><span class="cell is-ok" data-i="1">3</span><span class="cell is-active" data-i="2" data-ptr="nhớ 1">5</span><span class="cell" data-i="3">4</span><span class="cell" data-i="4">0</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Nhớ ở ô 3.&lt;/b&gt; 4 + nhớ 1 = 5. Giữ 5, nhớ 0 sang ô 4.">
+        <div class="bn-col bn-gap">
+          <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">3</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">1</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">4</span></div>
+          <div class="arr"><span class="arr-label">c</span><span class="cell is-ok" data-i="0">5</span><span class="cell is-ok" data-i="1">3</span><span class="cell is-ok" data-i="2">5</span><span class="cell is-active" data-i="3" data-ptr="nhớ 0">5</span><span class="cell" data-i="4">0</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kết quả.&lt;/b&gt; c = {5, 3, 5, 5, 0}. Ô 4 là số 0 thừa nên bị xóa. Đọc ngược: 123 × 45 = &lt;b&gt;5535&lt;/b&gt;.">
+        <div class="bn-col bn-gap">
+          <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">3</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">1</span></div>
+          <div class="arr"><span class="arr-label">b</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">4</span></div>
+          <div class="arr"><span class="arr-label">c</span><span class="cell is-ok" data-i="0">5</span><span class="cell is-ok" data-i="1">3</span><span class="cell is-ok" data-i="2">5</span><span class="cell is-ok" data-i="3">5</span><span class="cell is-dim" data-i="4">0</span></div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Bảng tích a[i]·b[j] của 123 × 45</p></div>
+      <div class="viz-body">
+        <div class="grid-viz bn-grid" style="--cols:4">
+          <span class="g h">×</span><span class="g h">a[2]=1</span><span class="g h">a[1]=2</span><span class="g h">a[0]=3</span>
+          <span class="g h">b[1]=4</span><span class="g">4</span><span class="g is-active">8</span><span class="g is-ok">12</span>
+          <span class="g h">b[0]=5</span><span class="g is-active">5</span><span class="g is-ok">10</span><span class="g">15</span>
+        </div>
+      </div>
+      <div class="viz-legend"><span><i class="is-ok"></i>vào ô c[1]</span><span><i class="is-active"></i>vào ô c[2]</span></div>
+      <div class="viz-caption"><p>Các ô trên cùng một đường chéo có cùng i + j nên dồn vào cùng một ô của c: c[0] = 15, c[1] = 12 + 10 = 22, c[2] = 8 + 5 = 13, c[3] = 4. Đây đúng là các “hàng lùi sang trái” khi đặt tính nhân trên giấy.</p></div>
+    </div>
+
+    <p>Phép chia cho số nhỏ đi theo chiều ngược lại, từ trái sang phải, nên ta theo dõi bằng bảng vết.</p>
+
+    <div class="stepper" data-title="Ví dụ 4: chia 98765 cho 7 từ trái sang phải">
+      <div class="frame" data-caption="&lt;b&gt;Chuẩn bị.&lt;/b&gt; Chia 98765 cho k = 7. Số dư r = 0. Đi từ chữ số trái nhất.">
+        <table class="trace">
+          <thead><tr><th>Chữ số hạ xuống</th><th>r·10 + d</th><th>Chữ số thương</th><th>Dư r mới</th><th>Thương đến giờ</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Hạ 9.&lt;/b&gt; r = 0·10 + 9 = 9. Viết chữ số thương 1, dư 2.">
+        <table class="trace">
+          <thead><tr><th>Chữ số hạ xuống</th><th>r·10 + d</th><th>Chữ số thương</th><th>Dư r mới</th><th>Thương đến giờ</th></tr></thead>
+          <tbody><tr class="hl"><td>9</td><td>0·10 + 9 = 9</td><td>9 / 7 = 1</td><td>9 % 7 = 2</td><td>1</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Hạ 8.&lt;/b&gt; r = 2·10 + 8 = 28. Viết chữ số thương 4, dư 0.">
+        <table class="trace">
+          <thead><tr><th>Chữ số hạ xuống</th><th>r·10 + d</th><th>Chữ số thương</th><th>Dư r mới</th><th>Thương đến giờ</th></tr></thead>
+          <tbody><tr><td>9</td><td>0·10 + 9 = 9</td><td>9 / 7 = 1</td><td>9 % 7 = 2</td><td>1</td></tr><tr class="hl"><td>8</td><td>2·10 + 8 = 28</td><td>28 / 7 = 4</td><td>28 % 7 = 0</td><td>14</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Hạ 7.&lt;/b&gt; r = 0·10 + 7 = 7. Viết chữ số thương 1, dư 0.">
+        <table class="trace">
+          <thead><tr><th>Chữ số hạ xuống</th><th>r·10 + d</th><th>Chữ số thương</th><th>Dư r mới</th><th>Thương đến giờ</th></tr></thead>
+          <tbody><tr><td>9</td><td>0·10 + 9 = 9</td><td>9 / 7 = 1</td><td>9 % 7 = 2</td><td>1</td></tr><tr><td>8</td><td>2·10 + 8 = 28</td><td>28 / 7 = 4</td><td>28 % 7 = 0</td><td>14</td></tr><tr class="hl"><td>7</td><td>0·10 + 7 = 7</td><td>7 / 7 = 1</td><td>7 % 7 = 0</td><td>141</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Hạ 6.&lt;/b&gt; r = 0·10 + 6 = 6. Viết chữ số thương 0, dư 6.">
+        <table class="trace">
+          <thead><tr><th>Chữ số hạ xuống</th><th>r·10 + d</th><th>Chữ số thương</th><th>Dư r mới</th><th>Thương đến giờ</th></tr></thead>
+          <tbody><tr><td>9</td><td>0·10 + 9 = 9</td><td>9 / 7 = 1</td><td>9 % 7 = 2</td><td>1</td></tr><tr><td>8</td><td>2·10 + 8 = 28</td><td>28 / 7 = 4</td><td>28 % 7 = 0</td><td>14</td></tr><tr><td>7</td><td>0·10 + 7 = 7</td><td>7 / 7 = 1</td><td>7 % 7 = 0</td><td>141</td></tr><tr class="hl"><td>6</td><td>0·10 + 6 = 6</td><td>6 / 7 = 0</td><td>6 % 7 = 6</td><td>1410</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Hạ 5.&lt;/b&gt; r = 6·10 + 5 = 65. Viết chữ số thương 9, dư 2.">
+        <table class="trace">
+          <thead><tr><th>Chữ số hạ xuống</th><th>r·10 + d</th><th>Chữ số thương</th><th>Dư r mới</th><th>Thương đến giờ</th></tr></thead>
+          <tbody><tr><td>9</td><td>0·10 + 9 = 9</td><td>9 / 7 = 1</td><td>9 % 7 = 2</td><td>1</td></tr><tr><td>8</td><td>2·10 + 8 = 28</td><td>28 / 7 = 4</td><td>28 % 7 = 0</td><td>14</td></tr><tr><td>7</td><td>0·10 + 7 = 7</td><td>7 / 7 = 1</td><td>7 % 7 = 0</td><td>141</td></tr><tr><td>6</td><td>0·10 + 6 = 6</td><td>6 / 7 = 0</td><td>6 % 7 = 6</td><td>1410</td></tr><tr class="hl"><td>5</td><td>6·10 + 5 = 65</td><td>65 / 7 = 9</td><td>65 % 7 = 2</td><td>14109</td></tr></tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kết quả.&lt;/b&gt; Thương 14109 (không có số 0 thừa ở đầu), dư 2. Kiểm tra: 7 · 14109 + 2 = 98763 + 2 = 98765.">
+        <table class="trace">
+          <thead><tr><th>Chữ số hạ xuống</th><th>r·10 + d</th><th>Chữ số thương</th><th>Dư r mới</th><th>Thương đến giờ</th></tr></thead>
+          <tbody><tr><td>9</td><td>0·10 + 9 = 9</td><td>9 / 7 = 1</td><td>9 % 7 = 2</td><td>1</td></tr><tr><td>8</td><td>2·10 + 8 = 28</td><td>28 / 7 = 4</td><td>28 % 7 = 0</td><td>14</td></tr><tr><td>7</td><td>0·10 + 7 = 7</td><td>7 / 7 = 1</td><td>7 % 7 = 0</td><td>141</td></tr><tr><td>6</td><td>0·10 + 6 = 6</td><td>6 / 7 = 0</td><td>6 % 7 = 6</td><td>1410</td></tr><tr><td>5</td><td>6·10 + 5 = 65</td><td>65 / 7 = 9</td><td>65 % 7 = 2</td><td>14109</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="playground" id="viz-big-numbers">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: đặt tính với hai số dài</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="bn-a">a <input type="text" id="bn-a" value="9876" inputmode="numeric" spellcheck="false"></label>
+          <label for="bn-b">b <input type="text" id="bn-b" value="2345" inputmode="numeric" spellcheck="false"></label>
+          <label for="bn-op">phép <select id="bn-op"><option value="+">a + b</option><option value="-">a − b</option><option value="*">a × b</option></select></label>
+          <button type="button" data-act="run">Tính</button>
+          <button type="button" class="ghost" data-act="rand">Số ngẫu nhiên 30 chữ số</button>
+        </div>
+        <div class="out" data-role="out">Nhập hai số nguyên không âm (tối đa 60 chữ số; phép nhân tối đa 25 chữ số), chọn phép rồi bấm Tính.</div>
+        <div data-role="table"></div>
+      </div>
+    </div>
+    <p>Bảng hiện từng cột như em làm tay; dòng cuối kết quả được đối chiếu với kiểu <code>BigInt</code> có sẵn của JavaScript. Với phép trừ, nếu a &lt; b, widget đổi chỗ hai số, trừ rồi thêm dấu “−”, đúng như code C++ ở dưới.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Chương trình dưới giải bài <a href="https://oj.vnoi.info/problem/bignum">VNOJ BIGNUM – Xử lý số nguyên lớn</a>: cho hai số nguyên dương A, B (mỗi số không quá 1000 chữ số), in ba dòng A + B, A − B, A × B. Mỗi phép là một hàm riêng, em có thể chép nguyên các hàm này sang bài khác.</p>
+    <figure class="code">
+      <figcaption><span class="fn">bignum.cpp</span> So sánh, cộng, trừ, nhân hai số lớn</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Số lớn = vector chữ số LƯU NGƯỢC: a[0] là hàng đơn vị, a[1] hàng chục...
+typedef vector&lt;int&gt; Big;
+
+// Đọc xâu "01234" thành số lớn, bỏ số 0 thừa ở đầu
+Big fromString(const string&amp; s) {
+    Big a;
+    for (int i = (int)s.size() - 1; i &gt;= 0; i--) a.push_back(s[i] - '0');
+    while (a.size() &gt; 1 &amp;&amp; a.back() == 0) a.pop_back();
+    return a;
+}
+
+string toString(const Big&amp; a) {
+    string s;
+    for (int i = (int)a.size() - 1; i &gt;= 0; i--) s += char('0' + a[i]);
+    return s;
+}
+
+// Bỏ các số 0 thừa ở hàng cao (cuối vector), luôn giữ ít nhất 1 chữ số
+void trim(Big&amp; a) {
+    while (a.size() &gt; 1 &amp;&amp; a.back() == 0) a.pop_back();
+}
+
+// So sánh: trả về -1 nếu a &lt; b, 0 nếu a = b, 1 nếu a &gt; b
+int cmp(const Big&amp; a, const Big&amp; b) {
+    if (a.size() != b.size()) return a.size() &lt; b.size() ? -1 : 1;  // độ dài trước
+    for (int i = (int)a.size() - 1; i &gt;= 0; i--)                       // rồi từ hàng cao
+        if (a[i] != b[i]) return a[i] &lt; b[i] ? -1 : 1;
+    return 0;
+}
+
+// Cộng có nhớ
+Big add(const Big&amp; a, const Big&amp; b) {
+    Big c;
+    int carry = 0;
+    for (size_t i = 0; i &lt; max(a.size(), b.size()) || carry; i++) {
+        int s = carry;
+        if (i &lt; a.size()) s += a[i];
+        if (i &lt; b.size()) s += b[i];
+        c.push_back(s % 10);   // chữ số viết xuống
+        carry = s / 10;        // nhớ sang cột kế
+    }
+    return c;
+}
+
+// Trừ có mượn, YÊU CẦU a &gt;= b
+Big sub(const Big&amp; a, const Big&amp; b) {
+    Big c;
+    int borrow = 0;
+    for (size_t i = 0; i &lt; a.size(); i++) {
+        int d = a[i] - borrow - (i &lt; b.size() ? b[i] : 0);
+        if (d &lt; 0) { d += 10; borrow = 1; }   // mượn 1 ở cột kế
+        else borrow = 0;
+        c.push_back(d);
+    }
+    trim(c);                                  // 1002 - 999 = 0003 -&gt; 3
+    return c;
+}
+
+// Nhân hai số lớn: chữ số i nhân chữ số j cộng vào ô i + j
+Big mul(const Big&amp; a, const Big&amp; b) {
+    vector&lt;long long&gt; c(a.size() + b.size(), 0);
+    for (size_t i = 0; i &lt; a.size(); i++)
+        for (size_t j = 0; j &lt; b.size(); j++)
+            c[i + j] += a[i] * b[j];
+    Big res(c.size());
+    long long carry = 0;
+    for (size_t k = 0; k &lt; c.size(); k++) {   // xử lý nhớ một lượt
+        long long cur = c[k] + carry;
+        res[k] = cur % 10;
+        carry = cur / 10;
+    }
+    trim(res);                                // 0 * 123 = 0, 12 * 34 có 4 ô, 408 chỉ 3 chữ số
+    return res;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    string sa, sb;
+    cin &gt;&gt; sa &gt;&gt; sb;
+    Big a = fromString(sa), b = fromString(sb);
+
+    cout &lt;&lt; toString(add(a, b)) &lt;&lt; '\n';
+
+    // A - B: nếu A &lt; B thì tính B - A rồi thêm dấu trừ
+    if (cmp(a, b) &gt;= 0) cout &lt;&lt; toString(sub(a, b)) &lt;&lt; '\n';
+    else cout &lt;&lt; '-' &lt;&lt; toString(sub(b, a)) &lt;&lt; '\n';
+
+    cout &lt;&lt; toString(mul(a, b)) &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">10
+11</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">21
+-1
+110</code></pre></div>
+    </div>
+    <p>Thử thêm: với A = 9876, B = 2345 chương trình in 12221, 7531, 23159220; với A = B = 5 in 10, 0, 25 (không phải <code>-0</code> hay <code>00</code>, nhờ <code>cmp(a, b) &gt;= 0</code> và hàm <code>trim</code>).</p>
+
+    <h3>Giai thừa lớn: nhân với số nhỏ</h3>
+    <p>Bài <a href="https://www.spoj.com/problems/FCTRL2/">SPOJ FCTRL2</a>: có t test, mỗi test cho n, in n!. Chương trình chạy được tới n = 1000 (2 568 chữ số) trong vài mili giây.</p>
+    <figure class="code">
+      <figcaption><span class="fn">giai_thua.cpp</span> n! bằng cách nhân liên tiếp với số nhỏ</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Nhân số lớn a (chữ số lưu ngược) với số nhỏ k, sửa trực tiếp trên a
+void mulSmall(vector&lt;int&gt;&amp; a, int k) {
+    long long carry = 0;
+    for (size_t i = 0; i &lt; a.size(); i++) {
+        long long cur = (long long)a[i] * k + carry;
+        a[i] = cur % 10;
+        carry = cur / 10;
+    }
+    while (carry &gt; 0) {            // phần nhớ còn lại có thể dài nhiều chữ số
+        a.push_back(carry % 10);
+        carry /= 10;
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int t;
+    cin &gt;&gt; t;
+    while (t--) {
+        int n;
+        cin &gt;&gt; n;
+        vector&lt;int&gt; a = {1};       // 0! = 1! = 1
+        for (int k = 2; k &lt;= n; k++) mulSmall(a, k);
+        for (int i = (int)a.size() - 1; i &gt;= 0; i--) cout &lt;&lt; a[i];
+        cout &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+5
+25
+30</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">120
+15511210043330985984000000
+265252859812191058636308480000000</code></pre></div>
+    </div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <p>Gọi n, m là số chữ số của hai số.</p>
+    <table>
+      <thead><tr><th>Phép</th><th>Thời gian</th><th>Bộ nhớ</th><th>Ví dụ n = m = 1000</th></tr></thead>
+      <tbody>
+        <tr><td>Đọc, in, so sánh</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span></td><td>≈ 1 000 bước</td></tr>
+        <tr><td>Cộng, trừ</td><td><span class="bigo">O(max(n, m))</span></td><td><span class="bigo">O(max(n, m))</span></td><td>≈ 1 000 bước</td></tr>
+        <tr><td>Nhân với số nhỏ k</td><td><span class="bigo">O(n + số chữ số của k)</span></td><td><span class="bigo">O(n)</span></td><td>≈ 1 000 bước</td></tr>
+        <tr><td>Chia cho số nhỏ, lấy dư</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span> (chỉ lấy dư: <span class="bigo">O(1)</span>)</td><td>≈ 1 000 bước</td></tr>
+        <tr><td>Nhân hai số lớn</td><td><span class="bigo">O(n·m)</span></td><td><span class="bigo">O(n + m)</span></td><td>10<sup>6</sup> bước</td></tr>
+        <tr><td>n! (nhân lần lượt 2, 3, …, n)</td><td><span class="bigo">O(n · độ dài n!)</span></td><td><span class="bigo">O(độ dài n!)</span></td><td>n = 1000: ≈ 1,2·10<sup>6</sup> bước</td></tr>
+      </tbody>
+    </table>
+    <p>Con số 1,2·10<sup>6</sup> cho 1000! được tính chính xác: tổng độ dài của 1!, 2!, …, 1000! là 1 177 743 chữ số. Máy chấm làm khoảng 10<sup>8</sup> phép tính đơn giản mỗi giây, nên còn rất dư.</p>
+    <p>Giới hạn hợp lý trong 1 giây:</p>
+    <ul>
+      <li>Cộng, trừ, so sánh, chia cho số nhỏ: số dài tới 10<sup>6</sup>–10<sup>7</sup> chữ số (khi đó đọc bằng <code>string</code> và tắt đồng bộ <code>ios::sync_with_stdio(false)</code>).</li>
+      <li>Nhân hai số lớn, cơ số 10: n·m ≤ khoảng 10<sup>8</sup>, tức hai số chừng 10<sup>4</sup> chữ số.</li>
+      <li>Nhân với cơ số 10<sup>9</sup> (mục Biến thể): mỗi ô giữ 9 chữ số nên số ô giảm 9 lần, số phép nhân giảm 81 lần; hai số 10<sup>5</sup> chữ số chỉ cần khoảng (10<sup>5</sup>/9)<sup>2</sup> ≈ 1,2·10<sup>8</sup> phép.</li>
+    </ul>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Chia số lớn cho số nhỏ và kiểm tra chia hết</h3>
+    <p>Hàm dưới cài đặt thuật toán 6 trên xâu viết xuôi. Nhập <code>98765 7</code> thì in <code>14109 2</code>; nhập <code>5 7</code> thì in <code>0 5</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">chia_nho.cpp</span> Thương và số dư khi chia số lớn cho k ≤ 10<sup>9</sup></figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Chia số lớn (xâu, viết xuôi) cho số nhỏ k: trả về thương, r nhận số dư
+string divSmall(const string&amp; s, long long k, long long&amp; r) {
+    string q;
+    r = 0;
+    for (char ch : s) {                // đi từ TRÁI sang PHẢI như chia tay
+        r = r * 10 + (ch - '0');       // hạ chữ số kế tiếp xuống
+        q += char('0' + r / k);        // chữ số thương
+        r %= k;                        // số dư mang sang bước sau
+    }
+    size_t p = q.find_first_not_of('0');   // bỏ số 0 thừa ở đầu thương
+    return p == string::npos ? "0" : q.substr(p);
+}
+
+int main() {
+    string s;
+    long long k, r;
+    cin &gt;&gt; s &gt;&gt; k;
+    string q = divSmall(s, k, r);
+    cout &lt;&lt; q &lt;&lt; ' ' &lt;&lt; r &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <p>Chỉ cần biết số dài 10<sup>5</sup> chữ số có chia hết cho k không? Giữ mỗi <code>r = (r * 10 + d) % k</code>, không cần lưu thương. Đây cũng là cách tính một số rất lớn theo mô-đun, nối sang chủ đề <a href="modular-power.html">đồng dư và lũy thừa nhanh</a>. Lưu ý <code>r * 10</code> phải vừa kiểu dữ liệu: với k ≤ 10<sup>9</sup>, r·10 + 9 &lt; 10<sup>10</sup> + 9 nên dùng <code>long long</code>.</p>
+
+    <h3>Lũy thừa 2<sup>n</sup> và số Fibonacci lớn</h3>
+    <p>Hai ứng dụng này chỉ ghép các hàm có sẵn:</p>
+    <pre><code class="language-cpp">// 2^n: nhân với 2 đúng n lần (2^1000 có 302 chữ số)
+vector&lt;int&gt; p = {1};
+for (int i = 0; i &lt; n; i++) mulSmall(p, 2);
+
+// Fibonacci: F(i) = F(i-1) + F(i-2) bằng phép cộng số lớn (F(1000) có 209 chữ số)
+Big f0 = {0}, f1 = {1};
+for (int i = 2; i &lt;= n; i++) {
+    Big f2 = add(f0, f1);
+    f0 = f1;
+    f1 = f2;
+}   // f1 là F(n) với n ≥ 1</code></pre>
+
+    <h3>Số âm</h3>
+    <p>Lưu riêng một biến dấu <code>bool neg</code> và phần trị tuyệt đối là mảng chữ số. Phép tính quy về số không âm:</p>
+    <ul>
+      <li>Cùng dấu: cộng hai trị tuyệt đối, giữ dấu chung.</li>
+      <li>Khác dấu: lấy trị tuyệt đối lớn trừ trị tuyệt đối nhỏ, mang dấu của số có trị tuyệt đối lớn hơn.</li>
+      <li>Nhân: nhân hai trị tuyệt đối, dấu âm khi hai số khác dấu.</li>
+      <li>Kết quả bằng 0 thì luôn đặt dấu dương, tránh in <code>-0</code>.</li>
+    </ul>
+
+    <h3>Cơ số 10<sup>9</sup> (nâng cao)</h3>
+    <p>Mỗi ô của mảng không nhất thiết chỉ giữ một chữ số. Nếu mỗi ô giữ 9 chữ số (tức một “chữ số” trong hệ cơ số 10<sup>9</sup>), số ô giảm 9 lần: cộng nhanh gấp 9 lần, nhân nhanh gấp khoảng 81 lần. Tích hai ô nhỏ hơn 10<sup>18</sup>, vừa <code>long long</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">co_so_1e9.cpp</span> Nhân hai số lớn, mỗi ô 9 chữ số</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const int BASE = 1000000000;   // mỗi ô giữ 9 chữ số
+typedef vector&lt;long long&gt; Big; // a[0] là 9 chữ số thấp nhất
+
+Big fromString(const string&amp; s) {
+    Big a;
+    for (int i = (int)s.size(); i &gt; 0; i -= 9) {          // cắt từng khúc 9 chữ số từ phải
+        int st = max(0, i - 9);
+        a.push_back(stoll(s.substr(st, i - st)));
+    }
+    while (a.size() &gt; 1 &amp;&amp; a.back() == 0) a.pop_back();
+    return a;
+}
+
+void print(const Big&amp; a) {
+    cout &lt;&lt; a.back();                                     // ô cao nhất in bình thường
+    for (int i = (int)a.size() - 2; i &gt;= 0; i--)
+        cout &lt;&lt; setw(9) &lt;&lt; setfill('0') &lt;&lt; a[i];          // các ô sau phải đủ 9 chữ số
+    cout &lt;&lt; '\n';
+}
+
+Big mul(const Big&amp; a, const Big&amp; b) {
+    Big c(a.size() + b.size(), 0);
+    for (size_t i = 0; i &lt; a.size(); i++) {
+        long long carry = 0;
+        for (size_t j = 0; j &lt; b.size() || carry; j++) {
+            long long cur = c[i + j] + carry + (j &lt; b.size() ? a[i] * b[j] : 0);
+            c[i + j] = cur % BASE;                        // cur &lt; 10^18 + 2*10^9: vừa long long
+            carry = cur / BASE;
+        }
+    }
+    while (c.size() &gt; 1 &amp;&amp; c.back() == 0) c.pop_back();
+    return c;
+}
+
+int main() {
+    string x, y;
+    cin &gt;&gt; x &gt;&gt; y;
+    print(mul(fromString(x), fromString(y)));
+}</code></pre>
+    </figure>
+    <p>Ba điểm phải nhớ với cơ số 10<sup>9</sup>: cắt xâu thành khúc 9 chữ số <strong>từ phải sang</strong>; khi in, các ô sau ô đầu phải đủ 9 chữ số (ô giá trị 5 in ra <code>000000005</code>, nhờ <code>setw(9) &lt;&lt; setfill('0')</code>); trong phép nhân phải xử lý nhớ ngay trong vòng lặp, vì cộng dồn nhiều tích 10<sup>18</sup> sẽ tràn <code>long long</code>. Nhập <code>123 45</code> chương trình in <code>5535</code>.</p>
+
+    <h3><code>__int128</code>: khi chỉ vượt <code>long long</code> một chút</h3>
+    <p>GCC (trình biên dịch của hầu hết máy chấm) có kiểu <code>__int128</code>, chứa số tới khoảng 1,7·10<sup>38</sup>. Nếu đề chỉ cần nhân hai số tới 10<sup>18</sup> (tích tới 10<sup>36</sup>), dùng <code>__int128</code> gọn hơn nhiều so với số lớn. Nhược điểm: <code>cin</code>, <code>cout</code> không đọc in trực tiếp được, em phải tự in.</p>
+    <figure class="code">
+      <figcaption><span class="fn">int128.cpp</span> Nhân hai số long long và in kết quả 128 bit</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// In __int128 (cout không in được trực tiếp)
+void print128(__int128 x) {
+    if (x == 0) { cout &lt;&lt; 0; return; }
+    if (x &lt; 0) { cout &lt;&lt; '-'; x = -x; }
+    string s;
+    while (x &gt; 0) { s += char('0' + x % 10); x /= 10; }
+    reverse(s.begin(), s.end());
+    cout &lt;&lt; s;
+}
+
+int main() {
+    long long a, b;
+    cin &gt;&gt; a &gt;&gt; b;
+    __int128 p = (__int128)a * b;   // ép kiểu TRƯỚC khi nhân
+    print128(p);
+    cout &lt;&lt; '\n';
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">1000000000000000000 1000000000000000000</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1000000000000000000000000000000000000</code></pre></div>
+    </div>
+
+    <h3>Chia số lớn cho số lớn (đọc thêm)</h3>
+    <p>Vẫn chia từ trái sang phải, nhưng phần dư là số lớn và mỗi chữ số thương q (0 đến 9) tìm bằng cách trừ B lặp lại tối đa 9 lần: <span class="bigo">O(10·n·m)</span>. Dạng này hiếm gặp ở cấp THCS.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Quên số nhớ cuối cùng</p><p>Vòng lặp cộng chỉ chạy tới <code>max(n, m)</code> nên 999 + 1 ra <code>000</code> thay vì <code>1000</code>. Sửa: điều kiện lặp thêm <code>|| carry</code>; với nhân số nhỏ, thêm vòng <code>while (carry &gt; 0)</code> sau cùng.</p></div>
+    <div class="callout danger"><p class="callout-title">Quên đảo xâu</p><p>Cộng thẳng <code>s[i]</code> của hai xâu viết xuôi là cộng hàng nghìn của số này với hàng chục của số kia khi hai số dài khác nhau. Luôn đảo về mảng lưu ngược trước, hoặc cẩn thận căn lề phải.</p></div>
+    <div class="callout danger"><p class="callout-title">So sánh xâu bằng <code>&lt;</code></p><p><code>string("9") &lt; string("10")</code> là <code>false</code> vì so theo từ điển. Phải so độ dài trước (sau khi bỏ số 0 đầu), cùng độ dài mới so từng chữ số.</p></div>
+    <div class="callout warn"><p class="callout-title">In ra số 0 thừa hoặc “-0”</p><p>Phép trừ (1000 − 999 = 0001), phép nhân (0 × 123 = 000) và đầu vào kiểu <code>007</code> đều sinh số 0 thừa. Gọi <code>trim</code> sau mỗi phép, nhưng giữ lại một chữ số để số 0 vẫn in ra <code>0</code>. Khi A = B, in <code>0</code> chứ không in <code>-0</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Trừ khi a &lt; b</p><p>Hàm trừ giả sử a ≥ b. Gọi <code>sub(a, b)</code> với a &lt; b sẽ ra kết quả rác. Luôn <code>cmp</code> trước, đổi chỗ và thêm dấu “−” nếu cần.</p></div>
+    <div class="callout warn"><p class="callout-title">Tràn số khi nhân</p><p>Trong <code>mulSmall</code>, <code>a[i] * k</code> với k gần 10<sup>9</sup> tràn <code>int</code>: phải ép <code>(long long)a[i] * k</code>. Với <code>__int128</code> cũng vậy: viết <code>(__int128)a * b</code>, không viết <code>(__int128)(a * b)</code> vì phép nhân đã tràn trước khi ép kiểu.</p></div>
+    <div class="callout warn"><p class="callout-title">Cơ số 10<sup>9</sup> in thiếu số 0</p><p>Ô giá trị 5 phải in thành <code>000000005</code> (trừ ô cao nhất). Quên <code>setw(9) &lt;&lt; setfill('0')</code> thì 10<sup>9</sup> + 5 in ra <code>15</code>.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo</p><p>Viết các hàm số lớn một lần, kiểm tra kỹ bằng Python (so hàng trăm cặp số ngẫu nhiên), rồi giữ làm “thư viện” riêng. Trong phòng thi em chỉ cần gõ lại thật cẩn thận. Và đừng quên: nếu đề cho lấy dư theo 10<sup>9</sup> + 7 thì không cần số lớn.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Số 4057 được lưu thành mảng chữ số ngược. Giá trị của a[1] là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 0</button>
+        <button type="button" class="quiz-opt" data-correct>B. 5</button>
+        <button type="button" class="quiz-opt">C. 4</button>
+        <button type="button" class="quiz-opt">D. 7</button>
+      </div>
+      <p class="quiz-explain">Lưu ngược: a = {7, 5, 0, 4}. a[0] = 7 là hàng đơn vị, a[1] = 5 là hàng chục.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Khi nhân số 1000 chữ số với số 800 chữ số bằng thuật toán đặt tính (cơ số 10), mảng c cần tối đa bao nhiêu ô và có khoảng bao nhiêu phép nhân chữ số?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 1000 ô, 1800 phép nhân</button>
+        <button type="button" class="quiz-opt" data-correct>B. 1800 ô, 800 000 phép nhân</button>
+        <button type="button" class="quiz-opt">C. 800 000 ô, 800 000 phép nhân</button>
+        <button type="button" class="quiz-opt">D. 1800 ô, 1800 phép nhân</button>
+      </div>
+      <p class="quiz-explain">Tích có không quá n + m = 1800 chữ số. Mỗi cặp chữ số nhân một lần: 1000 × 800 = 800 000 phép.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Đề yêu cầu in 25! chính xác. Cách nào đúng?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Dùng <code>long long</code>, vì 25 nhỏ.</button>
+        <button type="button" class="quiz-opt">B. Dùng <code>double</code> rồi in bằng <code>fixed</code>.</button>
+        <button type="button" class="quiz-opt" data-correct>C. Dùng số lớn, nhân lần lượt với 2, 3, …, 25 (hoặc <code>__int128</code>).</button>
+      </div>
+      <p class="quiz-explain">25! = 15 511 210 043 330 985 984 000 000 có 26 chữ số, vượt <code>long long</code> (19 chữ số). <code>double</code> chỉ đúng khoảng 16 chữ số đầu. 26 chữ số vẫn vừa <code>__int128</code> (39 chữ số), nhưng số lớn dùng được cho cả n = 1000.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Phép nào sau đây phải đi từ hàng cao xuống hàng thấp (trái sang phải)?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Cộng có nhớ</button>
+        <button type="button" class="quiz-opt">B. Nhân với số nhỏ</button>
+        <button type="button" class="quiz-opt" data-correct>C. Chia cho số nhỏ</button>
+        <button type="button" class="quiz-opt">D. Trừ có mượn</button>
+      </div>
+      <p class="quiz-explain">Cộng, trừ, nhân đẩy số nhớ (hoặc mượn) từ hàng thấp lên hàng cao. Phép chia thì phần dư của hàng cao “tràn” xuống hàng thấp, nên phải đi từ trái.</p>
+    </div>
+    <p><strong>Câu 5.</strong> Đặt tính bằng thuật toán trừ có mượn: 50003 − 4. Ghi số mượn ở từng cột và kết quả cuối cùng.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>a = {3, 0, 0, 0, 5}, b = {4}. Cột 0: 3 − 0 − 4 = −1 → 9, mượn 1. Cột 1: 0 − 1 − 0 = −1 → 9, mượn 1. Cột 2: tương tự → 9, mượn 1. Cột 3: → 9, mượn 1. Cột 4: 5 − 1 − 0 = 4, không mượn. Kết quả {9, 9, 9, 9, 4}, đọc ngược: <strong>49999</strong>. Kiểm tra: 49999 + 4 = 50003.</p>
+    </details>
+    <p><strong>Câu 6.</strong> Dùng thuật toán chia cho số nhỏ, tìm số dư khi chia 123456789 cho 11 (chỉ giữ r).</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>r lần lượt: 1 → 12 mod 11 = 1 → 13 mod 11 = 2 → 24 mod 11 = 2 → 25 mod 11 = 3 → 36 mod 11 = 3 → 37 mod 11 = 4 → 48 mod 11 = 4 → 49 mod 11 = 5. Số dư là <strong>5</strong>. Kiểm tra: 11 × 11223344 = 123456784, cộng 5 ra 123456789.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Ưu tiên làm hai bài tiếng Việt trên VNOJ; bài tiếng Anh có tóm tắt tiếng Việt.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/616/A">616A – Comparing Two Long Integers</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho hai số nguyên không âm a, b, mỗi số tới 10<sup>6</sup> chữ số và có thể có số 0 ở đầu. In <code>&lt;</code>, <code>&gt;</code> hoặc <code>=</code>.</p>
+        <p class="ex-skill"><b>Luyện:</b> so sánh số lớn, bỏ số 0 thừa, đọc xâu dài nhanh.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đọc bằng <code>string</code> (nhớ <code>ios::sync_with_stdio(false)</code>), xóa các '0' ở đầu (nếu xóa hết thì thành "0"), so độ dài rồi so xâu. Hoặc thêm số 0 vào đầu xâu ngắn cho bằng độ dài rồi so từ điển.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://www.spoj.com/problems/ADDREV/">ADDREV – Adding Reversed Numbers</a>
+          <span class="judge">SPOJ</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Mỗi test cho hai số đã bị viết ngược. Đảo chúng lại, cộng, rồi in tổng cũng viết ngược (bỏ số 0 ở đầu).</p>
+        <p class="ex-skill"><b>Luyện:</b> cộng có nhớ trên mảng chữ số lưu ngược, bỏ số 0 thừa.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xâu đề cho đã “lưu ngược” sẵn: cộng thẳng từ trái sang phải với số nhớ, được tổng viết ngược. Chỉ cần xóa số 0 ở đầu kết quả (và không in xâu rỗng).</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://www.spoj.com/problems/FCTRL2/">FCTRL2 – Small factorials</a>
+          <span class="judge">SPOJ</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Có t test, mỗi test cho n (1 ≤ n ≤ 100), in n! chính xác.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhân số lớn với số nhỏ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chính là chương trình <code>giai_thua.cpp</code> ở trên. Có thể tính sẵn 1!…100! một lần rồi trả lời từng test.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/bignum">BIGNUM – Xử lý số nguyên lớn</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho hai số nguyên dương A, B (không quá 1000 chữ số). In A + B, A − B, A × B trên ba dòng, không có số 0 thừa, kết quả 0 in là <code>0</code>.</p>
+        <p class="ex-skill"><b>Luyện:</b> đủ bộ cộng, trừ (có kết quả âm), nhân hai số lớn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>So sánh A và B trước phép trừ. Nhân 1000 × 1000 chữ số là 10<sup>6</sup> phép, rất nhanh. Cẩn thận trường hợp A = B.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://www.spoj.com/problems/JULKA/">JULKA – Julka</a>
+          <span class="judge">SPOJ</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Hai bạn có tổng cộng S quả táo, bạn Klaudia có nhiều hơn bạn Natalia D quả. S, D tới 10<sup>100</sup>. In số táo của mỗi bạn (10 test).</p>
+        <p class="ex-skill"><b>Luyện:</b> cộng, trừ số lớn và chia số lớn cho số nhỏ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Klaudia có (S + D) / 2, Natalia có (S − D) / 2. Dùng hàm cộng, hàm trừ và hàm chia cho 2 từ trái sang phải.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/vobignum">VOBIGNUM – VO 15 Bài 6: Tính toán số lớn</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho N ≤ 1000 số nguyên (có thể âm, tới 1000 chữ số) và Q ≤ 10<sup>5</sup> truy vấn. Mỗi truy vấn hỏi A<sub>x1</sub> c1 A<sub>y1</sub> có bằng A<sub>x2</sub> c2 A<sub>y2</sub> không, với c là +, − hoặc ×.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra khi nào số lớn đầy đủ là quá chậm; lấy dư số lớn cho số nhỏ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Nhân số lớn cho 10<sup>5</sup> truy vấn là quá chậm. Hãy tính sẵn mỗi A<sub>i</sub> mod p với vài số nguyên tố lớn p (thuật toán chia cho số nhỏ, chỉ giữ số dư, nhớ xử lý dấu âm). Hai biểu thức bằng nhau thì bằng nhau theo mọi mô-đun; khác nhau thì rất khó trùng cùng lúc theo nhiều mô-đun.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://viblo.asia/p/xu-ly-so-nguyen-lon-phan-1-nhapxuat-phep-so-sanh-phep-cong-va-phep-tru-V3m5WQpxZO7">Viblo – Xử lý số nguyên lớn, phần 1: nhập xuất, so sánh, cộng và trừ</a> (tiếng Việt)</li>
+      <li><a href="https://viblo.asia/p/xu-ly-so-nguyen-lon-phan-2-cac-phep-toan-nhan-Qpmle1Yolrd">Viblo – Xử lý số nguyên lớn, phần 2: các phép toán nhân</a> (tiếng Việt)</li>
+      <li><a href="https://cp-algorithms.com/algebra/big-integer.html">cp-algorithms – Arbitrary-Precision Arithmetic</a> (tiếng Anh, có cài đặt cơ số 10<sup>9</sup>)</li>
+      <li>Bài liên quan trong lộ trình: <a href="strings.html">Xâu ký tự</a>, <a href="cpp-contest-basics.html">Khung bài thi C++</a> (giới hạn kiểu dữ liệu, đọc nhanh), <a href="modular-power.html">Đồng dư và lũy thừa nhanh</a>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li><code>long long</code> chỉ tới ≈ 9,2·10<sup>18</sup> (19 chữ số); 21! đã tràn. Đề cho “tới 1000 chữ số” và không cho lấy dư → dùng số lớn.</li>
+        <li>Lưu chữ số <strong>ngược</strong>: a[0] là hàng đơn vị; hai số tự thẳng cột, nhớ mọc ra ở cuối bằng <code>push_back</code>.</li>
+        <li>So sánh: độ dài trước, rồi từ hàng cao; không so <code>string</code> bằng <code>&lt;</code> khi độ dài khác nhau.</li>
+        <li>Cộng: <code>s = a[i] + b[i] + nhớ</code>, viết <code>s % 10</code>, nhớ <code>s / 10</code>, lặp cả khi còn nhớ. Trừ (a ≥ b): âm thì cộng 10 và mượn 1, cuối cùng xóa số 0 thừa.</li>
+        <li>Nhân hai số lớn: <code>c[i + j] += a[i]·b[j]</code>, xử lý nhớ một lượt, <span class="bigo">O(n·m)</span>. Nhân với số nhỏ: một lượt, nhớ có thể nhiều chữ số.</li>
+        <li>Chia cho số nhỏ: từ trái sang phải, <code>r = r·10 + d</code>; chỉ cần số dư thì không cần lưu thương.</li>
+        <li>Tăng tốc: cơ số 10<sup>9</sup> (in các ô sau đủ 9 chữ số); kết quả chỉ tới ≈ 10<sup>38</sup> thì dùng <code>__int128</code> và tự viết hàm in.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/big-numbers.js"></script>
+</body>
+</html>

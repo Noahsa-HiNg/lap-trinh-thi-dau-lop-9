@@ -3,10 +3,10 @@
   "agent": "topic-strings",
   "task": "Soạn chủ đề strings",
   "topic": "strings",
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-11-08T06:29:35Z",
-  "heartbeat_at": "2026-11-08T06:37:08Z",
-  "ended_at": null,
-  "summary": null
+  "heartbeat_at": "2026-11-08T06:53:36Z",
+  "ended_at": "2026-11-08T06:53:36Z",
+  "summary": "11 bài tập (8 VI, 3 EN), 6456 từ, 2 stepper (12 khung), SVG UTF-8, widget có"
 }

@@ -65,13 +65,14 @@
 | `20261108T062729Z-topic-knapsack-cf1f` | topic-knapsack | knapsack | done | 2026-11-08T06:27:29Z | 2026-11-08T06:38:26Z | 9 bài tập (4 VI), 6309 từ, 2 stepper (16 khung), widget có |
 | `20261108T062729Z-topic-bfs-955c` | topic-bfs | bfs | active | 2026-11-08T06:27:29Z | — |  |
 | `20261108T062735Z-topic-flood-fill-2aed` | topic-flood-fill | flood-fill | active | 2026-11-08T06:27:35Z | — |  |
-| `20261108T062736Z-topic-stl-0fa2` | topic-stl | stl | active | 2026-11-08T06:27:36Z | — |  |
-| `20261108T062740Z-topic-graph-dfs-4680` | topic-graph-dfs | graph-dfs | active | 2026-11-08T06:27:40Z | — |  |
-| `20261108T062927Z-topic-stack-queue-3731` | topic-stack-queue | stack-queue | active | 2026-11-08T06:29:27Z | — |  |
-| `20261108T062935Z-topic-strings-d55b` | topic-strings | strings | active | 2026-11-08T06:29:35Z | — |  |
-| `20261108T063014Z-topic-big-numbers-aaeb` | topic-big-numbers | big-numbers | active | 2026-11-08T06:30:14Z | — |  |
+| `20261108T062736Z-topic-stl-0fa2` | topic-stl | stl | done | 2026-11-08T06:27:36Z | 2026-11-08T06:53:07Z | 9 bài tập (9 VI), 7219 từ, 2 stepper (19 khung), widget có |
+| `20261108T062740Z-topic-graph-dfs-4680` | topic-graph-dfs | graph-dfs | done | 2026-11-08T06:27:40Z | 2026-11-08T06:52:13Z | 8 bài tập (3 VI, 5 EN), 7607 từ, stepper 11 khung, widget có |
+| `20261108T062927Z-topic-stack-queue-3731` | topic-stack-queue | stack-queue | done | 2026-11-08T06:29:27Z | 2026-11-08T06:54:31Z | 10 bài tập (5 VI), 7696 từ, 3 stepper (27 khung), widget có (ngoặc + lớn hơn gần nhất) |
+| `20261108T062935Z-topic-strings-d55b` | topic-strings | strings | done | 2026-11-08T06:29:35Z | 2026-11-08T06:53:36Z | 11 bài tập (8 VI, 3 EN), 6456 từ, 2 stepper (12 khung), SVG UTF-8, widget có |
+| `20261108T063014Z-topic-big-numbers-aaeb` | topic-big-numbers | big-numbers | done | 2026-11-08T06:30:14Z | 2026-11-08T06:55:09Z | 6 bài tập (2 VI), 6016 từ, 4 stepper/29 khung, widget có |
 | `20261108T063515Z-topic-lcs-7c82` | topic-lcs | lcs | active | 2026-11-08T06:35:15Z | — |  |
 | `20261108T063814Z-topic-dijkstra-223f` | topic-dijkstra | dijkstra | active | 2026-11-08T06:38:14Z | — |  |
+| `20261108T065148Z-topic-dsu-mst-6efb` | topic-dsu-mst | dsu-mst | active | 2026-11-08T06:51:48Z | — |  |
 
 ## Dòng thời gian
 
@@ -376,3 +377,26 @@
 - `06:38:40` **topic-stl** · `stl` · _tiến độ_: Viết xong toàn bộ 14 section; còn widget
 - `06:39:06` **topic-stack-queue** · `stack-queue` · _tiến độ_: Viết xong Biến thể (hậu tố, undo, khử đệ quy, 4 dạng gần nhất, biểu đồ cột, bảng 0/1, deque) và Lỗi thường gặp
 - `06:51:08` **orchestrator** · _commit_: Commit knapsack; 9 agent dừng do giới hạn 5 giờ, sẽ nhắn để làm tiếp
+- `06:51:48` **topic-dsu-mst** · `dsu-mst` · _bắt đầu_: Mở phiên: Soạn chủ đề dsu-mst
+- `06:51:48` **topic-strings** · `strings` · _tiến độ_: Viết xong biến thể, lỗi thường gặp, tự kiểm tra, 11 bài tập, tham khảo, tóm tắt
+- `06:51:49` **topic-big-numbers** · `big-numbers` · _tiến độ_: Viết xong Minh họa trực quan (4 stepper) + widget
+- `06:52:13` **topic-graph-dfs** · `graph-dfs` · _tiến độ_: Widget graph-dfs.js xong, node --check OK, validate OK, đã chụp kiểm tra phần minh họa
+- `06:52:13` **topic-graph-dfs** · `graph-dfs` · _hoàn thành_: Đóng phiên (done): 8 bài tập (3 VI, 5 EN), 7607 từ, stepper 11 khung, widget có
+- `06:52:38` **topic-strings** · `strings` · _tiến độ_: Widget strings.js xong, validate đạt (11 bài, 6456 từ)
+- `06:52:48` **topic-stack-queue** · `stack-queue` · _tiến độ_: Viết xong Tự kiểm tra, Bài tập (10 bài), Tham khảo, Tóm tắt; đã xóa @@TIEP@@
+- `06:52:53` **topic-dijkstra** · `dijkstra` · _tiến độ_: Đã tìm xong 10 bài tập (6 VI), lưu exercises.md
+- `06:52:58` **topic-bfs** · `bfs` · _tiến độ_: Viết xong độ phức tạp, biến thể (trọng số, đa nguồn, DFS vs BFS, 0-1 BFS, đếm đường), lỗi thường gặp
+- `06:53:07` **topic-stl** · `stl` · _tiến độ_: Widget stl.js xong (node --check OK), validate đạt, đã chụp kiểm tra phần minh họa
+- `06:53:07` **topic-stl** · `stl` · _hoàn thành_: Đóng phiên (done): 9 bài tập (9 VI), 7219 từ, 2 stepper (19 khung), widget có
+- `06:53:34` **topic-big-numbers** · `big-numbers` · _tiến độ_: Viết xong cài đặt, độ phức tạp, biến thể, lỗi thường gặp, tự kiểm tra
+- `06:53:36` **topic-strings** · `strings` · _tiến độ_: Qua validate, chụp kiểm tra minh họa, sửa ô hẹp cho xâu 19 ký tự
+- `06:53:36` **topic-strings** · `strings` · _hoàn thành_: Đóng phiên (done): 11 bài tập (8 VI, 3 EN), 6456 từ, 2 stepper (12 khung), SVG UTF-8, widget có
+- `06:53:42` **topic-flood-fill** · `flood-fill` · _tiến độ_: Widget xong (node --check OK); viết xong do-phuc-tap, bien-the, loi-thuong-gap
+- `06:53:53` **topic-lcs** · `lcs` · _tiến độ_: Viết xong mục tiêu + section 1-4
+- `06:54:16` **topic-stack-queue** · `stack-queue` · _tiến độ_: Viết xong widget assets/js/viz/stack-queue.js (ngoặc + lớn hơn gần nhất), qua node --check và thử bằng DOM giả
+- `06:54:28` **topic-big-numbers** · `big-numbers` · _tiến độ_: Viết xong toàn bộ, qua validate
+- `06:54:31` **topic-stack-queue** · `stack-queue` · _hoàn thành_: Đóng phiên (done): 10 bài tập (5 VI), 7696 từ, 3 stepper (27 khung), widget có (ngoặc + lớn hơn gần nhất)
+- `06:54:51` **topic-lcs** · `lcs` · _tiến độ_: Viết xong hoat-dong, truc-quan (stepper 8 khung), cai-dat
+- `06:55:09` **topic-big-numbers** · `big-numbers` · _hoàn thành_: Hoàn thành: 6 bài tập (2 VI), ~6000 từ, 4 stepper (29 khung), widget +/−/×
+- `06:55:09` **topic-big-numbers** · `big-numbers` · _hoàn thành_: Đóng phiên (done): 6 bài tập (2 VI), 6016 từ, 4 stepper/29 khung, widget có
+- `06:55:29` **orchestrator** · _commit_: Commit graph-dfs stl strings stack-queue big-numbers

@@ -1,5 +1,5 @@
 /* data/status.js — SINH TỰ ĐỘNG bởi scripts/validate.py --write-status. Đừng sửa tay. */
-/* 2026-11-08T06:51:08Z */
+/* 2026-11-08T06:55:29Z */
 window.TOPIC_STATUS = {
   "complexity": {
     "ok": true,
@@ -186,23 +186,23 @@ window.TOPIC_STATUS = {
     "interactive": true
   },
   "bfs": {
-    "ok": false,
-    "exercises": 0,
-    "vi": 0,
-    "words": 4677,
+    "ok": true,
+    "exercises": 10,
+    "vi": 6,
+    "words": 7979,
     "frames": 10,
     "interactive": true
   },
   "flood-fill": {
-    "ok": false,
-    "exercises": 0,
-    "vi": 0,
-    "words": 4026,
+    "ok": true,
+    "exercises": 9,
+    "vi": 3,
+    "words": 7072,
     "frames": 15,
     "interactive": true
   },
   "stl": {
-    "ok": false,
+    "ok": true,
     "exercises": 9,
     "vi": 9,
     "words": 7219,
@@ -210,31 +210,36 @@ window.TOPIC_STATUS = {
     "interactive": true
   },
   "stack-queue": {
-    "ok": false,
-    "exercises": 0,
-    "vi": 0,
-    "words": 5767,
+    "ok": true,
+    "exercises": 10,
+    "vi": 5,
+    "words": 7698,
     "frames": 27,
     "interactive": true
   },
   "strings": {
-    "ok": false,
-    "exercises": 0,
-    "vi": 0,
-    "words": 4057,
+    "ok": true,
+    "exercises": 11,
+    "vi": 8,
+    "words": 6456,
     "frames": 12,
     "interactive": true
   },
   "big-numbers": {
-    "ok": false,
-    "exercises": 0,
-    "vi": 0,
-    "words": 3565,
+    "ok": true,
+    "exercises": 6,
+    "vi": 2,
+    "words": 6016,
     "frames": 29,
     "interactive": true
   },
   "lcs": {
-    "ok": false
+    "ok": false,
+    "exercises": 0,
+    "vi": 0,
+    "words": 3146,
+    "frames": 8,
+    "interactive": true
   },
   "dijkstra": {
     "ok": false

@@ -3,10 +3,10 @@
   "agent": "topic-stack-queue",
   "task": "Soạn chủ đề stack-queue",
   "topic": "stack-queue",
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-11-08T06:29:27Z",
-  "heartbeat_at": "2026-11-08T06:39:06Z",
-  "ended_at": null,
-  "summary": null
+  "heartbeat_at": "2026-11-08T06:54:16Z",
+  "ended_at": "2026-11-08T06:54:31Z",
+  "summary": "10 bài tập (5 VI), 7696 từ, 3 stepper (27 khung), widget có (ngoặc + lớn hơn gần nhất)"
 }

@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ngăn xếp, hàng đợi &amp; ngăn xếp đơn điệu · Thi đấu lớp 9</title>
+<meta name="description" content="Ngăn xếp (stack), hàng đợi (queue), deque; kiểm tra dãy ngoặc đúng, biểu thức hậu tố; ngăn xếp đơn điệu tìm phần tử lớn hơn gần nhất, hình chữ nhật lớn nhất; deque đơn điệu tìm min cửa sổ trượt trong O(n).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="stack-queue">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Phân biệt được ngăn xếp (vào sau ra trước), hàng đợi (vào trước ra trước) và hàng đợi hai đầu (deque); cài được cả ba bằng mảng và bằng thư viện STL.</li>
+      <li>Dùng ngăn xếp để kiểm tra dãy ngoặc đúng có nhiều loại ngoặc, tính biểu thức hậu tố và hiểu vì sao đệ quy thực chất chạy trên một ngăn xếp.</li>
+      <li>Giải được bài “phần tử lớn hơn / nhỏ hơn gần nhất” trong <span class="bigo">O(n)</span> bằng ngăn xếp đơn điệu và giải thích được vì sao mỗi phần tử chỉ vào, ra tối đa một lần.</li>
+      <li>Tìm được giá trị nhỏ nhất (lớn nhất) của mọi cửa sổ độ dài k trong <span class="bigo">O(n)</span> bằng deque đơn điệu.</li>
+      <li>Vận dụng vào bài nâng cao: hình chữ nhật lớn nhất trong biểu đồ cột và trong bảng 0/1.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Ngăn xếp và hàng đợi là hai cách <em>xếp hàng</em> dữ liệu. Chúng không cho em lấy phần tử bất kỳ, chỉ cho lấy ở một đầu nhất định. Nghe thì có vẻ hạn chế, nhưng chính sự hạn chế đó giúp nhiều bài toán trở nên gọn gàng và rất nhanh.</p>
+
+    <h3>Ngăn xếp (stack): vào sau, ra trước</h3>
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> một chồng đĩa sau bữa cơm. Em rửa xong đĩa nào thì đặt lên trên cùng. Khi cần lấy đĩa, em cũng chỉ lấy được chiếc trên cùng, tức là chiếc vừa đặt vào gần nhất. Muốn lấy chiếc ở đáy, em phải nhấc hết các chiếc phía trên ra trước.</p></div>
+    </div>
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>Ngăn xếp</strong> là cấu trúc dữ liệu chỉ thao tác ở một đầu gọi là <strong>đỉnh</strong> (top), theo nguyên tắc <strong>LIFO</strong> (Last In, First Out: vào sau, ra trước). Ba thao tác chính, mỗi thao tác tốn <span class="bigo">O(1)</span>:</p>
+      <ul>
+        <li><code>push(x)</code>: đặt x lên đỉnh;</li>
+        <li><code>pop()</code>: bỏ phần tử ở đỉnh;</li>
+        <li><code>top()</code>: xem phần tử ở đỉnh (không bỏ).</li>
+      </ul>
+    </div>
+
+    <h3>Hàng đợi (queue): vào trước, ra trước</h3>
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> hàng người xếp mua vé xem phim. Ai đến trước đứng đầu hàng và được mua trước. Người mới đến phải đứng vào cuối hàng. Không ai được chen ngang.</p></div>
+    </div>
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>Hàng đợi</strong> là cấu trúc dữ liệu thêm phần tử ở <strong>cuối</strong> (back) và lấy phần tử ở <strong>đầu</strong> (front), theo nguyên tắc <strong>FIFO</strong> (First In, First Out: vào trước, ra trước). Các thao tác <code>push(x)</code> (thêm vào cuối), <code>pop()</code> (bỏ ở đầu), <code>front()</code> (xem đầu) đều tốn <span class="bigo">O(1)</span>.</p>
+    </div>
+
+    <h3>Hàng đợi hai đầu (deque)</h3>
+    <p><strong>Deque</strong> (đọc là “đéc”, viết tắt của double-ended queue) cho phép thêm và bỏ ở <em>cả hai đầu</em> trong <span class="bigo">O(1)</span>: <code>push_front</code>, <code>push_back</code>, <code>pop_front</code>, <code>pop_back</code>. Em có thể coi deque vừa là ngăn xếp, vừa là hàng đợi.</p>
+
+    <h3>Ngăn xếp đơn điệu và deque đơn điệu</h3>
+    <p>Đây là hai <em>kỹ thuật</em> chứ không phải cấu trúc mới. Ta vẫn dùng ngăn xếp (hoặc deque) bình thường, nhưng luôn giữ cho các phần tử bên trong <strong>tăng dần</strong> hoặc <strong>giảm dần</strong>. Trước khi đẩy phần tử mới vào, ta bỏ ra những phần tử làm hỏng tính đơn điệu.</p>
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>Ngăn xếp đơn điệu</strong> (monotonic stack) là ngăn xếp mà giá trị các phần tử từ đáy lên đỉnh luôn tăng dần (hoặc luôn giảm dần). <strong>Deque đơn điệu</strong> (monotonic deque) cũng vậy, và còn được bỏ phần tử ở đầu khi nó “hết hạn”.</p>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 560 190" width="560" role="img" aria-label="So sánh ngăn xếp, hàng đợi và deque">
+        <!-- Ngăn xếp -->
+        <text class="label-sm" x="80" y="18" text-anchor="middle">Ngăn xếp (LIFO)</text>
+        <line class="edge" x1="40" y1="40" x2="40" y2="170"/>
+        <line class="edge" x1="120" y1="40" x2="120" y2="170"/>
+        <line class="edge" x1="40" y1="170" x2="120" y2="170"/>
+        <rect class="node" x="46" y="138" width="68" height="26" rx="4"/><text x="80" y="156" text-anchor="middle">3</text>
+        <rect class="node" x="46" y="108" width="68" height="26" rx="4"/><text x="80" y="126" text-anchor="middle">8</text>
+        <rect class="node is-active" x="46" y="78" width="68" height="26" rx="4"/><text x="80" y="96" text-anchor="middle">5</text>
+        <text class="label-pen" x="128" y="96">đỉnh</text>
+        <text class="label-sm" x="80" y="60" text-anchor="middle">vào / ra ở trên</text>
+        <!-- Hàng đợi -->
+        <text class="label-sm" x="330" y="18" text-anchor="middle">Hàng đợi (FIFO)</text>
+        <line class="edge" x1="220" y1="70" x2="440" y2="70"/>
+        <line class="edge" x1="220" y1="110" x2="440" y2="110"/>
+        <rect class="node is-ok" x="226" y="76" width="46" height="28" rx="4"/><text x="249" y="95" text-anchor="middle">3</text>
+        <rect class="node" x="280" y="76" width="46" height="28" rx="4"/><text x="303" y="95" text-anchor="middle">8</text>
+        <rect class="node" x="334" y="76" width="46" height="28" rx="4"/><text x="357" y="95" text-anchor="middle">5</text>
+        <rect class="node is-active" x="388" y="76" width="46" height="28" rx="4"/><text x="411" y="95" text-anchor="middle">1</text>
+        <text class="label-pen" x="249" y="132" text-anchor="middle">ra ở đầu</text>
+        <text class="label-pen" x="411" y="132" text-anchor="middle">vào ở cuối</text>
+        <!-- Deque -->
+        <text class="label-sm" x="505" y="18" text-anchor="middle">Deque</text>
+        <rect class="node" x="480" y="50" width="50" height="26" rx="4"/><text x="505" y="68" text-anchor="middle">3</text>
+        <rect class="node" x="480" y="80" width="50" height="26" rx="4"/><text x="505" y="98" text-anchor="middle">8</text>
+        <rect class="node" x="480" y="110" width="50" height="26" rx="4"/><text x="505" y="128" text-anchor="middle">5</text>
+        <text class="label-sm" x="505" y="42" text-anchor="middle">vào / ra</text>
+        <text class="label-sm" x="505" y="154" text-anchor="middle">vào / ra</text>
+        <text class="label-pen" x="505" y="176" text-anchor="middle">cả hai đầu</text>
+      </svg>
+      <figcaption>Hình 1. Ngăn xếp chỉ mở một đầu; hàng đợi vào một đầu, ra đầu kia; deque mở cả hai đầu.</figcaption>
+    </figure>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Ba cấu trúc này xuất hiện ở khắp nơi, cả trong máy tính lẫn trong đề thi.</p>
+
+    <h3>Ngăn xếp dùng để làm gì</h3>
+    <ul>
+      <li><strong>Ghép cặp lồng nhau:</strong> dãy ngoặc <code>([]{()})</code>, thẻ mở/đóng trong HTML, khối <code>{ }</code> trong C++. Thứ gì mở <em>sau cùng</em> thì phải đóng <em>trước tiên</em>, đúng tinh thần LIFO.</li>
+      <li><strong>Tính biểu thức:</strong> máy tính bỏ túi đổi biểu thức sang dạng hậu tố rồi tính bằng ngăn xếp.</li>
+      <li><strong>Hoàn tác (Undo):</strong> trình soạn thảo cất từng thao tác vào ngăn xếp; bấm Ctrl+Z là lấy thao tác gần nhất ra và làm ngược lại.</li>
+      <li><strong>Đệ quy:</strong> mỗi lần gọi hàm, máy cất “phiếu ghi nhớ” (tham số, biến cục bộ, chỗ quay về) lên <em>ngăn xếp lời gọi</em> (call stack). Vì thế em có thể khử đệ quy bằng một ngăn xếp tự quản lý. Xem lại bài <a href="recursion.html">Đệ quy</a>.</li>
+      <li><strong>Duyệt sâu (DFS):</strong> đi sâu nhất có thể rồi quay lui, cũng là LIFO.</li>
+    </ul>
+
+    <h3>Hàng đợi và deque dùng để làm gì</h3>
+    <ul>
+      <li><strong>Mô phỏng xếp hàng:</strong> khách đến quầy, tiến trình chờ CPU, máy in in lần lượt.</li>
+      <li><strong>Duyệt theo chiều rộng (BFS):</strong> đỉnh nào được phát hiện trước thì được xét trước, nhờ vậy BFS tìm được đường đi ngắn nhất trên đồ thị không trọng số. Xem bài <a href="bfs.html">BFS</a>.</li>
+      <li><strong>Deque:</strong> BFS 0-1, mô phỏng lá bài lấy ở cả hai đầu, và đặc biệt là <em>cửa sổ trượt</em>.</li>
+    </ul>
+
+    <h3>Ngăn xếp đơn điệu và deque đơn điệu dùng để làm gì</h3>
+    <ul>
+      <li>Với mỗi phần tử, tìm phần tử <strong>lớn hơn (nhỏ hơn) gần nhất</strong> ở bên trái hoặc bên phải.</li>
+      <li>Với mỗi phần tử, tìm <strong>đoạn dài nhất</strong> mà nó là giá trị nhỏ nhất (lớn nhất). Từ đó giải bài hình chữ nhật lớn nhất.</li>
+      <li>Tìm <strong>min/max của mọi cửa sổ</strong> độ dài k khi cửa sổ trượt từ trái sang phải. Kỹ thuật này là họ hàng của <a href="two-pointers.html">hai con trỏ</a>.</li>
+    </ul>
+
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết trong đề</p>
+      <p>Đề có <strong>ngoặc, thẻ, cấu trúc lồng nhau</strong> → ngăn xếp. Đề nói “<strong>gần nhất bên trái/phải mà lớn hơn/nhỏ hơn</strong>”, “nhìn thấy”, “bị che khuất”, “đoạn dài nhất mà a[i] là nhỏ nhất” → ngăn xếp đơn điệu. Đề nói “<strong>mỗi đoạn k phần tử liên tiếp</strong>”, “đoạn tịnh tiến”, “cửa sổ” và cần min/max → deque đơn điệu. Giới hạn n ≤ 10⁵ đến 10⁶ (thậm chí 10⁷) là gợi ý mạnh rằng cần lời giải <span class="bigo">O(n)</span>.</p>
+    </div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+
+    <h3>Bài toán 1: kiểm tra dãy ngoặc</h3>
+    <p>Cho xâu gồm các ký tự <code>( ) [ ] { }</code>, dài tới n = 10⁵. Hỏi xâu có phải <strong>dãy ngoặc đúng</strong> không: mỗi ngoặc mở có đúng một ngoặc đóng cùng loại, và các cặp lồng nhau chứ không bắt chéo nhau. Ví dụ <code>([]{()})</code> đúng, còn <code>([)]</code> sai vì cặp tròn và cặp vuông bắt chéo.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p>Lặp lại: tìm trong xâu một cặp kề nhau <code>()</code>, <code>[]</code> hoặc <code>{}</code> rồi xóa nó, đến khi không xóa được nữa; xâu rỗng thì đúng. Mỗi lượt quét và xóa tốn khoảng n bước, có tới n/2 lượt. Với n = 10⁵ là khoảng 10⁵ × 5·10⁴ = 5·10⁹ bước, quá chậm. Độ phức tạp <span class="bigo">O(n²)</span>.</p></div>
+      <div class="good-side"><h4>Dùng ngăn xếp</h4><p>Đi một lượt từ trái sang phải: ngoặc mở thì đẩy vào ngăn xếp, ngoặc đóng thì so với đỉnh rồi bỏ đỉnh. Mỗi ký tự vào ra tối đa một lần: khoảng 2 × 10⁵ thao tác. Độ phức tạp <span class="bigo">O(n)</span>.</p></div>
+    </div>
+
+    <h3>Bài toán 2: phần tử lớn hơn gần nhất bên phải</h3>
+    <p>Cho dãy a gồm n số (n ≤ 2·10⁵). Với mỗi i, tìm phần tử đầu tiên <em>bên phải</em> a[i] mà lớn hơn a[i]; không có thì ghi −1. Ví dụ a = [2, 7, 3, 5, 4, 6, 1] cho đáp án [7, −1, 5, 6, 6, −1, −1].</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p>Với mỗi i, đi sang phải từng ô đến khi gặp số lớn hơn. Trường hợp xấu nhất là dãy giảm dần: không ai có đáp án, nên vòng trong đi tới cuối mỗi lần. Tổng số phép so sánh là (n−1) + (n−2) + … + 1 = n(n−1)/2. Với n = 2·10⁵ là khoảng 2·10¹⁰ phép so sánh, cần cỡ 20 giây. Độ phức tạp <span class="bigo">O(n²)</span>.</p></div>
+      <div class="good-side"><h4>Ngăn xếp đơn điệu</h4><p>Giữ ngăn xếp các phần tử “đang chờ” người lớn hơn. Mỗi phần tử được đẩy vào đúng 1 lần, lấy ra nhiều nhất 1 lần. Tổng thao tác ≤ 2n = 4·10⁵. Độ phức tạp <span class="bigo">O(n)</span>.</p></div>
+    </div>
+
+    <h3>Bài toán 3: min của mọi cửa sổ độ dài k</h3>
+    <p>Cho dãy n số và số k. Với mỗi đoạn k phần tử liên tiếp (có n − k + 1 đoạn), in ra số nhỏ nhất trong đoạn.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p>Với mỗi đoạn, duyệt k phần tử để tìm min: (n − k + 1) × k phép tính. Với n = 10⁶ và k = 5·10⁵ là (5·10⁵ + 1) × 5·10⁵ ≈ 2,5·10¹¹ phép tính. Độ phức tạp <span class="bigo">O(n·k)</span>.</p></div>
+      <div class="good-side"><h4>Deque đơn điệu</h4><p>Mỗi chỉ số vào deque 1 lần và ra nhiều nhất 1 lần (ở đầu hoặc ở cuối). Tổng ≤ 2n = 2·10⁶ thao tác. Độ phức tạp <span class="bigo">O(n)</span>, không phụ thuộc k.</p></div>
+    </div>
+    <p>Ba bài toán có chung một ý: <strong>bỏ đi những thứ chắc chắn không còn dùng tới</strong>. Ngăn xếp và deque là chỗ để ta cất những thứ <em>có thể</em> còn dùng, theo đúng thứ tự cần lấy ra.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>A. Cài ngăn xếp và hàng đợi bằng mảng</h3>
+    <p>Ngăn xếp: một mảng <code>st</code> và một biến <code>top</code> là số phần tử đang có. Phần tử ở đỉnh là <code>st[top-1]</code>.</p>
+    <p>Hàng đợi: nếu chỉ dùng mảng thẳng với hai chỉ số đầu/cuối thì chỉ số cuối cứ tăng mãi, phần đầu mảng bỏ phí. Cách khắc phục là <strong>mảng vòng</strong> (circular buffer): khi chạy tới cuối mảng thì quay lại ô 0, nhờ phép lấy dư <code>% MAXN</code>.</p>
+    <pre class="pseudo"><i>// Ngăn xếp</i>
+<b>push</b>(x):  st[top] ← x;  top ← top + 1
+<b>pop</b>():    top ← top − 1
+<b>top</b>():    <b>trả về</b> st[top − 1]
+<b>empty</b>():  <b>trả về</b> top = 0
+
+<i>// Hàng đợi vòng, sức chứa M</i>
+<b>push</b>(x):  q[(head + cnt) mod M] ← x;  cnt ← cnt + 1
+<b>pop</b>():    head ← (head + 1) mod M;  cnt ← cnt − 1
+<b>front</b>():  <b>trả về</b> q[head]</pre>
+
+    <h3>B. Kiểm tra dãy ngoặc đúng (nhiều loại)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Ngăn xếp rỗng.</div></li>
+      <li><div><strong>Gặp ngoặc mở</strong> <code>( [ {</code>: đẩy vào ngăn xếp (nên đẩy cả vị trí để báo lỗi).</div></li>
+      <li><div><strong>Gặp ngoặc đóng.</strong> Nếu ngăn xếp rỗng, hoặc đỉnh không phải ngoặc mở cùng loại: <em>sai ngay tại vị trí này</em>. Ngược lại, bỏ đỉnh (ghép cặp xong).</div></li>
+      <li><div><strong>Kết thúc.</strong> Ngăn xếp rỗng thì đúng. Còn sót ngoặc mở thì sai (thiếu ngoặc đóng).</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> KiemTra(s):
+    st ← ngăn xếp rỗng
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> |s| − 1:
+        <b>nếu</b> s[i] là ngoặc mở: st.push(i)
+        <b>ngược lại</b>:
+            <b>nếu</b> st rỗng <b>hoặc</b> s[st.top()] không cùng loại s[i]:
+                <b>trả về</b> SAI tại i
+            st.pop()
+    <b>nếu</b> st rỗng: <b>trả về</b> ĐÚNG
+    <b>trả về</b> SAI tại st.top()          <i>// ngoặc mở chưa được đóng</i></pre>
+
+    <h3>C. Ngăn xếp đơn điệu: phần tử lớn hơn gần nhất bên phải</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> ans[i] = −1 với mọi i; ngăn xếp rỗng. Ngăn xếp chứa <em>chỉ số</em> của các phần tử chưa tìm được đáp án; giá trị của chúng giảm dần từ đáy lên đỉnh.</div></li>
+      <li><div><strong>Duyệt i từ trái sang phải.</strong> Chừng nào đỉnh có a[đỉnh] &lt; a[i]: gán ans[đỉnh] = a[i] và bỏ đỉnh.</div></li>
+      <li><div><strong>Đẩy i vào.</strong> Lúc này đỉnh (nếu có) ≥ a[i], nên ngăn xếp vẫn giảm dần.</div></li>
+      <li><div><strong>Kết thúc.</strong> Những chỉ số còn trong ngăn xếp không có ai lớn hơn bên phải: giữ −1.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> LonHonPhai(a, n):
+    ans ← [−1, −1, …, −1];  st ← rỗng
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> n − 1:
+        <b>trong khi</b> st khác rỗng <b>và</b> a[st.top()] &lt; a[i]:
+            ans[st.top()] ← a[i]          <i>// a[i] là người lớn hơn đầu tiên</i>
+            st.pop()
+        st.push(i)
+    <b>trả về</b> ans</pre>
+
+    <h3>D. Deque đơn điệu: min của mọi cửa sổ độ dài k</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Deque rỗng, chứa chỉ số; giá trị tăng dần từ đầu đến cuối. Đầu deque luôn là chỉ số của min trong cửa sổ hiện tại.</div></li>
+      <li><div><strong>Bỏ phần tử hết hạn.</strong> Cửa sổ kết thúc tại i là [i − k + 1, i]. Nếu chỉ số ở đầu ≤ i − k thì nó đã ra khỏi cửa sổ: bỏ ở đầu.</div></li>
+      <li><div><strong>Bỏ phần tử vô dụng.</strong> Chừng nào a[cuối] ≥ a[i]: bỏ ở cuối.</div></li>
+      <li><div><strong>Thêm i vào cuối.</strong></div></li>
+      <li><div><strong>Ghi kết quả.</strong> Nếu i ≥ k − 1 (cửa sổ đã đủ k phần tử): min = a[đầu deque].</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> MinCuaSo(a, n, k):
+    dq ← deque rỗng
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> n − 1:
+        <b>nếu</b> dq khác rỗng <b>và</b> dq.front() ≤ i − k: dq.pop_front()   <i>// hết hạn</i>
+        <b>trong khi</b> dq khác rỗng <b>và</b> a[dq.back()] ≥ a[i]: dq.pop_back()  <i>// vô dụng</i>
+        dq.push_back(i)
+        <b>nếu</b> i ≥ k − 1: <b>in</b> a[dq.front()]</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Dãy ngoặc: vì sao đúng</h3>
+    <p>Trong một dãy ngoặc đúng, ngoặc đóng ở vị trí i phải ghép với ngoặc mở <strong>gần nhất bên trái chưa được ghép</strong>. Nếu nó ghép với một ngoặc mở xa hơn, thì ngoặc mở gần hơn (nằm giữa) sẽ phải ghép với ai đó ở bên phải i, tạo ra hai cặp bắt chéo, trái với định nghĩa. Ngăn xếp giữ đúng danh sách các ngoặc mở chưa được ghép, và đỉnh chính là cái gần nhất. Vì vậy chỉ cần so ngoặc đóng với đỉnh.</p>
+    <p>Có ba kiểu sai, và thuật toán bắt được cả ba:</p>
+    <ul>
+      <li><strong>Sai loại:</strong> <code>([)]</code>. Tại <code>)</code> (vị trí 3, đánh số từ 1), đỉnh là <code>[</code>, khác loại.</li>
+      <li><strong>Thừa ngoặc đóng:</strong> <code>())</code>. Tại <code>)</code> thứ hai (vị trí 3), ngăn xếp đã rỗng.</li>
+      <li><strong>Thiếu ngoặc đóng:</strong> <code>(()</code>. Đi hết xâu mà ngăn xếp còn <code>(</code> ở vị trí 1.</li>
+    </ul>
+    <div class="callout tip"><p class="callout-title">Chỉ có một loại ngoặc thì sao?</p><p>Với riêng <code>( )</code>, mọi phần tử trong ngăn xếp đều là <code>(</code>, nên chỉ cần một <strong>biến đếm</strong> số ngoặc đang mở: gặp <code>(</code> thì tăng, gặp <code>)</code> thì giảm; nếu có lúc đếm âm hoặc cuối cùng khác 0 thì sai. Có từ hai loại ngoặc trở lên thì bắt buộc dùng ngăn xếp, vì phải nhớ <em>loại</em> của từng ngoặc đang mở.</p></div>
+
+    <h3>Ngăn xếp đơn điệu: vì sao đúng</h3>
+    <p>Hãy tưởng tượng mỗi phần tử là một bạn đứng xếp hàng, nhìn sang phải để tìm người <em>cao hơn mình</em> đầu tiên. Ngăn xếp chứa những bạn <strong>còn đang chờ</strong>.</p>
+    <ul>
+      <li><strong>Ngăn xếp luôn giảm dần</strong> từ đáy lên đỉnh. Lý do: ta chỉ đẩy a[i] vào sau khi đã bỏ hết các phần tử nhỏ hơn a[i] ở đỉnh, nên phần tử ngay dưới a[i] luôn ≥ a[i].</li>
+      <li><strong>Khi a[i] làm đỉnh j bị bỏ ra, a[i] đúng là đáp án của j.</strong> Mọi phần tử nằm giữa j và i đã từng vào ngăn xếp sau j. Nếu có phần tử nào ở giữa lớn hơn a[j], nó đã bỏ j ra từ trước, và j không còn ở đây. Vậy mọi phần tử giữa j và i đều ≤ a[j], còn a[i] &gt; a[j]: a[i] là phần tử lớn hơn <em>đầu tiên</em>.</li>
+      <li><strong>Vì sao dừng ở đỉnh ≥ a[i] là đủ?</strong> Ngăn xếp giảm dần, nên đỉnh đã ≥ a[i] thì mọi phần tử bên dưới còn lớn hơn nữa. Không ai bên dưới cần a[i].</li>
+      <li><strong>Những phần tử còn lại cuối cùng</strong> không bị ai bỏ ra, tức là không có ai bên phải lớn hơn chúng: đáp án −1 là đúng.</li>
+    </ul>
+
+    <h3>Ngăn xếp đơn điệu: vì sao nhanh</h3>
+    <p>Vòng <code>while</code> nằm trong vòng <code>for</code>, nhìn qua tưởng là <span class="bigo">O(n²)</span>. Nhưng hãy đếm theo từng phần tử thay vì theo từng vòng lặp: mỗi chỉ số được <code>push</code> <strong>đúng 1 lần</strong> và <code>pop</code> <strong>nhiều nhất 1 lần</strong> (đã ra thì không vào lại). Mỗi lần vòng while chạy thân là một lần pop, nên tổng số lần chạy thân while trong <em>cả chương trình</em> ≤ n. Cộng thêm n lần kiểm tra điều kiện dừng, tổng là <span class="bigo">O(n)</span>. Cách đếm này gọi là <strong>phân tích khấu trừ</strong> (amortized analysis): có bước tốn nhiều, có bước tốn ít, nhưng tổng cộng lại vẫn nhỏ.</p>
+
+    <h3>Deque đơn điệu: vì sao đúng</h3>
+    <p>Xét hai chỉ số j &lt; i trong cùng cửa sổ, với a[j] ≥ a[i]. Từ giờ trở đi, mọi cửa sổ chứa j cũng chứa i (vì i nằm bên phải, rời cửa sổ muộn hơn j). Trong những cửa sổ đó, a[i] luôn nhỏ hơn hoặc bằng a[j], nên a[j] <strong>không bao giờ</strong> là min duy nhất nữa. Ta bỏ j đi mà không mất gì. Đó là lý do bỏ ở cuối những phần tử ≥ a[i].</p>
+    <p>Sau bước đó, deque <strong>tăng dần</strong> từ đầu đến cuối, và các chỉ số cũng tăng dần. Phần tử ở đầu là nhỏ nhất trong số những phần tử còn trong cửa sổ, chỉ cần bỏ nó khi đã hết hạn. Vì các chỉ số tăng dần và cửa sổ mỗi lần chỉ dịch 1 ô, mỗi bước có nhiều nhất <strong>một</strong> chỉ số hết hạn, và đó luôn là chỉ số ở đầu. Nên một câu <code>if</code> là đủ.</p>
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> một đội tuyển chọn “người yếu nhất” để thi đấu, mỗi thành viên có hạn hợp đồng k ngày. Một bạn mới đến vừa trẻ hơn (ở lâu hơn), vừa yếu hơn hoặc bằng các bạn cũ thì các bạn cũ đó sẽ không bao giờ được chọn nữa, nên được cho nghỉ luôn. Bạn đứng đầu danh sách bị cho nghỉ khi hết hợp đồng.</p></div>
+    </div>
+
+    <h3>Deque đơn điệu: vì sao nhanh</h3>
+    <p>Lập luận như ngăn xếp đơn điệu: mỗi chỉ số vào deque 1 lần, ra nhiều nhất 1 lần (hoặc ở đầu vì hết hạn, hoặc ở cuối vì vô dụng). Tổng số thao tác ≤ 2n, tức <span class="bigo">O(n)</span>, dù k lớn hay nhỏ.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Khi viết ngăn xếp đơn điệu, em hãy luôn tự hỏi hai câu: “Ngăn xếp đang tăng hay giảm?” và “Ai được bỏ ra, và lúc bỏ ra thì biết thêm điều gì?”. Trả lời được hai câu này thì code tự hiện ra.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Em hãy bấm từng bước và tự dự đoán trước khi xem khung tiếp theo. Có ba ví dụ, ứng với ba kỹ thuật chính của bài.</p>
+
+    <h3>Ví dụ 1. Ngăn xếp kiểm tra dãy ngoặc</h3>
+    <p>Xâu <code>([]{()})</code>. Ô xanh là ngoặc đã ghép cặp, ô tô đậm là ký tự đang xét (con trỏ i), ô mờ là phần chưa đọc tới. Ở hàng dưới, đỉnh ngăn xếp nằm ở bên phải.</p>
+    <div class="stepper" data-title="Ví dụ 1: kiểm tra ([]{()}) bằng ngăn xếp">
+      <div class="frame" data-caption="&lt;b&gt;Bắt đầu.&lt;/b&gt; Xâu s = &lt;code&gt;([]{()})&lt;/code&gt; gồm 8 ký tự (đánh số từ 1). Ngăn xếp rỗng. Số phía trên ô ngăn xếp là vị trí của ngoặc trong xâu.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="1">(</span><span class="cell" data-i="2">[</span><span class="cell" data-i="3">]</span><span class="cell" data-i="4">{</span><span class="cell" data-i="5">(</span><span class="cell" data-i="6">)</span><span class="cell" data-i="7">}</span><span class="cell" data-i="8">)</span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-dim">rỗng</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 1:&lt;/b&gt; &lt;code&gt;(&lt;/code&gt; là ngoặc mở, đẩy vào ngăn xếp. Ngăn xếp có 1 phần tử.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell is-active" data-i="1" data-ptr="i">(</span><span class="cell is-dim" data-i="2">[</span><span class="cell is-dim" data-i="3">]</span><span class="cell is-dim" data-i="4">{</span><span class="cell is-dim" data-i="5">(</span><span class="cell is-dim" data-i="6">)</span><span class="cell is-dim" data-i="7">}</span><span class="cell is-dim" data-i="8">)</span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell" data-i="1" data-ptr="đỉnh">(</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 2:&lt;/b&gt; &lt;code&gt;[&lt;/code&gt; là ngoặc mở, đẩy vào ngăn xếp. Ngăn xếp có 2 phần tử.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="1">(</span><span class="cell is-active" data-i="2" data-ptr="i">[</span><span class="cell is-dim" data-i="3">]</span><span class="cell is-dim" data-i="4">{</span><span class="cell is-dim" data-i="5">(</span><span class="cell is-dim" data-i="6">)</span><span class="cell is-dim" data-i="7">}</span><span class="cell is-dim" data-i="8">)</span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell" data-i="1">(</span><span class="cell" data-i="2" data-ptr="đỉnh">[</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 3:&lt;/b&gt; &lt;code&gt;]&lt;/code&gt; là ngoặc đóng. Đỉnh là &lt;code&gt;[&lt;/code&gt; ở vị trí 2, cùng loại nên khớp. Bỏ đỉnh, hai vị trí 2 và 3 thành một cặp.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="1">(</span><span class="cell" data-i="2">[</span><span class="cell is-active" data-i="3" data-ptr="i">]</span><span class="cell is-dim" data-i="4">{</span><span class="cell is-dim" data-i="5">(</span><span class="cell is-dim" data-i="6">)</span><span class="cell is-dim" data-i="7">}</span><span class="cell is-dim" data-i="8">)</span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell" data-i="1">(</span><span class="cell is-cmp" data-i="2" data-ptr="đỉnh">[</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 4:&lt;/b&gt; &lt;code&gt;{&lt;/code&gt; là ngoặc mở, đẩy vào ngăn xếp. Ngăn xếp có 2 phần tử.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="1">(</span><span class="cell is-ok" data-i="2">[</span><span class="cell is-ok" data-i="3">]</span><span class="cell is-active" data-i="4" data-ptr="i">{</span><span class="cell is-dim" data-i="5">(</span><span class="cell is-dim" data-i="6">)</span><span class="cell is-dim" data-i="7">}</span><span class="cell is-dim" data-i="8">)</span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell" data-i="1">(</span><span class="cell" data-i="4" data-ptr="đỉnh">{</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 5:&lt;/b&gt; &lt;code&gt;(&lt;/code&gt; là ngoặc mở, đẩy vào ngăn xếp. Ngăn xếp có 3 phần tử.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="1">(</span><span class="cell is-ok" data-i="2">[</span><span class="cell is-ok" data-i="3">]</span><span class="cell" data-i="4">{</span><span class="cell is-active" data-i="5" data-ptr="i">(</span><span class="cell is-dim" data-i="6">)</span><span class="cell is-dim" data-i="7">}</span><span class="cell is-dim" data-i="8">)</span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell" data-i="1">(</span><span class="cell" data-i="4">{</span><span class="cell" data-i="5" data-ptr="đỉnh">(</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 6:&lt;/b&gt; &lt;code&gt;)&lt;/code&gt; là ngoặc đóng. Đỉnh là &lt;code&gt;(&lt;/code&gt; ở vị trí 5, cùng loại nên khớp. Bỏ đỉnh, hai vị trí 5 và 6 thành một cặp.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="1">(</span><span class="cell is-ok" data-i="2">[</span><span class="cell is-ok" data-i="3">]</span><span class="cell" data-i="4">{</span><span class="cell" data-i="5">(</span><span class="cell is-active" data-i="6" data-ptr="i">)</span><span class="cell is-dim" data-i="7">}</span><span class="cell is-dim" data-i="8">)</span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell" data-i="1">(</span><span class="cell" data-i="4">{</span><span class="cell is-cmp" data-i="5" data-ptr="đỉnh">(</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 7:&lt;/b&gt; &lt;code&gt;}&lt;/code&gt; là ngoặc đóng. Đỉnh là &lt;code&gt;{&lt;/code&gt; ở vị trí 4, cùng loại nên khớp. Bỏ đỉnh, hai vị trí 4 và 7 thành một cặp.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="1">(</span><span class="cell is-ok" data-i="2">[</span><span class="cell is-ok" data-i="3">]</span><span class="cell" data-i="4">{</span><span class="cell is-ok" data-i="5">(</span><span class="cell is-ok" data-i="6">)</span><span class="cell is-active" data-i="7" data-ptr="i">}</span><span class="cell is-dim" data-i="8">)</span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell" data-i="1">(</span><span class="cell is-cmp" data-i="4" data-ptr="đỉnh">{</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 8:&lt;/b&gt; &lt;code&gt;)&lt;/code&gt; là ngoặc đóng. Đỉnh là &lt;code&gt;(&lt;/code&gt; ở vị trí 1, cùng loại nên khớp. Bỏ đỉnh, hai vị trí 1 và 8 thành một cặp.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="1">(</span><span class="cell is-ok" data-i="2">[</span><span class="cell is-ok" data-i="3">]</span><span class="cell is-ok" data-i="4">{</span><span class="cell is-ok" data-i="5">(</span><span class="cell is-ok" data-i="6">)</span><span class="cell is-ok" data-i="7">}</span><span class="cell is-active" data-i="8" data-ptr="i">)</span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-cmp" data-i="1" data-ptr="đỉnh">(</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kết thúc.&lt;/b&gt; Đi hết xâu, ngăn xếp rỗng, mọi ngoặc đều có cặp: &lt;code&gt;([]{()})&lt;/code&gt; là &lt;b&gt;dãy ngoặc đúng&lt;/b&gt;. Các cặp: (1,8), (2,3), (4,7), (5,6).">
+        <div class="arr"><span class="arr-label">s</span><span class="cell is-ok" data-i="1">(</span><span class="cell is-ok" data-i="2">[</span><span class="cell is-ok" data-i="3">]</span><span class="cell is-ok" data-i="4">{</span><span class="cell is-ok" data-i="5">(</span><span class="cell is-ok" data-i="6">)</span><span class="cell is-ok" data-i="7">}</span><span class="cell is-ok" data-i="8">)</span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-dim">rỗng</span></div>
+      </div>
+    </div>
+
+    <h3>Ví dụ 2. Ngăn xếp đơn điệu tìm phần tử lớn hơn gần nhất bên phải</h3>
+    <p>Dãy a = [2, 7, 3, 5, 4, 6, 1]. Chiều cao mỗi cột là giá trị. Hãy để ý: các cột tím (đang chờ) luôn <strong>giảm dần</strong> từ trái sang phải, và một cột cao mới đến sẽ “giải phóng” mọi cột thấp hơn nó đang chờ.</p>
+    <div class="stepper" data-title="Ví dụ 2: phần tử lớn hơn gần nhất bên phải">
+      <div class="frame" data-caption="&lt;b&gt;Bắt đầu.&lt;/b&gt; a = [2, 7, 3, 5, 4, 6, 1] (chỉ số từ 0). Cột tím là phần tử đang chờ trong ngăn xếp, cột đang xét tô đậm, cột xanh là phần tử vừa tìm được đáp án.">
+        <div class="bars" style="--max:7"><span class="bar" style="--v:2" data-v="2"></span><span class="bar" style="--v:7" data-v="7"></span><span class="bar" style="--v:3" data-v="3"></span><span class="bar" style="--v:5" data-v="5"></span><span class="bar" style="--v:4" data-v="4"></span><span class="bar" style="--v:6" data-v="6"></span><span class="bar" style="--v:1" data-v="1"></span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-dim">rỗng</span></div>
+        <div class="arr"><span class="arr-label">ans</span><span class="cell is-dim" data-i="0">?</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 0, a[i] = 2:&lt;/b&gt; ngăn xếp rỗng. Đẩy 2 vào. Ngăn xếp vẫn giảm dần từ đáy lên đỉnh.">
+        <div class="bars" style="--max:7"><span class="bar is-active" style="--v:2" data-v="2"></span><span class="bar" style="--v:7" data-v="7"></span><span class="bar" style="--v:3" data-v="3"></span><span class="bar" style="--v:5" data-v="5"></span><span class="bar" style="--v:4" data-v="4"></span><span class="bar" style="--v:6" data-v="6"></span><span class="bar" style="--v:1" data-v="1"></span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-cmp" data-i="0" data-ptr="đỉnh">2</span></div>
+        <div class="arr"><span class="arr-label">ans</span><span class="cell is-dim" data-i="0">?</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 1, a[i] = 7:&lt;/b&gt; a[0] = 2 &lt; 7 nên ans[0] = 7. Bỏ 1 phần tử đó ra, ngăn xếp rỗng. Đẩy 7 vào.">
+        <div class="bars" style="--max:7"><span class="bar is-ok" style="--v:2" data-v="2"></span><span class="bar is-active" style="--v:7" data-v="7"></span><span class="bar" style="--v:3" data-v="3"></span><span class="bar" style="--v:5" data-v="5"></span><span class="bar" style="--v:4" data-v="4"></span><span class="bar" style="--v:6" data-v="6"></span><span class="bar" style="--v:1" data-v="1"></span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-cmp" data-i="1" data-ptr="đỉnh">7</span></div>
+        <div class="arr"><span class="arr-label">ans</span><span class="cell is-ok" data-i="0">7</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 2, a[i] = 3:&lt;/b&gt; đỉnh 7 ≥ 3, không ai được bỏ ra. Đẩy 3 vào. Ngăn xếp vẫn giảm dần từ đáy lên đỉnh.">
+        <div class="bars" style="--max:7"><span class="bar is-dim" style="--v:2" data-v="2"></span><span class="bar is-cmp" style="--v:7" data-v="7"></span><span class="bar is-active" style="--v:3" data-v="3"></span><span class="bar" style="--v:5" data-v="5"></span><span class="bar" style="--v:4" data-v="4"></span><span class="bar" style="--v:6" data-v="6"></span><span class="bar" style="--v:1" data-v="1"></span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-cmp" data-i="1">7</span><span class="cell is-cmp" data-i="2" data-ptr="đỉnh">3</span></div>
+        <div class="arr"><span class="arr-label">ans</span><span class="cell is-ok" data-i="0">7</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 3, a[i] = 5:&lt;/b&gt; a[2] = 3 &lt; 5 nên ans[2] = 5. Bỏ 1 phần tử đó ra, dừng vì đỉnh 7 ≥ 5. Đẩy 5 vào.">
+        <div class="bars" style="--max:7"><span class="bar is-dim" style="--v:2" data-v="2"></span><span class="bar is-cmp" style="--v:7" data-v="7"></span><span class="bar is-ok" style="--v:3" data-v="3"></span><span class="bar is-active" style="--v:5" data-v="5"></span><span class="bar" style="--v:4" data-v="4"></span><span class="bar" style="--v:6" data-v="6"></span><span class="bar" style="--v:1" data-v="1"></span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-cmp" data-i="1">7</span><span class="cell is-cmp" data-i="3" data-ptr="đỉnh">5</span></div>
+        <div class="arr"><span class="arr-label">ans</span><span class="cell is-ok" data-i="0">7</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-ok" data-i="2">5</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 4, a[i] = 4:&lt;/b&gt; đỉnh 5 ≥ 4, không ai được bỏ ra. Đẩy 4 vào. Ngăn xếp vẫn giảm dần từ đáy lên đỉnh.">
+        <div class="bars" style="--max:7"><span class="bar is-dim" style="--v:2" data-v="2"></span><span class="bar is-cmp" style="--v:7" data-v="7"></span><span class="bar is-dim" style="--v:3" data-v="3"></span><span class="bar is-cmp" style="--v:5" data-v="5"></span><span class="bar is-active" style="--v:4" data-v="4"></span><span class="bar" style="--v:6" data-v="6"></span><span class="bar" style="--v:1" data-v="1"></span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-cmp" data-i="1">7</span><span class="cell is-cmp" data-i="3">5</span><span class="cell is-cmp" data-i="4" data-ptr="đỉnh">4</span></div>
+        <div class="arr"><span class="arr-label">ans</span><span class="cell is-ok" data-i="0">7</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-ok" data-i="2">5</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 5, a[i] = 6:&lt;/b&gt; a[4] = 4 &lt; 6 nên ans[4] = 6; a[3] = 5 &lt; 6 nên ans[3] = 6. Bỏ 2 phần tử đó ra, dừng vì đỉnh 7 ≥ 6. Đẩy 6 vào.">
+        <div class="bars" style="--max:7"><span class="bar is-dim" style="--v:2" data-v="2"></span><span class="bar is-cmp" style="--v:7" data-v="7"></span><span class="bar is-dim" style="--v:3" data-v="3"></span><span class="bar is-ok" style="--v:5" data-v="5"></span><span class="bar is-ok" style="--v:4" data-v="4"></span><span class="bar is-active" style="--v:6" data-v="6"></span><span class="bar" style="--v:1" data-v="1"></span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-cmp" data-i="1">7</span><span class="cell is-cmp" data-i="5" data-ptr="đỉnh">6</span></div>
+        <div class="arr"><span class="arr-label">ans</span><span class="cell is-ok" data-i="0">7</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-ok" data-i="2">5</span><span class="cell is-ok" data-i="3">6</span><span class="cell is-ok" data-i="4">6</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 6, a[i] = 1:&lt;/b&gt; đỉnh 6 ≥ 1, không ai được bỏ ra. Đẩy 1 vào. Ngăn xếp vẫn giảm dần từ đáy lên đỉnh.">
+        <div class="bars" style="--max:7"><span class="bar is-dim" style="--v:2" data-v="2"></span><span class="bar is-cmp" style="--v:7" data-v="7"></span><span class="bar is-dim" style="--v:3" data-v="3"></span><span class="bar is-dim" style="--v:5" data-v="5"></span><span class="bar is-dim" style="--v:4" data-v="4"></span><span class="bar is-cmp" style="--v:6" data-v="6"></span><span class="bar is-active" style="--v:1" data-v="1"></span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-cmp" data-i="1">7</span><span class="cell is-cmp" data-i="5">6</span><span class="cell is-cmp" data-i="6" data-ptr="đỉnh">1</span></div>
+        <div class="arr"><span class="arr-label">ans</span><span class="cell is-ok" data-i="0">7</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-ok" data-i="2">5</span><span class="cell is-ok" data-i="3">6</span><span class="cell is-ok" data-i="4">6</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kết thúc.&lt;/b&gt; Còn lại 7, 6, 1 trong ngăn xếp: không ai bên phải lớn hơn, nên ans = −1. Kết quả [7, −1, 5, 6, 6, −1, −1]. Tổng cộng 7 lần đẩy vào và 4 lần lấy ra (trong vòng lặp).">
+        <div class="bars" style="--max:7"><span class="bar is-dim" style="--v:2" data-v="2"></span><span class="bar is-cmp" style="--v:7" data-v="7"></span><span class="bar is-dim" style="--v:3" data-v="3"></span><span class="bar is-dim" style="--v:5" data-v="5"></span><span class="bar is-dim" style="--v:4" data-v="4"></span><span class="bar is-cmp" style="--v:6" data-v="6"></span><span class="bar is-cmp" style="--v:1" data-v="1"></span></div>
+        <div class="arr"><span class="arr-label">Ngăn xếp</span><span class="cell is-cmp" data-i="1">7</span><span class="cell is-cmp" data-i="5">6</span><span class="cell is-cmp" data-i="6" data-ptr="đỉnh">1</span></div>
+        <div class="arr"><span class="arr-label">ans</span><span class="cell is-ok" data-i="0">7</span><span class="cell is-ok" data-i="1">-1</span><span class="cell is-ok" data-i="2">5</span><span class="cell is-ok" data-i="3">6</span><span class="cell is-ok" data-i="4">6</span><span class="cell is-ok" data-i="5">-1</span><span class="cell is-ok" data-i="6">-1</span></div>
+      </div>
+    </div>
+
+    <p>Bảng dưới tóm tắt lại cả quá trình. Cột “bỏ ra” cho thấy số lần pop ở mỗi bước khác nhau (0, 1 hoặc 2), nhưng tổng cộng chỉ là 4, không vượt quá n = 7.</p>
+    <table class="trace">
+      <thead><tr><th>i</th><th>a[i]</th><th>Bỏ ra (và gán ans)</th><th>Ngăn xếp sau bước (giá trị)</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>2</td><td>—</td><td>2</td></tr>
+        <tr><td>1</td><td>7</td><td>2 → ans[0] = 7</td><td>7</td></tr>
+        <tr><td>2</td><td>3</td><td>—</td><td>7, 3</td></tr>
+        <tr><td>3</td><td>5</td><td>3 → ans[2] = 5</td><td>7, 5</td></tr>
+        <tr><td>4</td><td>4</td><td>—</td><td>7, 5, 4</td></tr>
+        <tr class="hl"><td>5</td><td>6</td><td>4 → ans[4] = 6; 5 → ans[3] = 6</td><td>7, 6</td></tr>
+        <tr><td>6</td><td>1</td><td>—</td><td>7, 6, 1</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Ví dụ 3. Deque đơn điệu tìm min cửa sổ</h3>
+    <p>Dãy a = [4, 2, 12, 3, 8, 5, 1, 7], k = 3. Ô tô đậm là phần tử mới (i), nhãn L đánh dấu đầu cửa sổ, ô tím là phần tử còn trong deque, ô mờ nằm ngoài cửa sổ. Ở hàng deque, ô xanh ở đầu luôn là min của cửa sổ.</p>
+    <div class="stepper" data-title="Ví dụ 3: min cửa sổ độ dài k = 3 bằng deque đơn điệu">
+      <div class="frame" data-caption="&lt;b&gt;i = 0, a[i] = 4:&lt;/b&gt; thêm 4 vào cuối. Cửa sổ chưa đủ 3 phần tử, chưa in.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-active" data-i="0" data-ptr="i">4</span><span class="cell is-dim" data-i="1">2</span><span class="cell is-dim" data-i="2">12</span><span class="cell is-dim" data-i="3">3</span><span class="cell is-dim" data-i="4">8</span><span class="cell is-dim" data-i="5">5</span><span class="cell is-dim" data-i="6">1</span><span class="cell is-dim" data-i="7">7</span></div>
+        <div class="arr"><span class="arr-label">Deque</span><span class="cell is-ok" data-i="0" data-ptr="đầu">4</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 1, a[i] = 2:&lt;/b&gt; bỏ ở cuối 4 vì ≥ 2; thêm 2 vào cuối. Cửa sổ chưa đủ 3 phần tử, chưa in.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0" data-ptr="L">4</span><span class="cell is-active" data-i="1" data-ptr="i">2</span><span class="cell is-dim" data-i="2">12</span><span class="cell is-dim" data-i="3">3</span><span class="cell is-dim" data-i="4">8</span><span class="cell is-dim" data-i="5">5</span><span class="cell is-dim" data-i="6">1</span><span class="cell is-dim" data-i="7">7</span></div>
+        <div class="arr"><span class="arr-label">Deque</span><span class="cell is-ok" data-i="1" data-ptr="đầu">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 2, a[i] = 12:&lt;/b&gt; thêm 12 vào cuối. Cửa sổ [0, 2] có min = a[1] = &lt;b&gt;2&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0" data-ptr="L">4</span><span class="cell is-cmp" data-i="1">2</span><span class="cell is-active" data-i="2" data-ptr="i">12</span><span class="cell is-dim" data-i="3">3</span><span class="cell is-dim" data-i="4">8</span><span class="cell is-dim" data-i="5">5</span><span class="cell is-dim" data-i="6">1</span><span class="cell is-dim" data-i="7">7</span></div>
+        <div class="arr"><span class="arr-label">Deque</span><span class="cell is-ok" data-i="1" data-ptr="đầu">2</span><span class="cell" data-i="2">12</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 3, a[i] = 3:&lt;/b&gt; bỏ ở cuối 12 vì ≥ 3; thêm 3 vào cuối. Cửa sổ [1, 3] có min = a[1] = &lt;b&gt;2&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">4</span><span class="cell is-cmp" data-i="1" data-ptr="L">2</span><span class="cell" data-i="2">12</span><span class="cell is-active" data-i="3" data-ptr="i">3</span><span class="cell is-dim" data-i="4">8</span><span class="cell is-dim" data-i="5">5</span><span class="cell is-dim" data-i="6">1</span><span class="cell is-dim" data-i="7">7</span></div>
+        <div class="arr"><span class="arr-label">Deque</span><span class="cell is-ok" data-i="1" data-ptr="đầu">2</span><span class="cell" data-i="3">3</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 4, a[i] = 8:&lt;/b&gt; chỉ số 1 (giá trị 2) hết hạn vì 1 ≤ 4−3 = 1, bỏ ở đầu; thêm 8 vào cuối. Cửa sổ [2, 4] có min = a[3] = &lt;b&gt;3&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">4</span><span class="cell is-dim" data-i="1">2</span><span class="cell" data-i="2" data-ptr="L">12</span><span class="cell is-cmp" data-i="3">3</span><span class="cell is-active" data-i="4" data-ptr="i">8</span><span class="cell is-dim" data-i="5">5</span><span class="cell is-dim" data-i="6">1</span><span class="cell is-dim" data-i="7">7</span></div>
+        <div class="arr"><span class="arr-label">Deque</span><span class="cell is-ok" data-i="3" data-ptr="đầu">3</span><span class="cell" data-i="4">8</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 5, a[i] = 5:&lt;/b&gt; bỏ ở cuối 8 vì ≥ 5; thêm 5 vào cuối. Cửa sổ [3, 5] có min = a[3] = &lt;b&gt;3&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">4</span><span class="cell is-dim" data-i="1">2</span><span class="cell is-dim" data-i="2">12</span><span class="cell is-cmp" data-i="3" data-ptr="L">3</span><span class="cell" data-i="4">8</span><span class="cell is-active" data-i="5" data-ptr="i">5</span><span class="cell is-dim" data-i="6">1</span><span class="cell is-dim" data-i="7">7</span></div>
+        <div class="arr"><span class="arr-label">Deque</span><span class="cell is-ok" data-i="3" data-ptr="đầu">3</span><span class="cell" data-i="5">5</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 6, a[i] = 1:&lt;/b&gt; chỉ số 3 (giá trị 3) hết hạn vì 3 ≤ 6−3 = 3, bỏ ở đầu; bỏ ở cuối 5 vì ≥ 1; thêm 1 vào cuối. Cửa sổ [4, 6] có min = a[6] = &lt;b&gt;1&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">4</span><span class="cell is-dim" data-i="1">2</span><span class="cell is-dim" data-i="2">12</span><span class="cell is-dim" data-i="3">3</span><span class="cell" data-i="4" data-ptr="L">8</span><span class="cell" data-i="5">5</span><span class="cell is-active" data-i="6" data-ptr="i">1</span><span class="cell is-dim" data-i="7">7</span></div>
+        <div class="arr"><span class="arr-label">Deque</span><span class="cell is-ok" data-i="6" data-ptr="đầu">1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;i = 7, a[i] = 7:&lt;/b&gt; thêm 7 vào cuối. Cửa sổ [5, 7] có min = a[6] = &lt;b&gt;1&lt;/b&gt;. Kết quả: 2 2 3 3 1 1.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">4</span><span class="cell is-dim" data-i="1">2</span><span class="cell is-dim" data-i="2">12</span><span class="cell is-dim" data-i="3">3</span><span class="cell is-dim" data-i="4">8</span><span class="cell" data-i="5" data-ptr="L">5</span><span class="cell is-cmp" data-i="6">1</span><span class="cell is-active" data-i="7" data-ptr="i">7</span></div>
+        <div class="arr"><span class="arr-label">Deque</span><span class="cell is-ok" data-i="6" data-ptr="đầu">1</span><span class="cell" data-i="7">7</span></div>
+      </div>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 520 190" width="520" role="img" aria-label="Vì sao phần tử lớn hơn ở bên trái bị loại khỏi deque">
+        <text class="label-sm" x="20" y="20">Cửa sổ hiện tại</text>
+        <rect class="fill-soft" x="20" y="30" width="300" height="60" rx="6"/>
+        <rect class="node is-bad" x="70" y="42" width="44" height="36" rx="4"/><text x="92" y="66" text-anchor="middle">8</text>
+        <text class="label-sm" x="92" y="108" text-anchor="middle">j (cũ, lớn)</text>
+        <rect class="node is-active" x="230" y="42" width="44" height="36" rx="4"/><text x="252" y="66" text-anchor="middle">5</text>
+        <text class="label-sm" x="252" y="108" text-anchor="middle">i (mới, nhỏ)</text>
+        <line class="edge" x1="20" y1="135" x2="500" y2="135"/>
+        <text class="label-pen" x="20" y="158">j rời cửa sổ trước i, mà a[j] ≥ a[i]:</text>
+        <text class="label-pen" x="20" y="180">nên j không bao giờ là min nữa, bỏ j đi.</text>
+        <line class="edge is-active" x1="330" y1="60" x2="480" y2="60"/>
+        <text class="label-sm" x="405" y="50" text-anchor="middle">cửa sổ trượt sang phải</text>
+      </svg>
+      <figcaption>Hình 2. Phần tử cũ mà lớn hơn hoặc bằng phần tử mới là “vô dụng”: mọi cửa sổ sau này chứa nó thì cũng chứa phần tử mới nhỏ hơn.</figcaption>
+    </figure>
+
+    <div class="playground" id="viz-stack-queue">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: chạy ngăn xếp từng bước</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="sq-mode">Bài toán <select id="sq-mode">
+            <option value="br">Kiểm tra dãy ngoặc</option>
+            <option value="ng">Lớn hơn gần nhất bên phải</option>
+          </select></label>
+          <label for="sq-input">Dữ liệu <input type="text" id="sq-input" value="([]{()})"></label>
+        </div>
+        <div class="controls">
+          <button type="button" data-act="start">Bắt đầu lại</button>
+          <button type="button" class="ghost" data-act="next">Bước tiếp</button>
+          <button type="button" class="ghost" data-act="all">Chạy hết</button>
+          <button type="button" class="ghost" data-act="rand">Ví dụ ngẫu nhiên</button>
+        </div>
+        <div class="sq-view"></div>
+        <div class="out">Nhập một xâu ngoặc (chỉ gồm ( ) [ ] { }), hoặc chọn bài thứ hai và nhập dãy số, rồi bấm “Bước tiếp”.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Trong C++ em không cần tự viết ngăn xếp hay hàng đợi: thư viện chuẩn đã có sẵn (xem bài <a href="stl.html">STL</a>). Bảng dưới là các lệnh hay dùng nhất.</p>
+    <table>
+      <thead><tr><th>Cấu trúc</th><th>Khai báo</th><th>Thêm</th><th>Bỏ</th><th>Xem</th></tr></thead>
+      <tbody>
+        <tr><td>Ngăn xếp</td><td><code>stack&lt;int&gt; st;</code></td><td><code>st.push(x)</code></td><td><code>st.pop()</code></td><td><code>st.top()</code></td></tr>
+        <tr><td>Hàng đợi</td><td><code>queue&lt;int&gt; q;</code></td><td><code>q.push(x)</code> (vào cuối)</td><td><code>q.pop()</code> (bỏ đầu)</td><td><code>q.front()</code>, <code>q.back()</code></td></tr>
+        <tr><td>Deque</td><td><code>deque&lt;int&gt; d;</code></td><td><code>push_front</code>, <code>push_back</code></td><td><code>pop_front</code>, <code>pop_back</code></td><td><code>front()</code>, <code>back()</code>, <code>d[i]</code></td></tr>
+        <tr><td>Ngăn xếp bằng vector</td><td><code>vector&lt;int&gt; st;</code></td><td><code>push_back(x)</code></td><td><code>pop_back()</code></td><td><code>back()</code></td></tr>
+      </tbody>
+    </table>
+    <p>Cả ba đều có <code>size()</code> và <code>empty()</code>. Chú ý: <code>pop()</code> <strong>không trả về</strong> giá trị; muốn lấy giá trị thì gọi <code>top()</code> hoặc <code>front()</code> trước. Nhiều bạn thích dùng <code>vector</code> làm ngăn xếp vì nó còn cho xem mọi phần tử bên trong, rất tiện khi gỡ lỗi.</p>
+
+    <h3>Chương trình 1: kiểm tra dãy ngoặc và báo vị trí sai</h3>
+    <p>Đọc một xâu chỉ gồm <code>( ) [ ] { }</code>. In <code>YES</code> nếu là dãy ngoặc đúng; ngược lại in <code>NO p</code> với p là vị trí (đánh số từ 1) phát hiện lỗi: ngoặc đóng không khớp, hoặc ngoặc mở cuối cùng chưa được đóng.</p>
+    <figure class="code">
+      <figcaption><span class="fn">ngoac.cpp</span> Ngăn xếp lưu chỉ số các ngoặc mở</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Trả về cặp ngoặc mở tương ứng với ngoặc đóng c
+char moTuongUng(char c) {
+    if (c == ')') return '(';
+    if (c == ']') return '[';
+    return '{';                       // c == '}'
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    string s;
+    cin &gt;&gt; s;
+    stack&lt;int&gt; st;                    // lưu CHỈ SỐ của các ngoặc mở chưa được đóng
+    for (int i = 0; i &lt; (int)s.size(); i++) {
+        char c = s[i];
+        if (c == '(' || c == '[' || c == '{') {
+            st.push(i);               // ngoặc mở: cất vào ngăn xếp
+        } else {
+            // ngoặc đóng: phải khớp với ngoặc mở trên đỉnh
+            if (st.empty() || s[st.top()] != moTuongUng(c)) {
+                cout &lt;&lt; "NO " &lt;&lt; i + 1 &lt;&lt; '\n';   // sai tại vị trí i+1 (đánh số từ 1)
+                return 0;
+            }
+            st.pop();                 // khớp: bỏ ngoặc mở đó đi
+        }
+    }
+    if (!st.empty()) {
+        // còn ngoặc mở chưa đóng: báo vị trí ngoặc mở ở đỉnh (mở gần cuối nhất)
+        cout &lt;&lt; "NO " &lt;&lt; st.top() + 1 &lt;&lt; '\n';
+    } else {
+        cout &lt;&lt; "YES\n";
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">([]{()})</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">YES</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">([)]</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">NO 3</code></pre></div>
+    </div>
+    <p>Với <code>([)]</code>: đến vị trí 3 gặp <code>)</code> nhưng đỉnh là <code>[</code>, nên sai tại 3. Thử thêm: <code>(()</code> cho <code>NO 1</code>, <code>())</code> cho <code>NO 3</code>.</p>
+
+    <h3>Chương trình 2: phần tử lớn hơn gần nhất bên phải</h3>
+    <figure class="code">
+      <figcaption><span class="fn">lon_hon_phai.cpp</span> Ngăn xếp đơn điệu giảm dần</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;long long&gt; a(n);
+    for (auto &amp;x : a) cin &gt;&gt; x;
+
+    vector&lt;long long&gt; ans(n, -1);     // mặc định: không có phần tử lớn hơn bên phải
+    vector&lt;int&gt; st;                   // ngăn xếp CHỈ SỐ, giá trị giảm dần từ đáy lên đỉnh
+    for (int i = 0; i &lt; n; i++) {
+        // a[i] là "người lớn hơn" mà các phần tử nhỏ hơn trên đỉnh đang chờ
+        while (!st.empty() &amp;&amp; a[st.back()] &lt; a[i]) {
+            ans[st.back()] = a[i];    // tìm được đáp án cho phần tử ở đỉnh
+            st.pop_back();            // phần tử này xong việc, ra khỏi ngăn xếp
+        }
+        st.push_back(i);              // a[i] vào hàng chờ
+    }
+    // những chỉ số còn lại trong ngăn xếp không có ai lớn hơn: giữ -1
+
+    for (int i = 0; i &lt; n; i++) cout &lt;&lt; ans[i] &lt;&lt; " \n"[i == n - 1];
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">7
+2 7 3 5 4 6 1</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">7 -1 5 6 6 -1 -1</code></pre></div>
+    </div>
+    <p>Ngăn xếp lưu <em>chỉ số</em> chứ không lưu giá trị, vì ta cần biết phải ghi đáp án vào ô nào. Đây là thói quen tốt: hầu hết bài ngăn xếp đơn điệu đều nên lưu chỉ số.</p>
+
+    <h3>Chương trình 3: min của mọi cửa sổ độ dài k</h3>
+    <figure class="code">
+      <figcaption><span class="fn">min_cua_so.cpp</span> Deque đơn điệu tăng dần</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, k;
+    cin &gt;&gt; n &gt;&gt; k;
+    vector&lt;long long&gt; a(n);
+    for (auto &amp;x : a) cin &gt;&gt; x;
+
+    deque&lt;int&gt; dq;                    // chỉ số; giá trị TĂNG dần từ đầu đến cuối
+    for (int i = 0; i &lt; n; i++) {
+        // 1) Bỏ phần tử ở đầu nếu đã rơi ra ngoài cửa sổ [i-k+1, i]
+        if (!dq.empty() &amp;&amp; dq.front() &lt;= i - k) dq.pop_front();
+        // 2) Bỏ ở cuối những phần tử &gt;= a[i]: chúng không bao giờ là min nữa
+        while (!dq.empty() &amp;&amp; a[dq.back()] &gt;= a[i]) dq.pop_back();
+        // 3) Thêm i vào cuối
+        dq.push_back(i);
+        // 4) Đủ k phần tử thì đầu deque chính là min của cửa sổ
+        if (i &gt;= k - 1) cout &lt;&lt; a[dq.front()] &lt;&lt; (i == n - 1 ? '\n' : ' ');
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8 3
+4 2 12 3 8 5 1 7</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2 2 3 3 1 1</code></pre></div>
+    </div>
+    <p>Muốn tìm <strong>max</strong> thay vì min, em chỉ cần đổi dấu so sánh ở bước 2 thành <code>a[dq.back()] &lt;= a[i]</code>: deque khi đó giảm dần.</p>
+
+    <h3>Tự cài bằng mảng</h3>
+    <p>Khi cần chạy thật nhanh, hoặc khi thi ở nơi em muốn kiểm soát bộ nhớ, có thể tự cài bằng mảng tĩnh như mã giả ở mục A. Hàng đợi dùng <strong>mảng vòng</strong> để không phí chỗ.</p>
+    <figure class="code">
+      <figcaption><span class="fn">mang.cpp</span> Ngăn xếp và hàng đợi vòng bằng mảng</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const int MAXN = 100005;
+
+// Ngăn xếp bằng mảng: top = số phần tử đang có
+int stk[MAXN], top_ = 0;
+void push(int x) { stk[top_++] = x; }
+void pop()       { top_--; }
+int  topVal()    { return stk[top_ - 1]; }
+bool emptyS()    { return top_ == 0; }
+
+// Hàng đợi vòng: head = vị trí đầu, cnt = số phần tử
+int q[MAXN], head = 0, cnt = 0;
+void enqueue(int x) { q[(head + cnt) % MAXN] = x; cnt++; }
+void dequeue()      { head = (head + 1) % MAXN; cnt--; }
+int  frontVal()     { return q[head]; }
+
+int main() {
+    push(1); push(2); push(3);
+    pop();                                   // bỏ 3
+    cout &lt;&lt; topVal() &lt;&lt; '\n';                // 2
+    enqueue(1); enqueue(2); enqueue(3);
+    dequeue();                               // bỏ 1
+    cout &lt;&lt; frontVal() &lt;&lt; ' ' &lt;&lt; cnt &lt;&lt; '\n'; // 2 2
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">(không cần nhập)</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2
+2 2</code></pre></div>
+    </div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thao tác / thuật toán</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>push, pop, top của ngăn xếp; push, pop, front của hàng đợi; 4 thao tác hai đầu của deque</td><td><span class="bigo">O(1)</span></td><td>—</td></tr>
+        <tr><td>Kiểm tra dãy ngoặc độ dài n</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Tính biểu thức hậu tố n ký hiệu</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Lớn hơn / nhỏ hơn gần nhất (ngăn xếp đơn điệu)</td><td><span class="bigo">O(n)</span> (ngây thơ <span class="bigo">O(n²)</span>)</td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Min/max cửa sổ độ dài k (deque đơn điệu)</td><td><span class="bigo">O(n)</span> (ngây thơ <span class="bigo">O(n·k)</span>)</td><td><span class="bigo">O(k)</span> cho deque</td></tr>
+        <tr><td>Hình chữ nhật lớn nhất trong biểu đồ cột</td><td><span class="bigo">O(n)</span> (ngây thơ <span class="bigo">O(n²)</span>)</td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Hình chữ nhật toàn số 1 trong bảng m × n</td><td><span class="bigo">O(m·n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Con số cụ thể.</strong> Với n = 10⁶, ngăn xếp đơn điệu làm không quá 2·10⁶ thao tác push/pop, chạy trong vài mili giây. Cách ngây thơ O(n²) cần cỡ 5·10¹¹ phép so sánh ở trường hợp xấu, mất nhiều phút. Với bảng 1000 × 1000 trong bài hình chữ nhật 0/1, lời giải O(m·n) chỉ khoảng 10⁶ bước (nhân một hằng số nhỏ), trong khi thử mọi hình chữ nhật là cỡ (10⁶)² / 4 = 2,5·10¹¹ hình.</p>
+    <p><strong>Phân tích khấu trừ</strong>, nhắc lại: đừng nhân “số vòng for” với “số vòng while lớn nhất”. Hãy đếm xem mỗi phần tử bị đụng tới bao nhiêu lần trong cả chương trình. Mỗi phần tử: vào 1 lần, ra không quá 1 lần, nên tổng ≤ 2n.</p>
+    <div class="callout note"><p class="callout-title">Về bộ nhớ của std::stack, std::queue</p><p>Mặc định chúng được xây trên <code>deque</code>, cấp phát theo từng khối nên an toàn với 10⁶ đến 10⁷ phần tử. Với n = 10⁷ (như bài Sliding Window Minimum của CSES), em nên dùng mảng tĩnh làm deque (hai chỉ số đầu, cuối) để vừa nhanh vừa đỡ tốn bộ nhớ.</p></div>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Biểu thức hậu tố (ký pháp Ba Lan ngược)</h3>
+    <p>Em quen viết <code>5 + (1 + 2) * 4 - 3</code>, gọi là dạng <strong>trung tố</strong> (dấu nằm giữa hai số). Dạng <strong>hậu tố</strong> (postfix) đặt dấu <em>sau</em> hai số: <code>5 1 2 + 4 * + 3 -</code>. Dạng này không cần ngoặc và không cần nhớ “nhân chia trước, cộng trừ sau”, nên máy tính rất thích.</p>
+    <p><strong>Cách tính bằng ngăn xếp:</strong> đọc từ trái sang phải; gặp số thì đẩy vào; gặp dấu thì lấy ra hai số trên cùng (số lấy ra <em>trước</em> là số hạng <em>thứ hai</em>), tính, rồi đẩy kết quả vào. Cuối cùng ngăn xếp còn đúng một số là đáp án.</p>
+    <table class="trace">
+      <thead><tr><th>Đọc</th><th>Việc làm</th><th>Ngăn xếp (đáy → đỉnh)</th></tr></thead>
+      <tbody>
+        <tr><td>5</td><td>đẩy</td><td>5</td></tr>
+        <tr><td>1</td><td>đẩy</td><td>5, 1</td></tr>
+        <tr><td>2</td><td>đẩy</td><td>5, 1, 2</td></tr>
+        <tr><td>+</td><td>1 + 2 = 3</td><td>5, 3</td></tr>
+        <tr><td>4</td><td>đẩy</td><td>5, 3, 4</td></tr>
+        <tr><td>*</td><td>3 × 4 = 12</td><td>5, 12</td></tr>
+        <tr><td>+</td><td>5 + 12 = 17</td><td>17</td></tr>
+        <tr><td>3</td><td>đẩy</td><td>17, 3</td></tr>
+        <tr class="hl"><td>-</td><td>17 − 3 = 14</td><td>14</td></tr>
+      </tbody>
+    </table>
+    <figure class="code">
+      <figcaption><span class="fn">hau_to.cpp</span> Tính biểu thức hậu tố gồm số nguyên và + − ×</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    string tok;
+    stack&lt;long long&gt; st;
+    while (cin &gt;&gt; tok) {              // đọc từng "từ": số hoặc dấu phép tính
+        if (tok == "+" || tok == "-" || tok == "*") {
+            long long b = st.top(); st.pop();   // lấy ra số thứ HAI trước
+            long long a = st.top(); st.pop();
+            if (tok == "+") st.push(a + b);
+            else if (tok == "-") st.push(a - b);
+            else st.push(a * b);
+        } else {
+            st.push(stoll(tok));      // là số: đẩy vào ngăn xếp
+        }
+    }
+    cout &lt;&lt; st.top() &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 1 2 + 4 * + 3 -</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">14</code></pre></div>
+    </div>
+    <p>Đổi trung tố sang hậu tố cũng dùng ngăn xếp (thuật toán “sân ga” shunting-yard của Dijkstra): số thì in ra ngay, dấu thì cất vào ngăn xếp và lấy ra khi gặp dấu có độ ưu tiên thấp hơn hoặc bằng, hoặc khi gặp ngoặc đóng. Bài <a href="https://oj.vnoi.info/problem/mmass">MMASS</a> ở cuối trang là một dạng gần gũi: tính khối lượng công thức hóa học có ngoặc.</p>
+
+    <h3>2. Hoàn tác (Undo) và làm lại (Redo)</h3>
+    <p>Dùng <strong>hai ngăn xếp</strong>: <code>undo</code> và <code>redo</code>. Mỗi thao tác mới được đẩy vào <code>undo</code> và xóa sạch <code>redo</code>. Bấm Undo: lấy thao tác ở đỉnh <code>undo</code>, làm ngược lại, đẩy nó sang <code>redo</code>. Bấm Redo: làm ngược lại theo chiều kia. Thao tác gần nhất luôn được hoàn tác trước, đúng kiểu LIFO.</p>
+
+    <h3>3. Khử đệ quy</h3>
+    <p>Mỗi lời gọi đệ quy tốn một ít bộ nhớ trên ngăn xếp lời gọi của máy. Nếu đệ quy sâu tới 10⁶ tầng (ví dụ DFS trên một đường thẳng dài 10⁶ đỉnh), chương trình có thể bị lỗi tràn ngăn xếp (stack overflow). Cách chữa: tự quản lý một <code>stack</code> trong bộ nhớ thường. Ví dụ DFS không đệ quy:</p>
+    <figure class="code">
+      <figcaption><span class="fn">dfs_khong_de_quy</span> Đoạn hàm (đặt vào chương trình có <code>adj</code>, <code>vis</code>)</figcaption>
+<pre><code class="language-cpp">void dfsKhongDeQuy(int s) {
+    stack&lt;int&gt; st;
+    st.push(s);
+    while (!st.empty()) {
+        int u = st.top(); st.pop();
+        if (vis[u]) continue;              // có thể bị đẩy nhiều lần, chỉ thăm lần đầu
+        vis[u] = true;                     // "thăm" u
+        for (int v : adj[u])
+            if (!vis[v]) st.push(v);       // cất các đỉnh kề để thăm sau
+    }
+}</code></pre>
+    </figure>
+    <p>Hàm này thăm đúng các đỉnh mà DFS đệ quy thăm, nhưng thứ tự có thể khác một chút. Xem thêm bài <a href="graph-dfs.html">DFS</a>. Nếu em thay <code>stack</code> bằng <code>queue</code> ở đây, em gần như đã có BFS: đó chính là khác biệt cốt lõi giữa hai cách duyệt.</p>
+
+    <h3>4. Bốn dạng “gần nhất” của ngăn xếp đơn điệu</h3>
+    <p>Chỉ cần đổi hướng duyệt và đổi dấu so sánh, em giải được cả bốn câu hỏi. Mẹo nhớ: phần tử nào <em>chắc chắn không thể</em> là đáp án cho các phần tử sau thì bỏ ra.</p>
+    <table>
+      <thead><tr><th>Câu hỏi với mỗi i</th><th>Hướng duyệt</th><th>Bỏ đỉnh khi</th><th>Sau khi bỏ, đáp án của i</th><th>Ngăn xếp</th></tr></thead>
+      <tbody>
+        <tr><td>Nhỏ hơn gần nhất bên trái</td><td>trái → phải</td><td>a[đỉnh] ≥ a[i]</td><td>đỉnh (rỗng: không có)</td><td>tăng dần</td></tr>
+        <tr><td>Lớn hơn gần nhất bên trái</td><td>trái → phải</td><td>a[đỉnh] ≤ a[i]</td><td>đỉnh</td><td>giảm dần</td></tr>
+        <tr><td>Nhỏ hơn gần nhất bên phải</td><td>phải → trái</td><td>a[đỉnh] ≥ a[i]</td><td>đỉnh</td><td>tăng dần</td></tr>
+        <tr><td>Lớn hơn gần nhất bên phải</td><td>phải → trái</td><td>a[đỉnh] ≤ a[i]</td><td>đỉnh</td><td>giảm dần</td></tr>
+      </tbody>
+    </table>
+    <p>Cách ở bảng này là “hỏi đỉnh sau khi dọn”. Cách ở chương trình 2 là “phần tử bị bỏ ra nhận đáp án”. Hai cách cho cùng kết quả; em chọn cách nào thấy tự nhiên hơn. Muốn “nhỏ hơn <em>hoặc bằng</em>” thì đổi ≥ thành &gt; (và tương tự). Bài <a href="https://cses.fi/problemset/task/1645">CSES 1645</a> chính là dòng đầu tiên của bảng.</p>
+
+    <h3>5. Hình chữ nhật lớn nhất trong biểu đồ cột (nâng cao)</h3>
+    <p>Cho n cột sát nhau, cột i rộng 1, cao h[i]. Tìm hình chữ nhật có diện tích lớn nhất nằm trong các cột. Ví dụ h = [2, 1, 5, 6, 2, 3] cho đáp án 10 (hai cột cao 5 và 6, lấy chiều cao 5, rộng 2).</p>
+    <div class="bars" style="--max:6">
+      <span class="bar" style="--v:2" data-v="2"></span>
+      <span class="bar" style="--v:1" data-v="1"></span>
+      <span class="bar is-ok" style="--v:5" data-v="5"></span>
+      <span class="bar is-ok" style="--v:6" data-v="6"></span>
+      <span class="bar" style="--v:2" data-v="2"></span>
+      <span class="bar" style="--v:3" data-v="3"></span>
+    </div>
+    <p><strong>Ý tưởng then chốt:</strong> hình chữ nhật tốt nhất luôn có một cột <em>thấp nhất</em> chạm nóc. Vậy với mỗi cột i, giả sử nó là cột thấp nhất: hình chữ nhật cao h[i] kéo dài sang trái tới ngay sau cột <strong>thấp hơn gần nhất bên trái</strong> L[i], và sang phải tới ngay trước cột <strong>thấp hơn gần nhất bên phải</strong> R[i]. Diện tích là h[i] × (R[i] − L[i] − 1). Hai mảng L và R tính bằng ngăn xếp đơn điệu trong O(n).</p>
+    <table class="trace">
+      <thead><tr><th>i</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
+      <tbody>
+        <tr><td>h[i]</td><td>2</td><td>1</td><td>5</td><td>6</td><td>2</td><td>3</td></tr>
+        <tr><td>L[i]</td><td>−1</td><td>−1</td><td>1</td><td>2</td><td>1</td><td>4</td></tr>
+        <tr><td>R[i]</td><td>1</td><td>6</td><td>4</td><td>4</td><td>6</td><td>6</td></tr>
+        <tr><td>rộng</td><td>1</td><td>6</td><td>2</td><td>1</td><td>4</td><td>1</td></tr>
+        <tr class="hl"><td>diện tích</td><td>2</td><td>6</td><td>10</td><td>6</td><td>8</td><td>3</td></tr>
+      </tbody>
+    </table>
+    <figure class="code">
+      <figcaption><span class="fn">histogram.cpp</span> Hình chữ nhật lớn nhất trong biểu đồ cột</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;long long&gt; h(n);
+    for (auto &amp;x : h) cin &gt;&gt; x;
+    vector&lt;int&gt; L(n), R(n), st;
+    // L[i]: chỉ số gần nhất bên trái có h nhỏ hơn h[i] (không có thì -1)
+    for (int i = 0; i &lt; n; i++) {
+        while (!st.empty() &amp;&amp; h[st.back()] &gt;= h[i]) st.pop_back();
+        L[i] = st.empty() ? -1 : st.back();
+        st.push_back(i);
+    }
+    st.clear();
+    // R[i]: chỉ số gần nhất bên phải có h nhỏ hơn h[i] (không có thì n)
+    for (int i = n - 1; i &gt;= 0; i--) {
+        while (!st.empty() &amp;&amp; h[st.back()] &gt;= h[i]) st.pop_back();
+        R[i] = st.empty() ? n : st.back();
+        st.push_back(i);
+    }
+    long long best = 0;
+    for (int i = 0; i &lt; n; i++)       // cột i là cột thấp nhất của hình chữ nhật
+        best = max(best, h[i] * (R[i] - L[i] - 1));
+    cout &lt;&lt; best &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">6
+2 1 5 6 2 3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">10</code></pre></div>
+    </div>
+    <p>Nhớ dùng <code>long long</code>: chiều cao tới 10⁹ nhân độ rộng tới 2·10⁵ thì vượt xa giới hạn của <code>int</code>. Bài <a href="https://oj.vnoi.info/problem/kagain">KAGAIN</a> cũng là bài này, chỉ khác ở chỗ in thêm đoạn [L + 1, R − 1].</p>
+
+    <h3>6. Hình chữ nhật toàn số 1 trong bảng 0/1</h3>
+    <p>Duyệt từng dòng từ trên xuống. Với mỗi cột j, gọi h[j] là số ô 1 liên tiếp tính từ dòng hiện tại ngược lên trên (gặp 0 thì h[j] = 0, gặp 1 thì h[j] tăng 1). Mỗi dòng cho ta một biểu đồ cột h, giải bằng mục 5. Tổng thời gian O(m·n). Đây là bài <a href="https://oj.vnoi.info/problem/qbrect">QBRECT</a>.</p>
+
+    <h3>7. Max cửa sổ và các biến thể deque</h3>
+    <ul>
+      <li><strong>Max cửa sổ:</strong> đổi dấu, giữ deque giảm dần.</li>
+      <li><strong>Cửa sổ độ dài thay đổi</strong> (hai con trỏ): cửa sổ [l, r], r tăng dần, l cũng chỉ tăng. Vẫn dùng deque: thêm ở cuối khi r tăng, bỏ ở đầu khi chỉ số ở đầu &lt; l. Ví dụ: tìm đoạn dài nhất có max − min ≤ d, dùng hai deque (một cho max, một cho min).</li>
+      <li><strong>Quy hoạch động tối ưu bằng deque:</strong> công thức dạng f[i] = min(f[j]) + c[i] với j trong [i − k, i − 1] dùng đúng deque min cửa sổ.</li>
+    </ul>
+
+    <h3>8. Thêm vài mẹo hay</h3>
+    <ul>
+      <li><strong>Ngăn xếp có min trong O(1):</strong> mỗi ô ngăn xếp lưu cặp (giá trị, min của mọi phần tử từ đáy tới ô này). Khi đẩy x: min mới = min(x, min ở đỉnh cũ).</li>
+      <li><strong>Hàng đợi bằng hai ngăn xếp:</strong> đẩy vào ngăn xếp “vào”; khi cần lấy ra mà ngăn xếp “ra” rỗng thì đổ hết “vào” sang “ra” (thứ tự bị đảo ngược đúng một lần). Mỗi phần tử bị đổ tối đa 1 lần, nên trung bình O(1) mỗi thao tác.</li>
+    </ul>
+
+    <h3>Khi nào dùng cấu trúc nào</h3>
+    <table>
+      <thead><tr><th>Dấu hiệu trong bài</th><th>Cấu trúc</th><th>Ví dụ</th></tr></thead>
+      <tbody>
+        <tr><td>Lồng nhau, mở sau đóng trước, quay lui, hoàn tác</td><td>Ngăn xếp</td><td>Dãy ngoặc, hậu tố, Undo, DFS không đệ quy</td></tr>
+        <tr><td>Phục vụ theo thứ tự đến, lan dần theo từng lớp</td><td>Hàng đợi</td><td>Mô phỏng xếp hàng, BFS</td></tr>
+        <tr><td>Thêm/bỏ ở cả hai đầu</td><td>Deque</td><td>BFS 0-1, mô phỏng bộ bài</td></tr>
+        <tr><td>“Gần nhất bên trái/phải mà lớn hơn/nhỏ hơn”, “đoạn dài nhất mà a[i] là min”</td><td>Ngăn xếp đơn điệu</td><td>Nearest Smaller Values, biểu đồ cột</td></tr>
+        <tr><td>Min/max của cửa sổ trượt (độ dài cố định hoặc hai con trỏ)</td><td>Deque đơn điệu</td><td>MINK, Sliding Window Minimum</td></tr>
+        <tr><td>Luôn lấy phần tử lớn nhất/nhỏ nhất của <em>cả</em> tập (không theo cửa sổ)</td><td>Hàng đợi ưu tiên</td><td>Dijkstra, tham lam (xem <a href="stl.html">STL</a>)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Gọi top() hoặc pop() khi ngăn xếp rỗng</p><p>Với <code>std::stack</code>, đây là hành vi không xác định: chương trình có thể chạy sai âm thầm hoặc bị dừng. Luôn kiểm tra <code>!st.empty()</code> trước, và đặt điều kiện này <strong>đứng trước</strong> trong phép <code>&amp;&amp;</code>: <code>while (!st.empty() &amp;&amp; a[st.top()] &lt; a[i])</code>. Trong bài ngoặc, xâu <code>)</code> là phép thử đầu tiên em nên chạy.</p></div>
+    <div class="callout danger"><p class="callout-title">Quên kiểm tra ngăn xếp cuối cùng</p><p>Xâu <code>((</code> không làm sai ở bước nào, nhưng vẫn không phải dãy ngoặc đúng. Sau vòng lặp phải kiểm tra ngăn xếp có rỗng không.</p></div>
+    <div class="callout warn"><p class="callout-title">Nhầm &lt; với ≤ khi có giá trị bằng nhau</p><p>“Lớn hơn” và “lớn hơn hoặc bằng” cho kết quả khác nhau khi dãy có số trùng. Ví dụ a = [3, 3]: phần tử lớn hơn gần nhất bên phải của a[0] là −1, nhưng phần tử lớn hơn <em>hoặc bằng</em> là 3. Đọc kỹ đề, rồi thử tay với một dãy có số trùng. Trong bài biểu đồ cột, chương trình ở trên bỏ đỉnh khi ≥ ở cả hai lượt, nên L[i], R[i] là cột thấp hơn <em>hẳn</em> gần nhất và mỗi cột tìm được độ rộng tối đa của mình.</p></div>
+    <div class="callout warn"><p class="callout-title">Lưu giá trị thay vì chỉ số</p><p>Trong ngăn xếp đơn điệu và deque cửa sổ, nếu chỉ lưu giá trị, em sẽ không biết ghi đáp án vào ô nào, và cũng không biết phần tử ở đầu deque đã hết hạn chưa. Hãy lưu chỉ số, lấy giá trị bằng <code>a[chỉ số]</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Sai thứ tự hai số khi tính hậu tố</p><p>Với <code>7 2 -</code>, số lấy ra trước là 2 (số hạng thứ hai). Viết <code>b = top; pop; a = top; pop; push(a - b)</code>. Viết ngược sẽ ra −5 thay vì 5. Phép chia cũng vậy.</p></div>
+    <div class="callout warn"><p class="callout-title">Điều kiện hết hạn của cửa sổ lệch một đơn vị</p><p>Cửa sổ kết thúc tại i là [i − k + 1, i]. Chỉ số j hết hạn khi j ≤ i − k (tức j &lt; i − k + 1). Viết nhầm thành j &lt; i − k thì cửa sổ có k + 1 phần tử. Và chỉ in kết quả khi i ≥ k − 1.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo kiểm tra</p><p>Viết thêm một lời giải ngây thơ O(n²), sinh ngẫu nhiên vài trăm dãy ngắn (n ≤ 8, giá trị từ 1 đến 5 để có nhiều số trùng), rồi so kết quả hai chương trình. Cách này bắt được gần hết lỗi dấu &lt; / ≤ và lỗi lệch chỉ số.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Ngăn xếp ban đầu rỗng. Thực hiện lần lượt: push 1, push 2, push 3, pop, push 4, pop, pop. Phần tử ở đỉnh bây giờ là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt" data-correct>A. 1</button>
+        <button type="button" class="quiz-opt">B. 2</button>
+        <button type="button" class="quiz-opt">C. 3</button>
+        <button type="button" class="quiz-opt">D. 4</button>
+      </div>
+      <p class="quiz-explain">Sau push 1, 2, 3: [1, 2, 3]. pop bỏ 3: [1, 2]. push 4: [1, 2, 4]. pop bỏ 4, pop bỏ 2: còn [1]. Đỉnh là 1.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Hàng đợi ban đầu rỗng. Thực hiện: push 1, push 2, push 3, pop, push 4. Phần tử ở đầu hàng đợi là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 1</button>
+        <button type="button" class="quiz-opt" data-correct>B. 2</button>
+        <button type="button" class="quiz-opt">C. 3</button>
+        <button type="button" class="quiz-opt">D. 4</button>
+      </div>
+      <p class="quiz-explain">Hàng đợi bỏ ở đầu: pop bỏ 1 (vào trước nhất). Còn [2, 3, 4], đầu là 2.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Xâu nào <strong>không</strong> phải dãy ngoặc đúng?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. <code>()[]{}</code></button>
+        <button type="button" class="quiz-opt">B. <code>{[()]}</code></button>
+        <button type="button" class="quiz-opt" data-correct>C. <code>([)]</code></button>
+        <button type="button" class="quiz-opt">D. <code>([]{})</code></button>
+      </div>
+      <p class="quiz-explain">Trong <code>([)]</code>, khi gặp <code>)</code> ở vị trí 3 thì đỉnh ngăn xếp là <code>[</code>, khác loại. Số lượng ngoặc mỗi loại đủ nhưng các cặp bắt chéo nhau.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Chạy ngăn xếp đơn điệu (chương trình 2) trên một dãy n = 10⁶ phần tử. Tổng số lần <code>pop</code> trong cả chương trình nhiều nhất là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt" data-correct>A. Khoảng 10⁶</button>
+        <button type="button" class="quiz-opt">B. Khoảng 5·10¹¹</button>
+        <button type="button" class="quiz-opt">C. Khoảng 10¹²</button>
+        <button type="button" class="quiz-opt">D. Phụ thuộc giá trị lớn nhất trong dãy</button>
+      </div>
+      <p class="quiz-explain">Mỗi chỉ số được đẩy vào đúng một lần nên bị lấy ra nhiều nhất một lần. Tổng số pop ≤ n = 10⁶. Đây là lý do thuật toán là O(n) dù có vòng while lồng trong for.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Giá trị của biểu thức hậu tố <code>2 3 4 * +</code> là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 20</button>
+        <button type="button" class="quiz-opt" data-correct>B. 14</button>
+        <button type="button" class="quiz-opt">C. 24</button>
+        <button type="button" class="quiz-opt">D. 9</button>
+      </div>
+      <p class="quiz-explain">Đẩy 2, 3, 4. Gặp *: 3 × 4 = 12, ngăn xếp [2, 12]. Gặp +: 2 + 12 = 14. (Biểu thức trung tố tương ứng là 2 + 3 × 4.)</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 6. Bài nào nên dùng deque đơn điệu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Kiểm tra dãy ngoặc đúng</button>
+        <button type="button" class="quiz-opt">B. Với mỗi i, tìm phần tử nhỏ hơn gần nhất bên trái</button>
+        <button type="button" class="quiz-opt" data-correct>C. Với mỗi đoạn 1000 phần tử liên tiếp, tìm giá trị lớn nhất</button>
+        <button type="button" class="quiz-opt">D. Tìm đường đi ngắn nhất trên lưới</button>
+      </div>
+      <p class="quiz-explain">Min/max của cửa sổ trượt độ dài cố định là dạng kinh điển của deque đơn điệu. Câu A dùng ngăn xếp, câu B dùng ngăn xếp đơn điệu, câu D dùng BFS (hàng đợi).</p>
+    </div>
+
+    <p><strong>Câu 7.</strong> Chạy tay thuật toán phần tử lớn hơn gần nhất bên phải với a = [5, 3, 1, 4, 2, 6]. Ghi ngăn xếp (giá trị) sau mỗi bước và mảng đáp án.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>i = 0 (5): đẩy → [5]. i = 1 (3): đẩy → [5, 3]. i = 2 (1): đẩy → [5, 3, 1]. i = 3 (4): bỏ 1 (ans = 4), bỏ 3 (ans = 4), dừng vì 5 ≥ 4, đẩy → [5, 4]. i = 4 (2): đẩy → [5, 4, 2]. i = 5 (6): bỏ 2, 4, 5 (cả ba có ans = 6), đẩy → [6]. Còn 6 có ans = −1.</p>
+      <p>Đáp án: [6, 4, 4, 6, 6, −1]. Tổng 6 lần đẩy, 5 lần lấy ra trong vòng lặp.</p>
+    </details>
+
+    <p><strong>Câu 8.</strong> Với a = [1, 3, 2, 5, 4] và k = 2, hãy liệt kê max của từng cửa sổ và trạng thái deque (giảm dần) sau mỗi bước.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>i = 0: deque [1]. i = 1: bỏ 1 (vì 1 ≤ 3), deque [3], cửa sổ [0, 1] max 3. i = 2: deque [3, 2], max 3. i = 3: chỉ số 1 (giá trị 3) hết hạn vì 1 ≤ 3 − 2; bỏ 2 vì 2 ≤ 5; deque [5], max 5. i = 4: deque [5, 4], max 5.</p>
+      <p>Kết quả: 3 3 5 5.</p>
+    </details>
+
+    <p><strong>Câu 9.</strong> Vì sao với dãy ngoặc chỉ có một loại <code>( )</code> ta dùng được một biến đếm, còn với ba loại thì không?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Với một loại, mọi phần tử trong ngăn xếp đều là <code>(</code>, nên thông tin duy nhất cần nhớ là <em>có bao nhiêu</em> phần tử. Với nhiều loại, khi gặp ngoặc đóng ta phải biết ngoặc mở <em>gần nhất</em> là loại gì, nên phải nhớ cả thứ tự các loại. Ví dụ <code>([)]</code>: đếm riêng từng loại thì đều cân bằng, nhưng xâu vẫn sai.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Năm bài có đề tiếng Việt (VNOJ); bài tiếng Anh có tóm tắt tiếng Việt. Em nên làm theo thứ tự: ngăn xếp cơ bản → ngăn xếp đơn điệu → deque → hình chữ nhật lớn nhất.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/bedao_m09_bracket">BEDAO_M09_BRACKET – Bedao Mini Contest 09 - BRACKET</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho một dãy n ngoặc tròn (n ≤ 10⁵) đã bị mất vài dấu. Hãy chèn thêm <em>ít dấu ngoặc nhất</em> để được một dãy ngoặc đúng và in dãy đó ra.</p>
+        <p class="ex-skill"><b>Luyện:</b> dãy ngoặc một loại, biến đếm thay cho ngăn xếp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Duyệt trái sang phải, giữ số ngoặc mở chưa đóng. Gặp <code>)</code> mà bộ đếm bằng 0 thì phải chèn một <code>(</code> ngay trước nó. Hết xâu, bộ đếm còn bao nhiêu thì thêm bấy nhiêu <code>)</code> ở cuối.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://www.spoj.com/problems/STPAR/">STPAR – Street Parade</a>
+          <span class="judge">SPOJ</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Các xe diễu hành đến theo một thứ tự lộn xộn, cần ra theo thứ tự 1, 2, …, n. Có một ngõ phụ cụt: xe vào sau phải ra trước. Hỏi có sắp được không (in yes/no).</p>
+        <p class="ex-skill"><b>Luyện:</b> mô phỏng bằng ngăn xếp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giữ biến <code>can</code> = số hiệu xe cần ra tiếp theo. Mỗi xe đến: nếu đúng <code>can</code> thì cho đi luôn, ngược lại đẩy vào ngõ (ngăn xếp). Sau mỗi bước, chừng nào đỉnh ngăn xếp bằng <code>can</code> thì cho ra. Cuối cùng ngăn xếp rỗng là yes.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/mmass">MMASS – Mass of Molecule</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Công thức hóa học chỉ gồm C, H, O (khối lượng 12, 1, 16), có ngoặc và hệ số từ 2 đến 9, ví dụ <code>CH(CO2H)3</code>. Tính khối lượng (đáp án 148).</p>
+        <p class="ex-skill"><b>Luyện:</b> ngăn xếp tổng, xử lý ngoặc lồng nhau.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Ngăn xếp chứa các số. Gặp nguyên tố: đẩy khối lượng của nó. Gặp <code>(</code>: đẩy một dấu mốc (ví dụ −1). Gặp <code>)</code>: cộng dồn các số cho tới dấu mốc, bỏ mốc, đẩy tổng. Gặp chữ số k: nhân phần tử ở đỉnh với k. Cuối cùng cộng tất cả.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/5/C">5C – Longest Regular Bracket Sequence</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho xâu ngoặc tròn dài tới 10⁶. Tìm độ dài xâu con liên tiếp dài nhất là dãy ngoặc đúng và số xâu con đạt độ dài đó; không có thì in <code>0 1</code>.</p>
+        <p class="ex-skill"><b>Luyện:</b> ngăn xếp chỉ số, ghép cặp ngoặc.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đẩy chỉ số −1 làm mốc ban đầu. Gặp <code>(</code> đẩy chỉ số. Gặp <code>)</code> thì pop; nếu ngăn xếp rỗng thì đẩy chỉ số hiện tại làm mốc mới, ngược lại độ dài đoạn đúng kết thúc tại i là i − top. Cập nhật max và số lần đạt max.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1645">Nearest Smaller Values</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho dãy n số (n ≤ 2·10⁵). Với mỗi vị trí, in vị trí gần nhất bên trái có giá trị nhỏ hơn (đánh số từ 1), không có thì in 0.</p>
+        <p class="ex-skill"><b>Luyện:</b> ngăn xếp đơn điệu tăng, dạng cơ bản nhất.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Dòng đầu của bảng “bốn dạng gần nhất”: duyệt trái sang phải, bỏ đỉnh khi a[đỉnh] ≥ a[i], đáp án là đỉnh (cộng 1 vì đánh số từ 1), rồi đẩy i.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/mink">MINK – Huyền thoại Lục Vân Tiên</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">N giám khảo xếp hàng, mỗi người có chỉ số APM. Với mọi nhóm K người đứng liền nhau, in APM nhỏ nhất của nhóm. Có nhiều bộ test.</p>
+        <p class="ex-skill"><b>Luyện:</b> deque đơn điệu, min cửa sổ độ dài cố định.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đúng chương trình 3 của bài. Nhớ xóa deque giữa các bộ test và dùng nhập xuất nhanh.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/3221">Sliding Window Minimum</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Dãy n phần tử (n tới 10⁷) được sinh bằng công thức cho trước. Tính XOR của min mọi cửa sổ độ dài k.</p>
+        <p class="ex-skill"><b>Luyện:</b> deque đơn điệu với dữ liệu rất lớn, tối ưu bộ nhớ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Không lưu kết quả, XOR ngay khi có. Dùng mảng tĩnh int làm deque (hai biến đầu, cuối) thay cho <code>std::deque</code> để nhanh và đỡ tốn bộ nhớ. Chú ý kiểu dữ liệu khi sinh dãy theo công thức.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/kagain">KAGAIN – Chiến trường Ô qua</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">N đại đội, đại đội i có A[i] người. Chọn một đoạn đại đội liên tiếp có (số người của đại đội ít nhất) × (số đại đội) lớn nhất; in giá trị đó cùng chỉ số đầu, cuối (ưu tiên chỉ số đầu nhỏ nhất).</p>
+        <p class="ex-skill"><b>Luyện:</b> hình chữ nhật lớn nhất trong biểu đồ cột, mảng L và R.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tính L[i], R[i] là vị trí nhỏ hơn hẳn gần nhất hai bên bằng ngăn xếp đơn điệu. Đáp án ứng với i là A[i] × (R[i] − L[i] − 1), đoạn [L[i] + 1, R[i] − 1]. Khi bằng nhau thì chọn đoạn có đầu nhỏ hơn. Dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1142">Advertisement</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Hàng rào gồm n tấm ván rộng 1, cao k[i] (n ≤ 2·10⁵). Tìm diện tích lớn nhất của tấm biển hình chữ nhật dán được lên hàng rào.</p>
+        <p class="ex-skill"><b>Luyện:</b> hình chữ nhật lớn nhất trong biểu đồ cột.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chính là chương trình <code>histogram.cpp</code> ở mục Biến thể. Đáp án có thể tới 10⁹ × 2·10⁵, phải dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qbrect">QBRECT – Hình chữ nhật 0 1</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Bảng M × N (M, N ≤ 1000) chỉ gồm 0 và 1. Tìm hình chữ nhật lớn nhất (cạnh song song với bảng) chỉ gồm số 1, in diện tích.</p>
+        <p class="ex-skill"><b>Luyện:</b> đưa bài 2 chiều về biểu đồ cột trên từng dòng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Với mỗi dòng, cập nhật h[j] = (ô = 1) ? h[j] + 1 : 0, rồi giải bài biểu đồ cột cho mảng h. Tổng O(M·N), khoảng 10⁶ bước.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/data-structures/Stack">VNOI Wiki – Stack (ngăn xếp)</a> (tiếng Việt): dãy ngoặc, phần tử gần nhất, hình chữ nhật lớn nhất, bài tập áp dụng.</li>
+      <li><a href="https://wiki.vnoi.info/algo/data-structures/deque-min-max">VNOI Wiki – Hàng đợi hai đầu (deque) và bài toán tìm max-min trong đoạn tịnh tiến</a> (tiếng Việt).</li>
+      <li><a href="https://cses.fi/problemset/">CSES Problem Set</a>: các bài Nearest Smaller Values, Sliding Window Minimum, Advertisement.</li>
+      <li>Antti Laaksonen, <em>Competitive Programmer’s Handbook</em>, chương 8 (Amortized analysis: nearest smaller elements, sliding window minimum).</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li><strong>Ngăn xếp</strong> (LIFO, chồng đĩa): push / pop / top ở đỉnh, O(1). C++: <code>stack</code> hoặc <code>vector</code>.</li>
+        <li><strong>Hàng đợi</strong> (FIFO, xếp hàng mua vé): vào cuối, ra đầu, O(1). C++: <code>queue</code>; tự cài bằng mảng vòng. <strong>Deque</strong>: thêm/bỏ cả hai đầu.</li>
+        <li><strong>Dãy ngoặc:</strong> mở thì đẩy, đóng thì so với đỉnh rồi pop; cuối cùng ngăn xếp phải rỗng. Một loại ngoặc: chỉ cần biến đếm.</li>
+        <li><strong>Hậu tố:</strong> số thì đẩy; dấu thì lấy b rồi a, đẩy a ∘ b. Đệ quy chạy trên ngăn xếp lời gọi, khử được bằng <code>stack</code> tự quản lý.</li>
+        <li><strong>Ngăn xếp đơn điệu:</strong> bỏ đỉnh “vô dụng” trước khi đẩy; mỗi phần tử vào 1 lần, ra ≤ 1 lần ⇒ O(n) thay cho O(n²). Lưu chỉ số.</li>
+        <li><strong>Hình chữ nhật lớn nhất:</strong> mỗi cột là cột thấp nhất; diện tích h[i] × (R[i] − L[i] − 1) với L, R là cột thấp hơn gần nhất hai bên.</li>
+        <li><strong>Deque đơn điệu:</strong> bỏ đầu nếu hết hạn (≤ i − k), bỏ cuối nếu ≥ a[i], thêm i; đầu deque là min cửa sổ. O(n) với mọi k.</li>
+        <li>Cẩn thận: kiểm tra rỗng trước khi top/pop, phân biệt &lt; và ≤, lệch chỉ số cửa sổ, dùng <code>long long</code> cho diện tích.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/stack-queue.js"></script>
+</body>
+</html>

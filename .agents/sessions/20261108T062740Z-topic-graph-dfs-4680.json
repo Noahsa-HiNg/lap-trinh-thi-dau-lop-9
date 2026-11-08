@@ -3,10 +3,10 @@
   "agent": "topic-graph-dfs",
   "task": "Soạn chủ đề graph-dfs",
   "topic": "graph-dfs",
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-11-08T06:27:40Z",
-  "heartbeat_at": "2026-11-08T06:37:43Z",
-  "ended_at": null,
-  "summary": null
+  "heartbeat_at": "2026-11-08T06:52:13Z",
+  "ended_at": "2026-11-08T06:52:13Z",
+  "summary": "8 bài tập (3 VI, 5 EN), 7607 từ, stepper 11 khung, widget có"
 }

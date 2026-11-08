@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Thư viện STL · Thi đấu lớp 9</title>
+<meta name="description" content="Dùng thư viện STL của C++ trong thi đấu: vector, pair, sort, lower_bound, set, multiset, map, unordered_map, priority_queue, độ phức tạp từng thao tác và cách chọn cấu trúc phù hợp.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="stl">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Dùng thành thạo <code>vector</code>, <code>pair</code>, <code>auto</code> và vòng lặp <code>for</code> theo phạm vi thay cho mảng tĩnh.</li>
+      <li>Gọi đúng các hàm có sẵn: <code>sort</code>, <code>reverse</code>, <code>max_element</code>, <code>accumulate</code>, <code>unique</code>, <code>lower_bound</code>, <code>upper_bound</code>, <code>next_permutation</code>.</li>
+      <li>Giải thích được vì sao <code>set</code>, <code>map</code>, <code>priority_queue</code> làm mỗi thao tác trong khoảng log n bước, và dùng chúng để giải bài.</li>
+      <li>Đọc câu hỏi của đề và chọn đúng cấu trúc dữ liệu dựa vào bảng độ phức tạp.</li>
+      <li>Tránh được các lỗi kinh điển: <code>[]</code> của map tự tạo phần tử, xóa khi đang duyệt, <code>multiset::erase(x)</code> xóa hết, <code>size() - 1</code> khi vector rỗng.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">STL (Standard Template Library, thư viện khuôn mẫu chuẩn) là bộ “đồ nghề” có sẵn trong C++. Nó gồm các <strong>cấu trúc dữ liệu</strong> (cách cất giữ dữ liệu) và các <strong>thuật toán</strong> (cách xử lý dữ liệu) đã được viết sẵn, kiểm thử kỹ và chạy rất nhanh. Em chỉ cần <code>#include &lt;bits/stdc++.h&gt;</code> là dùng được tất cả.</p>
+    <p>Đến giờ, em vẫn cất dữ liệu trong mảng tĩnh <code>int a[100005]</code> và tự viết vòng lặp để tìm, đếm, sắp xếp. Cách đó đúng, nhưng chậm khi viết và dễ sai. Với STL, một dòng <code>sort(a.begin(), a.end());</code> thay cho cả chục dòng sắp xếp tự viết, lại chạy nhanh hơn.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> STL giống một hộp đồ nghề của thợ sửa xe. Trong hộp có cờ lê, tua vít, kìm… mỗi món hợp với một việc. Người thợ giỏi không tự rèn cờ lê mỗi sáng. Họ biết lấy đúng món cho đúng việc. Em cũng vậy: cần “ngăn kéo luôn tự xếp gọn” thì lấy <code>set</code>; cần “sổ ghi tên và số lần” thì lấy <code>map</code>; cần “hàng chờ ai gấp nhất được gọi trước” thì lấy <code>priority_queue</code>.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>STL gồm ba phần chính:</p>
+      <ul>
+        <li><strong>Container (vật chứa):</strong> nơi cất dữ liệu, ví dụ <code>vector</code>, <code>set</code>, <code>multiset</code>, <code>map</code>, <code>unordered_map</code>, <code>priority_queue</code>, <code>stack</code>, <code>queue</code>, <code>deque</code>.</li>
+        <li><strong>Algorithm (thuật toán):</strong> các hàm xử lý một đoạn dữ liệu, ví dụ <code>sort</code>, <code>reverse</code>, <code>lower_bound</code>, <code>unique</code>.</li>
+        <li><strong>Iterator (con trỏ duyệt):</strong> “ngón tay” chỉ vào một phần tử trong container. <code>v.begin()</code> chỉ vào phần tử đầu, <code>v.end()</code> chỉ vào <em>ngay sau</em> phần tử cuối. Thuật toán nhận một cặp iterator để biết phải làm việc trên đoạn nào.</li>
+      </ul>
+    </div>
+
+    <p>Bài này không đòi em học thuộc mọi hàm. Mục tiêu là: biết <em>món đồ nào có trong hộp</em>, <em>mỗi món làm một việc mất bao lâu</em>, và <em>khi nào nên lấy món nào</em>.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Hầu như mọi bài thi lập trình đều dùng STL ở đâu đó. Có ba lợi ích lớn:</p>
+    <ul>
+      <li><strong>Viết nhanh, ít lỗi.</strong> Trong phòng thi, mỗi phút đều quý. Gọi <code>sort</code> mất 5 giây; tự viết sắp xếp trộn mất 10 phút và có thể sai.</li>
+      <li><strong>Chạy nhanh.</strong> <code>set</code>, <code>map</code> dùng cây cân bằng; <code>priority_queue</code> dùng đống nhị phân (heap). Tự cài đặt những thứ này rất khó với học sinh lớp 9.</li>
+      <li><strong>Là nền cho thuật toán lớn hơn.</strong> Dijkstra cần <code>priority_queue</code>, BFS cần <code>queue</code>, đồ thị cần <code>vector</code> 2 chiều. Học chắc STL là chuẩn bị cho các chủ đề <a href="dijkstra.html">Dijkstra</a>, <a href="stack-queue.html">ngăn xếp và hàng đợi</a>, <a href="strings.html">xâu ký tự</a>.</li>
+    </ul>
+
+    <p>Các dạng bài STL giải gọn:</p>
+    <ul>
+      <li>Đếm số giá trị khác nhau, đếm số lần xuất hiện của mỗi giá trị (giá trị có thể tới 10⁹, không lập mảng đếm được).</li>
+      <li>Liên tục thêm, xóa phần tử và hỏi “số nhỏ nhất”, “số lớn nhất”, “số gần x nhất”.</li>
+      <li>Luôn lấy ra phần tử “ưu tiên nhất” (lớn nhất, nhỏ nhất, gấp nhất) trong khi phần tử mới liên tục đến.</li>
+      <li>Sắp xếp theo nhiều tiêu chí (điểm giảm dần, cùng điểm thì tên tăng dần).</li>
+    </ul>
+
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề có các cụm từ “thêm / xóa / truy vấn”, “số khác nhau”, “xuất hiện nhiều nhất”, “lớn nhất hiện tại”, “nhỏ nhất không nhỏ hơn x”, “k số lớn nhất”, và có <strong>q ≤ 2·10⁵</strong> thao tác xen kẽ nhau. Khi đề vừa thay đổi dữ liệu vừa hỏi, mảng thường không đủ nhanh, đó là lúc lấy <code>set</code>, <code>map</code> hoặc <code>priority_queue</code>.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thư viện STL</h2>
+    <p>Xét bài <strong>Vé hòa nhạc</strong> (CSES 1091): có n vé với giá cho trước. Lần lượt m khách đến. Khách thứ j chỉ trả tối đa t<sub>j</sub> đồng; em phải bán cho khách vé <em>đắt nhất có giá ≤ t<sub>j</sub></em>, rồi bỏ vé đó đi. Giới hạn n, m ≤ 2·10⁵.</p>
+    <p>Mỗi khách cần hai việc: <strong>tìm</strong> vé đắt nhất ≤ t và <strong>xóa</strong> vé đó. Hãy so ba cách.</p>
+
+    <table>
+      <thead><tr><th>Cách</th><th>Tìm</th><th>Xóa</th><th>Tổng với n = m = 2·10⁵</th></tr></thead>
+      <tbody>
+        <tr><td>Mảng thường, duyệt hết</td><td>n bước</td><td>đánh dấu, 1 bước</td><td>≈ 2·10⁵ · 2·10⁵ = 4·10¹⁰ bước</td></tr>
+        <tr><td>Mảng đã sắp + tìm nhị phân</td><td>≈ 18 bước</td><td>dồn mảng, tới n bước</td><td>tới ≈ 2·10¹⁰ bước</td></tr>
+        <tr><td><code>multiset</code></td><td>≈ 18 bước</td><td>≈ 18 bước</td><td>≈ 2·10⁵ · 36 ≈ 7,2·10⁶ bước</td></tr>
+      </tbody>
+    </table>
+    <p>Ở đây log₂(2·10⁵) ≈ 17,6 nên em làm tròn là 18. Máy chấm làm khoảng 10⁸ phép tính mỗi giây. Cách 1 cần khoảng 400 giây, cách 2 khoảng 200 giây, còn <code>multiset</code> chỉ cần vài phần trăm giây.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Tự làm bằng mảng</h4><p>Tìm thì phải duyệt, xóa thì phải dồn. Mỗi khách tốn <span class="bigo">O(n)</span>, cả bài <span class="bigo">O(n·m)</span>, khoảng 4·10¹⁰ phép tính: quá giới hạn thời gian rất xa.</p></div>
+      <div class="good-side"><h4>Dùng multiset của STL</h4><p>Tìm bằng <code>upper_bound</code>, xóa bằng <code>erase</code>, mỗi việc <span class="bigo">O(log n)</span>. Cả bài <span class="bigo">O((n + m) log n)</span>, khoảng 7·10⁶ phép tính, chưa tới 0,1 giây. Code chỉ khoảng 15 dòng.</p></div>
+    </div>
+
+    <p>Một ví dụ khác: đếm số lần xuất hiện của n = 10⁵ số, mỗi số có thể tới 10⁹. Mảng đếm <code>int cnt[1000000001]</code> cần khoảng 4 GB bộ nhớ, máy chấm chỉ cho 256 MB. <code>map&lt;int,int&gt;</code> chỉ lưu những giá trị thật sự xuất hiện, tối đa 10⁵ khóa, vài MB là đủ.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước dùng từng công cụ</h2>
+    <p>Phần này giới thiệu từng món trong “hộp đồ nghề”: cách khai báo, các thao tác chính, và mã giả cách nó làm việc bên trong.</p>
+
+    <h3>1. vector: mảng co giãn</h3>
+    <p><code>vector&lt;int&gt; v;</code> là một mảng tự nới rộng khi em thêm phần tử. Em vẫn truy cập <code>v[i]</code> như mảng thường, nhưng không cần đoán trước kích thước.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khai báo.</strong> <code>vector&lt;int&gt; v;</code> (rỗng), <code>vector&lt;int&gt; v(n);</code> (n số 0), <code>vector&lt;int&gt; v(n, 7);</code> (n số 7).</div></li>
+      <li><div><strong>Thêm, bớt ở cuối.</strong> <code>v.push_back(x)</code> thêm x vào cuối; <code>v.pop_back()</code> bỏ phần tử cuối; <code>v.back()</code> xem phần tử cuối.</div></li>
+      <li><div><strong>Kích thước.</strong> <code>v.size()</code> trả về số phần tử; <code>v.resize(k)</code> đổi thành k phần tử (thiếu thì thêm số 0); <code>v.empty()</code> hỏi có rỗng không.</div></li>
+      <li><div><strong>Hai chiều.</strong> <code>vector&lt;vector&lt;int&gt;&gt; g(n, vector&lt;int&gt;(m, 0));</code> là bảng n hàng, m cột, dùng <code>g[i][j]</code>. Danh sách kề của đồ thị cũng viết như vậy: <code>vector&lt;int&gt; adj[N];</code>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> push_back(x):
+    <b>nếu</b> size = capacity:            <i>// hết chỗ trống</i>
+        xin vùng nhớ mới gấp đôi
+        chép size phần tử cũ sang     <i>// tốn size bước, nhưng hiếm khi xảy ra</i>
+    a[size] ← x
+    size ← size + 1</pre>
+
+    <h3>2. pair, tuple, auto và for theo phạm vi</h3>
+    <ol class="algo-steps">
+      <li><div><strong>pair.</strong> <code>pair&lt;int,string&gt; p = {9, "An"};</code> gói hai giá trị; lấy ra bằng <code>p.first</code>, <code>p.second</code>. <code>tuple&lt;int,int,int&gt;</code> gói ba giá trị trở lên.</div></li>
+      <li><div><strong>So sánh từ điển.</strong> Hai pair so <code>first</code> trước; nếu bằng nhau mới so <code>second</code>. Giống tra từ điển: so chữ cái đầu, bằng nhau mới so chữ thứ hai.</div></li>
+      <li><div><strong>auto.</strong> Để trình biên dịch tự đoán kiểu: <code>auto it = s.begin();</code> thay cho <code>set&lt;int&gt;::iterator it = s.begin();</code>.</div></li>
+      <li><div><strong>for theo phạm vi.</strong> <code>for (int x : v)</code> đi qua từng phần tử (bản sao); <code>for (auto &amp;x : v)</code> đi qua và <em>sửa được</em> phần tử; <code>for (auto [k, c] : m)</code> tách luôn pair thành hai biến.</div></li>
+    </ol>
+
+    <h3>3. Các hàm thuật toán trên một đoạn</h3>
+    <p>Mọi hàm dưới đây nhận đoạn <code>[đầu, cuối)</code>, thường là <code>v.begin(), v.end()</code>. Với mảng tĩnh <code>a</code> có n phần tử thì viết <code>a, a + n</code>.</p>
+    <table>
+      <thead><tr><th>Hàm</th><th>Làm gì</th><th>Ví dụ với v = {5, 2, 8, 2, 6}</th></tr></thead>
+      <tbody>
+        <tr><td><code>sort(b, e)</code></td><td>Sắp tăng dần</td><td>v thành {2, 2, 5, 6, 8}</td></tr>
+        <tr><td><code>sort(b, e, greater&lt;int&gt;())</code></td><td>Sắp giảm dần</td><td>{8, 6, 5, 2, 2}</td></tr>
+        <tr><td><code>reverse(b, e)</code></td><td>Đảo ngược</td><td>{6, 2, 8, 2, 5}</td></tr>
+        <tr><td><code>*max_element(b, e)</code></td><td>Giá trị lớn nhất (hàm trả về iterator, thêm <code>*</code> để lấy giá trị)</td><td>8</td></tr>
+        <tr><td><code>accumulate(b, e, 0LL)</code></td><td>Tổng, bắt đầu từ 0 kiểu long long</td><td>23</td></tr>
+        <tr><td><code>unique(b, e)</code></td><td>Dồn các phần tử <em>kề nhau</em> bị trùng, trả về vị trí cuối mới</td><td>cần sắp trước: {2, 2, 5, 6, 8} → {2, 5, 6, 8, …}</td></tr>
+        <tr><td><code>lower_bound(b, e, x)</code></td><td>Vị trí đầu tiên có giá trị <strong>≥ x</strong> (đoạn đã sắp)</td><td>trên {2, 2, 5, 6, 8}, x = 5 → chỉ số 2</td></tr>
+        <tr><td><code>upper_bound(b, e, x)</code></td><td>Vị trí đầu tiên có giá trị <strong>&gt; x</strong> (đoạn đã sắp)</td><td>x = 5 → chỉ số 3</td></tr>
+        <tr><td><code>next_permutation(b, e)</code></td><td>Biến đoạn thành hoán vị kế tiếp theo thứ tự từ điển; trả về <code>false</code> nếu đã là hoán vị cuối</td><td>{1, 2, 3} → {1, 3, 2}</td></tr>
+      </tbody>
+    </table>
+    <p>Mẫu xóa phần tử trùng cần nhớ thuộc lòng: <code>sort(v.begin(), v.end()); v.erase(unique(v.begin(), v.end()), v.end());</code>. Mẫu đếm số phần tử bằng x trong mảng đã sắp: <code>upper_bound(…, x) - lower_bound(…, x)</code>.</p>
+
+    <h3>4. set và multiset: tập hợp luôn sắp xếp</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khai báo.</strong> <code>set&lt;int&gt; s;</code> giữ các giá trị <em>khác nhau</em>, luôn tăng dần. <code>multiset&lt;int&gt; ms;</code> giống vậy nhưng cho phép trùng.</div></li>
+      <li><div><strong>Thêm.</strong> <code>s.insert(x)</code>. Với set, nếu x đã có thì không có gì thay đổi.</div></li>
+      <li><div><strong>Hỏi.</strong> <code>s.count(x)</code> (set: 0 hoặc 1), <code>s.find(x)</code> trả về iterator hoặc <code>s.end()</code> nếu không thấy.</div></li>
+      <li><div><strong>Tìm gần nhất.</strong> <code>s.lower_bound(x)</code> (phần tử đầu tiên ≥ x), <code>s.upper_bound(x)</code> (đầu tiên &gt; x). Nhỏ nhất là <code>*s.begin()</code>, lớn nhất là <code>*s.rbegin()</code>.</div></li>
+      <li><div><strong>Xóa.</strong> <code>s.erase(x)</code> xóa giá trị x (với multiset là xóa <em>hết</em> các bản x); <code>s.erase(it)</code> xóa đúng một phần tử mà iterator <code>it</code> chỉ vào.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> find(x):                        <i>// set là cây nhị phân tìm kiếm cân bằng</i>
+    u ← gốc
+    <b>trong khi</b> u khác rỗng:
+        <b>nếu</b> x = u.giá_trị: <b>trả về</b> u
+        <b>nếu</b> x &lt; u.giá_trị: u ← con trái    <i>// mọi số nhỏ hơn nằm bên trái</i>
+        <b>ngược lại</b>:          u ← con phải    <i>// mọi số lớn hơn nằm bên phải</i>
+    <b>trả về</b> "không có"</pre>
+
+    <h3>5. map và unordered_map: sổ tra cứu khóa → giá trị</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khai báo.</strong> <code>map&lt;string,int&gt; m;</code> mỗi <em>khóa</em> (string) gắn với một <em>giá trị</em> (int). Khóa không trùng và luôn tăng dần.</div></li>
+      <li><div><strong>Đếm tần suất.</strong> <code>m[x]++;</code> Nếu x chưa có, <code>m[x]</code> tự tạo với giá trị 0 rồi tăng lên 1.</div></li>
+      <li><div><strong>Hỏi mà không tạo.</strong> <code>m.count(x)</code> hoặc <code>m.find(x) != m.end()</code>.</div></li>
+      <li><div><strong>Duyệt.</strong> <code>for (auto [k, c] : m)</code> đi qua các khóa theo thứ tự tăng dần.</div></li>
+      <li><div><strong>Bản không thứ tự.</strong> <code>unordered_map</code> dùng bảng băm: trung bình <span class="bigo">O(1)</span> mỗi thao tác, nhưng không giữ thứ tự và có thể bị dữ liệu xấu làm chậm.</div></li>
+    </ol>
+
+    <h3>6. priority_queue: hàng đợi ưu tiên</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khai báo.</strong> <code>priority_queue&lt;int&gt; pq;</code> luôn cho em lấy phần tử <em>lớn nhất</em>. Muốn lấy nhỏ nhất: <code>priority_queue&lt;int, vector&lt;int&gt;, greater&lt;int&gt;&gt; pq;</code>.</div></li>
+      <li><div><strong>Ba thao tác.</strong> <code>pq.push(x)</code> thêm; <code>pq.top()</code> xem phần tử ưu tiên nhất; <code>pq.pop()</code> bỏ phần tử đó đi.</div></li>
+      <li><div><strong>Giới hạn.</strong> Chỉ nhìn được đỉnh. Không tìm, không xóa được phần tử ở giữa, không duyệt theo thứ tự.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> push(x):                        <i>// heap lưu trong mảng h[0..k-1]</i>
+    h[k] ← x;  i ← k;  k ← k + 1
+    <b>trong khi</b> i &gt; 0 <b>và</b> h[(i-1)/2] &lt; h[i]:   <i>// cha nhỏ hơn con: sai luật</i>
+        đổi chỗ h[i] và h[(i-1)/2];  i ← (i-1)/2   <i>// "nổi" lên</i>
+
+<b>hàm</b> pop():
+    h[0] ← h[k-1];  k ← k - 1;  i ← 0     <i>// đưa phần tử cuối lên đỉnh</i>
+    <b>lặp</b>:
+        c ← con lớn hơn trong hai con 2i+1, 2i+2
+        <b>nếu</b> không có con <b>hoặc</b> h[c] ≤ h[i]: <b>dừng</b>
+        đổi chỗ h[i] và h[c];  i ← c             <i>// "chìm" xuống</i></pre>
+
+    <h3>7. stack, queue, deque (tóm tắt)</h3>
+    <p><code>stack</code> (ngăn xếp): vào sau ra trước, dùng <code>push</code>, <code>top</code>, <code>pop</code>. <code>queue</code> (hàng đợi): vào trước ra trước, dùng <code>push</code>, <code>front</code>, <code>pop</code>. <code>deque</code>: thêm, bớt được ở cả hai đầu với <code>push_front</code>, <code>push_back</code>, <code>pop_front</code>, <code>pop_back</code>. Mọi thao tác này đều <span class="bigo">O(1)</span>. Cách dùng chi tiết nằm ở chủ đề <a href="stack-queue.html">Ngăn xếp và hàng đợi</a>.</p>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Em không cần tự cài các cấu trúc này. Nhưng hiểu chúng làm việc ra sao giúp em nhớ độ phức tạp, và đoán được khi nào chúng chậm.</p>
+
+    <h3>vector: vì sao push_back gần như O(1)</h3>
+    <p>Vector xin trước một vùng nhớ lớn hơn số phần tử đang có (gọi là <em>capacity</em>). Khi đầy, nó xin vùng mới gấp đôi và chép sang. Lần chép đó tốn nhiều, nhưng rất hiếm.</p>
+    <p>Đếm thử với 16 lần push_back, bắt đầu từ capacity 1: vector phải chép khi capacity đầy ở các mốc 1, 2, 4, 8 phần tử, tổng cộng 1 + 2 + 4 + 8 = 15 lần chép. Cộng với 16 lần ghi, tổng là 31 bước cho 16 phần tử, chưa tới 2 bước mỗi phần tử. Tổng quát, n lần push_back tốn chưa tới 3n bước. Ta nói push_back có độ phức tạp <strong>O(1) khấu hao</strong> (trung bình trên nhiều lần).</p>
+    <p>Ngược lại, chèn hoặc xóa ở <em>giữa</em> vector (<code>v.insert</code>, <code>v.erase</code>) phải dồn mọi phần tử phía sau, tốn <span class="bigo">O(n)</span>. Vì thế vector hợp với “thêm ở cuối, đọc theo chỉ số”, không hợp với “liên tục xóa ở giữa”.</p>
+
+    <h3>sort và lower_bound: vì sao nhanh</h3>
+    <p><code>sort</code> của STL dùng thuật toán introsort (kết hợp sắp xếp nhanh, sắp xếp vun đống và sắp xếp chèn), luôn đảm bảo <span class="bigo">O(n log n)</span>. Với n = 10⁶, số phép so sánh cỡ 2·10⁷, chạy dưới 0,1 giây. Chủ đề <a href="sorting.html">Sắp xếp</a> giải thích các thuật toán này.</p>
+    <p><code>lower_bound</code> chính là <a href="binary-search.html">tìm kiếm nhị phân</a>: mỗi bước so x với phần tử giữa và bỏ đi một nửa. Đoạn 10⁶ phần tử chỉ cần khoảng 20 bước. Điều kiện bắt buộc: đoạn phải <strong>đã sắp xếp</strong>; nếu không, kết quả vô nghĩa.</p>
+
+    <h3>set, map: cây nhị phân tìm kiếm cân bằng</h3>
+    <p>Bên trong, <code>set</code> và <code>map</code> là một <strong>cây nhị phân tìm kiếm</strong> (binary search tree). Mỗi nút chứa một giá trị và tuân theo một luật duy nhất:</p>
+    <div class="definition" data-label="Luật của cây tìm kiếm">
+      <p>Mọi giá trị ở <strong>cây con trái</strong> của nút u đều <strong>nhỏ hơn</strong> u; mọi giá trị ở <strong>cây con phải</strong> đều <strong>lớn hơn</strong> u.</p>
+    </div>
+    <p><strong>Vì sao đúng.</strong> Khi tìm x và đang đứng ở nút u: nếu x &lt; u thì x không thể nằm bên phải (bên phải toàn số lớn hơn u, tức lớn hơn x). Vậy chỉ cần đi xuống bên trái. Lập luận tương tự khi x &gt; u. Mỗi bước bỏ hẳn một nhánh mà không bỏ sót. Đi tới khi gặp x hoặc hết đường thì chắc chắn kết luận đúng.</p>
+    <p><code>lower_bound(x)</code> cũng đi như vậy. Mỗi khi gặp nút u ≥ x, ghi nhớ u là “ứng viên” rồi đi sang trái để tìm ứng viên nhỏ hơn; gặp u &lt; x thì sang phải. Ứng viên cuối cùng là đáp án.</p>
+    <p><strong>Vì sao nhanh.</strong> Số bước bằng <em>chiều cao</em> của cây. Nếu cây “cân”, mỗi tầng chứa gấp đôi tầng trên: tầng 1 có 1 nút, tầng 2 có 2, tầng 3 có 4… Cây cao h tầng chứa tới 2<sup>h</sup> − 1 nút. Muốn chứa 10⁶ nút chỉ cần h = 20, vì 2²⁰ − 1 = 1 048 575. STL dùng <strong>cây đỏ đen</strong> (red-black tree): sau mỗi lần thêm hoặc xóa, nó xoay vài nút để cây không bị lệch, chiều cao luôn không quá khoảng 2·log₂ n. Nhờ vậy insert, erase, find, lower_bound đều <span class="bigo">O(log n)</span>.</p>
+    <p>Nếu cây <em>không</em> được cân bằng, chèn lần lượt 1, 2, 3, …, n sẽ tạo ra một “cây” thẳng như sợi dây, cao n tầng, và tìm kiếm tốn O(n). Đó là lý do phần “cân bằng” rất quan trọng.</p>
+    <p>Duyệt set từ <code>begin()</code> đến <code>end()</code> là đi theo thứ tự “trái, gốc, phải”, nên các giá trị hiện ra <strong>tăng dần</strong>. <code>map</code> giống hệt set, chỉ khác mỗi nút cất thêm một giá trị đi kèm khóa.</p>
+
+    <h3>unordered_map: bảng băm</h3>
+    <p><code>unordered_map</code> dùng <strong>hàm băm</strong> (hash) để tính ra “ngăn kéo” cho mỗi khóa, như xếp học sinh vào tủ theo hai chữ số cuối của mã số. Tìm khóa chỉ cần tính số ngăn rồi mở ra xem: trung bình <span class="bigo">O(1)</span>. Nhưng nếu nhiều khóa rơi cùng một ngăn (va chạm), phải dò từng khóa trong ngăn, tệ nhất <span class="bigo">O(n)</span>. Trên Codeforces, người ta cố tình tạo dữ liệu va chạm để “hack” bài dùng <code>unordered_map</code>. Vì thế khi n ≤ 2·10⁵, em cứ dùng <code>map</code> cho an toàn.</p>
+
+    <h3>priority_queue: đống nhị phân (heap)</h3>
+    <p>Hàng đợi ưu tiên là một cây nhị phân “đầy đủ” (điền kín từng tầng từ trái sang phải) cất trong mảng: nút ở chỉ số i có con là 2i + 1 và 2i + 2, có cha là (i − 1) / 2. Luật của heap lớn (max-heap):</p>
+    <div class="definition" data-label="Luật của heap">
+      <p>Mỗi nút <strong>lớn hơn hoặc bằng</strong> các con của nó. Hệ quả: phần tử lớn nhất luôn ở gốc h[0], nên <code>top()</code> là <span class="bigo">O(1)</span>.</p>
+    </div>
+    <p><strong>Vì sao đúng.</strong> Khi <code>push</code>, phần tử mới đặt ở cuối có thể lớn hơn cha. Đổi chỗ nó với cha sửa được chỗ sai đó; cha cũ chuyển xuống vẫn lớn hơn các con khác của nó (vì trước đó nó đã là cha của chúng). Lặp tới khi cha ≥ con thì toàn cây lại đúng luật. Khi <code>pop</code>, ta đưa phần tử cuối lên gốc rồi cho nó “chìm”: luôn đổi với <em>con lớn hơn</em>, để nút đi lên làm cha lớn hơn cả hai con.</p>
+    <p><strong>Vì sao nhanh.</strong> Cây đầy đủ n nút cao khoảng log₂ n tầng. Phần tử chỉ nổi lên hoặc chìm xuống dọc một đường từ lá tới gốc, nên mỗi push, pop tốn <span class="bigo">O(log n)</span>. Với 10⁶ phần tử là khoảng 20 lần đổi chỗ.</p>
+    <p>Heap không sắp xếp toàn bộ, chỉ đảm bảo “cha ≥ con”. Hai nút anh em không theo thứ tự nào. Vì vậy heap nhẹ và nhanh hơn set, nhưng chỉ trả lời được câu hỏi “ai lớn nhất”.</p>
+
+    <h3>Iterator: ngón tay chỉ vào phần tử</h3>
+    <p>Iterator là cách chung để “chỉ” vào một phần tử trong bất kỳ container nào. Với iterator <code>it</code>: <code>*it</code> là giá trị nó chỉ; <code>++it</code> sang phần tử kế tiếp; <code>--it</code> lùi lại. Với vector, iterator cộng trừ số được (<code>v.begin() + 3</code>), và <code>it - v.begin()</code> cho ra chỉ số. Với set, map chỉ đi từng bước được (dùng <code>next(it)</code>, <code>prev(it)</code>). Mọi hàm “tìm” trả về <code>end()</code> khi không thấy, nên luôn kiểm tra <code>it != s.end()</code> trước khi viết <code>*it</code>.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Không cần học thuộc cây đỏ đen. Chỉ cần nhớ: set, map, priority_queue là “cây cao log n”, nên mỗi thao tác cỡ 20 bước. Vector là “mảng”, nên đọc theo chỉ số tức thì nhưng chèn giữa thì chậm.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <h3>Ví dụ 1: set luôn tự sắp xếp</h3>
+    <p>Em chèn lần lượt 5, 2, 8, 2, 6, 1 vào một <code>set&lt;int&gt;</code>, rồi hỏi <code>lower_bound</code>, <code>upper_bound</code> và xóa một phần tử. Bấm từng bước để xem tập hợp thay đổi ra sao.</p>
+    <div class="stepper" data-title="set: chèn 5, 2, 8, 2, 6, 1 rồi tìm và xóa">
+      <div class="frame" data-caption="&lt;b&gt;Bắt đầu.&lt;/b&gt; &lt;code&gt;set&amp;lt;int&amp;gt; s;&lt;/code&gt; đang rỗng. Ta sẽ lần lượt &lt;code&gt;insert&lt;/code&gt; 5, 2, 8, 2, 6, 1.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell is-dim">rỗng</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;insert(5).&lt;/b&gt; Tập chỉ có một phần tử: {5}.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell is-active" data-i="0">5</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;insert(2).&lt;/b&gt; 2 &amp;lt; 5 nên 2 tự đứng trước 5. Em không phải gọi &lt;code&gt;sort&lt;/code&gt;: set luôn giữ thứ tự tăng dần.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell is-active" data-i="0">2</span><span class="cell" data-i="1">5</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;insert(8).&lt;/b&gt; 8 lớn nhất nên đứng cuối: {2, 5, 8}.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="0">2</span><span class="cell" data-i="1">5</span><span class="cell is-active" data-i="2">8</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;insert(2) lần nữa.&lt;/b&gt; 2 đã có trong set nên &lt;b&gt;không có gì thay đổi&lt;/b&gt;, &lt;code&gt;s.size()&lt;/code&gt; vẫn là 3. Nếu dùng &lt;code&gt;multiset&lt;/code&gt; thì sẽ thành {2, 2, 5, 8}.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell is-bad" data-i="0">2</span><span class="cell" data-i="1">5</span><span class="cell" data-i="2">8</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;insert(6).&lt;/b&gt; 6 chen vào giữa 5 và 8: {2, 5, 6, 8}. Với mảng thường, chen giữa phải dồn 8 sang phải; với set chỉ tốn khoảng log n bước.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="0">2</span><span class="cell" data-i="1">5</span><span class="cell is-active" data-i="2">6</span><span class="cell" data-i="3">8</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;insert(1).&lt;/b&gt; {1, 2, 5, 6, 8}. Phần tử nhỏ nhất &lt;code&gt;*s.begin()&lt;/code&gt; = 1, lớn nhất &lt;code&gt;*s.rbegin()&lt;/code&gt; = 8.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell is-active" data-i="0">1</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">5</span><span class="cell" data-i="3">6</span><span class="cell" data-i="4">8</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;s.lower_bound(4)&lt;/b&gt; trỏ tới phần tử đầu tiên ≥ 4, đó là &lt;b&gt;5&lt;/b&gt;. Phần tử ngay trước nó, &lt;code&gt;*prev(it)&lt;/code&gt; = 2, là số lớn nhất &amp;lt; 4.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell is-dim" data-i="0">1</span><span class="cell is-dim" data-i="1">2</span><span class="cell is-ok" data-i="2">5</span><span class="cell" data-i="3">6</span><span class="cell" data-i="4">8</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;s.upper_bound(5)&lt;/b&gt; trỏ tới phần tử đầu tiên &amp;gt; 5, đó là &lt;b&gt;6&lt;/b&gt;. &lt;code&gt;s.upper_bound(8)&lt;/code&gt; sẽ trả về &lt;code&gt;s.end()&lt;/code&gt; vì không có số nào &amp;gt; 8.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell is-dim" data-i="0">1</span><span class="cell is-dim" data-i="1">2</span><span class="cell is-dim" data-i="2">5</span><span class="cell is-ok" data-i="3">6</span><span class="cell" data-i="4">8</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;s.erase(2).&lt;/b&gt; Xóa 2: {1, 5, 6, 8}. &lt;code&gt;s.count(2)&lt;/code&gt; bây giờ bằng 0, &lt;code&gt;s.count(5)&lt;/code&gt; bằng 1.">
+        <div class="arr"><span class="arr-label">s</span><span class="cell" data-i="0">1</span><span class="cell" data-i="1">5</span><span class="cell" data-i="2">6</span><span class="cell" data-i="3">8</span></div>
+      </div>
+    </div>
+
+    <p>Bên trong, tập {1, 2, 5, 6, 8} được cất thành một cây nhị phân tìm kiếm như hình dưới. Khi tìm 6, máy chỉ đi qua 3 nút: 5 → 8 → 6.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 320 180" width="320" role="img" aria-label="Cây nhị phân tìm kiếm của tập 1, 2, 5, 6, 8; đường tìm số 6 đi qua 5, 8, 6">
+        <line class="edge" x1="160" y1="30" x2="90" y2="90"/>
+        <line class="edge is-active" x1="160" y1="30" x2="230" y2="90"/>
+        <line class="edge" x1="90" y1="90" x2="55" y2="150"/>
+        <line class="edge is-active" x1="230" y1="90" x2="195" y2="150"/>
+        <circle class="node is-active" cx="160" cy="30" r="18"/><text x="160" y="35" text-anchor="middle">5</text>
+        <circle class="node" cx="90" cy="90" r="18"/><text x="90" y="95" text-anchor="middle">2</text>
+        <circle class="node is-active" cx="230" cy="90" r="18"/><text x="230" y="95" text-anchor="middle">8</text>
+        <circle class="node" cx="55" cy="150" r="18"/><text x="55" y="155" text-anchor="middle">1</text>
+        <circle class="node is-ok" cx="195" cy="150" r="18"/><text x="195" y="155" text-anchor="middle">6</text>
+        <text class="label-pen" x="190" y="34">6 &gt; 5: sang phải</text>
+        <text class="label-pen" x="250" y="128">6 &lt; 8: sang trái</text>
+        <text class="label-sm" x="6" y="18">trái: nhỏ hơn</text>
+        <text class="label-sm" x="6" y="32">phải: lớn hơn</text>
+      </svg>
+      <figcaption>Hình 1. Cây tìm kiếm của <code>set</code> {1, 2, 5, 6, 8}. Mỗi nút lớn hơn mọi nút bên trái và nhỏ hơn mọi nút bên phải. Tìm 6 chỉ đi qua 3 nút thay vì xét cả 5 số.</figcaption>
+    </figure>
+
+    <h3>Ví dụ 2: priority_queue là một heap</h3>
+    <p>Em <code>push</code> lần lượt 4, 9, 2, 7, 5 vào <code>priority_queue&lt;int&gt;</code> rồi <code>pop</code> một lần. Hình cây ở trên, mảng heap thật sự ở dưới. Nút màu tím là phần tử đang di chuyển, nút màu vàng là nút đang được so sánh với nó, nút màu xanh lá là vị trí đã ổn định.</p>
+    <div class="stepper" data-title="priority_queue: heap lớn khi push 4, 9, 2, 7, 5 rồi pop">
+      <div class="frame" data-caption="&lt;b&gt;push(4).&lt;/b&gt; Heap đang rỗng, 4 thành gốc ở chỉ số 0. &lt;code&gt;top()&lt;/code&gt; = 4.">
+        <figure class="diagram"><svg viewBox="0 0 320 180" width="320" role="img" aria-label="Heap gồm 4"><circle class="node is-active" cx="160" cy="28" r="18"/><text x="160" y="33" text-anchor="middle">4</text><text class="label-sm" x="182" y="16">[0]</text></svg></figure>
+        <div class="arr"><span class="arr-label">h</span><span class="cell is-active" data-i="0">4</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;push(9).&lt;/b&gt; 9 được đặt ở cuối mảng (chỉ số 1). Cha của nó là chỉ số (1 − 1) / 2 = 0, giá trị 4 &amp;lt; 9: sai luật “cha ≥ con”, phải đổi chỗ.">
+        <figure class="diagram"><svg viewBox="0 0 320 180" width="320" role="img" aria-label="Heap gồm 4, 9"><line class="edge" x1="160" y1="28" x2="90" y2="88"/><circle class="node is-cmp" cx="160" cy="28" r="18"/><text x="160" y="33" text-anchor="middle">4</text><text class="label-sm" x="182" y="16">[0]</text><circle class="node is-active" cx="90" cy="88" r="18"/><text x="90" y="93" text-anchor="middle">9</text><text class="label-sm" x="112" y="76">[1]</text></svg></figure>
+        <div class="arr"><span class="arr-label">h</span><span class="cell is-cmp" data-i="0">4</span><span class="cell is-active" data-i="1">9</span></div>
+      </div>
+      <div class="frame" data-caption="9 đã &lt;b&gt;nổi lên&lt;/b&gt; gốc. Giờ &lt;code&gt;top()&lt;/code&gt; = 9. Chỉ tốn 1 lần đổi chỗ.">
+        <figure class="diagram"><svg viewBox="0 0 320 180" width="320" role="img" aria-label="Heap gồm 9, 4"><line class="edge" x1="160" y1="28" x2="90" y2="88"/><circle class="node is-ok" cx="160" cy="28" r="18"/><text x="160" y="33" text-anchor="middle">9</text><text class="label-sm" x="182" y="16">[0]</text><circle class="node" cx="90" cy="88" r="18"/><text x="90" y="93" text-anchor="middle">4</text><text class="label-sm" x="112" y="76">[1]</text></svg></figure>
+        <div class="arr"><span class="arr-label">h</span><span class="cell is-ok" data-i="0">9</span><span class="cell" data-i="1">4</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;push(2).&lt;/b&gt; 2 vào chỉ số 2, cha là 9 ≥ 2: đúng luật, không cần đổi.">
+        <figure class="diagram"><svg viewBox="0 0 320 180" width="320" role="img" aria-label="Heap gồm 9, 4, 2"><line class="edge" x1="160" y1="28" x2="90" y2="88"/><line class="edge" x1="160" y1="28" x2="230" y2="88"/><circle class="node is-ok" cx="160" cy="28" r="18"/><text x="160" y="33" text-anchor="middle">9</text><text class="label-sm" x="182" y="16">[0]</text><circle class="node" cx="90" cy="88" r="18"/><text x="90" y="93" text-anchor="middle">4</text><text class="label-sm" x="112" y="76">[1]</text><circle class="node is-active" cx="230" cy="88" r="18"/><text x="230" y="93" text-anchor="middle">2</text><text class="label-sm" x="252" y="76">[2]</text></svg></figure>
+        <div class="arr"><span class="arr-label">h</span><span class="cell is-ok" data-i="0">9</span><span class="cell" data-i="1">4</span><span class="cell is-active" data-i="2">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;push(7).&lt;/b&gt; 7 vào chỉ số 3, cha là chỉ số 1 có giá trị 4 &amp;lt; 7: đổi chỗ.">
+        <figure class="diagram"><svg viewBox="0 0 320 180" width="320" role="img" aria-label="Heap gồm 9, 4, 2, 7"><line class="edge" x1="160" y1="28" x2="90" y2="88"/><line class="edge" x1="160" y1="28" x2="230" y2="88"/><line class="edge" x1="90" y1="88" x2="50" y2="148"/><circle class="node" cx="160" cy="28" r="18"/><text x="160" y="33" text-anchor="middle">9</text><text class="label-sm" x="182" y="16">[0]</text><circle class="node is-cmp" cx="90" cy="88" r="18"/><text x="90" y="93" text-anchor="middle">4</text><text class="label-sm" x="112" y="76">[1]</text><circle class="node" cx="230" cy="88" r="18"/><text x="230" y="93" text-anchor="middle">2</text><text class="label-sm" x="252" y="76">[2]</text><circle class="node is-active" cx="50" cy="148" r="18"/><text x="50" y="153" text-anchor="middle">7</text><text class="label-sm" x="72" y="136">[3]</text></svg></figure>
+        <div class="arr"><span class="arr-label">h</span><span class="cell" data-i="0">9</span><span class="cell is-cmp" data-i="1">4</span><span class="cell" data-i="2">2</span><span class="cell is-active" data-i="3">7</span></div>
+      </div>
+      <div class="frame" data-caption="7 lên chỉ số 1. Cha mới là 9 ≥ 7: dừng. Mảng heap là 9 7 2 4. Để ý: 7 và 2 là anh em nhưng không cần theo thứ tự nào.">
+        <figure class="diagram"><svg viewBox="0 0 320 180" width="320" role="img" aria-label="Heap gồm 9, 7, 2, 4"><line class="edge" x1="160" y1="28" x2="90" y2="88"/><line class="edge" x1="160" y1="28" x2="230" y2="88"/><line class="edge" x1="90" y1="88" x2="50" y2="148"/><circle class="node is-cmp" cx="160" cy="28" r="18"/><text x="160" y="33" text-anchor="middle">9</text><text class="label-sm" x="182" y="16">[0]</text><circle class="node is-active" cx="90" cy="88" r="18"/><text x="90" y="93" text-anchor="middle">7</text><text class="label-sm" x="112" y="76">[1]</text><circle class="node" cx="230" cy="88" r="18"/><text x="230" y="93" text-anchor="middle">2</text><text class="label-sm" x="252" y="76">[2]</text><circle class="node" cx="50" cy="148" r="18"/><text x="50" y="153" text-anchor="middle">4</text><text class="label-sm" x="72" y="136">[3]</text></svg></figure>
+        <div class="arr"><span class="arr-label">h</span><span class="cell is-cmp" data-i="0">9</span><span class="cell is-active" data-i="1">7</span><span class="cell" data-i="2">2</span><span class="cell" data-i="3">4</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;push(5).&lt;/b&gt; 5 vào chỉ số 4, cha là chỉ số 1 có giá trị 7 ≥ 5: đúng luật. Heap có 5 phần tử, cao 3 tầng.">
+        <figure class="diagram"><svg viewBox="0 0 320 180" width="320" role="img" aria-label="Heap gồm 9, 7, 2, 4, 5"><line class="edge" x1="160" y1="28" x2="90" y2="88"/><line class="edge" x1="160" y1="28" x2="230" y2="88"/><line class="edge" x1="90" y1="88" x2="50" y2="148"/><line class="edge" x1="90" y1="88" x2="130" y2="148"/><circle class="node" cx="160" cy="28" r="18"/><text x="160" y="33" text-anchor="middle">9</text><text class="label-sm" x="182" y="16">[0]</text><circle class="node is-cmp" cx="90" cy="88" r="18"/><text x="90" y="93" text-anchor="middle">7</text><text class="label-sm" x="112" y="76">[1]</text><circle class="node" cx="230" cy="88" r="18"/><text x="230" y="93" text-anchor="middle">2</text><text class="label-sm" x="252" y="76">[2]</text><circle class="node" cx="50" cy="148" r="18"/><text x="50" y="153" text-anchor="middle">4</text><text class="label-sm" x="72" y="136">[3]</text><circle class="node is-active" cx="130" cy="148" r="18"/><text x="130" y="153" text-anchor="middle">5</text><text class="label-sm" x="152" y="136">[4]</text></svg></figure>
+        <div class="arr"><span class="arr-label">h</span><span class="cell" data-i="0">9</span><span class="cell is-cmp" data-i="1">7</span><span class="cell" data-i="2">2</span><span class="cell" data-i="3">4</span><span class="cell is-active" data-i="4">5</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;pop().&lt;/b&gt; Bỏ 9 ở gốc, đưa phần tử cuối (5) lên thay. So 5 với hai con 7 và 2: con lớn hơn là 7 &amp;gt; 5, đổi chỗ 5 với 7.">
+        <figure class="diagram"><svg viewBox="0 0 320 180" width="320" role="img" aria-label="Heap gồm 5, 7, 2, 4"><line class="edge" x1="160" y1="28" x2="90" y2="88"/><line class="edge" x1="160" y1="28" x2="230" y2="88"/><line class="edge" x1="90" y1="88" x2="50" y2="148"/><circle class="node is-active" cx="160" cy="28" r="18"/><text x="160" y="33" text-anchor="middle">5</text><text class="label-sm" x="182" y="16">[0]</text><circle class="node is-cmp" cx="90" cy="88" r="18"/><text x="90" y="93" text-anchor="middle">7</text><text class="label-sm" x="112" y="76">[1]</text><circle class="node is-cmp" cx="230" cy="88" r="18"/><text x="230" y="93" text-anchor="middle">2</text><text class="label-sm" x="252" y="76">[2]</text><circle class="node" cx="50" cy="148" r="18"/><text x="50" y="153" text-anchor="middle">4</text><text class="label-sm" x="72" y="136">[3]</text></svg></figure>
+        <div class="arr"><span class="arr-label">h</span><span class="cell is-active" data-i="0">5</span><span class="cell is-cmp" data-i="1">7</span><span class="cell is-cmp" data-i="2">2</span><span class="cell" data-i="3">4</span></div>
+      </div>
+      <div class="frame" data-caption="5 &lt;b&gt;chìm&lt;/b&gt; xuống chỉ số 1. Con duy nhất là 4 &amp;lt; 5: dừng. &lt;code&gt;top()&lt;/code&gt; mới là 7, mảng heap là 7 5 2 4. Mỗi lần push hay pop chỉ đi dọc một đường từ gốc tới lá.">
+        <figure class="diagram"><svg viewBox="0 0 320 180" width="320" role="img" aria-label="Heap gồm 7, 5, 2, 4"><line class="edge" x1="160" y1="28" x2="90" y2="88"/><line class="edge" x1="160" y1="28" x2="230" y2="88"/><line class="edge" x1="90" y1="88" x2="50" y2="148"/><circle class="node is-ok" cx="160" cy="28" r="18"/><text x="160" y="33" text-anchor="middle">7</text><text class="label-sm" x="182" y="16">[0]</text><circle class="node is-active" cx="90" cy="88" r="18"/><text x="90" y="93" text-anchor="middle">5</text><text class="label-sm" x="112" y="76">[1]</text><circle class="node" cx="230" cy="88" r="18"/><text x="230" y="93" text-anchor="middle">2</text><text class="label-sm" x="252" y="76">[2]</text><circle class="node is-cmp" cx="50" cy="148" r="18"/><text x="50" y="153" text-anchor="middle">4</text><text class="label-sm" x="72" y="136">[3]</text></svg></figure>
+        <div class="arr"><span class="arr-label">h</span><span class="cell is-ok" data-i="0">7</span><span class="cell is-active" data-i="1">5</span><span class="cell" data-i="2">2</span><span class="cell is-cmp" data-i="3">4</span></div>
+      </div>
+    </div>
+
+    <h3>Ví dụ 3: map đếm tần suất</h3>
+    <p>Lớp em bầu lớp trưởng, các phiếu lần lượt là: <em>an, binh, an, chi, an, binh</em>. Chương trình chỉ cần <code>for (auto &amp;t : phieu) dem[t]++;</code>. Bảng dưới là vết chạy.</p>
+    <table class="trace">
+      <thead><tr><th>Phiếu</th><th>Lệnh</th><th>map sau lệnh (khóa tăng dần)</th></tr></thead>
+      <tbody>
+        <tr><td>an</td><td><code>dem["an"]++</code></td><td>{an: 1}</td></tr>
+        <tr><td>binh</td><td><code>dem["binh"]++</code></td><td>{an: 1, binh: 1}</td></tr>
+        <tr><td>an</td><td><code>dem["an"]++</code></td><td>{an: 2, binh: 1}</td></tr>
+        <tr><td>chi</td><td><code>dem["chi"]++</code></td><td>{an: 2, binh: 1, chi: 1}</td></tr>
+        <tr><td>an</td><td><code>dem["an"]++</code></td><td>{an: 3, binh: 1, chi: 1}</td></tr>
+        <tr class="hl"><td>binh</td><td><code>dem["binh"]++</code></td><td>{an: 3, binh: 2, chi: 1}</td></tr>
+      </tbody>
+    </table>
+    <p>Duyệt map cho ra các tên theo thứ tự chữ cái: an (3 phiếu), binh (2), chi (1). Lớp trưởng là An. Nếu dùng <code>unordered_map</code>, kết quả đếm vẫn đúng nhưng thứ tự in ra có thể lộn xộn.</p>
+
+    <div class="playground" id="viz-stl">
+      <div class="viz-head"><p class="viz-title">Sân chơi container</p></div>
+      <div class="playground-body">
+        <div class="out">Trình duyệt cần bật JavaScript để dùng sân chơi này.</div>
+      </div>
+    </div>
+    <p>Trong sân chơi, em chọn một container, gõ một số rồi bấm các nút. Hãy thử: chèn 5 hai lần vào <code>set</code> và vào <code>multiset</code> rồi so sánh; với <code>multiset</code>, so “Xóa một bản” và “Xóa mọi bản”; với <code>priority_queue</code>, xem mảng heap thay đổi sau mỗi lần push, pop.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Chương trình 1: thống kê một dãy số</h3>
+    <p><strong>Đề.</strong> Cho n số nguyên, số k và số x. Hãy in: tổng và số lớn nhất; giá trị xuất hiện nhiều nhất (nếu hòa, lấy giá trị nhỏ nhất) và số lần; k số lớn nhất theo thứ tự giảm dần (tính cả số trùng); dãy sau khi sắp xếp; số phần tử ≥ x; số giá trị khác nhau. Chương trình dùng gần như mọi công cụ ở trên: <code>vector</code>, <code>accumulate</code>, <code>max_element</code>, <code>map</code>, <code>priority_queue</code>, <code>sort</code>, <code>lower_bound</code>, <code>unique</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">thong_ke.cpp</span> Thống kê dãy số bằng STL</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Thống kê một dãy số bằng các công cụ có sẵn của STL
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, k;
+    long long x;
+    cin &gt;&gt; n &gt;&gt; k &gt;&gt; x;
+    vector&lt;long long&gt; a(n);                 // mảng động, dài đúng n
+    for (auto &amp;v : a) cin &gt;&gt; v;             // for theo phạm vi, đọc thẳng vào a
+
+    // 1) Tổng và giá trị lớn nhất
+    long long tong = accumulate(a.begin(), a.end(), 0LL);   // 0LL: cộng bằng long long
+    long long lonNhat = *max_element(a.begin(), a.end());
+    cout &lt;&lt; "Tong = " &lt;&lt; tong &lt;&lt; ", lon nhat = " &lt;&lt; lonNhat &lt;&lt; '\n';
+
+    // 2) Đếm tần suất bằng map: khóa = giá trị, giá trị = số lần
+    map&lt;long long, int&gt; dem;
+    for (long long v : a) dem[v]++;
+    long long hayGap = 0; int soLan = 0;
+    for (auto [gt, c] : dem)                // duyệt theo khóa tăng dần
+        if (c &gt; soLan) { soLan = c; hayGap = gt; }   // dấu &gt; nên giữ giá trị nhỏ nhất khi hòa
+    cout &lt;&lt; "Xuat hien nhieu nhat: " &lt;&lt; hayGap &lt;&lt; " (" &lt;&lt; soLan &lt;&lt; " lan)\n";
+
+    // 3) k số lớn nhất: hàng đợi ưu tiên "min" giữ đúng k phần tử
+    priority_queue&lt;long long, vector&lt;long long&gt;, greater&lt;long long&gt;&gt; pq;
+    for (long long v : a) {
+        pq.push(v);
+        if ((int)pq.size() &gt; k) pq.pop();   // bỏ số nhỏ nhất trong nhóm
+    }
+    vector&lt;long long&gt; top;
+    while (!pq.empty()) { top.push_back(pq.top()); pq.pop(); }
+    reverse(top.begin(), top.end());        // đảo để in giảm dần
+    cout &lt;&lt; k &lt;&lt; " so lon nhat:";
+    for (long long v : top) cout &lt;&lt; ' ' &lt;&lt; v;
+    cout &lt;&lt; '\n';
+
+    // 4) Sắp xếp, rồi đếm số giá trị khác nhau bằng unique + erase
+    sort(a.begin(), a.end());
+    cout &lt;&lt; "Day da sap xep:";
+    for (long long v : a) cout &lt;&lt; ' ' &lt;&lt; v;
+    cout &lt;&lt; '\n';
+    // 5) Số phần tử &gt;= x: tìm vị trí đầu tiên &gt;= x bằng tìm kiếm nhị phân
+    int viTri = lower_bound(a.begin(), a.end(), x) - a.begin();
+    cout &lt;&lt; "So phan tu &gt;= " &lt;&lt; x &lt;&lt; ": " &lt;&lt; n - viTri &lt;&lt; '\n';
+
+    vector&lt;long long&gt; b = a;                // sao chép để giữ nguyên a
+    b.erase(unique(b.begin(), b.end()), b.end());
+    cout &lt;&lt; "So gia tri khac nhau: " &lt;&lt; b.size() &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">10 3 5
+5 2 8 2 6 1 8 2 9 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">Tong = 48, lon nhat = 9
+Xuat hien nhieu nhat: 2 (3 lan)
+3 so lon nhat: 9 8 8
+Day da sap xep: 1 2 2 2 5 5 6 8 8 9
+So phan tu &gt;= 5: 6
+So gia tri khac nhau: 6</code></pre></div>
+    </div>
+    <p>Kiểm tra tay: tổng 5 + 2 + 8 + 2 + 6 + 1 + 8 + 2 + 9 + 5 = 48. Số 2 xuất hiện 3 lần, nhiều nhất. Ba số lớn nhất là 9, 8, 8. Dãy sắp xếp là 1 2 2 2 5 5 6 8 8 9; <code>lower_bound(5)</code> trỏ vào chỉ số 4, nên có 10 − 4 = 6 số ≥ 5. Các giá trị khác nhau là 1, 2, 5, 6, 8, 9: đúng 6 giá trị.</p>
+    <div class="callout tip"><p class="callout-title">Mẹo: k số lớn nhất bằng heap nhỏ</p><p>Muốn giữ k số <em>lớn</em> nhất, em dùng heap <em>nhỏ</em> (<code>greater</code>) có đúng k phần tử. Mỗi khi heap có quá k phần tử, bỏ đi số nhỏ nhất. Số bị bỏ chắc chắn không thuộc nhóm k lớn nhất, vì đã có k số lớn hơn hoặc bằng nó. Cách này tốn <span class="bigo">O(n log k)</span> thời gian và chỉ <span class="bigo">O(k)</span> bộ nhớ cho heap.</p></div>
+
+    <h3>Chương trình 2: Vé hòa nhạc (CSES 1091) bằng multiset</h3>
+    <p>Đây là lời giải đầy đủ cho bài mở đầu. Vé có thể trùng giá nên phải dùng <code>multiset</code>. Với mỗi khách giá t, <code>upper_bound(t)</code> trỏ vào vé đầu tiên đắt hơn t; lùi lại một bước là vé đắt nhất còn ≤ t. Nếu <code>upper_bound</code> đã là <code>begin()</code> thì mọi vé đều quá đắt.</p>
+    <figure class="code">
+      <figcaption><span class="fn">ve_hoa_nhac.cpp</span> Mỗi khách lấy vé đắt nhất không vượt quá t</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// CSES 1091 - Vé hòa nhạc: mỗi khách lấy vé đắt nhất không vượt quá t
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    multiset&lt;int&gt; ve;                       // multiset: giữ được các giá trùng nhau
+    for (int i = 0; i &lt; n; i++) {
+        int h; cin &gt;&gt; h;
+        ve.insert(h);                       // O(log n) mỗi lần
+    }
+    for (int j = 0; j &lt; m; j++) {
+        int t; cin &gt;&gt; t;
+        auto it = ve.upper_bound(t);        // vé đầu tiên có giá &gt; t
+        if (it == ve.begin()) {             // mọi vé đều đắt hơn t
+            cout &lt;&lt; -1 &lt;&lt; '\n';
+        } else {
+            --it;                           // lùi một bước: vé đắt nhất &lt;= t
+            cout &lt;&lt; *it &lt;&lt; '\n';
+            ve.erase(it);                   // xóa ĐÚNG MỘT vé (theo iterator)
+        }
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 3
+5 3 7 8 5
+4 8 3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">3
+8
+-1</code></pre></div>
+    </div>
+    <p>Chạy tay: multiset ban đầu là {3, 5, 5, 7, 8}. Khách 1 trả tối đa 4: <code>upper_bound(4)</code> trỏ vào 5, lùi lại được 3; bán vé 3, còn {5, 5, 7, 8}. Khách 2 trả 8: <code>upper_bound(8)</code> là <code>end()</code>, lùi lại được 8; còn {5, 5, 7}. Khách 3 trả 3: <code>upper_bound(3)</code> trỏ vào 5, chính là <code>begin()</code>, nên in −1.</p>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <p>Bảng dưới là “bảng giá” của từng thao tác. Hãy chép nó vào vở. n là số phần tử đang có trong container.</p>
+    <table>
+      <thead><tr><th>Container</th><th>Thao tác</th><th>Thời gian</th><th>Ghi chú</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="4"><code>vector</code></td><td><code>v[i]</code>, <code>back()</code>, <code>size()</code></td><td><span class="bigo">O(1)</span></td><td>đọc, ghi theo chỉ số tức thì</td></tr>
+        <tr><td><code>push_back</code>, <code>pop_back</code></td><td><span class="bigo">O(1)</span></td><td>khấu hao (trung bình)</td></tr>
+        <tr><td><code>insert</code>, <code>erase</code> ở giữa</td><td><span class="bigo">O(n)</span></td><td>phải dồn các phần tử phía sau</td></tr>
+        <tr><td>tìm x trong vector chưa sắp</td><td><span class="bigo">O(n)</span></td><td>phải duyệt hết</td></tr>
+        <tr><td rowspan="3">Thuật toán trên đoạn n phần tử</td><td><code>sort</code></td><td><span class="bigo">O(n log n)</span></td><td></td></tr>
+        <tr><td><code>reverse</code>, <code>max_element</code>, <code>accumulate</code>, <code>unique</code>, <code>next_permutation</code></td><td><span class="bigo">O(n)</span></td><td>đi qua đoạn một lượt</td></tr>
+        <tr><td><code>lower_bound</code>, <code>upper_bound</code> trên vector đã sắp</td><td><span class="bigo">O(log n)</span></td><td>tìm kiếm nhị phân</td></tr>
+        <tr><td rowspan="3"><code>set</code>, <code>multiset</code></td><td><code>insert</code>, <code>erase</code>, <code>find</code>, <code>count</code>*, <code>lower_bound</code></td><td><span class="bigo">O(log n)</span></td><td>*<code>multiset::count(x)</code> tốn thêm số bản x</td></tr>
+        <tr><td><code>*begin()</code>, <code>*rbegin()</code> (nhỏ nhất, lớn nhất)</td><td><span class="bigo">O(1)</span></td><td></td></tr>
+        <tr><td>duyệt toàn bộ</td><td><span class="bigo">O(n)</span></td><td>theo thứ tự tăng dần</td></tr>
+        <tr><td><code>map</code></td><td><code>m[k]</code>, <code>find</code>, <code>count</code>, <code>erase</code></td><td><span class="bigo">O(log n)</span></td><td>khóa có thứ tự</td></tr>
+        <tr><td><code>unordered_map</code>, <code>unordered_set</code></td><td><code>m[k]</code>, <code>find</code>, <code>count</code>, <code>erase</code></td><td><span class="bigo">O(1)</span> trung bình</td><td>xấu nhất <span class="bigo">O(n)</span>; không có thứ tự</td></tr>
+        <tr><td rowspan="2"><code>priority_queue</code></td><td><code>push</code>, <code>pop</code></td><td><span class="bigo">O(log n)</span></td><td></td></tr>
+        <tr><td><code>top</code>, <code>size</code></td><td><span class="bigo">O(1)</span></td><td>không tìm, không xóa giữa</td></tr>
+        <tr><td><code>stack</code>, <code>queue</code>, <code>deque</code></td><td>thêm, bớt, xem ở đầu/cuối</td><td><span class="bigo">O(1)</span></td><td><code>deque</code> còn có <code>dq[i]</code> O(1)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Ước lượng thời gian</h3>
+    <p>Với q = 2·10⁵ thao tác trên set, mỗi thao tác khoảng log₂(2·10⁵) ≈ 18 bước, tổng cỡ 3,6·10⁶ bước. Nhưng mỗi “bước” của set chậm hơn mảng vài lần, vì phải nhảy giữa các nút nằm rải rác trong bộ nhớ. Kinh nghiệm thực tế:</p>
+    <ul>
+      <li>10⁶ thao tác trên <code>set</code> hoặc <code>map</code>: khoảng 0,3 đến 0,5 giây. Vẫn kịp với giới hạn 1 giây.</li>
+      <li>10⁶ thao tác <code>priority_queue</code>: nhanh hơn set khoảng 2 đến 3 lần.</li>
+      <li>Sắp xếp 10⁶ số bằng <code>sort</code>: dưới 0,1 giây.</li>
+      <li>Nếu chỉ cần “sắp xếp một lần rồi hỏi nhiều lần” thì <code>sort</code> + <code>lower_bound</code> trên vector nhanh hơn set.</li>
+    </ul>
+    <p><strong>Bộ nhớ.</strong> <code>vector&lt;int&gt;</code> n phần tử tốn khoảng 4n byte. Mỗi nút của set, map tốn thêm khoảng 32 đến 48 byte cho các con trỏ trái, phải, cha và màu. 10⁶ phần tử trong <code>set&lt;int&gt;</code> tốn khoảng 40 đến 50 MB, vẫn vừa giới hạn 256 MB nhưng nhiều hơn 10 lần so với vector.</p>
+
+    <h3>Chọn cấu trúc theo câu hỏi của đề</h3>
+    <table>
+      <thead><tr><th>Đề hỏi gì</th><th>Dùng</th></tr></thead>
+      <tbody>
+        <tr><td>Lưu dãy, đọc theo chỉ số, thêm ở cuối</td><td><code>vector</code></td></tr>
+        <tr><td>Dữ liệu cố định, hỏi “có x không”, “bao nhiêu số ≤ x”</td><td><code>sort</code> + <code>lower_bound</code>, <code>upper_bound</code></td></tr>
+        <tr><td>Số giá trị khác nhau</td><td><code>set</code> rồi <code>size()</code>, hoặc <code>sort</code> + <code>unique</code></td></tr>
+        <tr><td>Mỗi giá trị xuất hiện mấy lần, giá trị tới 10⁹ hoặc là xâu</td><td><code>map</code> (hoặc <code>unordered_map</code>)</td></tr>
+        <tr><td>Vừa thêm, vừa xóa bất kỳ, vừa hỏi số gần x nhất, min, max</td><td><code>set</code> / <code>multiset</code></td></tr>
+        <tr><td>Vừa thêm, vừa lấy ra phần tử lớn nhất (hoặc nhỏ nhất)</td><td><code>priority_queue</code></td></tr>
+        <tr><td>Xử lý theo thứ tự đến (BFS, xếp hàng)</td><td><code>queue</code></td></tr>
+        <tr><td>Ngoặc, “phần tử gần nhất bên trái lớn hơn”</td><td><code>stack</code></td></tr>
+        <tr><td>Cửa sổ trượt, thêm bớt ở hai đầu</td><td><code>deque</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Sắp xếp theo nhiều tiêu chí với pair và hàm so sánh</h3>
+    <p>Vì pair so sánh theo kiểu từ điển, <code>sort</code> một <code>vector&lt;pair&lt;int,string&gt;&gt;</code> sẽ sắp theo điểm tăng dần, cùng điểm thì theo tên tăng dần. Ví dụ {(8, Binh), (9, An), (8, An)} thành {(8, An), (8, Binh), (9, An)}. Muốn <em>điểm giảm dần, tên tăng dần</em>, em truyền thêm một hàm so sánh dạng lambda: hàm trả về <code>true</code> khi a phải đứng trước b.</p>
+    <figure class="code">
+      <figcaption><span class="fn">sap_xep_nhieu_tieu_chi.cpp</span> Điểm giảm dần, cùng điểm thì tên tăng dần</figcaption>
+<pre><code class="language-cpp">vector&lt;pair&lt;int, string&gt;&gt; hs = {{8, "Binh"}, {9, "An"}, {8, "An"}};
+sort(hs.begin(), hs.end(), [](const pair&lt;int, string&gt; &amp;a, const pair&lt;int, string&gt; &amp;b) {
+    if (a.first != b.first) return a.first &gt; b.first;   // điểm cao đứng trước
+    return a.second &lt; b.second;                         // cùng điểm: tên theo ABC
+});
+// hs = {(9, An), (8, An), (8, Binh)}
+for (auto &amp;[diem, ten] : hs) cout &lt;&lt; ten &lt;&lt; ' ' &lt;&lt; diem &lt;&lt; '\n';</code></pre>
+    </figure>
+    <p>Mẹo nhanh hơn: lưu <code>{-diem, ten}</code> rồi gọi <code>sort</code> bình thường. Điểm âm tăng dần nghĩa là điểm thật giảm dần. Chi tiết hơn ở chủ đề <a href="sorting.html">Sắp xếp</a>.</p>
+
+    <h3>priority_queue chứa pair: nền của Dijkstra</h3>
+    <p>Heap so sánh pair cũng theo kiểu từ điển. Thuật toán <a href="dijkstra.html">Dijkstra</a> luôn lấy đỉnh có khoảng cách nhỏ nhất, nên dùng heap nhỏ chứa cặp (khoảng cách, đỉnh):</p>
+    <figure class="code">
+      <figcaption><span class="fn">heap_pair.cpp</span> Heap nhỏ chứa cặp (khoảng cách, đỉnh)</figcaption>
+<pre><code class="language-cpp">priority_queue&lt;pair&lt;long long, int&gt;, vector&lt;pair&lt;long long, int&gt;&gt;, greater&lt;&gt;&gt; pq;
+pq.push({5, 1});
+pq.push({2, 3});
+pq.push({2, 1});
+auto [d, u] = pq.top();   // d = 2, u = 1: cùng khoảng cách 2 thì đỉnh nhỏ hơn ra trước
+pq.pop();</code></pre>
+    </figure>
+
+    <h3>Lấy phần tử liền trước, liền sau trong set</h3>
+    <p>Rất nhiều bài hỏi “số nhỏ nhất ≥ x” và “số lớn nhất ≤ x”. Số thứ nhất là <code>s.lower_bound(x)</code>. Số thứ hai là phần tử ngay trước <code>s.upper_bound(x)</code>, nhớ kiểm tra không phải <code>begin()</code>:</p>
+    <figure class="code">
+      <figcaption><span class="fn">lien_truoc_lien_sau.cpp</span> Tìm số gần x nhất ở hai phía</figcaption>
+<pre><code class="language-cpp">set&lt;int&gt; s = {1, 2, 5, 6, 8};
+int x = 4;
+auto it = s.lower_bound(x);                  // số nhỏ nhất &gt;= x
+if (it != s.end()) cout &lt;&lt; "&gt;= x: " &lt;&lt; *it &lt;&lt; '\n';           // 5
+auto jt = s.upper_bound(x);                  // số đầu tiên &gt; x
+if (jt != s.begin()) cout &lt;&lt; "&lt;= x: " &lt;&lt; *prev(jt) &lt;&lt; '\n';    // 2</code></pre>
+    </figure>
+    <p>Đây là toàn bộ ý tưởng của bài <strong>CPPSET</strong> trong phần bài tập.</p>
+
+    <h3>Sinh mọi hoán vị bằng next_permutation</h3>
+    <p>Sắp dãy tăng dần trước, rồi lặp <code>do { … } while (next_permutation(v.begin(), v.end()));</code>. Với {1, 2, 3}, vòng lặp chạy đúng 3! = 6 lần: 123, 132, 213, 231, 312, 321. Dãy có phần tử trùng thì mỗi hoán vị chỉ ra một lần, ví dụ {1, 1, 2} cho 3 hoán vị. Đây là cách duyệt trâu nhanh gọn, so sánh với cách tự viết ở chủ đề <a href="backtracking.html">Quay lui</a>.</p>
+
+    <h3>multiset làm “túi” có xóa: bài Bố trí phòng, Đèn giao thông (nâng cao)</h3>
+    <p>Khi cần “lấy phần tử nhỏ nhất và xóa phần tử bất kỳ”, heap không làm được, nhưng multiset làm được. Ví dụ bài Đèn giao thông: đặt dần đèn lên đoạn [0, x], sau mỗi lần phải biết đoạn trống dài nhất. Em giữ <code>set</code> các vị trí đèn và <code>multiset</code> các độ dài đoạn trống. Đặt đèn tại p: tìm hai đèn kề hai bên là L và R bằng <code>lower_bound</code>, xóa <em>một</em> độ dài R − L, thêm hai độ dài p − L và R − p. Đáp án là <code>*lengths.rbegin()</code>. Mỗi đèn tốn <span class="bigo">O(log n)</span>.</p>
+
+    <h3>Bảo vệ unordered_map khỏi bị hack (nâng cao)</h3>
+    <p>Nếu đề có tới 10⁶ thao tác và em muốn dùng <code>unordered_map</code> cho nhanh, hãy dùng hàm băm có yếu tố ngẫu nhiên để kẻ xấu không đoán được ngăn. Một cách phổ biến (theo bài viết của neal trên Codeforces, xem phần tham khảo):</p>
+    <figure class="code">
+      <figcaption><span class="fn">hash_an_toan.cpp</span> Hàm băm splitmix64 cộng một số ngẫu nhiên theo thời gian</figcaption>
+<pre><code class="language-cpp">struct BamAnToan {
+    static unsigned long long splitmix64(unsigned long long x) {
+        x += 0x9e3779b97f4a7c15ULL;
+        x = (x ^ (x &gt;&gt; 30)) * 0xbf58476d1ce4e5b9ULL;
+        x = (x ^ (x &gt;&gt; 27)) * 0x94d049bb133111ebULL;
+        return x ^ (x &gt;&gt; 31);
+    }
+    size_t operator()(unsigned long long x) const {
+        static const unsigned long long R =
+            chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + R);
+    }
+};
+unordered_map&lt;long long, int, BamAnToan&gt; dem;   // dùng như unordered_map bình thường</code></pre>
+    </figure>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+
+    <div class="callout danger"><p class="callout-title">Lỗi 1: toán tử [] của map tự tạo phần tử</p>
+      <p>Viết <code>if (dem[x] &gt; 0)</code> chỉ để <em>hỏi</em>, nhưng nếu x chưa có, <code>dem[x]</code> sẽ <strong>thêm</strong> khóa x với giá trị 0. Map phình to, <code>dem.size()</code> sai, và khi duyệt em gặp những khóa “ma” có giá trị 0. Với 10⁵ câu hỏi về các khóa không có, map tự thêm 10⁵ nút thừa.</p>
+      <p><strong>Sửa:</strong> chỉ hỏi thì dùng <code>dem.count(x)</code> hoặc <code>dem.find(x) != dem.end()</code>. Chỉ dùng <code>dem[x]</code> khi thật sự muốn ghi.</p></div>
+
+    <div class="callout danger"><p class="callout-title">Lỗi 2: xóa phần tử trong lúc đang duyệt</p>
+      <p>Đoạn <code>for (auto it = s.begin(); it != s.end(); ++it) if (*it % 2 == 0) s.erase(it);</code> là sai. Sau <code>erase(it)</code>, iterator <code>it</code> trỏ vào một nút đã bị hủy; lệnh <code>++it</code> tiếp theo có thể làm chương trình chạy sai hoặc chết. Vòng <code>for (int x : s)</code> kèm <code>s.erase(x)</code> cũng sai vì lý do y hệt.</p>
+      <p><strong>Sửa:</strong> <code>erase</code> trả về iterator của phần tử kế tiếp, hãy dùng nó:</p>
+<pre><code class="language-cpp">for (auto it = s.begin(); it != s.end(); ) {
+    if (*it % 2 == 0) it = s.erase(it);   // xóa và nhận phần tử kế tiếp
+    else ++it;                             // không xóa thì mới tự tiến
+}</code></pre>
+    </div>
+
+    <div class="callout danger"><p class="callout-title">Lỗi 3: multiset::erase(x) xóa HẾT các bản x</p>
+      <p>Với <code>multiset&lt;int&gt; ms = {2, 5, 5, 5, 8};</code>, lệnh <code>ms.erase(5)</code> xóa cả ba số 5, còn lại {2, 8}. Trong bài Vé hòa nhạc, lỗi này làm “bán” một lúc nhiều vé.</p>
+      <p><strong>Sửa:</strong> xóa đúng một bản bằng iterator: <code>auto it = ms.find(5); if (it != ms.end()) ms.erase(it);</code> Kết quả {2, 5, 5, 8}.</p></div>
+
+    <div class="callout danger"><p class="callout-title">Lỗi 4: size() − 1 khi vector rỗng</p>
+      <p><code>v.size()</code> có kiểu <em>số không dấu</em> (unsigned). Nếu v rỗng, <code>v.size() - 1</code> không phải −1 mà là 18 446 744 073 709 551 615 (2⁶⁴ − 1). Vòng <code>for (int i = 0; i &lt; v.size() - 1; i++)</code> sẽ chạy “vô tận” và truy cập ngoài mảng.</p>
+      <p><strong>Sửa:</strong> ép kiểu trước khi trừ, <code>(int)v.size() - 1</code>, hoặc viết điều kiện không có phép trừ: <code>i + 1 &lt; v.size()</code>.</p></div>
+
+    <div class="callout warn"><p class="callout-title">Lỗi 5: dùng std::lower_bound cho set</p>
+      <p><code>lower_bound(s.begin(), s.end(), x)</code> vẫn cho kết quả đúng, nhưng chạy <span class="bigo">O(n)</span> vì iterator của set không nhảy cóc được. Trong vòng lặp 2·10⁵ lần, bài bị quá thời gian.</p>
+      <p><strong>Sửa:</strong> dùng hàm thành viên <code>s.lower_bound(x)</code>, chạy <span class="bigo">O(log n)</span>. Tương tự với <code>count</code>, <code>find</code>: dùng <code>s.find(x)</code>, đừng dùng <code>find(s.begin(), s.end(), x)</code>.</p></div>
+
+    <div class="callout warn"><p class="callout-title">Lỗi 6: gọi top(), pop(), *begin() khi container rỗng</p>
+      <p><code>pq.top()</code> trên heap rỗng, <code>*s.begin()</code> trên set rỗng, <code>*prev(s.begin())</code> đều là lỗi chạy, không có thông báo rõ ràng. Luôn kiểm tra <code>!pq.empty()</code>, <code>it != s.begin()</code>, <code>it != s.end()</code> trước.</p></div>
+
+    <div class="callout warn"><p class="callout-title">Lỗi 7: unique khi chưa sắp xếp, accumulate tràn số</p>
+      <p><code>unique</code> chỉ gộp các phần tử trùng <em>kề nhau</em>: {1, 1, 2, 2, 2, 3, 1} thành {1, 2, 3, 1}, số 1 vẫn xuất hiện hai lần. Phải <code>sort</code> trước. Còn <code>accumulate(b, e, 0)</code> cộng bằng kiểu <code>int</code> theo số 0 ban đầu, tổng 2·10⁵ số cỡ 10⁹ sẽ tràn; hãy viết <code>0LL</code>.</p></div>
+
+    <div class="callout tip"><p class="callout-title">Mẹo: truyền vector vào hàm bằng tham chiếu</p>
+      <p><code>void xuLy(vector&lt;int&gt; v)</code> chép cả vector mỗi lần gọi. Gọi 10⁵ lần với vector 10⁵ phần tử là 10¹⁰ phép chép. Viết <code>void xuLy(vector&lt;int&gt; &amp;v)</code> (sửa được) hoặc <code>const vector&lt;int&gt; &amp;v</code> (chỉ đọc) để không phải chép.</p></div>
+
+    <div class="callout tip"><p class="callout-title">Mẹo: priority_queue nhỏ nhất không cần greater</p>
+      <p>Cách nhanh để có heap nhỏ: đẩy <code>-x</code> vào <code>priority_queue&lt;int&gt;</code>, khi lấy ra thì đổi dấu lại. Cách này dễ nhầm hơn <code>greater</code>, nên chỉ dùng khi em đã quen.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Chèn lần lượt 4, 1, 4, 7, 1 vào một <code>set&lt;int&gt;</code>. Duyệt set in ra gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 4 1 4 7 1</button>
+        <button type="button" class="quiz-opt">B. 1 1 4 4 7</button>
+        <button type="button" class="quiz-opt" data-correct>C. 1 4 7</button>
+        <button type="button" class="quiz-opt">D. 4 1 7</button>
+      </div>
+      <p class="quiz-explain">set bỏ các giá trị trùng và luôn giữ thứ tự tăng dần, nên chỉ còn 1, 4, 7. Phương án B là kết quả của <code>multiset</code>.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Cho vector đã sắp v = {1, 3, 3, 3, 6, 9}. Biểu thức <code>upper_bound(v.begin(), v.end(), 3) - lower_bound(v.begin(), v.end(), 3)</code> bằng bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 1</button>
+        <button type="button" class="quiz-opt" data-correct>B. 3</button>
+        <button type="button" class="quiz-opt">C. 4</button>
+        <button type="button" class="quiz-opt">D. 5</button>
+      </div>
+      <p class="quiz-explain"><code>lower_bound(3)</code> là chỉ số 1 (số 3 đầu tiên), <code>upper_bound(3)</code> là chỉ số 4 (số 6). Hiệu 4 − 1 = 3 đúng bằng số lần 3 xuất hiện.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Đề cho 2·10⁵ thao tác: “thêm số x” hoặc “in ra và xóa số lớn nhất”. Cấu trúc nào gọn và nhanh nhất?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. vector, mỗi lần sort lại</button>
+        <button type="button" class="quiz-opt" data-correct>B. priority_queue&lt;int&gt;</button>
+        <button type="button" class="quiz-opt">C. map&lt;int,int&gt;</button>
+        <button type="button" class="quiz-opt">D. queue&lt;int&gt;</button>
+      </div>
+      <p class="quiz-explain">Chỉ cần thêm và lấy ra lớn nhất: đúng việc của heap, mỗi thao tác O(log n). Sort lại mỗi lần tốn O(n log n) mỗi thao tác, quá chậm. map cũng làm được nhưng dài và chậm hơn; queue lấy theo thứ tự đến chứ không theo độ lớn.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Sau đoạn code <code>map&lt;int,int&gt; m; m[3] = 1; if (m[5] == 0) m[7]++;</code> thì <code>m.size()</code> bằng bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 1</button>
+        <button type="button" class="quiz-opt">B. 2</button>
+        <button type="button" class="quiz-opt" data-correct>C. 3</button>
+        <button type="button" class="quiz-opt">D. 0</button>
+      </div>
+      <p class="quiz-explain">Khóa 3 được gán. <code>m[5]</code> tự tạo khóa 5 với giá trị 0, điều kiện đúng, nên <code>m[7]++</code> tạo thêm khóa 7. Tổng cộng 3 khóa: 3, 5, 7.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. <code>multiset&lt;int&gt; ms = {2, 2, 2, 5};</code> Sau lệnh nào thì ms còn {2, 2, 5}?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. <code>ms.erase(2);</code></button>
+        <button type="button" class="quiz-opt" data-correct>B. <code>ms.erase(ms.find(2));</code></button>
+        <button type="button" class="quiz-opt">C. <code>ms.erase(ms.begin(), ms.end());</code></button>
+      </div>
+      <p class="quiz-explain">Xóa theo giá trị xóa hết ba số 2, còn {5}. Xóa theo iterator chỉ bỏ đúng một phần tử. Phương án C xóa sạch multiset.</p>
+    </div>
+    <p><strong>Câu 6.</strong> Vẽ heap lớn (dạng cây và dạng mảng) sau khi push lần lượt 3, 8, 6, 10 vào một <code>priority_queue&lt;int&gt;</code> rỗng.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>push 3: [3]. push 8: đặt ở chỉ số 1, cha 3 &lt; 8 nên đổi, được [8, 3]. push 6: đặt ở chỉ số 2, cha 8 ≥ 6, được [8, 3, 6]. push 10: đặt ở chỉ số 3, cha là chỉ số 1 (giá trị 3) &lt; 10, đổi được [8, 10, 6, 3]; cha mới là chỉ số 0 (giá trị 8) &lt; 10, đổi tiếp được [10, 8, 6, 3]. Cây: gốc 10, hai con 8 và 6, con trái của 8 là 3.</p>
+    </details>
+    <p><strong>Câu 7.</strong> Cho n ≤ 2·10⁵ học sinh, mỗi em có tên (xâu) và điểm. Có q ≤ 2·10⁵ câu hỏi, mỗi câu là một tên, hỏi điểm của bạn đó (hoặc in “khong co”). Em chọn cấu trúc nào, độ phức tạp bao nhiêu?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Dùng <code>map&lt;string,int&gt; diem;</code>. Đọc n học sinh: <code>diem[ten] = d;</code>. Mỗi câu hỏi: <code>auto it = diem.find(ten);</code> nếu <code>it == diem.end()</code> thì in “khong co”, ngược lại in <code>it-&gt;second</code>. Không dùng <code>diem[ten]</code> lúc hỏi, vì nó sẽ tạo bạn “ma” có điểm 0. Độ phức tạp <span class="bigo">O((n + q) log n)</span> lần so sánh xâu, khoảng 4·10⁵ · 18 ≈ 7·10⁶ lần so sánh.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Tất cả đều có đề tiếng Việt: các bài CSES được LQDOJ dịch sang tiếng Việt (bản gốc tiếng Anh ở <a href="https://cses.fi/problemset/">CSES Problem Set</a>, mục Sorting and Searching).</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1621">CSES 1621 – Giá trị phân biệt</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 2·10⁵ số nguyên, đếm xem có bao nhiêu giá trị khác nhau.</p>
+        <p class="ex-skill"><b>Luyện:</b> set, hoặc sort + unique.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chèn mọi số vào <code>set</code> rồi in <code>size()</code>. Cách thứ hai: sắp xếp rồi đếm số vị trí i mà a[i] khác a[i − 1].</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1640">CSES 1640 – Tổng hai giá trị</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho dãy n số và số x, tìm hai vị trí khác nhau có tổng giá trị bằng x.</p>
+        <p class="ex-skill"><b>Luyện:</b> map giá trị → chỉ số.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Duyệt từ trái sang. Tại a[i], hỏi map xem đã gặp giá trị x − a[i] chưa (dùng <code>find</code>, không dùng <code>[]</code>). Nếu chưa thì mới cất a[i] vào map. Cách khác: sắp xếp cặp (giá trị, chỉ số) rồi dùng <a href="two-pointers.html">hai con trỏ</a>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qbheap">QBHEAP – Hàng đợi có độ ưu tiên</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Thực hiện các lệnh “+V” (thêm V nếu danh sách có dưới 15 000 phần tử) và “−” (xóa mọi phần tử lớn nhất). Cuối cùng in số giá trị khác nhau còn lại và liệt kê chúng giảm dần.</p>
+        <p class="ex-skill"><b>Luyện:</b> priority_queue, đọc dữ liệu đến hết tệp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đọc từng dòng bằng <code>while (cin &gt;&gt; s)</code>. Lệnh “−”: lấy <code>m = pq.top()</code> rồi <code>pop</code> trong khi đỉnh còn bằng m. Khi in, bỏ qua giá trị trùng với giá trị vừa in.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1141">CSES 1141 – Danh sách phát</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho dãy n bài hát (mã số tới 10⁹), tìm đoạn liên tiếp dài nhất mà không có bài nào lặp lại.</p>
+        <p class="ex-skill"><b>Luyện:</b> map lưu vị trí xuất hiện gần nhất, kết hợp hai con trỏ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giữ đầu trái L của đoạn. Tại vị trí i, nếu bài a[i] đã xuất hiện ở vị trí p ≥ L thì dời L thành p + 1. Cập nhật vị trí gần nhất của a[i] là i, và đáp án là max(i − L + 1).</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1091">CSES 1091 – Vé hòa nhạc</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có n vé, m khách lần lượt đến; mỗi khách mua vé đắt nhất có giá không vượt quá số tiền tối đa của mình, hoặc không mua được.</p>
+        <p class="ex-skill"><b>Luyện:</b> multiset, upper_bound, xóa một bản bằng iterator.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đây chính là Chương trình 2 trong phần Cài đặt. Hãy tự viết lại mà không nhìn code, rồi thử thay <code>erase(it)</code> bằng <code>erase(*it)</code> để thấy lỗi.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/cppset">CPPSET – Tập hợp động</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Tới 3·10⁵ thao tác trên một tập số nguyên: thêm, xóa, tìm min, max, số nhỏ nhất &gt; x hoặc ≥ x, số lớn nhất &lt; x hoặc ≤ x.</p>
+        <p class="ex-skill"><b>Luyện:</b> set, lower_bound, upper_bound, prev, xử lý trường hợp rỗng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>SUCC x là <code>upper_bound(x)</code>, SUCC_2 x là <code>lower_bound(x)</code>, PRED x là phần tử trước <code>lower_bound(x)</code>, PRED_2 x là phần tử trước <code>upper_bound(x)</code>. Kiểm tra tập rỗng trước tiên, rồi kiểm tra <code>end()</code>, <code>begin()</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/heap1">HEAP1 – Một chút về Huffman Tree</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cắt một thanh gỗ thành n đoạn có độ dài cho trước; mỗi lần cắt một thanh tốn chi phí bằng độ dài thanh đó. Tìm tổng chi phí nhỏ nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> heap nhỏ (greater), tham lam, long long.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Nghĩ ngược lại: ghép các đoạn thành thanh, mỗi lần ghép tốn tổng hai đoạn. Luôn lấy hai đoạn ngắn nhất từ heap nhỏ, ghép lại, cộng chi phí rồi đẩy đoạn mới vào. Xem thêm chủ đề <a href="greedy.html">Tham lam</a>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1164">CSES 1164 – Bố trí phòng</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">n khách, mỗi khách ở từ ngày a đến ngày b. Tìm số phòng ít nhất để không hai khách nào ở chung phòng cùng ngày, và chỉ ra phòng của từng khách.</p>
+        <p class="ex-skill"><b>Luyện:</b> sắp xếp theo ngày đến, heap nhỏ chứa pair (ngày rời, số phòng).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp khách theo ngày đến (nhớ giữ chỉ số gốc). Heap chứa (ngày rời, phòng) của các phòng đang có khách. Khi khách mới đến ngày a, nếu đỉnh heap có ngày rời &lt; a thì lấy lại phòng đó; nếu không, mở phòng mới.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1163">CSES 1163 – Đèn giao thông</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Con phố dài x, lần lượt lắp n đèn giao thông ở các vị trí khác nhau. Sau mỗi lần lắp, in độ dài đoạn dài nhất không có đèn.</p>
+        <p class="ex-skill"><b>Luyện:</b> set vị trí + multiset độ dài, xóa đúng một bản.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xem mục “multiset làm túi có xóa” trong phần Biến thể. Ban đầu set vị trí là {0, x}, multiset độ dài là {x}. Cẩn thận dùng <code>erase(find(…))</code> chứ không phải <code>erase(giá trị)</code>.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://en.cppreference.com/w/cpp/container">cppreference – Containers library</a> (tiếng Anh): danh sách mọi container và độ phức tạp từng hàm.</li>
+      <li><a href="https://en.cppreference.com/w/cpp/container/set">cppreference – std::set</a>, <a href="https://en.cppreference.com/w/cpp/container/map">std::map</a>, <a href="https://en.cppreference.com/w/cpp/container/priority_queue">std::priority_queue</a> (tiếng Anh).</li>
+      <li><a href="https://en.cppreference.com/w/cpp/algorithm">cppreference – Algorithms library</a> (tiếng Anh): sort, lower_bound, unique, next_permutation…</li>
+      <li><a href="https://usaco.guide/bronze/intro-ds">USACO Guide – Introduction to Data Structures</a> và <a href="https://usaco.guide/bronze/intro-sets">Introduction to Sets &amp; Maps</a> (tiếng Anh, có bài tập).</li>
+      <li><a href="https://usaco.guide/silver/intro-sorted-sets">USACO Guide – More Operations on Sorted Sets</a> (tiếng Anh): lower_bound, upper_bound trên set, multiset.</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer’s Handbook</a>, chương 4 “Data structures” (tiếng Anh, PDF).</li>
+      <li><a href="https://codeforces.com/blog/entry/62393">neal – Blowing up unordered_map, and how to stop getting hacked on it</a> (Codeforces, tiếng Anh).</li>
+      <li><a href="https://wiki.vnoi.info/algo/basic/sorting">VNOI Wiki – Thuật toán sắp xếp</a> (tiếng Việt).</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li><code>vector</code>: mảng co giãn; <code>push_back</code> O(1) khấu hao, <code>v[i]</code> O(1), chèn/xóa giữa O(n).</li>
+        <li><code>sort</code> O(n log n); trên đoạn đã sắp, <code>lower_bound</code> (≥ x) và <code>upper_bound</code> (&gt; x) O(log n); xóa trùng bằng <code>sort</code> + <code>erase(unique(…), end())</code>.</li>
+        <li><code>set</code>/<code>multiset</code>: luôn tăng dần, insert/erase/find/lower_bound O(log n) nhờ cây cân bằng cao ≈ log n.</li>
+        <li><code>map</code>: đếm tần suất <code>m[x]++</code>; chỉ hỏi thì dùng <code>count</code>/<code>find</code> vì <code>[]</code> tự tạo khóa. <code>unordered_map</code> O(1) trung bình, không thứ tự, có thể bị hack.</li>
+        <li><code>priority_queue</code>: heap, <code>top</code> O(1), <code>push</code>/<code>pop</code> O(log n); mặc định lớn nhất, thêm <code>greater</code> để lấy nhỏ nhất.</li>
+        <li>Xóa khi duyệt: <code>it = s.erase(it)</code>. Xóa một bản trong multiset: <code>ms.erase(ms.find(x))</code>.</li>
+        <li><code>v.size()</code> không dấu: viết <code>(int)v.size() - 1</code>. Với set dùng <code>s.lower_bound(x)</code>, đừng dùng <code>std::lower_bound</code>.</li>
+        <li>Chọn cấu trúc theo câu hỏi: khác nhau → set; mấy lần → map; lớn nhất liên tục → priority_queue; gần x nhất có xóa → set/multiset.</li>
+      </ul>
+    </div>
+  </section>
+
+
+
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/stl.js"></script>
+</body>
+</html>
