@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chặt nhị phân trên kết quả · Thi đấu lớp 9</title>
+<meta name="description" content="Chặt nhị phân trên kết quả: đổi câu hỏi 'đáp án là bao nhiêu?' thành 'đáp án x có được không?', tính đơn điệu của hàm check, quy trình 4 bước, Cắt gỗ, dạng lớn nhất nhỏ nhất, nhỏ nhất lớn nhất và chặt số thực.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="binary-search-answer">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Nhận ra được một bài “tìm giá trị lớn nhất / nhỏ nhất có thể” giải được bằng chặt nhị phân trên kết quả.</li>
+      <li>Đổi được câu hỏi “đáp án là bao nhiêu?” thành câu hỏi có/không “giá trị x có đạt được không?”, rồi viết hàm <code>check(x)</code> bằng một vòng lặp tham lam.</li>
+      <li>Tự chứng minh được tính đơn điệu của <code>check</code> bằng một câu, và chọn đúng miền <span class="math">[lo, hi]</span>.</li>
+      <li>Cài đặt không lỗi mẫu chặt nhị phân có biến <code>ans</code> cho các bài Cắt gỗ, Aggressive Cows, Array Division, Factory Machines và chặt trên số thực.</li>
+      <li>Tính được độ phức tạp <span class="bigo">O(n log(hi − lo))</span> và tránh các lỗi tràn số, lặp vô hạn, lệch một đơn vị.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Ở bài <a href="binary-search.html">Tìm kiếm nhị phân trên mảng</a>, em đã biết cách tìm một số trong mảng đã sắp xếp bằng cách liên tục chia đôi. Bài này dùng đúng ý tưởng chia đôi đó, nhưng không tìm trong mảng nữa. Ta chia đôi <strong>trên tập các đáp án có thể</strong> của bài toán. Kỹ thuật này có tên là <em>chặt nhị phân trên kết quả</em> (binary search on the answer).</p>
+    <p>Ý tưởng chỉ gồm một câu: thay vì hỏi “đáp án là bao nhiêu?”, ta hỏi “đáp án bằng <span class="math">x</span> có được không?”. Câu hỏi thứ nhất thường rất khó. Câu hỏi thứ hai chỉ cần trả lời <em>có</em> hoặc <em>không</em>, và thường kiểm tra được bằng một vòng lặp đơn giản.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> em cần chọn cỡ giày vừa chân nhưng không có thước đo. Em không biết “chân mình cỡ bao nhiêu”, nhưng em thử được: xỏ một đôi vào và trả lời “vừa” hay “chật”. Cỡ càng to thì càng dễ vừa: nếu cỡ 38 đã vừa thì cỡ 39, 40 chắc chắn cũng vừa. Vậy em thử cỡ ở giữa dãy 30 đến 46 trước, chật thì bỏ hết các cỡ nhỏ hơn, vừa thì thử nhỏ lại. Chỉ sau 4–5 lần thử là em biết cỡ nhỏ nhất vừa chân.</p></div>
+    </div>
+
+    <p>Trong ví dụ trên có hai điều quan trọng. Thứ nhất, câu hỏi “cỡ x có vừa không?” dễ trả lời. Thứ hai, câu trả lời có dạng “chật, chật, …, chật, vừa, vừa, …, vừa” khi cỡ tăng dần: nó chỉ đổi từ <em>không</em> sang <em>có</em> đúng một lần. Tính chất thứ hai gọi là <strong>tính đơn điệu</strong>. Có nó, ta chia đôi được.</p>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Cho một miền số nguyên <span class="math">[lo, hi]</span> và một hàm kiểm tra <code>check(x)</code> trả về đúng/sai. Ta nói <code>check</code> <strong>đơn điệu</strong> nếu khi <span class="math">x</span> tăng, giá trị của nó có dạng</p>
+      <div class="math-block">sai, sai, …, sai, đúng, đúng, …, đúng</div>
+      <p>(hoặc ngược lại: đúng, …, đúng, sai, …, sai). Nói cách khác: nếu <code>check(x)</code> đúng thì <code>check(x + 1)</code> cũng đúng. <strong>Chặt nhị phân trên kết quả</strong> là tìm điểm đổi chiều, tức giá trị <span class="math">x</span> nhỏ nhất (hoặc lớn nhất) làm <code>check(x)</code> đúng, bằng cách chia đôi miền <span class="math">[lo, hi]</span> liên tục.</p>
+    </div>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Rất nhiều bài thi học sinh giỏi và tuyển sinh lớp 10 chuyên có dạng “tìm giá trị tốt nhất”. Khi tìm trực tiếp quá khó, chặt nhị phân trên kết quả biến bài <em>tối ưu</em> thành bài <em>kiểm tra</em>. Kiểm tra một con số cụ thể thường chỉ cần một vòng lặp tham lam <span class="bigo">O(n)</span>. Sau đó, ta chỉ phải kiểm tra khoảng 30 đến 60 con số, dù miền đáp án lên tới 10<sup>18</sup>.</p>
+    <p>Các dạng bài hay gặp:</p>
+    <ul>
+      <li><strong>Đặt ngưỡng:</strong> chọn độ cao lưỡi cưa, mức nước, tốc độ… sao cho thu được đủ một lượng. Ví dụ bài Cắt gỗ (EKO).</li>
+      <li><strong>Thời gian ít nhất:</strong> cần bao lâu để làm xong <span class="math">t</span> sản phẩm, chở hết hàng, đọc xong sách. Ví dụ Factory Machines.</li>
+      <li><strong>Lớn nhất là nhỏ nhất</strong> (minimize the maximum): chia dãy thành <span class="math">k</span> đoạn sao cho đoạn nặng nhất nhẹ nhất có thể. Ví dụ Array Division.</li>
+      <li><strong>Nhỏ nhất là lớn nhất</strong> (maximize the minimum): đặt <span class="math">c</span> con bò vào chuồng sao cho hai con gần nhau nhất vẫn cách xa nhất có thể. Ví dụ Aggressive Cows.</li>
+      <li><strong>Phần tử thứ k:</strong> tìm số thứ k trong một bảng quá lớn để liệt kê, ví dụ bảng cửu chương <span class="math">n × n</span> với <span class="math">n</span> gần 10<sup>6</sup>.</li>
+      <li><strong>Số thực:</strong> tìm căn bậc hai, nghiệm phương trình, kích thước miếng bánh với độ chính xác 10<sup>−6</sup>.</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề hỏi “<em>lớn nhất có thể</em>”, “<em>nhỏ nhất có thể</em>”, “<em>ít nhất bao lâu</em>”, đặc biệt các cụm “<em>sao cho giá trị lớn nhất là nhỏ nhất</em>” hoặc “<em>khoảng cách nhỏ nhất là lớn nhất</em>”. Đáp án là một số nằm trong miền rất rộng (đến 10<sup>9</sup> hay 10<sup>18</sup>), còn <span class="math">n</span> khoảng 10<sup>5</sup> đến 10<sup>6</sup>. Và quan trọng nhất: nếu ai đó đưa em một con số <span class="math">x</span>, em kiểm tra được ngay “<span class="math">x</span> có đạt không?”.</p></div>
+    <p>Kỹ thuật này hay đi kèm với <a href="greedy.html">tham lam</a> (để viết <code>check</code>), <a href="prefix-sum.html">mảng cộng dồn</a> (để <code>check</code> nhanh hơn) và cần hiểu <a href="complexity.html">độ phức tạp</a> để chọn số lần lặp.</p>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <h3>Bài toán mở đầu: Cắt gỗ</h3>
+    <p>Bác tiều phu cần ít nhất <span class="math">m</span> mét gỗ. Trước mặt bác là một hàng <span class="math">n</span> cây, cây thứ <span class="math">i</span> cao <span class="math">h<sub>i</sub></span> mét. Máy cưa có một lưỡi cưa nằm ngang, bác đặt nó ở độ cao <span class="math">H</span> (số nguyên). Lưỡi cưa cắt hết mọi phần cây cao hơn <span class="math">H</span>; cây nào thấp hơn hoặc bằng <span class="math">H</span> thì giữ nguyên. Bác lấy các phần bị cắt. Để bảo vệ rừng, bác muốn đặt lưỡi cưa <strong>cao nhất có thể</strong> mà vẫn đủ <span class="math">m</span> mét gỗ. Tìm <span class="math">H</span> đó.</p>
+    <p>Ví dụ: các cây cao 20, 15, 10, 17 và cần <span class="math">m = 7</span>. Nếu đặt <span class="math">H = 15</span>, bác thu được 20 − 15 = 5 mét từ cây đầu và 17 − 15 = 2 mét từ cây cuối, tổng 7 mét, vừa đủ. Nếu nâng lên <span class="math">H = 16</span> thì chỉ được 4 + 1 = 5 mét, thiếu. Vậy đáp án là 15.</p>
+    <p>Giới hạn thật trong đề EKO: <span class="math">n ≤ 10<sup>6</sup></span>, chiều cao dưới 10<sup>9</sup>, <span class="math">m ≤ 2 · 10<sup>9</sup></span>.</p>
+
+    <h3>Cách ngây thơ: thử từng độ cao</h3>
+    <p>Gọi <code>wood(H)</code> là tổng gỗ thu được khi đặt lưỡi cưa ở độ cao <span class="math">H</span>. Tính <code>wood(H)</code> mất một vòng lặp qua <span class="math">n</span> cây. Cách đơn giản nhất: thử <span class="math">H</span> từ cây cao nhất trở xuống, gặp <span class="math">H</span> đầu tiên có <code>wood(H) ≥ m</code> thì dừng. Trường hợp xấu, phải thử gần 10<sup>9</sup> độ cao, mỗi lần 10<sup>6</sup> phép cộng: tổng cộng 10<sup>15</sup> phép tính. Máy chấm làm khoảng 10<sup>8</sup> phép tính mỗi giây, nên cần khoảng 10<sup>7</sup> giây, tức gần 4 tháng!</p>
+
+    <h3>Quan sát then chốt</h3>
+    <p><strong>Hạ lưỡi cưa xuống thì gỗ thu được không giảm.</strong> Mỗi cây cho phần gỗ <span class="math">max(0, h<sub>i</sub> − H)</span>, và phần này chỉ tăng hoặc giữ nguyên khi <span class="math">H</span> giảm. Vậy nếu độ cao <span class="math">H</span> đã đủ gỗ, mọi độ cao thấp hơn cũng đủ gỗ. Câu hỏi “đặt ở <span class="math">H</span> có đủ gỗ không?” có dạng “đúng, đúng, …, đúng, sai, …, sai” khi <span class="math">H</span> tăng. Ta chỉ cần tìm chỗ đổi chiều, và chỗ đó tìm được bằng cách chia đôi.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Thử lần lượt từng H</h4><p>Có tới 10<sup>9</sup> giá trị <span class="math">H</span>, mỗi giá trị tốn <span class="math">n</span> phép tính. Độ phức tạp <span class="bigo">O(n · maxH)</span>, với <span class="math">n = 10<sup>6</sup></span> là khoảng 10<sup>15</sup> phép tính, không bao giờ kịp.</p></div>
+      <div class="good-side"><h4>Chặt nhị phân trên H</h4><p>Mỗi lần thử loại được một nửa miền. Chỉ cần <span class="math">⌈log<sub>2</sub>(10<sup>9</sup>)⌉ = 30</span> lần thử. Độ phức tạp <span class="bigo">O(n log maxH)</span>, khoảng 30 · 10<sup>6</sup> = 3 · 10<sup>7</sup> phép tính, chạy dưới 0,1 giây.</p></div>
+    </div>
+    <p>Từ 10<sup>15</sup> xuống 3 · 10<sup>7</sup>: nhanh hơn khoảng 30 triệu lần. Đó là sức mạnh của việc chia đôi miền đáp án.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Mọi bài chặt nhị phân trên kết quả đều đi theo đúng bốn bước sau. Em nên viết chúng ra giấy trước khi gõ code.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Xác định miền đáp án [lo, hi].</strong> <span class="math">lo</span> là giá trị nhỏ nhất có thể, <span class="math">hi</span> là giá trị lớn nhất có thể. Miền phải <em>chắc chắn chứa đáp án</em>. Với Cắt gỗ: <span class="math">lo = 0</span>, <span class="math">hi = max h<sub>i</sub></span> (đặt cao hơn cây cao nhất thì chẳng cắt được gì).</div></li>
+      <li><div><strong>Viết hàm check(x).</strong> Hàm trả lời câu hỏi có/không: “giá trị <span class="math">x</span> có đạt yêu cầu không?”. Thường viết bằng một vòng lặp tham lam <span class="bigo">O(n)</span>. Với Cắt gỗ: cộng <span class="math">h<sub>i</sub> − x</span> của các cây cao hơn <span class="math">x</span>, so với <span class="math">m</span>.</div></li>
+      <li><div><strong>Chứng minh check đơn điệu bằng một câu.</strong> Ví dụ: “hạ lưỡi cưa xuống thì gỗ không giảm, nên nếu <span class="math">x</span> đủ gỗ thì mọi giá trị nhỏ hơn <span class="math">x</span> cũng đủ”. Không viết được câu này thì <em>chưa được</em> chặt nhị phân.</div></li>
+      <li><div><strong>Dùng mẫu chặt nhị phân có biến ans.</strong> Lấy <span class="math">mid</span> ở giữa. Nếu <code>check(mid)</code> đúng: ghi <span class="math">ans = mid</span> rồi bỏ một nửa. Nếu sai: bỏ nửa còn lại. Lặp khi <span class="math">lo ≤ hi</span>. Kết quả nằm trong <span class="math">ans</span>.</div></li>
+    </ol>
+    <p>Bước 4 có hai phiên bản, tùy em cần tìm <em>nhỏ nhất</em> hay <em>lớn nhất</em>. Chỉ khác nhau ở hai dòng.</p>
+    <pre class="pseudo"><i>// Dạng A: check có dạng  sai … sai đúng … đúng  -> tìm x NHỎ NHẤT làm check đúng</i>
+<b>hàm</b> TimNhoNhat(lo, hi):
+    ans ← -1                          <i>// -1 nghĩa là chưa tìm được</i>
+    <b>khi</b> lo ≤ hi:
+        mid ← lo + (hi − lo) / 2       <i>// chia nguyên, không bị tràn số</i>
+        <b>nếu</b> check(mid):
+            ans ← mid                  <i>// mid đạt, ghi lại</i>
+            hi ← mid − 1               <i>// thử tìm giá trị nhỏ hơn nữa</i>
+        <b>ngược lại</b>:
+            lo ← mid + 1               <i>// mid không đạt, đáp án ở bên phải</i>
+    <b>trả về</b> ans
+
+<i>// Dạng B: check có dạng  đúng … đúng sai … sai  -> tìm x LỚN NHẤT làm check đúng</i>
+<b>hàm</b> TimLonNhat(lo, hi):
+    ans ← -1
+    <b>khi</b> lo ≤ hi:
+        mid ← lo + (hi − lo) / 2
+        <b>nếu</b> check(mid):
+            ans ← mid
+            lo ← mid + 1               <i>// thử giá trị lớn hơn</i>
+        <b>ngược lại</b>:
+            hi ← mid − 1
+    <b>trả về</b> ans</pre>
+    <p>Cắt gỗ cần <span class="math">H</span> <em>lớn nhất</em> còn đủ gỗ, nên dùng dạng B. Factory Machines cần thời gian <em>nhỏ nhất</em> làm đủ hàng, nên dùng dạng A. Mẹo nhớ: khi <code>check(mid)</code> đúng, ta luôn ghi <span class="math">ans</span>, rồi “đi tiếp về phía mình muốn” (muốn nhỏ thì sang trái, muốn lớn thì sang phải).</p>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <h3>Vì sao câu hỏi có/không dễ hơn</h3>
+    <p>Với Cắt gỗ, câu hỏi “đặt lưỡi cưa ở đâu là tốt nhất?” bắt em phải suy nghĩ về mọi cách đặt. Câu hỏi “đặt ở 15 có đủ 7 mét không?” thì chỉ cần cộng bốn số: 5 + 0 + 0 + 2 = 7 ≥ 7, đủ. Đây là điểm mấu chốt: <strong>kiểm tra một đáp án dễ hơn nhiều so với tìm đáp án</strong>. Với Array Division cũng vậy: “chia thành 3 đoạn sao cho đoạn lớn nhất nhỏ nhất” thì khó, nhưng “có chia được thành không quá 3 đoạn, mỗi đoạn tổng không quá 8 không?” thì chỉ việc đi từ trái sang phải, nhét số vào đoạn hiện tại cho tới khi sắp vượt 8 thì mở đoạn mới.</p>
+
+    <h3>Từng bước của vòng lặp làm gì</h3>
+    <p>Xét dạng B (tìm lớn nhất) trên bài Cắt gỗ. Tại mỗi lượt, ta thử <span class="math">mid</span> nằm giữa <span class="math">lo</span> và <span class="math">hi</span>:</p>
+    <ul>
+      <li>Nếu <code>check(mid)</code> đúng, nghĩa là đặt ở <span class="math">mid</span> đủ gỗ. Nhờ tính đơn điệu, mọi độ cao <em>thấp hơn</em> <span class="math">mid</span> cũng đủ gỗ, nhưng chúng kém hơn <span class="math">mid</span> (ta muốn cao nhất). Vậy <span class="math">mid</span> là ứng viên tốt nhất trong nửa trái: ghi <span class="math">ans = mid</span> và bỏ hẳn nửa trái bằng <span class="math">lo = mid + 1</span>.</li>
+      <li>Nếu <code>check(mid)</code> sai, đặt ở <span class="math">mid</span> thiếu gỗ. Nhờ tính đơn điệu, mọi độ cao <em>cao hơn</em> <span class="math">mid</span> cũng thiếu gỗ. Bỏ hẳn nửa phải bằng <span class="math">hi = mid − 1</span>.</li>
+    </ul>
+
+    <h3>Vì sao đúng</h3>
+    <p>Gọi đáp án thật là <span class="math">H*</span>. Ta giữ một <em>bất biến</em> (điều luôn đúng sau mỗi lượt lặp): <strong>“mọi giá trị nhỏ hơn lo đều đúng, mọi giá trị lớn hơn hi đều sai, và ans là giá trị đúng lớn nhất đã thử”</strong>.</p>
+    <ul>
+      <li>Lúc đầu, chưa có giá trị nào ngoài <span class="math">[lo, hi]</span>, bất biến hiển nhiên đúng.</li>
+      <li>Khi <code>check(mid)</code> đúng: theo tính đơn điệu, mọi giá trị ≤ <span class="math">mid</span> đều đúng, nên đặt <span class="math">lo = mid + 1</span> vẫn giữ “mọi giá trị nhỏ hơn lo đều đúng”, và <span class="math">ans = mid</span> là giá trị đúng lớn nhất đã biết.</li>
+      <li>Khi <code>check(mid)</code> sai: mọi giá trị ≥ <span class="math">mid</span> đều sai, nên <span class="math">hi = mid − 1</span> vẫn giữ “mọi giá trị lớn hơn hi đều sai”.</li>
+      <li>Vòng lặp dừng khi <span class="math">lo = hi + 1</span>. Lúc đó, mọi giá trị ≤ <span class="math">hi</span> đều đúng và mọi giá trị ≥ <span class="math">lo</span> đều sai. Chỗ đổi chiều nằm giữa <span class="math">hi</span> và <span class="math">lo</span>, nên đáp án là <span class="math">hi</span>. Vì <span class="math">lo</span> chỉ thay đổi khi <code>check(mid)</code> đúng (thành <span class="math">mid + 1</span>), nên lúc dừng <span class="math">hi = lo − 1</span> chính là giá trị <span class="math">mid</span> đúng cuối cùng, tức là <span class="math">ans</span>. Nếu <code>check</code> chưa từng đúng thì trong miền không có đáp án, và <span class="math">ans</span> giữ giá trị khởi tạo để báo điều đó.</li>
+    </ul>
+    <p>Còn tính <strong>dừng</strong>: vì <span class="math">lo ≤ mid ≤ hi</span>, mỗi lượt hoặc <span class="math">lo</span> tăng ít nhất 1, hoặc <span class="math">hi</span> giảm ít nhất 1. Độ dài <span class="math">hi − lo + 1</span> giảm thật sự sau mỗi lượt, nên vòng lặp chắc chắn kết thúc. Mẫu có biến <code>ans</code> với <code>mid + 1</code> và <code>mid − 1</code> không bao giờ lặp vô hạn.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Gọi <span class="math">L = hi − lo + 1</span> là số giá trị trong miền. Sau mỗi lượt, miền còn lại nhiều nhất một nửa. Sau <span class="math">k</span> lượt còn khoảng <span class="frac"><span>L</span><span>2<sup>k</sup></span></span> giá trị. Miền hết khi <span class="math">2<sup>k</sup> &gt; L</span>, tức sau khoảng <span class="math">log<sub>2</sub> L + 1</span> lượt.</p>
+    <table>
+      <thead><tr><th>Độ rộng miền L</th><th>Số lần gọi check (khoảng)</th><th>Ví dụ</th></tr></thead>
+      <tbody>
+        <tr><td>100</td><td>7</td><td>Trò đoán số 1–100</td></tr>
+        <tr><td>10<sup>6</sup></td><td>20</td><td>Chiều cao đến một triệu</td></tr>
+        <tr><td>10<sup>9</sup></td><td>30</td><td>Cắt gỗ (EKO)</td></tr>
+        <tr><td>2 · 10<sup>14</sup></td><td>48</td><td>Array Division: tổng mảng</td></tr>
+        <tr><td>10<sup>18</sup></td><td>60</td><td>Factory Machines: thời gian</td></tr>
+      </tbody>
+    </table>
+    <p>Mỗi lần gọi <code>check</code> tốn <span class="bigo">O(n)</span>, nên tổng là <span class="bigo">O(n · log(hi − lo))</span>. Dù miền rộng tới 10<sup>18</sup>, ta cũng chỉ gọi <code>check</code> khoảng 60 lần.</p>
+
+    <h3>Ví dụ chạy tay thứ hai: Array Division</h3>
+    <p>Chia mảng <span class="math">[2, 4, 7, 3, 5]</span> thành <span class="math">k = 3</span> đoạn liên tiếp sao cho tổng lớn nhất của các đoạn là nhỏ nhất. Hàm <code>check(S)</code>: đi từ trái sang phải, nhét số vào đoạn hiện tại; nếu nhét thêm làm tổng vượt <span class="math">S</span> thì mở đoạn mới; cuối cùng đúng nếu số đoạn ≤ 3. Miền: <span class="math">lo = 7</span> (số lớn nhất, đoạn nào chứa nó cũng có tổng ≥ 7), <span class="math">hi = 21</span> (tổng cả mảng, một đoạn). Tổng càng được phép lớn thì càng ít đoạn, nên <code>check</code> có dạng “sai … sai đúng … đúng”: dùng dạng A.</p>
+    <table class="trace">
+      <thead><tr><th>Lượt</th><th>lo</th><th>hi</th><th>mid</th><th>Cách chia tham lam</th><th>Số đoạn</th><th>check</th><th>ans</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>7</td><td>21</td><td>14</td><td>[2, 4, 7] [3, 5]</td><td>2</td><td>đúng</td><td>14</td></tr>
+        <tr><td>2</td><td>7</td><td>13</td><td>10</td><td>[2, 4] [7, 3] [5]</td><td>3</td><td>đúng</td><td>10</td></tr>
+        <tr><td>3</td><td>7</td><td>9</td><td>8</td><td>[2, 4] [7] [3, 5]</td><td>3</td><td>đúng</td><td>8</td></tr>
+        <tr class="hl"><td>4</td><td>7</td><td>7</td><td>7</td><td>[2, 4] [7] [3] [5]</td><td>4</td><td>sai</td><td>8</td></tr>
+      </tbody>
+    </table>
+    <p>Sau lượt 4, <span class="math">lo = 8 &gt; hi = 7</span>, vòng lặp dừng, đáp án là 8. Em kiểm tra lại: cách chia <span class="math">[2, 4] [7] [3, 5]</span> có tổng 6, 7, 8, lớn nhất là 8. Không thể làm tốt hơn, vì với giới hạn 7 thì cần tới 4 đoạn.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi gõ code, em luôn viết đủ ba dòng: “miền [lo, hi] = …”, “check(x) = …”, “đơn điệu vì …”. Ba dòng này đúng thì phần code chỉ là chép mẫu. Phần lớn bài sai của học sinh nằm ở một trong ba dòng đó chứ không phải ở vòng while.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Ta chạy tay bài Cắt gỗ với bốn cây cao 20, 15, 10, 17 và cần <span class="math">m = 7</span> mét. Trong mỗi khung hình, đường gạch đứt là lưỡi cưa ở độ cao <span class="math">mid</span>. Phần ngọn cây bị cắt được tô màu: xanh nếu tổng đủ 7 mét, đỏ nếu thiếu. Hàng ô bên dưới ghi <code>check(H)</code> cho <span class="math">H = 0, 1, …, 20</span>: chữ <b>Đ</b> là đúng (đủ gỗ), <b>S</b> là sai, dấu <b>?</b> là chưa biết. Em để ý số dấu <b>?</b> giảm một nửa sau mỗi lượt.</p>
+
+    <div class="stepper" data-title="Cắt gỗ: chặt nhị phân độ cao lưỡi cưa">
+      <div class="frame" data-caption="&lt;b&gt;Khởi tạo.&lt;/b&gt; Bốn cây cao 20, 15, 10, 17; cần m = 7 mét. Miền đáp án lo = 0 (đặt sát đất chắc chắn đủ gỗ), hi = 20 (cây cao nhất). Hàng ô phía dưới là check(H) với H = 0…20, chưa biết ô nào nên ghi dấu ?.">
+        <figure class="diagram">
+          <svg viewBox="0 0 400 236" width="400" role="img" aria-label="Bốn cây cao 20, 15, 10, 17 chưa đặt lưỡi cưa">
+          <line class="edge" x1="20" y1="196" x2="380" y2="196"/>
+          <rect class="fill-paper2" x="40" y="36" width="50" height="160" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="65" y="212" text-anchor="middle">20</text>
+          <rect class="fill-paper2" x="120" y="76" width="50" height="120" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="145" y="212" text-anchor="middle">15</text>
+          <rect class="fill-paper2" x="200" y="116" width="50" height="80" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="225" y="212" text-anchor="middle">10</text>
+          <rect class="fill-paper2" x="280" y="60" width="50" height="136" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="305" y="212" text-anchor="middle">17</text>
+          <text class="label-sm" x="20" y="230">lo = 0 · hi = 20 · ans = —</text>
+          </svg>
+        </figure>
+        <div class="arr"><span class="arr-label">check</span><span class="cell is-dim" data-i="0">?</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span><span class="cell is-dim" data-i="8">?</span><span class="cell is-dim" data-i="9">?</span><span class="cell is-dim" data-i="10">?</span><span class="cell is-dim" data-i="11">?</span><span class="cell is-dim" data-i="12">?</span><span class="cell is-dim" data-i="13">?</span><span class="cell is-dim" data-i="14">?</span><span class="cell is-dim" data-i="15">?</span><span class="cell is-dim" data-i="16">?</span><span class="cell is-dim" data-i="17">?</span><span class="cell is-dim" data-i="18">?</span><span class="cell is-dim" data-i="19">?</span><span class="cell is-dim" data-i="20">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt 1.&lt;/b&gt; lo = 0, hi = 20, mid = (0+20)/2 = 10. Gỗ thu được: 10 + 5 + 7 = 22. 22 ≥ 7 nên check(10) &lt;b&gt;đúng&lt;/b&gt;: ghi ans = 10, mọi H ≤ 10 đều đủ gỗ, đặt lo = 10+1 = 11.">
+        <figure class="diagram">
+          <svg viewBox="0 0 400 236" width="400" role="img" aria-label="Lưỡi cưa ở độ cao 10, thu được 22 mét gỗ">
+          <line class="edge" x1="20" y1="196" x2="380" y2="196"/>
+          <rect class="fill-paper2" x="40" y="116" width="50" height="80" stroke="currentColor" stroke-opacity=".35"/>
+          <rect class="fill-ok" x="40" y="36" width="50" height="80" stroke="currentColor" stroke-opacity=".35"/>
+          <text class="label-sm" x="65" y="30" text-anchor="middle">+10</text>
+          <text x="65" y="212" text-anchor="middle">20</text>
+          <rect class="fill-paper2" x="120" y="116" width="50" height="80" stroke="currentColor" stroke-opacity=".35"/>
+          <rect class="fill-ok" x="120" y="76" width="50" height="40" stroke="currentColor" stroke-opacity=".35"/>
+          <text class="label-sm" x="145" y="70" text-anchor="middle">+5</text>
+          <text x="145" y="212" text-anchor="middle">15</text>
+          <rect class="fill-paper2" x="200" y="116" width="50" height="80" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="225" y="212" text-anchor="middle">10</text>
+          <rect class="fill-paper2" x="280" y="116" width="50" height="80" stroke="currentColor" stroke-opacity=".35"/>
+          <rect class="fill-ok" x="280" y="60" width="50" height="56" stroke="currentColor" stroke-opacity=".35"/>
+          <text class="label-sm" x="305" y="54" text-anchor="middle">+7</text>
+          <text x="305" y="212" text-anchor="middle">17</text>
+          <line class="stroke-pen" x1="24" y1="116" x2="340" y2="116" stroke-width="2.5" stroke-dasharray="7 5"/>
+          <text class="label-pen" x="344" y="121">H=10</text>
+          <text class="label-sm" x="20" y="230">lo = 11 · hi = 20 · ans = 10</text>
+          <text class="label-sm" x="250" y="230">gỗ = 22 ≥ 7</text>
+          </svg>
+        </figure>
+        <div class="arr"><span class="arr-label">check</span><span class="cell is-ok" data-i="0">Đ</span><span class="cell is-ok" data-i="1">Đ</span><span class="cell is-ok" data-i="2">Đ</span><span class="cell is-ok" data-i="3">Đ</span><span class="cell is-ok" data-i="4">Đ</span><span class="cell is-ok" data-i="5">Đ</span><span class="cell is-ok" data-i="6">Đ</span><span class="cell is-ok" data-i="7">Đ</span><span class="cell is-ok" data-i="8">Đ</span><span class="cell is-ok" data-i="9">Đ</span><span class="cell is-active" data-i="10" data-ptr="mid">Đ</span><span class="cell is-dim" data-i="11">?</span><span class="cell is-dim" data-i="12">?</span><span class="cell is-dim" data-i="13">?</span><span class="cell is-dim" data-i="14">?</span><span class="cell is-dim" data-i="15">?</span><span class="cell is-dim" data-i="16">?</span><span class="cell is-dim" data-i="17">?</span><span class="cell is-dim" data-i="18">?</span><span class="cell is-dim" data-i="19">?</span><span class="cell is-dim" data-i="20">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt 2.&lt;/b&gt; lo = 11, hi = 20, mid = (11+20)/2 = 15. Gỗ thu được: 5 + 2 = 7. 7 ≥ 7 nên check(15) &lt;b&gt;đúng&lt;/b&gt;: ghi ans = 15, mọi H ≤ 15 đều đủ gỗ, đặt lo = 15+1 = 16.">
+        <figure class="diagram">
+          <svg viewBox="0 0 400 236" width="400" role="img" aria-label="Lưỡi cưa ở độ cao 15, thu được 7 mét gỗ">
+          <line class="edge" x1="20" y1="196" x2="380" y2="196"/>
+          <rect class="fill-paper2" x="40" y="76" width="50" height="120" stroke="currentColor" stroke-opacity=".35"/>
+          <rect class="fill-ok" x="40" y="36" width="50" height="40" stroke="currentColor" stroke-opacity=".35"/>
+          <text class="label-sm" x="65" y="30" text-anchor="middle">+5</text>
+          <text x="65" y="212" text-anchor="middle">20</text>
+          <rect class="fill-paper2" x="120" y="76" width="50" height="120" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="145" y="212" text-anchor="middle">15</text>
+          <rect class="fill-paper2" x="200" y="116" width="50" height="80" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="225" y="212" text-anchor="middle">10</text>
+          <rect class="fill-paper2" x="280" y="76" width="50" height="120" stroke="currentColor" stroke-opacity=".35"/>
+          <rect class="fill-ok" x="280" y="60" width="50" height="16" stroke="currentColor" stroke-opacity=".35"/>
+          <text class="label-sm" x="305" y="54" text-anchor="middle">+2</text>
+          <text x="305" y="212" text-anchor="middle">17</text>
+          <line class="stroke-pen" x1="24" y1="76" x2="340" y2="76" stroke-width="2.5" stroke-dasharray="7 5"/>
+          <text class="label-pen" x="344" y="81">H=15</text>
+          <text class="label-sm" x="20" y="230">lo = 16 · hi = 20 · ans = 15</text>
+          <text class="label-sm" x="250" y="230">gỗ = 7 ≥ 7</text>
+          </svg>
+        </figure>
+        <div class="arr"><span class="arr-label">check</span><span class="cell is-ok" data-i="0">Đ</span><span class="cell is-ok" data-i="1">Đ</span><span class="cell is-ok" data-i="2">Đ</span><span class="cell is-ok" data-i="3">Đ</span><span class="cell is-ok" data-i="4">Đ</span><span class="cell is-ok" data-i="5">Đ</span><span class="cell is-ok" data-i="6">Đ</span><span class="cell is-ok" data-i="7">Đ</span><span class="cell is-ok" data-i="8">Đ</span><span class="cell is-ok" data-i="9">Đ</span><span class="cell is-ok" data-i="10">Đ</span><span class="cell is-ok" data-i="11">Đ</span><span class="cell is-ok" data-i="12">Đ</span><span class="cell is-ok" data-i="13">Đ</span><span class="cell is-ok" data-i="14">Đ</span><span class="cell is-active" data-i="15" data-ptr="mid">Đ</span><span class="cell is-dim" data-i="16">?</span><span class="cell is-dim" data-i="17">?</span><span class="cell is-dim" data-i="18">?</span><span class="cell is-dim" data-i="19">?</span><span class="cell is-dim" data-i="20">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt 3.&lt;/b&gt; lo = 16, hi = 20, mid = (16+20)/2 = 18. Gỗ thu được: 2 = 2. 2 &lt; 7 nên check(18) &lt;b&gt;sai&lt;/b&gt;: mọi H ≥ 18 đều thiếu gỗ, đặt hi = 18−1 = 17.">
+        <figure class="diagram">
+          <svg viewBox="0 0 400 236" width="400" role="img" aria-label="Lưỡi cưa ở độ cao 18, thu được 2 mét gỗ">
+          <line class="edge" x1="20" y1="196" x2="380" y2="196"/>
+          <rect class="fill-paper2" x="40" y="52" width="50" height="144" stroke="currentColor" stroke-opacity=".35"/>
+          <rect class="fill-bad" x="40" y="36" width="50" height="16" stroke="currentColor" stroke-opacity=".35"/>
+          <text class="label-sm" x="65" y="30" text-anchor="middle">+2</text>
+          <text x="65" y="212" text-anchor="middle">20</text>
+          <rect class="fill-paper2" x="120" y="76" width="50" height="120" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="145" y="212" text-anchor="middle">15</text>
+          <rect class="fill-paper2" x="200" y="116" width="50" height="80" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="225" y="212" text-anchor="middle">10</text>
+          <rect class="fill-paper2" x="280" y="60" width="50" height="136" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="305" y="212" text-anchor="middle">17</text>
+          <line class="stroke-pen" x1="24" y1="52" x2="340" y2="52" stroke-width="2.5" stroke-dasharray="7 5"/>
+          <text class="label-pen" x="344" y="57">H=18</text>
+          <text class="label-sm" x="20" y="230">lo = 16 · hi = 17 · ans = 15</text>
+          <text class="label-sm" x="250" y="230">gỗ = 2 &lt; 7</text>
+          </svg>
+        </figure>
+        <div class="arr"><span class="arr-label">check</span><span class="cell is-ok" data-i="0">Đ</span><span class="cell is-ok" data-i="1">Đ</span><span class="cell is-ok" data-i="2">Đ</span><span class="cell is-ok" data-i="3">Đ</span><span class="cell is-ok" data-i="4">Đ</span><span class="cell is-ok" data-i="5">Đ</span><span class="cell is-ok" data-i="6">Đ</span><span class="cell is-ok" data-i="7">Đ</span><span class="cell is-ok" data-i="8">Đ</span><span class="cell is-ok" data-i="9">Đ</span><span class="cell is-ok" data-i="10">Đ</span><span class="cell is-ok" data-i="11">Đ</span><span class="cell is-ok" data-i="12">Đ</span><span class="cell is-ok" data-i="13">Đ</span><span class="cell is-ok" data-i="14">Đ</span><span class="cell is-ok" data-i="15">Đ</span><span class="cell is-dim" data-i="16">?</span><span class="cell is-dim" data-i="17">?</span><span class="cell is-active" data-i="18" data-ptr="mid">S</span><span class="cell is-bad" data-i="19">S</span><span class="cell is-bad" data-i="20">S</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt 4.&lt;/b&gt; lo = 16, hi = 17, mid = (16+17)/2 = 16. Gỗ thu được: 4 + 1 = 5. 5 &lt; 7 nên check(16) &lt;b&gt;sai&lt;/b&gt;: mọi H ≥ 16 đều thiếu gỗ, đặt hi = 16−1 = 15.">
+        <figure class="diagram">
+          <svg viewBox="0 0 400 236" width="400" role="img" aria-label="Lưỡi cưa ở độ cao 16, thu được 5 mét gỗ">
+          <line class="edge" x1="20" y1="196" x2="380" y2="196"/>
+          <rect class="fill-paper2" x="40" y="68" width="50" height="128" stroke="currentColor" stroke-opacity=".35"/>
+          <rect class="fill-bad" x="40" y="36" width="50" height="32" stroke="currentColor" stroke-opacity=".35"/>
+          <text class="label-sm" x="65" y="30" text-anchor="middle">+4</text>
+          <text x="65" y="212" text-anchor="middle">20</text>
+          <rect class="fill-paper2" x="120" y="76" width="50" height="120" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="145" y="212" text-anchor="middle">15</text>
+          <rect class="fill-paper2" x="200" y="116" width="50" height="80" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="225" y="212" text-anchor="middle">10</text>
+          <rect class="fill-paper2" x="280" y="68" width="50" height="128" stroke="currentColor" stroke-opacity=".35"/>
+          <rect class="fill-bad" x="280" y="60" width="50" height="8" stroke="currentColor" stroke-opacity=".35"/>
+          <text class="label-sm" x="305" y="54" text-anchor="middle">+1</text>
+          <text x="305" y="212" text-anchor="middle">17</text>
+          <line class="stroke-pen" x1="24" y1="68" x2="340" y2="68" stroke-width="2.5" stroke-dasharray="7 5"/>
+          <text class="label-pen" x="344" y="73">H=16</text>
+          <text class="label-sm" x="20" y="230">lo = 16 · hi = 15 · ans = 15</text>
+          <text class="label-sm" x="250" y="230">gỗ = 5 &lt; 7</text>
+          </svg>
+        </figure>
+        <div class="arr"><span class="arr-label">check</span><span class="cell is-ok" data-i="0">Đ</span><span class="cell is-ok" data-i="1">Đ</span><span class="cell is-ok" data-i="2">Đ</span><span class="cell is-ok" data-i="3">Đ</span><span class="cell is-ok" data-i="4">Đ</span><span class="cell is-ok" data-i="5">Đ</span><span class="cell is-ok" data-i="6">Đ</span><span class="cell is-ok" data-i="7">Đ</span><span class="cell is-ok" data-i="8">Đ</span><span class="cell is-ok" data-i="9">Đ</span><span class="cell is-ok" data-i="10">Đ</span><span class="cell is-ok" data-i="11">Đ</span><span class="cell is-ok" data-i="12">Đ</span><span class="cell is-ok" data-i="13">Đ</span><span class="cell is-ok" data-i="14">Đ</span><span class="cell is-ok" data-i="15">Đ</span><span class="cell is-active" data-i="16" data-ptr="mid">S</span><span class="cell is-bad" data-i="17">S</span><span class="cell is-bad" data-i="18">S</span><span class="cell is-bad" data-i="19">S</span><span class="cell is-bad" data-i="20">S</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kết thúc.&lt;/b&gt; lo = 16 &gt; hi = 15 nên dừng. Hàng check giờ đã rõ: đúng từ 0 đến 15, sai từ 16 đến 20. Đáp án ans = 15: đặt lưỡi cưa ở 15 mét thu được đúng 7 mét gỗ. Chỉ mất 4 lần gọi check thay vì thử cả 21 độ cao.">
+        <figure class="diagram">
+          <svg viewBox="0 0 400 236" width="400" role="img" aria-label="Đáp án: lưỡi cưa ở độ cao 15, thu đúng 7 mét gỗ">
+          <line class="edge" x1="20" y1="196" x2="380" y2="196"/>
+          <rect class="fill-paper2" x="40" y="76" width="50" height="120" stroke="currentColor" stroke-opacity=".35"/>
+          <rect class="fill-ok" x="40" y="36" width="50" height="40" stroke="currentColor" stroke-opacity=".35"/>
+          <text class="label-sm" x="65" y="30" text-anchor="middle">+5</text>
+          <text x="65" y="212" text-anchor="middle">20</text>
+          <rect class="fill-paper2" x="120" y="76" width="50" height="120" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="145" y="212" text-anchor="middle">15</text>
+          <rect class="fill-paper2" x="200" y="116" width="50" height="80" stroke="currentColor" stroke-opacity=".35"/>
+          <text x="225" y="212" text-anchor="middle">10</text>
+          <rect class="fill-paper2" x="280" y="76" width="50" height="120" stroke="currentColor" stroke-opacity=".35"/>
+          <rect class="fill-ok" x="280" y="60" width="50" height="16" stroke="currentColor" stroke-opacity=".35"/>
+          <text class="label-sm" x="305" y="54" text-anchor="middle">+2</text>
+          <text x="305" y="212" text-anchor="middle">17</text>
+          <line class="stroke-pen" x1="24" y1="76" x2="340" y2="76" stroke-width="2.5" stroke-dasharray="7 5"/>
+          <text class="label-pen" x="344" y="81">H=15</text>
+          <text class="label-sm" x="20" y="230">lo = 16 · hi = 15 · ans = 15</text>
+          <text class="label-sm" x="250" y="230">gỗ = 7 ≥ 7</text>
+          </svg>
+        </figure>
+        <div class="arr"><span class="arr-label">check</span><span class="cell is-ok" data-i="0">Đ</span><span class="cell is-ok" data-i="1">Đ</span><span class="cell is-ok" data-i="2">Đ</span><span class="cell is-ok" data-i="3">Đ</span><span class="cell is-ok" data-i="4">Đ</span><span class="cell is-ok" data-i="5">Đ</span><span class="cell is-ok" data-i="6">Đ</span><span class="cell is-ok" data-i="7">Đ</span><span class="cell is-ok" data-i="8">Đ</span><span class="cell is-ok" data-i="9">Đ</span><span class="cell is-ok" data-i="10">Đ</span><span class="cell is-ok" data-i="11">Đ</span><span class="cell is-ok" data-i="12">Đ</span><span class="cell is-ok" data-i="13">Đ</span><span class="cell is-ok" data-i="14">Đ</span><span class="cell is-ok" data-i="15">Đ</span><span class="cell is-bad" data-i="16">S</span><span class="cell is-bad" data-i="17">S</span><span class="cell is-bad" data-i="18">S</span><span class="cell is-bad" data-i="19">S</span><span class="cell is-bad" data-i="20">S</span></div>
+      </div>
+    </div>
+
+    <p>Vì sao ta được phép tô cả một dải ô chỉ sau một lần thử? Đó chính là tính đơn điệu. Biểu đồ dưới đây vẽ lượng gỗ <code>wood(H)</code> cho mọi <span class="math">H</span> từ 0 đến 20. Các cột giảm dần từ trái sang phải, nên đường ngang “7 mét” cắt dãy cột đúng một lần: bên trái toàn cột đủ (xanh), bên phải toàn cột thiếu (đỏ).</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Lượng gỗ wood(H) khi H tăng từ 0 đến 20</p></div>
+      <div class="viz-body">
+        <div class="bars" style="--max:62">
+          <span class="bar is-ok" style="--v:62" data-v="62"></span>
+          <span class="bar is-ok" style="--v:58" data-v="58"></span>
+          <span class="bar is-ok" style="--v:54" data-v="54"></span>
+          <span class="bar is-ok" style="--v:50" data-v="50"></span>
+          <span class="bar is-ok" style="--v:46" data-v="46"></span>
+          <span class="bar is-ok" style="--v:42" data-v="42"></span>
+          <span class="bar is-ok" style="--v:38" data-v="38"></span>
+          <span class="bar is-ok" style="--v:34" data-v="34"></span>
+          <span class="bar is-ok" style="--v:30" data-v="30"></span>
+          <span class="bar is-ok" style="--v:26" data-v="26"></span>
+          <span class="bar is-ok" style="--v:22" data-v="22"></span>
+          <span class="bar is-ok" style="--v:19" data-v="19"></span>
+          <span class="bar is-ok" style="--v:16" data-v="16"></span>
+          <span class="bar is-ok" style="--v:13" data-v="13"></span>
+          <span class="bar is-ok" style="--v:10" data-v="10"></span>
+          <span class="bar is-ok" style="--v:7" data-v="7"></span>
+          <span class="bar is-bad" style="--v:5" data-v="5"></span>
+          <span class="bar is-bad" style="--v:3" data-v="3"></span>
+          <span class="bar is-bad" style="--v:2" data-v="2"></span>
+          <span class="bar is-bad" style="--v:1" data-v="1"></span>
+          <span class="bar is-bad" style="--v:0" data-v="0"></span>
+        </div>
+      </div>
+      <div class="viz-legend"><span><i class="is-ok"></i>wood(H) ≥ 7: check đúng</span><span><i class="is-bad"></i>wood(H) &lt; 7: check sai</span></div>
+      <div class="viz-caption"><p>Các giá trị lần lượt là 62, 58, 54, 50, 46, 42, 38, 34, 30, 26, 22, 19, 16, 13, 10, 7, 5, 3, 2, 1, 0. Cột cuối cùng còn xanh ứng với H = 15. Dãy không cần giảm đều (từ H = 10 trở đi mỗi bước giảm ít hơn, vì cây cao 10 đã hết gỗ), chỉ cần không tăng.</p></div>
+    </div>
+
+    <p>Bây giờ đến lượt em. Nhập chiều cao các cây và lượng gỗ cần, kéo thanh trượt để xem lưỡi cưa cắt được bao nhiêu. Sau đó bấm “Bước tiếp” để máy chạy chặt nhị phân từng lượt, hoặc “Chạy hết” để xem toàn bộ.</p>
+    <div class="playground" id="viz-binary-search-answer">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: Cắt gỗ bằng chặt nhị phân</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="bsa-h">Chiều cao các cây <input type="text" id="bsa-h" value="20 15 10 17"></label>
+          <label for="bsa-m">m <input type="number" id="bsa-m" value="7" min="1"></label>
+          <button type="button" data-act="load">Nạp dữ liệu</button>
+          <button type="button" class="ghost" data-act="rand">Ngẫu nhiên</button>
+        </div>
+        <div class="controls">
+          <label for="bsa-slider">Độ cao lưỡi cưa H <input type="range" id="bsa-slider" min="0" max="20" value="10"></label>
+          <button type="button" data-act="step">Bước tiếp</button>
+          <button type="button" data-act="all">Chạy hết</button>
+          <button type="button" class="ghost" data-act="reset">Làm lại</button>
+        </div>
+        <div class="bsa-view"></div>
+        <div class="out" aria-live="polite">Nhập tối đa 10 chiều cao (số nguyên từ 1 đến 40) và m, rồi bấm Nạp dữ liệu.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Chương trình dưới đây giải bài Cắt gỗ (đúng định dạng của SPOJ EKO). Dòng đầu là <span class="math">n</span> và <span class="math">m</span>, dòng hai là chiều cao <span class="math">n</span> cây. Em để ý ba chi tiết: tổng gỗ dùng <code>long long</code> (10<sup>6</sup> cây × 10<sup>9</sup> mét = 10<sup>15</sup>, vượt <code>int</code>); hàm <code>check</code> dừng sớm ngay khi đủ gỗ; và vòng lặp dùng đúng mẫu dạng B có biến <code>ans</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">cat_go.cpp</span> Cắt gỗ: tìm độ cao lưỡi cưa lớn nhất vẫn đủ m mét gỗ</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+
+int n;
+ll m;
+vector&lt;ll&gt; h;
+
+// check(H): đặt lưỡi cưa ở độ cao H thì có thu được ít nhất m mét gỗ không?
+bool check(ll H) {
+    ll wood = 0;                       // tổng gỗ có thể lên tới 10^15, phải dùng long long
+    for (int i = 0; i &lt; n; i++) {
+        if (h[i] &gt; H) wood += h[i] - H;
+        if (wood &gt;= m) return true;    // dừng sớm: đã đủ gỗ
+    }
+    return false;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin &gt;&gt; n &gt;&gt; m;
+    h.resize(n);
+    ll maxH = 0;
+    for (auto &amp;x : h) { cin &gt;&gt; x; maxH = max(maxH, x); }
+
+    // Bước 1: miền đáp án. H = 0 luôn đủ gỗ (đề bảo đảm), H = maxH thì thu 0 mét.
+    ll lo = 0, hi = maxH, ans = 0;
+    // Bước 4: mẫu chặt nhị phân có biến ans.
+    // check có dạng đúng, đúng, ..., đúng, sai, ..., sai -&gt; tìm H LỚN NHẤT còn đúng.
+    while (lo &lt;= hi) {
+        ll mid = lo + (hi - lo) / 2;
+        if (check(mid)) { ans = mid; lo = mid + 1; }  // đủ gỗ: ghi nhận, thử nâng cao hơn
+        else hi = mid - 1;                            // thiếu gỗ: phải hạ thấp xuống
+    }
+    cout &lt;&lt; ans &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4 7
+20 15 10 17</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">15</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 20
+4 42 40 26 46</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">36</code></pre></div>
+    </div>
+    <p>Ví dụ thứ hai: đặt ở 36 thu được 6 + 4 + 10 = 20 mét, vừa đủ; đặt ở 37 chỉ được 5 + 3 + 9 = 17 mét, thiếu. Vậy đáp án 36.</p>
+    <div class="callout tip"><p class="callout-title">Vì sao viết check thành một hàm riêng</p><p>Tách <code>check</code> ra hàm riêng giúp em kiểm tra nó độc lập: thử tay vài giá trị (ví dụ <code>check(15)</code> phải đúng, <code>check(16)</code> phải sai) trước khi ghép vào vòng chặt nhị phân. Khi sang bài khác, em gần như chỉ phải viết lại hàm này, còn vòng <code>while</code> giữ nguyên.</p></div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <p>Gọi <span class="math">C</span> là chi phí một lần gọi <code>check</code>. Vòng chặt nhị phân gọi <code>check</code> khoảng <span class="math">log<sub>2</sub>(hi − lo + 1)</span> lần, nên tổng thời gian là <span class="bigo">O(C · log(hi − lo))</span>. Với <code>check</code> tham lam một vòng lặp, <span class="math">C = O(n)</span>.</p>
+    <table>
+      <thead><tr><th>Bài</th><th>Miền [lo, hi]</th><th>Số lượt</th><th>check</th><th>Tổng (cỡ)</th></tr></thead>
+      <tbody>
+        <tr><td>Cắt gỗ (EKO), n ≤ 10<sup>6</sup></td><td>[0, 10<sup>9</sup>]</td><td>30</td><td><span class="bigo">O(n)</span></td><td>3 · 10<sup>7</sup></td></tr>
+        <tr><td>Factory Machines, n ≤ 2 · 10<sup>5</sup></td><td>[1, 10<sup>18</sup>]</td><td>60</td><td><span class="bigo">O(n)</span></td><td>1,2 · 10<sup>7</sup></td></tr>
+        <tr><td>Array Division, n ≤ 2 · 10<sup>5</sup></td><td>[max x, tổng x] ⊂ [1, 2 · 10<sup>14</sup>]</td><td>48</td><td><span class="bigo">O(n)</span></td><td>≈ 10<sup>7</sup></td></tr>
+        <tr><td>Aggressive Cows, n ≤ 10<sup>5</sup></td><td>[1, 10<sup>9</sup>]</td><td>30</td><td><span class="bigo">O(n)</span> (+ sắp xếp <span class="bigo">O(n log n)</span> một lần)</td><td>≈ 5 · 10<sup>6</sup></td></tr>
+        <tr><td>Bảng cửu chương, n &lt; 10<sup>6</sup></td><td>[1, n²] ⊂ [1, 10<sup>12</sup>]</td><td>40</td><td><span class="bigo">O(n)</span></td><td>4 · 10<sup>7</sup></td></tr>
+        <tr><td>Số thực (căn bậc hai…)</td><td>[0, max(1, x)]</td><td>100 (cố định)</td><td><span class="bigo">O(1)</span> hoặc <span class="bigo">O(n)</span></td><td>100 · C</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Bộ nhớ:</strong> chỉ cần lưu dữ liệu đầu vào, <span class="bigo">O(n)</span>. Chặt nhị phân không tốn thêm bộ nhớ đáng kể.</p>
+    <p>Một cách nhìn dễ nhớ: <em>chặt nhị phân nhân thời gian của check lên chừng 30 đến 60 lần</em>. Vậy nếu <code>check</code> chạy trong khoảng 10<sup>6</sup> đến 10<sup>7</sup> phép tính thì cả bài vẫn kịp 1 giây. Nếu <code>check</code> đã tốn <span class="bigo">O(n²)</span> với <span class="math">n = 10<sup>5</sup></span> (10<sup>10</sup> phép tính) thì có chặt nhị phân cũng không cứu được: em phải tìm <code>check</code> nhanh hơn trước.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+    <p>Phần này đi qua các dạng hay gặp nhất. Với mỗi dạng, em hãy để ý ba dòng quen thuộc: miền, check, đơn điệu. Vòng <code>while</code> thì luôn như nhau.</p>
+
+    <h3>1. “Lớn nhất là nhỏ nhất”: Array Division</h3>
+    <p><strong>Đề.</strong> Chia mảng <span class="math">n</span> số dương thành <span class="math">k</span> đoạn liên tiếp sao cho tổng lớn nhất của các đoạn là nhỏ nhất (CSES 1085).</p>
+    <ul>
+      <li><strong>Miền:</strong> <span class="math">lo = max x<sub>i</sub></span> (phần tử lớn nhất phải nằm trọn trong một đoạn), <span class="math">hi = tổng x<sub>i</sub></span> (cả mảng là một đoạn).</li>
+      <li><strong>check(S):</strong> “chia được thành <em>không quá</em> <span class="math">k</span> đoạn, mỗi đoạn tổng ≤ <span class="math">S</span> không?”. Tham lam: nhét số vào đoạn hiện tại cho đến khi sắp vượt <span class="math">S</span> thì mở đoạn mới. Cách nhét “càng nhiều càng tốt” này cho số đoạn ít nhất có thể.</li>
+      <li><strong>Đơn điệu:</strong> “cho phép tổng mỗi đoạn lớn hơn thì số đoạn cần dùng không tăng”, nên <code>check</code> có dạng sai … sai đúng … đúng. Dùng dạng A (tìm nhỏ nhất).</li>
+    </ul>
+    <p>Vì sao “không quá <span class="math">k</span> đoạn” mà không phải “đúng <span class="math">k</span> đoạn”? Nếu chia được thành ít đoạn hơn, em luôn tách tiếp một đoạn dài thành hai (mảng có <span class="math">n ≥ k</span> phần tử) mà tổng lớn nhất không tăng. Hỏi “đúng <span class="math">k</span>” sẽ làm <code>check</code> khó viết và dễ mất tính đơn điệu.</p>
+    <figure class="code">
+      <figcaption><span class="fn">array_division.cpp</span> Chia mảng thành k đoạn, tổng lớn nhất nhỏ nhất</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+
+int n, k;
+vector&lt;ll&gt; a;
+
+// Chia được thành không quá k đoạn, mỗi đoạn có tổng &lt;= S hay không?
+bool check(ll S) {
+    int groups = 1;
+    ll cur = 0;
+    for (int i = 0; i &lt; n; i++) {
+        if (a[i] &gt; S) return false;               // một phần tử đã vượt S
+        if (cur + a[i] &gt; S) { groups++; cur = 0; } // mở đoạn mới
+        cur += a[i];
+    }
+    return groups &lt;= k;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin &gt;&gt; n &gt;&gt; k;
+    a.resize(n);
+    ll lo = 0, hi = 0;
+    for (auto &amp;v : a) { cin &gt;&gt; v; lo = max(lo, v); hi += v; }
+    ll ans = hi;
+    while (lo &lt;= hi) {
+        ll mid = lo + (hi - lo) / 2;
+        if (check(mid)) { ans = mid; hi = mid - 1; }   // đúng: thử tổng nhỏ hơn
+        else lo = mid + 1;
+    }
+    cout &lt;&lt; ans &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 3
+2 4 7 3 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">8</code></pre></div>
+    </div>
+
+    <h3>2. “Nhỏ nhất là lớn nhất”: Aggressive Cows</h3>
+    <p><strong>Đề.</strong> Có <span class="math">n</span> chuồng trên một đường thẳng ở các vị trí <span class="math">x<sub>i</sub></span>. Đặt <span class="math">c</span> con bò vào <span class="math">c</span> chuồng khác nhau sao cho khoảng cách giữa hai con gần nhau nhất là lớn nhất (SPOJ AGGRCOW).</p>
+    <ul>
+      <li><strong>Miền:</strong> <span class="math">lo = 1</span> (các vị trí khác nhau), <span class="math">hi = x<sub>max</sub> − x<sub>min</sub></span>.</li>
+      <li><strong>check(d):</strong> “đặt được <span class="math">c</span> con sao cho hai con bất kỳ cách nhau ít nhất <span class="math">d</span> không?”. Sắp xếp vị trí, đặt con đầu ở chuồng trái nhất, rồi đi sang phải: chuồng nào cách con vừa đặt ít nhất <span class="math">d</span> thì đặt thêm một con. Đặt càng sớm càng chừa nhiều chỗ cho các con sau, nên tham lam này đặt được nhiều bò nhất.</li>
+      <li><strong>Đơn điệu:</strong> “nếu giữ được khoảng cách <span class="math">d</span> thì giữ được mọi khoảng cách nhỏ hơn <span class="math">d</span>”, nên <code>check</code> có dạng đúng … đúng sai … sai. Dùng dạng B (tìm lớn nhất).</li>
+    </ul>
+    <p>Chạy tay với các chuồng ở 1, 2, 8, 4, 9 (sau khi sắp xếp: 1, 2, 4, 8, 9) và <span class="math">c = 3</span>. Miền <span class="math">[1, 8]</span>.</p>
+    <table class="trace">
+      <thead><tr><th>Lượt</th><th>lo</th><th>hi</th><th>mid</th><th>Các chuồng được chọn</th><th>Số bò</th><th>check</th><th>ans</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>1</td><td>8</td><td>4</td><td>1, 8</td><td>2</td><td>sai</td><td>—</td></tr>
+        <tr><td>2</td><td>1</td><td>3</td><td>2</td><td>1, 4, 8</td><td>3</td><td>đúng</td><td>2</td></tr>
+        <tr class="hl"><td>3</td><td>3</td><td>3</td><td>3</td><td>1, 4, 8</td><td>3</td><td>đúng</td><td>3</td></tr>
+      </tbody>
+    </table>
+    <p>Sau lượt 3, <span class="math">lo = 4 &gt; hi = 3</span>, dừng. Đáp án 3: đặt bò ở 1, 4, 8, hai con gần nhất cách nhau 3. Hàm <code>check</code> chỉ khác Array Division ở vòng lặp:</p>
+<pre><code class="language-cpp">// x đã sắp xếp tăng dần. Đặt được c con bò cách nhau ít nhất d không?
+bool check(ll d) {
+    int placed = 1;          // con đầu tiên ở chuồng trái nhất
+    ll last = x[0];
+    for (int i = 1; i &lt; n; i++) {
+        if (x[i] - last &gt;= d) { placed++; last = x[i]; }
+        if (placed &gt;= c) return true;
+    }
+    return false;
+}</code></pre>
+
+    <h3>3. Thời gian nhỏ nhất: Factory Machines (cẩn thận tràn số)</h3>
+    <p><strong>Đề.</strong> Có <span class="math">n</span> máy, máy <span class="math">i</span> làm một sản phẩm mất <span class="math">k<sub>i</sub></span> giây, các máy chạy cùng lúc. Hỏi ít nhất bao nhiêu giây để làm đủ <span class="math">t</span> sản phẩm (CSES 1620, <span class="math">n ≤ 2 · 10<sup>5</sup></span>, <span class="math">t, k<sub>i</sub> ≤ 10<sup>9</sup></span>).</p>
+    <ul>
+      <li><strong>check(T):</strong> trong <span class="math">T</span> giây, máy <span class="math">i</span> làm được <span class="math">⌊T / k<sub>i</sub>⌋</span> sản phẩm. Đúng nếu tổng ≥ <span class="math">t</span>.</li>
+      <li><strong>Đơn điệu:</strong> “thêm thời gian thì không máy nào làm được ít đi”. Dạng A.</li>
+      <li><strong>Miền:</strong> <span class="math">lo = 1</span>, <span class="math">hi = min(k<sub>i</sub>) · t</span>: chỉ riêng máy nhanh nhất làm hết cũng xong trong thời gian này. Lớn nhất là 10<sup>9</sup> · 10<sup>9</sup> = 10<sup>18</sup>, vẫn vừa <code>long long</code> (tối đa khoảng 9,2 · 10<sup>18</sup>).</li>
+    </ul>
+    <div class="callout danger"><p class="callout-title">Bẫy tràn số trong check</p><p>Với <span class="math">T = 10<sup>18</sup></span> và 2 · 10<sup>5</sup> máy đều có <span class="math">k<sub>i</sub> = 1</span>, tổng <span class="math">Σ T / k<sub>i</sub></span> bằng 2 · 10<sup>23</sup>, vượt xa giới hạn <code>long long</code>. Tổng bị tràn thành số âm, <code>check</code> trả lời sai. Cách sửa: <strong>dừng sớm</strong> ngay khi tổng đã ≥ <span class="math">t</span>. Vì mỗi số hạng cộng vào khi tổng còn nhỏ hơn <span class="math">t ≤ 10<sup>9</sup></span> thì không vượt 10<sup>18</sup>, nên tổng không bao giờ quá khoảng 1,000000001 · 10<sup>18</sup>.</p></div>
+    <figure class="code">
+      <figcaption><span class="fn">factory_machines.cpp</span> Thời gian ít nhất để làm t sản phẩm</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+
+int n;
+ll t;
+vector&lt;ll&gt; k;
+
+// Trong T giây, các máy làm được ít nhất t sản phẩm không?
+bool check(ll T) {
+    ll made = 0;
+    for (int i = 0; i &lt; n; i++) {
+        made += T / k[i];
+        if (made &gt;= t) return true;   // dừng sớm, tránh tràn số
+    }
+    return false;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin &gt;&gt; n &gt;&gt; t;
+    k.resize(n);
+    for (auto &amp;v : k) cin &gt;&gt; v;
+    ll lo = 1, hi = *min_element(k.begin(), k.end()) * t, ans = hi;  // máy nhanh nhất làm một mình
+    while (lo &lt;= hi) {
+        ll mid = lo + (hi - lo) / 2;
+        if (check(mid)) { ans = mid; hi = mid - 1; }
+        else lo = mid + 1;
+    }
+    cout &lt;&lt; ans &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3 7
+3 2 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">8</code></pre></div>
+    </div>
+    <p>Kiểm tra: trong 8 giây, ba máy làm được 2 + 4 + 1 = 7 sản phẩm, đủ; trong 7 giây chỉ được 2 + 3 + 1 = 6, thiếu.</p>
+
+    <h3>4. Phần tử thứ k: Bảng cửu chương</h3>
+    <p>Bảng <span class="math">n × n</span> có ô <span class="math">(i, j)</span> bằng <span class="math">i · j</span>. Tìm phần tử ở giữa khi xếp tăng dần (CSES 2422, <span class="math">n</span> lẻ, <span class="math">n &lt; 10<sup>6</sup></span>). Bảng có tới 10<sup>12</sup> ô, không thể liệt kê. Ta chặt nhị phân trên <em>giá trị</em> <span class="math">x</span>: “có ít nhất <span class="math">(n² + 1) / 2</span> ô có giá trị ≤ <span class="math">x</span> không?”. Hàng <span class="math">i</span> có <span class="math">min(n, ⌊x / i⌋)</span> ô ≤ <span class="math">x</span>, nên <code>check</code> chạy <span class="bigo">O(n)</span>. Số <span class="math">x</span> nhỏ nhất làm <code>check</code> đúng chính là phần tử cần tìm. Ví dụ <span class="math">n = 3</span>: với <span class="math">x = 2</span> đếm được 2 + 1 + 0 = 3 ô (chưa đủ 5); với <span class="math">x = 3</span> đếm được 3 + 1 + 1 = 5 ô (đủ). Đáp án 3.</p>
+
+    <h3>5. Chặt nhị phân trên số thực</h3>
+    <p>Khi đáp án là số thực (độ dài, diện tích, thời gian…), miền không còn là các số nguyên rời nhau. Ta vẫn chia đôi, nhưng gán thẳng <span class="math">lo = mid</span> hoặc <span class="math">hi = mid</span> (không có <span class="math">± 1</span>) và <strong>lặp một số lần cố định</strong>, thường 60 đến 100 lần, thay vì so <span class="math">lo ≤ hi</span>.</p>
+    <p>Vì sao 100 lần là đủ? Sau mỗi lần, độ dài miền giảm một nửa. Sau 100 lần, miền còn <span class="frac"><span>hi − lo</span><span>2<sup>100</sup></span></span>, mà 2<sup>100</sup> ≈ 1,27 · 10<sup>30</sup>. Dù miền ban đầu rộng 10<sup>9</sup>, sai số còn khoảng 10<sup>−21</sup>, nhỏ hơn nhiều so với độ chính xác của kiểu <code>double</code>. Với 60 lần, 2<sup>60</sup> ≈ 1,15 · 10<sup>18</sup>, thường cũng đủ.</p>
+    <p><strong>Ví dụ 1: căn bậc hai.</strong> Tìm <span class="math">√x</span> mà không dùng hàm <code>sqrt</code>. Hàm <span class="math">mid²</span> tăng khi <span class="math">mid ≥ 0</span>, nên “<span class="math">mid² ≥ x</span>?” có dạng sai … sai đúng … đúng.</p>
+    <figure class="code">
+      <figcaption><span class="fn">can_bac_hai.cpp</span> Căn bậc hai bằng chặt nhị phân trên số thực</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    double x;
+    cin &gt;&gt; x;
+    double lo = 0, hi = max(1.0, x);     // căn của x nằm trong [0, max(1, x)]
+    for (int it = 0; it &lt; 100; it++) {   // lặp cố định 100 lần, không so sánh lo &lt; hi
+        double mid = (lo + hi) / 2;
+        if (mid * mid &gt;= x) hi = mid;    // mid đủ lớn: căn nằm bên trái
+        else lo = mid;
+    }
+    cout &lt;&lt; fixed &lt;&lt; setprecision(9) &lt;&lt; hi &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1.414213562</code></pre></div>
+    </div>
+    <p>Chú ý <span class="math">hi = max(1, x)</span>: với <span class="math">x = 0,25</span> thì <span class="math">√x = 0,5 &gt; x</span>, nên lấy <span class="math">hi = x</span> sẽ sai.</p>
+    <p><strong>Ví dụ 2: chia bánh.</strong> Có các bánh tròn bán kính 4, 3, 3 và 4 người. Mỗi người nhận <em>một miếng</em> cắt từ <em>một</em> chiếc bánh, các miếng có diện tích bằng nhau. Hỏi diện tích lớn nhất <span class="math">V</span>? <code>check(V)</code>: bánh bán kính <span class="math">r</span> cho được <span class="math">⌊πr² / V⌋</span> miếng; đúng nếu tổng số miếng ≥ 4. Miếng càng to thì càng ít miếng, nên <code>check</code> có dạng đúng … đúng sai … sai. Chặt 100 lần trên <span class="math">[0, π · 4²]</span> được <span class="math">V = 8π ≈ 25,1327</span>: bánh to (diện tích <span class="math">16π</span>) chia đôi, mỗi bánh nhỏ (<span class="math">9π</span>) cho một miếng, vừa đủ 4 miếng.</p>
+<pre><code class="language-cpp">for (int it = 0; it &lt; 100; it++) {
+    double mid = (lo + hi) / 2;
+    long long cnt = 0;
+    for (double x : r) cnt += (long long)(PI * x * x / mid);  // số miếng mỗi bánh
+    if (cnt &gt;= people) lo = mid;   // đủ miếng: thử miếng to hơn
+    else hi = mid;
+}</code></pre>
+
+    <h3>6. Chọn cận hi cho đúng</h3>
+    <p><span class="math">hi</span> phải <strong>đủ lớn</strong> để chứa đáp án và <strong>đủ nhỏ</strong> để <code>check(hi)</code> không tràn số. Cách nghĩ: “trường hợp tệ nhất, đáp án lớn đến đâu?”.</p>
+    <table>
+      <thead><tr><th>Bài</th><th>hi hợp lý</th><th>Lý do</th></tr></thead>
+      <tbody>
+        <tr><td>Cắt gỗ</td><td><span class="math">max h<sub>i</sub></span></td><td>Cao hơn cây cao nhất thì không cắt được gì.</td></tr>
+        <tr><td>Array Division</td><td><span class="math">Σ x<sub>i</sub></span></td><td>Một đoạn duy nhất chứa cả mảng.</td></tr>
+        <tr><td>Aggressive Cows</td><td><span class="math">x<sub>max</sub> − x<sub>min</sub></span></td><td>Hai con không thể cách xa hơn hai chuồng ở hai đầu.</td></tr>
+        <tr><td>Factory Machines</td><td><span class="math">min k<sub>i</sub> · t</span></td><td>Máy nhanh nhất làm một mình cũng xong.</td></tr>
+        <tr><td>Bảng cửu chương</td><td><span class="math">n²</span></td><td>Số lớn nhất trong bảng.</td></tr>
+      </tbody>
+    </table>
+    <p>Nếu lười, em có thể đặt <span class="math">hi = 2 · 10<sup>18</sup></span> như mẫu trong giáo án, nhưng khi đó phải chắc rằng <code>check</code> không nhân <span class="math">mid</span> với số nào (vì 2 · 10<sup>18</sup> · 5 đã tràn).</p>
+
+    <h3>7. Kết hợp với thuật toán khác (nâng cao)</h3>
+    <p>Hàm <code>check</code> không nhất thiết là tham lam. Bài <em>Mountain Walking</em> (VNOJ MTWALK) hỏi đường đi trên lưới sao cho chênh lệch độ cao lớn nhất và nhỏ nhất trên đường là nhỏ nhất. Ta chặt nhị phân chênh lệch <span class="math">D</span>; <code>check(D)</code> thử mọi mức đáy <span class="math">a</span> và dùng loang (BFS) chỉ đi qua các ô có độ cao trong <span class="math">[a, a + D]</span>. Bài <em>Cắt cây</em> (VNOJ VMCUT2) thì <code>check</code> là một lần duyệt cây. Khi học xong các chuyên đề sau, em sẽ gặp lại chặt nhị phân trong dãy con tăng dài nhất và đường đi trên đồ thị.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">1. Tính mid bị tràn số</p><p>Viết <code>mid = (lo + hi) / 2</code> với <span class="math">lo, hi</span> gần 2 · 10<sup>18</sup> thì <code>lo + hi</code> vượt <code>long long</code>. Luôn viết <code>mid = lo + (hi - lo) / 2</code>. Với <code>int</code> cũng vậy: <span class="math">lo + hi</span> có thể vượt khoảng 2,1 · 10<sup>9</sup>.</p></div>
+    <div class="callout danger"><p class="callout-title">2. Vòng lặp vô hạn vì tự chế mẫu</p><p>Mẫu <code>while (lo &lt; hi) { mid = (lo + hi) / 2; if (check(mid)) lo = mid; else hi = mid - 1; }</code> sẽ lặp mãi khi <span class="math">hi = lo + 1</span> và <code>check(lo)</code> đúng: <span class="math">mid = lo</span>, gán <span class="math">lo = mid</span> chẳng thay đổi gì. Cách sửa an toàn nhất: dùng đúng một mẫu có <code>ans</code>, <code>while (lo &lt;= hi)</code>, luôn <code>mid + 1</code> và <code>mid - 1</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">3. Hàm check không đơn điệu</p><p>Hỏi “có đúng bằng <span class="math">x</span> không?” hay “chia được thành <em>đúng</em> <span class="math">k</span> đoạn không?” thường không đơn điệu, và chặt nhị phân sẽ trả lời sai mà không báo lỗi. Luôn đặt câu hỏi dạng “ít nhất / nhiều nhất” (“≥ m mét”, “≤ k đoạn”) và viết được câu chứng minh đơn điệu.</p></div>
+    <div class="callout warn"><p class="callout-title">4. Chọn sai cận lo, hi</p><p><span class="math">hi</span> quá nhỏ thì đáp án nằm ngoài miền, chương trình in ra <code>ans</code> sai. <span class="math">hi</span> quá lớn thì <code>check</code> có thể tràn số. Với Array Division, nếu đặt <span class="math">lo = 0</span> mà quên kiểm tra <code>a[i] &gt; S</code> trong <code>check</code>, tham lam sẽ đếm sai số đoạn.</p></div>
+    <div class="callout warn"><p class="callout-title">5. Tràn số bên trong check</p><p>Tổng gỗ, tổng sản phẩm, tổng mảng đều có thể vượt 2,1 · 10<sup>9</sup>: dùng <code>long long</code>. Nếu tổng có thể vượt cả 9,2 · 10<sup>18</sup> (như Factory Machines), hãy <strong>dừng sớm</strong> khi đã đạt yêu cầu.</p></div>
+    <div class="callout warn"><p class="callout-title">6. In mid thay vì ans, hoặc nhầm dạng A với dạng B</p><p>Khi vòng lặp dừng, <span class="math">mid</span> là giá trị thử cuối cùng, có thể là giá trị <em>sai</em>. Luôn in <code>ans</code>. Trước khi viết, tự hỏi: “check đúng thì em muốn đi sang trái (tìm nhỏ nhất) hay sang phải (tìm lớn nhất)?”.</p></div>
+    <div class="callout warn"><p class="callout-title">7. Chặt số thực bằng while (hi - lo &gt; eps)</p><p>Với số lớn, ví dụ khoảng 10<sup>9</sup>, hai số <code>double</code> liền nhau cách nhau khoảng 1,2 · 10<sup>−7</sup>. Nếu <span class="math">eps = 10<sup>−9</sup></span> thì <span class="math">hi − lo</span> không bao giờ nhỏ hơn <span class="math">eps</span>, chương trình lặp mãi. Lặp cố định 100 lần thì không bao giờ gặp lỗi này.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo kiểm tra nhanh</p><p>Viết thêm một vòng lặp “ngây thơ” thử mọi <span class="math">x</span> từ <span class="math">lo</span> đến <span class="math">hi</span> cho dữ liệu nhỏ, rồi so với kết quả chặt nhị phân. Nếu hai cách khác nhau, in hết dãy <code>check(lo), check(lo+1), …</code> ra xem có đúng dạng “sai … sai đúng … đúng” không.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <p>Làm các câu dưới đây trước khi xem đáp án. Với câu tự luận, em hãy viết ra giấy đủ ba dòng: miền, check, đơn điệu, rồi mới chạy tay.</p>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Bài Cắt gỗ với các cây 20, 15, 10, 17 và m = 7. Khi H tăng từ 0 đến 20, dãy giá trị của check(H) = “wood(H) ≥ 7” có dạng nào, và em dùng mẫu nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. sai … sai đúng … đúng, dùng dạng A (tìm nhỏ nhất)</button>
+        <button type="button" class="quiz-opt" data-correct>B. đúng … đúng sai … sai, dùng dạng B (tìm lớn nhất)</button>
+        <button type="button" class="quiz-opt">C. Không đơn điệu, phải thử hết mọi H</button>
+        <button type="button" class="quiz-opt">D. đúng … đúng sai … sai, dùng dạng A (tìm nhỏ nhất)</button>
+      </div>
+      <p class="quiz-explain">Nâng lưỡi cưa thì gỗ không tăng, nên các H nhỏ đều đủ gỗ còn các H lớn thì thiếu: đúng … đúng sai … sai (đúng với H từ 0 đến 15, sai từ 16 đến 20). Ta cần H lớn nhất còn đúng, nên dùng dạng B: check đúng thì ghi ans rồi đặt lo = mid + 1.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Miền đáp án là [1, 10<sup>9</sup>] và mỗi lần gọi check tốn 2 · 10<sup>5</sup> phép tính. Tổng số phép tính của cả bài khoảng bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 2 · 10<sup>5</sup></button>
+        <button type="button" class="quiz-opt" data-correct>B. 6 · 10<sup>6</sup></button>
+        <button type="button" class="quiz-opt">C. 2 · 10<sup>14</sup></button>
+        <button type="button" class="quiz-opt">D. 10<sup>9</sup></button>
+      </div>
+      <p class="quiz-explain">Vì 2<sup>30</sup> ≈ 1,07 · 10<sup>9</sup>, vòng chặt nhị phân gọi check khoảng 30 lần. 30 · 2 · 10<sup>5</sup> = 6 · 10<sup>6</sup> phép tính, chạy rất nhanh. Phương án C là cách thử từng giá trị.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Câu hỏi nào dưới đây <em>không</em> dùng làm check để chặt nhị phân được, vì nó không đơn điệu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. “Chia mảng được thành không quá k đoạn, mỗi đoạn tổng ≤ S không?”</button>
+        <button type="button" class="quiz-opt">B. “Trong T giây, các máy làm được ít nhất t sản phẩm không?”</button>
+        <button type="button" class="quiz-opt" data-correct>C. “Đặt lưỡi cưa ở độ cao H thì thu được đúng m mét gỗ không?”</button>
+        <button type="button" class="quiz-opt">D. “Đặt được c con bò cách nhau ít nhất d không?”</button>
+      </div>
+      <p class="quiz-explain">Với cây 20, 15, 10, 17 và m = 7, “thu được đúng 7 mét” chỉ đúng tại H = 15 (wood(14) = 10, wood(16) = 5). Dãy check là sai … sai đúng sai … sai, không có một điểm đổi chiều duy nhất. Ba câu còn lại đều là câu hỏi dạng “ít nhất / nhiều nhất” nên đơn điệu.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Factory Machines với hai máy k = [2, 3] và cần t = 5 sản phẩm. Đáp án là bao nhiêu giây?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 5</button>
+        <button type="button" class="quiz-opt" data-correct>B. 6</button>
+        <button type="button" class="quiz-opt">C. 7</button>
+        <button type="button" class="quiz-opt">D. 10</button>
+      </div>
+      <p class="quiz-explain">Trong 6 giây: 6/2 + 6/3 = 3 + 2 = 5 sản phẩm, đủ. Trong 5 giây: ⌊5/2⌋ + ⌊5/3⌋ = 2 + 1 = 3, thiếu. Nên 6 là thời gian nhỏ nhất. Phương án D là hi = min k · t = 2 · 5 = 10, chỉ là cận trên.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Đoạn code chặt số thực nào an toàn nhất?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. <code>while (hi - lo &gt; 1e-12) { … }</code></button>
+        <button type="button" class="quiz-opt">B. <code>while (lo &lt;= hi) { … lo = mid + 1; … }</code></button>
+        <button type="button" class="quiz-opt" data-correct>C. <code>for (int it = 0; it &lt; 100; it++) { … lo = mid; … hi = mid; }</code></button>
+      </div>
+      <p class="quiz-explain">A có thể lặp mãi khi các số lớn (hai số double liền nhau đã cách nhau hơn 10<sup>−12</sup>). B dùng ± 1 nên nhảy qua mất mọi giá trị lẻ. C lặp đúng 100 lần, độ dài miền giảm 2<sup>100</sup> lần, luôn dừng và đủ chính xác.</p>
+    </div>
+
+    <p><strong>Câu 6.</strong> Chạy tay Array Division với mảng <span class="math">[5, 1, 4, 2, 3]</span> và <span class="math">k = 2</span>. Ghi miền <span class="math">[lo, hi]</span>, bảng các lượt (lo, hi, mid, cách chia tham lam, check, ans) và đáp án.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Miền: <span class="math">lo = 5</span> (số lớn nhất), <span class="math">hi = 15</span> (tổng mảng). Dạng A, vì cho phép tổng lớn hơn thì cần ít đoạn hơn.</p>
+      <table class="trace">
+        <thead><tr><th>Lượt</th><th>lo</th><th>hi</th><th>mid</th><th>Cách chia tham lam</th><th>Số đoạn</th><th>check</th><th>ans</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>5</td><td>15</td><td>10</td><td>[5, 1, 4] [2, 3]</td><td>2</td><td>đúng</td><td>10</td></tr>
+          <tr><td>2</td><td>5</td><td>9</td><td>7</td><td>[5, 1] [4, 2] [3]</td><td>3</td><td>sai</td><td>10</td></tr>
+          <tr><td>3</td><td>8</td><td>9</td><td>8</td><td>[5, 1] [4, 2] [3]</td><td>3</td><td>sai</td><td>10</td></tr>
+          <tr class="hl"><td>4</td><td>9</td><td>9</td><td>9</td><td>[5, 1] [4, 2, 3]</td><td>2</td><td>đúng</td><td>9</td></tr>
+        </tbody>
+      </table>
+      <p>Sau lượt 4, <span class="math">lo = 9 &gt; hi = 8</span>, dừng. Đáp án 9: chia <span class="math">[5, 1] [4, 2, 3]</span> được tổng 6 và 9. Với giới hạn 8 thì phải dùng 3 đoạn nên không làm tốt hơn được.</p>
+    </details>
+
+    <p><strong>Câu 7.</strong> Có 5 chuồng ở các vị trí 1, 3, 6, 10, 15 và cần đặt <span class="math">c = 3</span> con bò. Khoảng cách nhỏ nhất giữa hai con lớn nhất là bao nhiêu? Chạy tay chặt nhị phân trên miền <span class="math">[1, 14]</span>.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Dạng B (tìm lớn nhất). Hàm check(d) đặt con đầu ở 1, rồi đặt tiếp ở chuồng đầu tiên cách con vừa đặt ít nhất <span class="math">d</span>.</p>
+      <ul>
+        <li>Lượt 1: lo = 1, hi = 14, mid = 7. Đặt ở 1, 10 (15 − 10 = 5 &lt; 7). Chỉ 2 con, <strong>sai</strong>, hi = 6.</li>
+        <li>Lượt 2: lo = 1, hi = 6, mid = 3. Đặt ở 1, 6, 10, 15. Đủ 3 con, <strong>đúng</strong>, ans = 3, lo = 4.</li>
+        <li>Lượt 3: lo = 4, hi = 6, mid = 5. Đặt ở 1, 6, 15 (vì 10 − 6 = 4 &lt; 5). Đủ 3 con, <strong>đúng</strong>, ans = 5, lo = 6.</li>
+        <li>Lượt 4: lo = 6, hi = 6, mid = 6. Đặt ở 1, 10 (6 − 1 = 5 &lt; 6, 15 − 10 = 5 &lt; 6). Chỉ 2 con, <strong>sai</strong>, hi = 5.</li>
+      </ul>
+      <p>lo = 6 &gt; hi = 5, dừng. Đáp án 5: đặt bò ở 1, 6, 15, hai con gần nhất cách nhau 5.</p>
+    </details>
+
+    <p><strong>Câu 8.</strong> Bạn Minh đặt <span class="math">hi = 2 · 10<sup>18</sup></span> cho bài Factory Machines nhưng quên dừng sớm trong check. Với 2 · 10<sup>5</sup> máy cùng <span class="math">k<sub>i</sub> = 1</span>, chuyện gì xảy ra ở lượt đầu tiên?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Lượt đầu, <span class="math">mid ≈ 10<sup>18</sup></span>. Mỗi máy góp <span class="math">10<sup>18</sup></span> sản phẩm, nên chỉ sau 10 máy tổng đã vượt 9,2 · 10<sup>18</sup> và <code>long long</code> bị tràn (thường thành số âm). Check có thể trả lời <em>sai</em> dù thật ra thừa sức, làm chặt nhị phân đi nhầm sang phải và in kết quả sai. Sửa: thêm <code>if (made &gt;= t) return true;</code> ngay sau mỗi phép cộng.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Các bài được xếp từ dễ đến khó. Bài nào cũng vậy: em viết ba dòng miền, check, đơn điệu trước, rồi dùng đúng mẫu có <code>ans</code>. Các bài CSES có bản dịch tiếng Việt trên LQDOJ.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://www.spoj.com/problems/EKO/">EKO – Eko</a>
+          <span class="judge">SPOJ</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đúng bài Cắt gỗ trong bài học: <span class="math">n ≤ 10<sup>6</sup></span> cây, tìm độ cao lưỡi cưa lớn nhất mà vẫn thu được ít nhất <span class="math">m</span> mét gỗ.</p>
+        <p class="ex-skill"><b>Luyện:</b> mẫu dạng B, tổng dùng <code>long long</code>, đọc dữ liệu nhanh.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Miền <span class="math">[0, max h]</span>. Check cộng <span class="math">h<sub>i</sub> − H</span> của các cây cao hơn <span class="math">H</span> và dừng sớm khi đủ <span class="math">m</span>. Nhớ <code>ios::sync_with_stdio(false)</code> vì có tới một triệu số.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1620">CSES – Factory Machines | Máy trong xưởng</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Có <span class="math">n</span> máy chạy song song, máy <span class="math">i</span> làm một sản phẩm mất <span class="math">k<sub>i</sub></span> giây. Tìm thời gian ít nhất để làm đủ <span class="math">t</span> sản phẩm.</p>
+        <p class="ex-skill"><b>Luyện:</b> mẫu dạng A, chọn cận <span class="math">hi</span>, chống tràn số bằng dừng sớm.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Check(T) = tổng <span class="math">⌊T / k<sub>i</sub>⌋ ≥ t</span>. Lấy <span class="math">hi = min k<sub>i</sub> · t ≤ 10<sup>18</sup></span>. Cộng tới đâu so với <span class="math">t</span> tới đó, đủ thì trả về ngay.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1085">CSES – Array Division | Chia mảng</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Chia mảng <span class="math">n ≤ 2 · 10<sup>5</sup></span> số dương thành <span class="math">k</span> đoạn liên tiếp sao cho tổng lớn nhất của các đoạn là nhỏ nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> dạng “lớn nhất là nhỏ nhất”, check tham lam đếm số đoạn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Miền <span class="math">[max x, Σ x]</span>. Check(S): nhét số vào đoạn hiện tại, sắp vượt <span class="math">S</span> thì mở đoạn mới; đúng nếu số đoạn ≤ <span class="math">k</span>. Hỏi “không quá k” chứ không phải “đúng k”.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://www.spoj.com/problems/AGGRCOW/">AGGRCOW – Aggressive cows</a>
+          <span class="judge">SPOJ</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có <span class="math">n</span> chuồng trên một đường thẳng, đặt <span class="math">c</span> con bò vào các chuồng sao cho khoảng cách giữa hai con gần nhau nhất là lớn nhất. Một file có nhiều bộ test.</p>
+        <p class="ex-skill"><b>Luyện:</b> dạng “nhỏ nhất là lớn nhất”, sắp xếp trước rồi check tham lam.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp xếp vị trí một lần cho mỗi bộ test. Miền <span class="math">[1, x<sub>max</sub> − x<sub>min</sub>]</span>, dạng B. Check(d): đặt con đầu ở chuồng trái nhất, đi sang phải, chuồng nào cách con vừa đặt ≥ <span class="math">d</span> thì đặt thêm.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/26ts10hye5">Trạm tín hiệu (TS10 Hưng Yên 2026)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Trên một đường thẳng có <span class="math">n</span> ngôi nhà và <span class="math">m</span> trạm (vị trí đã tăng dần). Mọi trạm có cùng cường độ <span class="math">x</span>, phát tới các nhà cách trạm không quá <span class="math">x</span>. Tìm <span class="math">x</span> nhỏ nhất để nhà nào cũng có tín hiệu.</p>
+        <p class="ex-skill"><b>Luyện:</b> đề tuyển sinh lớp 10, check bằng hai con trỏ trên hai dãy đã sắp xếp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tăng <span class="math">x</span> thì vùng phủ chỉ rộng ra, nên dạng A trên <span class="math">[1, 10<sup>9</sup>]</span>. Check(x): cho con trỏ <span class="math">j</span> chạy trên các trạm; với mỗi nhà <span class="math">a<sub>i</sub></span>, tăng <span class="math">j</span> khi <span class="math">b<sub>j</sub> + x &lt; a<sub>i</sub></span>, rồi xem <span class="math">|a<sub>i</sub> − b<sub>j</sub>| ≤ x</span> không. Bài này còn có cách giải trực tiếp, nhưng em hãy luyện bằng chặt nhị phân.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/bedao_m21_c">Bedao Mini Contest 21 – Cắt dây</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có <span class="math">n</span> sợi dây và được cắt <span class="math">k</span> lần (cắt ở vị trí bất kỳ, kể cả không nguyên). Tìm độ dài nhỏ nhất có thể của sợi dài nhất, làm tròn lên thành số nguyên.</p>
+        <p class="ex-skill"><b>Luyện:</b> đổi bài số thực về số nguyên, đếm số phép cắt cần thiết.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Để mọi đoạn của sợi dài <span class="math">A</span> không quá <span class="math">S</span>, cần đúng <span class="math">⌈A / S⌉ − 1</span> nhát cắt. Check(S): tổng số nhát ≤ <span class="math">k</span> (tổng có thể tới 2 · 10<sup>14</sup>, dùng <code>long long</code>). Vì đề bảo làm tròn lên, em chỉ cần chặt <span class="math">S</span> nguyên trên <span class="math">[1, max A]</span> và tìm <span class="math">S</span> nhỏ nhất làm check đúng.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses2422">CSES – Multiplication Table | Bảng cửu chương</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Tìm phần tử đứng giữa khi xếp tăng dần mọi số của bảng cửu chương <span class="math">n × n</span>, với <span class="math">n</span> lẻ và <span class="math">n &lt; 10<sup>6</sup></span>.</p>
+        <p class="ex-skill"><b>Luyện:</b> chặt nhị phân tìm phần tử thứ k mà không liệt kê.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đếm số ô ≤ <span class="math">x</span>: hàng <span class="math">i</span> có <span class="math">min(n, ⌊x / i⌋)</span> ô. Tìm <span class="math">x</span> nhỏ nhất có số ô đếm được ≥ <span class="math">(n² + 1) / 2</span>. Nhớ <span class="math">n²</span> tới 10<sup>12</sup>, phải dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/distmax">Khoảng cách lớn nhất</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Có <span class="math">N ≤ 2 · 10<sup>5</sup></span> điểm trên mặt phẳng. Khoảng cách giữa hai điểm là <span class="math">min(|x<sub>i</sub> − x<sub>j</sub>|, |y<sub>i</sub> − y<sub>j</sub>|)</span>. Tìm khoảng cách lớn nhất giữa hai điểm bất kỳ.</p>
+        <p class="ex-skill"><b>Luyện:</b> chặt nhị phân kết hợp sắp xếp và hai con trỏ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chặt <span class="math">D</span> trên <span class="math">[0, 10<sup>9</sup>]</span>, dạng B. Check(D): có cặp điểm với <span class="math">|Δx| ≥ D</span> và <span class="math">|Δy| ≥ D</span> không? Sắp xếp theo <span class="math">x</span>; đi qua từng điểm <span class="math">j</span>, dùng con trỏ thứ hai thêm dần các điểm có <span class="math">x ≤ x<sub>j</sub> − D</span> và nhớ <span class="math">y</span> nhỏ nhất, lớn nhất của chúng.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/mtwalk">MTWALK – Mountain Walking</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Đi trên lưới <span class="math">N × N</span> (<span class="math">N ≤ 100</span>, độ cao từ 0 đến 110) từ ô trên trái tới ô dưới phải, sao cho chênh lệch giữa ô cao nhất và thấp nhất trên đường là nhỏ nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> check không phải tham lam mà là loang (BFS) trên lưới.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chặt chênh lệch <span class="math">D</span> trên <span class="math">[0, 110]</span>, dạng A. Check(D): thử mọi mức đáy <span class="math">a</span> từ 0 đến 110; loang từ ô đầu, chỉ đi qua các ô có độ cao trong <span class="math">[a, a + D]</span>. Đến được ô cuối với một <span class="math">a</span> nào đó thì đúng. Nhớ kiểm tra ô đầu cũng nằm trong khoảng.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/basic/binary-search">VNOI Wiki – Tìm kiếm nhị phân</a> (tiếng Việt), có phần tìm kiếm nhị phân trên hàm đơn điệu và tập kết quả.</li>
+      <li><a href="binary-search.html">Bài 5.1 – Tìm kiếm nhị phân trên mảng</a> (cùng trang web), nên đọc trước để nắm mẫu có biến <code>ans</code>.</li>
+      <li><a href="https://cp-algorithms.com/num_methods/binary_search.html">CP-Algorithms – Binary Search</a> (tiếng Anh), có phần chặt trên số thực và tìm kiếm trên đáp án.</li>
+      <li><a href="https://usaco.guide/silver/binary-search">USACO Guide – Binary Search</a> (tiếng Anh), nhiều bài luyện chặt nhị phân trên kết quả có lời giải.</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer’s Handbook</a> (tiếng Anh, PDF), mục Binary search và các bài CSES đi kèm.</li>
+      <li><a href="https://cses.fi/problemset/task/1085">CSES – Array Division</a> và <a href="https://cses.fi/problemset/task/2422">CSES – Multiplication Table</a> (bản gốc tiếng Anh của hai bài trong phần bài tập).</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Đổi “đáp án là bao nhiêu?” thành “đáp án <span class="math">x</span> có đạt không?”, rồi chặt nhị phân trên miền đáp án.</li>
+        <li>Ba dòng viết trước khi code: <strong>miền</strong> <span class="math">[lo, hi]</span> chắc chắn chứa đáp án; <strong>check(x)</strong>, thường tham lam <span class="bigo">O(n)</span>; <strong>đơn điệu vì …</strong> (một câu).</li>
+        <li>Mẫu an toàn: <code>while (lo &lt;= hi)</code>, <code>mid = lo + (hi - lo) / 2</code>, check đúng thì ghi <code>ans = mid</code> rồi đi tiếp về phía mình muốn (nhỏ nhất: <code>hi = mid - 1</code>; lớn nhất: <code>lo = mid + 1</code>). In <code>ans</code>.</li>
+        <li>“Lớn nhất là nhỏ nhất” (Array Division) dùng dạng A; “nhỏ nhất là lớn nhất” (Aggressive Cows) và Cắt gỗ dùng dạng B.</li>
+        <li>Check luôn hỏi dạng “ít nhất / không quá”, không hỏi “đúng bằng”.</li>
+        <li>Độ phức tạp <span class="bigo">O(n · log(hi − lo))</span>: miền 10<sup>9</sup> cần 30 lượt, miền 10<sup>18</sup> cần 60 lượt.</li>
+        <li>Chống tràn: dùng <code>long long</code>, chọn <span class="math">hi</span> vừa đủ, dừng sớm trong check khi đã đạt yêu cầu.</li>
+        <li>Số thực: lặp cố định 60–100 lần, gán <code>lo = mid</code> / <code>hi = mid</code>, không dùng <code>while (hi - lo &gt; eps)</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/binary-search-answer.js"></script>
+</body>
+</html>

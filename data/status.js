@@ -1,5 +1,5 @@
 /* data/status.js — SINH TỰ ĐỘNG bởi scripts/validate.py --write-status. Đừng sửa tay. */
-/* 2026-11-08T06:30:04Z */
+/* 2026-11-08T06:34:33Z */
 window.TOPIC_STATUS = {
   "complexity": {
     "ok": true,
@@ -114,10 +114,10 @@ window.TOPIC_STATUS = {
     "interactive": true
   },
   "binary-search-answer": {
-    "ok": false,
-    "exercises": 0,
-    "vi": 0,
-    "words": 5306,
+    "ok": true,
+    "exercises": 9,
+    "vi": 7,
+    "words": 7540,
     "frames": 6,
     "interactive": true
   },
@@ -162,13 +162,28 @@ window.TOPIC_STATUS = {
     "interactive": true
   },
   "lis": {
-    "ok": false
+    "ok": false,
+    "exercises": 0,
+    "vi": 0,
+    "words": 2982,
+    "frames": 17,
+    "interactive": true
   },
   "knapsack": {
-    "ok": false
+    "ok": false,
+    "exercises": 0,
+    "vi": 0,
+    "words": 2484,
+    "frames": 0,
+    "interactive": false
   },
   "graph-dfs": {
-    "ok": false
+    "ok": false,
+    "exercises": 0,
+    "vi": 0,
+    "words": 3417,
+    "frames": 0,
+    "interactive": false
   },
   "bfs": {
     "ok": false
@@ -177,7 +192,12 @@ window.TOPIC_STATUS = {
     "ok": false
   },
   "stl": {
-    "ok": false
+    "ok": false,
+    "exercises": 0,
+    "vi": 0,
+    "words": 3037,
+    "frames": 0,
+    "interactive": false
   },
   "stack-queue": {
     "ok": false

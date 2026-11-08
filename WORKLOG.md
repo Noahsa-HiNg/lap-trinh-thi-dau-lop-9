@@ -60,7 +60,7 @@
 | `20261108T062723Z-topic-difference-array-ae9c` | topic-difference-array | difference-array | done | 2026-11-08T06:27:23Z | 2026-11-08T06:28:55Z | Bổ sung widget assets/js/viz/difference-array.js (thêm thao tác l,r,x; tô D[l], D[r+1]; cộng dồn ra mảng cuối); validate đạt |
 | `20261108T062723Z-topic-dp-grid-6035` | topic-dp-grid | dp-grid | done | 2026-11-08T06:27:23Z | 2026-11-08T06:29:06Z | Widget dp-grid.js xong; trang 9 bài tập (5 VI), 7555 từ, widget có; validate đạt |
 | `20261108T062724Z-topic-backtracking-16b3` | topic-backtracking | backtracking | done | 2026-11-08T06:27:24Z | 2026-11-08T06:29:46Z | Widget N hậu (4–8) assets/js/viz/backtracking.js; validate OK; 11 bài tập (7 VI), 7711 từ |
-| `20261108T062724Z-topic-binary-search-answer-4817` | topic-binary-search-answer | binary-search-answer | active | 2026-11-08T06:27:24Z | — |  |
+| `20261108T062724Z-topic-binary-search-answer-4817` | topic-binary-search-answer | binary-search-answer | done | 2026-11-08T06:27:24Z | 2026-11-08T06:34:16Z | 9 bài tập (7 VI), 7540 từ, 8 câu tự kiểm tra, widget có |
 | `20261108T062727Z-topic-lis-af33` | topic-lis | lis | active | 2026-11-08T06:27:27Z | — |  |
 | `20261108T062729Z-topic-knapsack-cf1f` | topic-knapsack | knapsack | active | 2026-11-08T06:27:29Z | — |  |
 | `20261108T062729Z-topic-bfs-955c` | topic-bfs | bfs | active | 2026-11-08T06:27:29Z | — |  |
@@ -69,6 +69,7 @@
 | `20261108T062740Z-topic-graph-dfs-4680` | topic-graph-dfs | graph-dfs | active | 2026-11-08T06:27:40Z | — |  |
 | `20261108T062927Z-topic-stack-queue-3731` | topic-stack-queue | stack-queue | active | 2026-11-08T06:29:27Z | — |  |
 | `20261108T062935Z-topic-strings-d55b` | topic-strings | strings | active | 2026-11-08T06:29:35Z | — |  |
+| `20261108T063014Z-topic-big-numbers-aaeb` | topic-big-numbers | big-numbers | active | 2026-11-08T06:30:14Z | — |  |
 
 ## Dòng thời gian
 
@@ -325,3 +326,21 @@
 - `06:29:46` **topic-backtracking** · `backtracking` · _hoàn thành_: Đóng phiên (done): Widget N hậu (4–8) assets/js/viz/backtracking.js; validate OK; 11 bài tập (7 VI), 7711 từ
 - `06:29:58` **topic-bfs** · `bfs` · _tiến độ_: Đã tìm xong 10 bài tập (6 VI)
 - `06:30:04` **orchestrator** · _commit_: Commit difference-array, backtracking, dp-grid (đã bổ sung widget)
+- `06:30:10` **topic-graph-dfs** · `graph-dfs` · _tiến độ_: Đã tìm xong 8 bài tập (3 VI) ghi vào exercises.md
+- `06:30:14` **topic-big-numbers** · `big-numbers` · _bắt đầu_: Mở phiên: Soạn chủ đề big-numbers
+- `06:30:25` **topic-knapsack** · `knapsack` · _tiến độ_: Đã tìm xong 9 bài tập (4 VI), lưu exercises.md
+- `06:30:45` **topic-binary-search-answer** · `binary-search-answer` · _tiến độ_: Đã tìm xong 9 bài tập (7 VI), lưu exercises.md
+- `06:30:45` **topic-stl** · `stl` · _tiến độ_: Đã tìm và kiểm chứng 9 bài tập (9 VI: 6 LQDOJ bản dịch CSES, 3 VNOJ)
+- `06:31:31` **topic-strings** · `strings` · _tiến độ_: Đã tìm xong 11 bài tập (8 VI), lưu exercises.md
+- `06:31:48` **topic-flood-fill** · `flood-fill` · _tiến độ_: Đã tìm xong 9 bài tập (3 VI), lưu exercises.md
+- `06:32:20` **topic-lis** · `lis` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `06:32:22` **topic-big-numbers** · `big-numbers` · _tiến độ_: Đã tìm xong 6 bài tập (2 VI)
+- `06:32:53` **topic-stack-queue** · `stack-queue` · _tiến độ_: Đã tìm xong 10 bài tập (5 VI), lưu exercises.md
+- `06:33:37` **topic-lis** · `lis` · _tiến độ_: Viết xong section trực quan (2 stepper, SVG, playground)
+- `06:33:51` **topic-graph-dfs** · `graph-dfs` · _tiến độ_: Viết xong mục tiêu + section 1-5 (kèm bieu-dien)
+- `06:33:58` **topic-binary-search-answer** · `binary-search-answer` · _tiến độ_: Viết xong kiem-tra, bai-tap, tham-khao, tom-tat; widget viết xong, qua node --check
+- `06:34:09` **topic-knapsack** · `knapsack` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `06:34:16` **topic-binary-search-answer** · `binary-search-answer` · _hoàn thành_: validate OK: 9 bài tập (7 VI), 7540 từ, 8 câu hỏi, widget chạy đúng (đã chụp ảnh)
+- `06:34:16` **topic-binary-search-answer** · `binary-search-answer` · _hoàn thành_: Đóng phiên (done): 9 bài tập (7 VI), 7540 từ, 8 câu tự kiểm tra, widget có
+- `06:34:28` **topic-stl** · `stl` · _tiến độ_: Viết xong mục tiêu + section 1-5 (lý thuyết)
+- `06:34:33` **orchestrator** · _commit_: Commit binary-search-answer

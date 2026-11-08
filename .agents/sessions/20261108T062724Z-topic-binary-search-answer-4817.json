@@ -3,10 +3,10 @@
   "agent": "topic-binary-search-answer",
   "task": "Soạn chủ đề binary-search-answer (viết tiếp)",
   "topic": "binary-search-answer",
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-11-08T06:27:24Z",
-  "heartbeat_at": "2026-11-08T06:28:02Z",
-  "ended_at": null,
-  "summary": null
+  "heartbeat_at": "2026-11-08T06:34:16Z",
+  "ended_at": "2026-11-08T06:34:16Z",
+  "summary": "9 bài tập (7 VI), 7540 từ, 8 câu tự kiểm tra, widget có"
 }
