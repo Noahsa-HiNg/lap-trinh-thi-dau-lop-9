@@ -3,10 +3,10 @@
   "agent": "topic-knapsack",
   "task": "Soạn chủ đề knapsack",
   "topic": "knapsack",
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-11-08T06:27:29Z",
-  "heartbeat_at": "2026-11-08T06:37:02Z",
-  "ended_at": null,
-  "summary": null
+  "heartbeat_at": "2026-11-08T06:38:26Z",
+  "ended_at": "2026-11-08T06:38:26Z",
+  "summary": "9 bài tập (4 VI), 6309 từ, 2 stepper (16 khung), widget có"
 }

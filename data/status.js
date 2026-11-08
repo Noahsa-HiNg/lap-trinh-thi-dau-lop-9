@@ -1,5 +1,5 @@
 /* data/status.js — SINH TỰ ĐỘNG bởi scripts/validate.py --write-status. Đừng sửa tay. */
-/* 2026-11-08T06:37:53Z */
+/* 2026-11-08T06:51:08Z */
 window.TOPIC_STATUS = {
   "complexity": {
     "ok": true,
@@ -173,15 +173,15 @@ window.TOPIC_STATUS = {
     "ok": true,
     "exercises": 9,
     "vi": 4,
-    "words": 6305,
+    "words": 6309,
     "frames": 16,
     "interactive": true
   },
   "graph-dfs": {
-    "ok": false,
+    "ok": true,
     "exercises": 8,
     "vi": 3,
-    "words": 7624,
+    "words": 7607,
     "frames": 11,
     "interactive": true
   },
@@ -189,23 +189,23 @@ window.TOPIC_STATUS = {
     "ok": false,
     "exercises": 0,
     "vi": 0,
-    "words": 2625,
-    "frames": 0,
-    "interactive": false
+    "words": 4677,
+    "frames": 10,
+    "interactive": true
   },
   "flood-fill": {
     "ok": false,
     "exercises": 0,
     "vi": 0,
-    "words": 2821,
-    "frames": 0,
-    "interactive": false
+    "words": 4026,
+    "frames": 15,
+    "interactive": true
   },
   "stl": {
     "ok": false,
-    "exercises": 0,
-    "vi": 0,
-    "words": 4970,
+    "exercises": 9,
+    "vi": 9,
+    "words": 7219,
     "frames": 19,
     "interactive": true
   },
@@ -213,7 +213,7 @@ window.TOPIC_STATUS = {
     "ok": false,
     "exercises": 0,
     "vi": 0,
-    "words": 4087,
+    "words": 5767,
     "frames": 27,
     "interactive": true
   },
@@ -229,9 +229,9 @@ window.TOPIC_STATUS = {
     "ok": false,
     "exercises": 0,
     "vi": 0,
-    "words": 2571,
-    "frames": 0,
-    "interactive": false
+    "words": 3565,
+    "frames": 29,
+    "interactive": true
   },
   "lcs": {
     "ok": false

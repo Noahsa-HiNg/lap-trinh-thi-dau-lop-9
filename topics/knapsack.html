@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cái túi &amp; đổi tiền · Thi đấu lớp 9</title>
+<meta name="description" content="Quy hoạch động cái túi 0/1, cái túi không giới hạn, đổi tiền ít đồng nhất, đếm số cách đổi tiền và tập tổng tạo được, có bảng điền tay và widget.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  table.dp-table td.is-active { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); font-weight: 700; }
+  table.dp-table td.is-cmp { background: var(--cmp-soft); }
+  table.dp-table td.is-ok { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
+  table.dp-table td.is-dim { color: var(--ink-3); }
+  table.dp-table th.row-h { text-align: left; white-space: nowrap; }
+  .kn-scroll { overflow-x: auto; }
+</style>
+</head>
+<body data-page="topic" data-topic="knapsack">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Phát biểu được bài toán cái túi 0/1 và giải bằng bảng <code>dp[i][j]</code> “chọn hay không chọn”.</li>
+      <li>Truy vết được những đồ vật đã chọn từ bảng QHĐ.</li>
+      <li>Giải thích được vì sao mảng một chiều phải duyệt <code>j</code> giảm dần, và duyệt tăng dần thì thành bài cái túi không giới hạn.</li>
+      <li>Giải được bài đổi tiền ít đồng nhất, đếm số cách đổi tiền (có thứ tự và không thứ tự), liệt kê các tổng tạo được.</li>
+      <li>Nhận ra khi nào <span class="bigo">O(n·W)</span> quá chậm và biết đổi vai khối lượng với giá trị.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Bài toán cái túi (knapsack) hỏi: có một chiếc túi chịu được khối lượng có hạn và nhiều đồ vật, mỗi vật có khối lượng và giá trị riêng; nên bỏ vào túi những vật nào để tổng giá trị lớn nhất mà túi không rách? Đây là bài quy hoạch động (QHĐ) kinh điển nhất. Bài đổi tiền là “anh em ruột” của nó: thay đồ vật bằng đồng xu, thay khối lượng bằng mệnh giá.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> lớp em đi cắm trại, mỗi bạn được mang một ba lô tối đa 5 kg. Trên bàn có đèn pin (1 kg, rất cần: 1 điểm), bộ nồi (3 kg, 4 điểm) và lều nhỏ (4 kg, 5 điểm). Lấy bộ nồi và lều thì nặng 7 kg, quá sức. Lấy lều với đèn pin được 6 điểm, đúng 5 kg. Khi có 30 món đồ thì không thể ngồi thử hết, em cần một cách làm có hệ thống.</p></div>
+    </div>
+
+    <div class="definition" data-label="Bài toán cái túi 0/1">
+      <p>Có <span class="math">n</span> đồ vật, vật thứ <span class="math">i</span> nặng <span class="math">w<sub>i</sub></span> và có giá trị <span class="math">v<sub>i</sub></span>. Túi chịu tối đa khối lượng <span class="math">W</span>. Mỗi vật chỉ có <b>một cái</b>: hoặc lấy (1), hoặc không lấy (0), không được cắt đôi. Hãy chọn một tập đồ vật có tổng khối lượng không quá <span class="math">W</span> và tổng giá trị lớn nhất.</p>
+    </div>
+
+    <p>Từ bài gốc này sinh ra cả một “họ” bài mà em sẽ học trong trang:</p>
+    <ul>
+      <li><b>Cái túi không giới hạn:</b> mỗi loại đồ vật có vô số cái, lấy bao nhiêu cũng được.</li>
+      <li><b>Đổi tiền ít đồng nhất:</b> có các mệnh giá, mỗi loại vô hạn; cần đúng số tiền <span class="math">x</span> với ít đồng nhất.</li>
+      <li><b>Đếm số cách đổi tiền:</b> có bao nhiêu cách tạo ra tổng <span class="math">x</span>? Ở đây phải phân biệt “1 + 2 và 2 + 1 là một cách hay hai cách”.</li>
+      <li><b>Tập tổng tạo được:</b> với một túi đồng xu, những tổng nào có thể ghép ra?</li>
+    </ul>
+    <p>Em nên học trước <a href="dp-intro.html">Nhập môn quy hoạch động</a> (bốn bước: trạng thái, công thức chuyển, cơ sở, đáp án) và đã quen bảng hai chiều ở <a href="dp-grid.html">QHĐ trên lưới</a>.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Cái túi là mô hình của mọi bài “có ngân sách giới hạn, chọn một số thứ để lợi nhất”:</p>
+    <ul>
+      <li>Có 200 nghìn đồng, mua những cuốn sách nào để tổng số trang nhiều nhất (bài <i>Book Shop</i>).</li>
+      <li>Có 120 phút làm bài thi, mỗi câu tốn một khoảng thời gian và cho một số điểm; chọn làm câu nào.</li>
+      <li>Chia một đống quà thành hai phần có tổng giá trị gần nhau nhất (dùng tập tổng tạo được).</li>
+      <li>Máy bán hàng trả lại tiền thừa bằng ít đồng xu nhất; đếm số cách trả một số tiền.</li>
+    </ul>
+    <p>Trong đề thi học sinh giỏi THCS, bài cái túi hay đổi tiền thường là bài phân loại: làm thử mọi cách chỉ được một phần điểm, làm QHĐ mới được trọn điểm.</p>
+
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p>
+      <p>Đề có cụm “chọn một số vật”, “tổng khối lượng (chi phí, thời gian) không vượt quá W”, “mỗi vật dùng nhiều nhất một lần” hoặc “mỗi loại dùng không giới hạn”, “ít đồng nhất”, “có bao nhiêu cách tạo ra tổng”. Giới hạn điển hình: <span class="math">n ≤ 100…1000</span> và <span class="math">W ≤ 10<sup>5</sup>…10<sup>6</sup></span>. Tích <span class="math">n·W</span> khoảng <span class="math">10<sup>7</sup>…10<sup>8</sup></span> là gợi ý rất mạnh.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Đề hỏi</th><th>Dạng</th><th>Vòng lặp trong</th></tr></thead>
+      <tbody>
+        <tr><td>Mỗi vật một cái, tối đa giá trị</td><td>Cái túi 0/1</td><td><code>j</code> giảm từ W về w</td></tr>
+        <tr><td>Mỗi loại vô hạn, tối đa giá trị</td><td>Cái túi không giới hạn</td><td><code>j</code> tăng từ w lên W</td></tr>
+        <tr><td>Đúng tổng x, ít đồng nhất</td><td>Đổi tiền (min)</td><td><code>s</code> tăng, khởi tạo ∞</td></tr>
+        <tr><td>Số cách, 1+2 khác 2+1</td><td>Đếm có thứ tự</td><td>Ngoài: tổng; trong: đồng xu</td></tr>
+        <tr><td>Số cách, 1+2 giống 2+1</td><td>Đếm không thứ tự</td><td>Ngoài: đồng xu; trong: tổng</td></tr>
+        <tr><td>Những tổng nào ghép được</td><td>Tập tổng (bool)</td><td>Như 0/1, giá trị đúng/sai</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p>Lấy ví dụ ba lô ở trên: ba vật (1 kg, 1), (3 kg, 4), (4 kg, 5) và <span class="math">W = 5</span>. Em thử hai cách quen thuộc trước.</p>
+
+    <h3>Cách 1: tham lam</h3>
+    <p>Theo bài <a href="greedy.html">tham lam</a>, một ý tự nhiên là lấy vật “đáng tiền nhất trên mỗi kg” trước. Tỉ lệ giá trị/khối lượng lần lượt là 1; 1,33; 1,25. Tham lam lấy bộ nồi (3 kg, 4), còn 2 kg nên không bỏ được lều, lấy thêm đèn pin: tổng <b>5</b>. Nhưng lấy lều + đèn pin được <b>6</b>. Tham lam sai, vì nó không dám “bỏ cái tốt bây giờ để được cái tốt hơn sau”.</p>
+    <p>Đổi tiền cũng vậy. Với mệnh giá {1, 3, 4} và số tiền 6, tham lam lấy đồng lớn nhất trước: 4 + 1 + 1 là <b>3 đồng</b>, trong khi 3 + 3 chỉ cần <b>2 đồng</b>.</p>
+
+    <h3>Cách 2: thử mọi tập con</h3>
+    <p>Mỗi vật có 2 lựa chọn (lấy hoặc không), nên có <span class="math">2<sup>n</sup></span> tập con. Dùng <a href="backtracking.html">quay lui</a> hoặc duyệt bit để thử hết thì chắc chắn đúng, nhưng:</p>
+    <ul>
+      <li><span class="math">n = 20</span>: <span class="math">2<sup>20</sup> ≈ 10<sup>6</sup></span> tập, chạy tức thì.</li>
+      <li><span class="math">n = 40</span>: <span class="math">2<sup>40</sup> ≈ 1,1·10<sup>12</sup></span> tập, mất cả chục phút.</li>
+      <li><span class="math">n = 100</span>: <span class="math">2<sup>100</sup> ≈ 1,27·10<sup>30</sup></span> tập, máy chạy đến hết vũ trụ cũng chưa xong.</li>
+    </ul>
+
+    <h3>Điều quan trọng: rất nhiều tập con “trùng trạng thái”</h3>
+    <p>Giả sử có các vật nặng 1, 2, 3 kg. Tập {1 kg, 2 kg} và tập {3 kg} đều đã dùng hết 3 kg. Với các vật còn lại, hai tập này có tương lai giống hệt nhau, nên ta chỉ cần nhớ tập nào có giá trị lớn hơn. Như vậy điều duy nhất cần biết về quá khứ là “đã xét đến vật thứ mấy” và “đã dùng bao nhiêu kg”. Số trạng thái chỉ là <span class="math">(n + 1)·(W + 1)</span>, không phải <span class="math">2<sup>n</sup></span>.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Thử mọi tập con</h4><p>Độ phức tạp <span class="bigo">O(2ⁿ·n)</span>. Với <span class="math">n = 100</span> là khoảng <span class="math">10<sup>32</sup></span> phép tính, không bao giờ xong.</p></div>
+      <div class="good-side"><h4>QHĐ cái túi</h4><p>Độ phức tạp <span class="bigo">O(n·W)</span>. Với <span class="math">n = 100</span>, <span class="math">W = 10<sup>5</sup></span> chỉ <span class="math">10<sup>7</sup></span> phép tính, chạy chưa tới 0,1 giây.</p></div>
+    </div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>1. Cái túi 0/1 bằng bảng hai chiều</h3>
+    <p>Viết bốn bước QHĐ ra giấy trước khi code:</p>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> <code>dp[i][j]</code> = tổng giá trị lớn nhất khi chỉ được dùng các vật 1, 2, …, i và tổng khối lượng <b>không quá</b> j.</div></li>
+      <li><div><strong>Công thức chuyển.</strong> Xét vật i, có đúng hai khả năng. <b>Không chọn</b>: được <code>dp[i-1][j]</code>. <b>Chọn</b> (chỉ khi <code>j ≥ w[i]</code>): phần còn lại có sức chứa <code>j - w[i]</code> và chỉ dùng vật 1..i-1, được <code>dp[i-1][j-w[i]] + v[i]</code>. Lấy giá trị lớn hơn.</div></li>
+      <li><div><strong>Cơ sở.</strong> <code>dp[0][j] = 0</code> với mọi j: chưa có vật nào thì giá trị bằng 0.</div></li>
+      <li><div><strong>Thứ tự tính và đáp án.</strong> Điền từng hàng i = 1, 2, …, n; mỗi hàng điền j = 0..W. Đáp án là <code>dp[n][W]</code>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>với</b> j <b>từ</b> 0 <b>đến</b> W: dp[0][j] ← 0
+<b>với</b> i <b>từ</b> 1 <b>đến</b> n:
+    <b>với</b> j <b>từ</b> 0 <b>đến</b> W:
+        dp[i][j] ← dp[i-1][j]                         <i>// không chọn vật i</i>
+        <b>nếu</b> j ≥ w[i]:
+            dp[i][j] ← max(dp[i][j], dp[i-1][j-w[i]] + v[i])   <i>// chọn vật i</i>
+<b>trả về</b> dp[n][W]</pre>
+
+    <h3>2. Truy vết các vật được chọn</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Bắt đầu</strong> tại ô <code>(i, j) = (n, W)</code>.</div></li>
+      <li><div><strong>So sánh với ô ngay trên.</strong> Nếu <code>dp[i][j] == dp[i-1][j]</code> thì có thể không chọn vật i: chỉ lên hàng trên. Ngược lại vật i <b>chắc chắn</b> được chọn: ghi lại i, giảm <code>j -= w[i]</code>, rồi lên hàng trên.</div></li>
+      <li><div><strong>Dừng</strong> khi i = 0. Danh sách ghi được (đảo ngược lại) là các vật cần lấy.</div></li>
+    </ol>
+    <pre class="pseudo">j ← W
+<b>với</b> i <b>từ</b> n <b>về</b> 1:
+    <b>nếu</b> dp[i][j] ≠ dp[i-1][j]:      <i>// giá trị thay đổi ⇒ đã lấy vật i</i>
+        ghi nhận vật i;  j ← j - w[i]</pre>
+
+    <h3>3. Tiết kiệm bộ nhớ: mảng một chiều, j giảm dần</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> Chỉ giữ một mảng <code>dp[0..W]</code>. Trước khi xét vật i, <code>dp[j]</code> chính là <code>dp[i-1][j]</code> của bảng cũ.</div></li>
+      <li><div><strong>Cập nhật tại chỗ.</strong> Với mỗi vật, cho j chạy <b>từ W giảm về w[i]</b>, gán <code>dp[j] = max(dp[j], dp[j-w[i]] + v[i])</code>.</div></li>
+      <li><div><strong>Đáp án.</strong> <code>dp[W]</code>.</div></li>
+    </ol>
+    <pre class="pseudo">dp[0..W] ← 0
+<b>với</b> mỗi vật (w, v):
+    <b>với</b> j <b>từ</b> W <b>về</b> w:                <i>// GIẢM: mỗi vật dùng tối đa 1 lần</i>
+        dp[j] ← max(dp[j], dp[j-w] + v)
+<b>trả về</b> dp[W]</pre>
+
+    <h3>4. Cái túi không giới hạn: j tăng dần</h3>
+    <p>Chỉ đổi đúng một chỗ: j chạy <b>từ w lên W</b>. Khi đó <code>dp[j-w]</code> có thể đã chứa vật đang xét, nên một vật được lấy nhiều lần.</p>
+    <pre class="pseudo"><b>với</b> mỗi loại (w, v):
+    <b>với</b> j <b>từ</b> w <b>đến</b> W:                <i>// TĂNG: mỗi loại dùng bao nhiêu lần cũng được</i>
+        dp[j] ← max(dp[j], dp[j-w] + v)</pre>
+
+    <h3>5. Đổi tiền ít đồng nhất</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> <code>mn[s]</code> = số đồng ít nhất để có <b>đúng</b> tổng s; nếu không tạo được thì bằng ∞.</div></li>
+      <li><div><strong>Cơ sở.</strong> <code>mn[0] = 0</code> (không cần đồng nào), mọi ô khác = ∞.</div></li>
+      <li><div><strong>Công thức chuyển.</strong> Đồng cuối cùng có mệnh giá c nào đó: <code>mn[s] = min(mn[s - c] + 1)</code> với mọi c ≤ s mà <code>mn[s-c]</code> khác ∞.</div></li>
+      <li><div><strong>Đáp án.</strong> <code>mn[x]</code>, in −1 nếu vẫn là ∞.</div></li>
+    </ol>
+    <pre class="pseudo">mn[0] ← 0;  mn[1..x] ← ∞
+<b>với</b> s <b>từ</b> 1 <b>đến</b> x:
+    <b>với</b> mỗi mệnh giá c ≤ s:
+        <b>nếu</b> mn[s-c] ≠ ∞:  mn[s] ← min(mn[s], mn[s-c] + 1)</pre>
+
+    <h3>6. Đếm số cách đổi tiền</h3>
+    <p>Cả hai bài đều có cơ sở <code>dp[0] = 1</code> (một cách: không dùng đồng nào) và công thức cộng <code>dp[s] += dp[s - c]</code>. Khác nhau duy nhất là <b>vòng nào ở ngoài</b>.</p>
+    <pre class="pseudo"><i>// (a) CÓ thứ tự: 1+2 và 2+1 là hai cách  (Coin Combinations I)</i>
+<b>với</b> s <b>từ</b> 1 <b>đến</b> x:              <i>// vòng NGOÀI là tổng</i>
+    <b>với</b> mỗi đồng c ≤ s:  dp[s] ← dp[s] + dp[s-c]
+
+<i>// (b) KHÔNG thứ tự: 1+2 và 2+1 là một cách  (Coin Combinations II)</i>
+<b>với</b> mỗi đồng c:                   <i>// vòng NGOÀI là đồng xu</i>
+    <b>với</b> s <b>từ</b> c <b>đến</b> x:  dp[s] ← dp[s] + dp[s-c]</pre>
+
+    <h3>7. Tập tổng tạo được</h3>
+    <p>Mỗi đồng xu dùng một lần, chỉ hỏi “tạo được hay không”, nên là cái túi 0/1 với giá trị đúng/sai.</p>
+    <pre class="pseudo">ok[0] ← đúng;  ok[1..T] ← sai           <i>// T = tổng mọi đồng xu</i>
+<b>với</b> mỗi đồng a:
+    <b>với</b> s <b>từ</b> T <b>về</b> a:
+        <b>nếu</b> ok[s-a]:  ok[s] ← đúng</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Vì sao công thức cái túi 0/1 đúng</h3>
+    <p>Hãy nhìn vào phương án tốt nhất cho <code>dp[i][j]</code>. Vật i hoặc nằm trong phương án đó, hoặc không, không có khả năng thứ ba.</p>
+    <ul>
+      <li>Nếu <b>không có</b> vật i: phương án chỉ gồm vật 1..i-1, khối lượng không quá j. Tốt nhất trong số đó chính là <code>dp[i-1][j]</code>.</li>
+      <li>Nếu <b>có</b> vật i: bỏ vật i ra, phần còn lại là một tập vật 1..i-1 nặng không quá <code>j - w[i]</code>. Phần còn lại này phải là tốt nhất có thể. Nếu có cách tốt hơn cho phần còn lại thì thay vào, phương án lớn cũng tốt hơn, trái với giả thiết “tốt nhất”. Vậy giá trị là <code>dp[i-1][j-w[i]] + v[i]</code>.</li>
+    </ul>
+    <p>Lấy max của hai trường hợp là đủ, vì đã xét hết mọi khả năng. Tính chất “lời giải tốt nhất được ghép từ lời giải tốt nhất của bài con” gọi là <b>cấu trúc con tối ưu</b>. Còn việc nhiều tập con dẫn tới cùng ô <code>(i, j)</code> là tính chất <b>bài con gối nhau</b>. Có đủ hai tính chất này nên QHĐ dùng được.</p>
+
+    <h3>Vì sao truy vết đúng</h3>
+    <p>Nếu <code>dp[i][j] ≠ dp[i-1][j]</code> thì giá trị tốt nhất không thể đến từ nhánh “không chọn”, nên chắc chắn đến từ nhánh “chọn vật i”, và phần còn lại nằm ở ô <code>(i-1, j-w[i])</code>. Nếu hai ô bằng nhau, nhánh “không chọn” đã đạt giá trị tốt nhất, ta đi theo nhánh đó là an toàn. Mỗi bước đi lên một hàng, nên truy vết tốn <span class="bigo">O(n)</span>.</p>
+
+    <h3>Vì sao mảng một chiều phải duyệt j giảm</h3>
+    <p>Công thức cần <code>dp[i-1][j-w]</code>, tức giá trị <b>cũ</b> (chưa dùng vật i) ở ô bên trái. Trong mảng một chiều, ô bên trái và ô hiện tại nằm chung một mảng.</p>
+    <ul>
+      <li><b>Duyệt giảm</b> (j = W, W-1, …): khi xử lý j, mọi ô nhỏ hơn j <b>chưa bị sửa</b> trong lượt vật i, nên <code>dp[j-w]</code> vẫn là giá trị cũ. Đúng ý bảng hai chiều.</li>
+      <li><b>Duyệt tăng</b> (j = w, w+1, …): khi xử lý j, ô <code>dp[j-w]</code> đã được sửa trong chính lượt này, có thể đã chứa vật i. Cộng thêm <code>v</code> nghĩa là lấy vật i lần thứ hai. Với bài 0/1 thì sai, nhưng với bài <b>không giới hạn</b> thì đây chính là điều ta muốn.</li>
+    </ul>
+    <p>Bài không giới hạn viết bằng bảng hai chiều là <code>dp[i][j] = max(dp[i-1][j], dp[i][j-w[i]] + v[i])</code>: chú ý chỉ số <b>i</b> (cùng hàng) ở nhánh chọn, nghĩa là “chọn vật i rồi vẫn được chọn tiếp vật i”. Duyệt tăng trên mảng một chiều làm đúng điều đó.</p>
+
+    <h3>Vì sao đổi tiền dùng ∞ và mn[0] = 0</h3>
+    <p>Bài đổi tiền cần <b>đúng</b> tổng s, không phải “không quá s”. Ô ∞ nghĩa là “chưa tạo được”; lấy min với ∞ không làm hỏng kết quả. Nếu khởi tạo mọi ô bằng 0 thì <code>mn[s]</code> luôn là 0, vô nghĩa. Với {1, 3, 4} và x = 6: <code>mn = 0, 1, 2, 1, 1, 2, 2</code>. Ô 6 lấy min của <code>mn[5]+1 = 3</code>, <code>mn[3]+1 = 2</code>, <code>mn[2]+1 = 3</code>, ra 2 (tức 3 + 3). QHĐ thử <b>mọi</b> đồng cuối cùng, nên không bị lừa như tham lam.</p>
+
+    <h3>Vì sao thứ tự vòng lặp quyết định cách đếm</h3>
+    <p>Lấy mệnh giá {1, 2} và tổng 3. Có thứ tự thì có 3 cách: 1+1+1, 1+2, 2+1. Không thứ tự thì chỉ 2 cách: {1, 1, 1} và {1, 2}.</p>
+    <ul>
+      <li><b>Vòng ngoài là tổng:</b> <code>dp[s] = Σ dp[s - c]</code> nghĩa là “chọn đồng <b>cuối cùng</b> là c, phía trước là một dãy bất kỳ có tổng s - c”. Dãy 1+2 (cuối là 2) và 2+1 (cuối là 1) rơi vào hai nhánh khác nhau nên được đếm riêng. Kết quả <code>dp = 1, 1, 2, 3</code>.</li>
+      <li><b>Vòng ngoài là đồng xu:</b> lượt đầu chỉ dùng đồng 1, lượt sau mới cho thêm đồng 2. Mọi cách đổi được “xây” theo thứ tự mệnh giá tăng dần: hết các đồng 1 rồi mới đến các đồng 2. Mỗi tập đồng xu chỉ có <b>một</b> cách xếp tăng dần, nên được đếm đúng một lần. Sau lượt đồng 1: <code>1, 1, 1, 1</code>; sau lượt đồng 2: <code>1, 1, 2, 2</code>.</li>
+    </ul>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Bảng có <span class="math">(n + 1)(W + 1)</span> ô, mỗi ô tính bằng một phép so sánh, nên tổng là <span class="bigo">O(n·W)</span>. Đổi tiền có <span class="math">x + 1</span> ô, mỗi ô thử <span class="math">n</span> mệnh giá: <span class="bigo">O(n·x)</span>. Thay vì liệt kê từng tập con, ta gộp tất cả tập con cùng khối lượng vào một ô và chỉ giữ cái tốt nhất.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi gõ code, em hãy tự hỏi ba câu: mỗi vật dùng một lần hay nhiều lần (j giảm hay tăng)? Cần “không quá” hay “đúng bằng” (khởi tạo 0 hay ∞)? Đếm có thứ tự hay không (vòng nào ở ngoài)? Trả lời đúng ba câu là xong 90% bài.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Ví dụ ba lô: vật 1 là đèn pin (1 kg, giá trị 1), vật 2 là bộ nồi (3 kg, 4), vật 3 là lều (4 kg, 5); túi chịu <span class="math">W = 5</span>. Mỗi hàng là “đã xét đến vật i”, mỗi cột là “sức chứa j”. Ô nền tím là ô đang tính, hai ô nền vàng là hai lựa chọn “không chọn” (ngay trên) và “chọn” (hàng trên, lùi trái w ô).</p>
+
+    <div class="stepper" data-title="Điền bảng dp[i][j] cho 3 đồ vật, W = 5">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1. Cơ sở.&lt;/b&gt; Hàng 0 (chưa có vật nào) toàn số 0. Mỗi ô dp[i][j] sẽ tính từ hai ô ở hàng ngay trên.">
+<div class="kn-scroll"><table class="dp-table">
+<thead><tr><th class="row-h">i (w, v)</th><th>j=0</th><th>j=1</th><th>j=2</th><th>j=3</th><th>j=4</th><th>j=5</th></tr></thead>
+<tbody>
+<tr><th class="row-h">0 (chưa có vật)</th><td class="is-ok">0</td><td class="is-ok">0</td><td class="is-ok">0</td><td class="is-ok">0</td><td class="is-ok">0</td><td class="is-ok">0</td></tr>
+<tr><th class="row-h">1 (1, 1)</th><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+<tr><th class="row-h">2 (3, 4)</th><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+<tr><th class="row-h">3 (4, 5)</th><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+</tbody></table></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2. Vật 1 (1 kg, 1), j = 1.&lt;/b&gt; Không chọn: dp[0][1] = 0. Chọn: dp[0][0] + 1 = 1. Lấy max = 1. Ô j = 0 không chọn được vì 0 &amp;lt; 1 kg.">
+<div class="kn-scroll"><table class="dp-table">
+<thead><tr><th class="row-h">i (w, v)</th><th>j=0</th><th>j=1</th><th>j=2</th><th>j=3</th><th>j=4</th><th>j=5</th></tr></thead>
+<tbody>
+<tr><th class="row-h">0 (chưa có vật)</th><td class="is-cmp">0</td><td class="is-cmp">0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th class="row-h">1 (1, 1)</th><td>0</td><td class="is-active">1</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+<tr><th class="row-h">2 (3, 4)</th><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+<tr><th class="row-h">3 (4, 5)</th><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+</tbody></table></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3. Hết hàng 1.&lt;/b&gt; Với mọi j ≥ 1, chọn đèn pin luôn được 1. Hàng 1: 0 1 1 1 1 1.">
+<div class="kn-scroll"><table class="dp-table">
+<thead><tr><th class="row-h">i (w, v)</th><th>j=0</th><th>j=1</th><th>j=2</th><th>j=3</th><th>j=4</th><th>j=5</th></tr></thead>
+<tbody>
+<tr><th class="row-h">0 (chưa có vật)</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th class="row-h">1 (1, 1)</th><td class="is-ok">0</td><td class="is-ok">1</td><td class="is-ok">1</td><td class="is-ok">1</td><td class="is-ok">1</td><td class="is-ok">1</td></tr>
+<tr><th class="row-h">2 (3, 4)</th><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+<tr><th class="row-h">3 (4, 5)</th><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+</tbody></table></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4. Vật 2 (3 kg, 4), j = 3.&lt;/b&gt; j = 0, 1, 2 nhỏ hơn 3 nên chép từ hàng trên. Ở j = 3: không chọn = dp[1][3] = 1; chọn = dp[1][0] + 4 = 4. Lấy 4.">
+<div class="kn-scroll"><table class="dp-table">
+<thead><tr><th class="row-h">i (w, v)</th><th>j=0</th><th>j=1</th><th>j=2</th><th>j=3</th><th>j=4</th><th>j=5</th></tr></thead>
+<tbody>
+<tr><th class="row-h">0 (chưa có vật)</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th class="row-h">1 (1, 1)</th><td class="is-cmp">0</td><td>1</td><td>1</td><td class="is-cmp">1</td><td>1</td><td>1</td></tr>
+<tr><th class="row-h">2 (3, 4)</th><td>0</td><td>1</td><td>1</td><td class="is-active">4</td><td>·</td><td>·</td></tr>
+<tr><th class="row-h">3 (4, 5)</th><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+</tbody></table></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5. Vật 2, j = 4.&lt;/b&gt; Không chọn = dp[1][4] = 1; chọn = dp[1][1] + 4 = 5 (bộ nồi + đèn pin). Lấy 5. Tương tự j = 5 cũng được 5.">
+<div class="kn-scroll"><table class="dp-table">
+<thead><tr><th class="row-h">i (w, v)</th><th>j=0</th><th>j=1</th><th>j=2</th><th>j=3</th><th>j=4</th><th>j=5</th></tr></thead>
+<tbody>
+<tr><th class="row-h">0 (chưa có vật)</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th class="row-h">1 (1, 1)</th><td>0</td><td class="is-cmp">1</td><td>1</td><td>1</td><td class="is-cmp">1</td><td>1</td></tr>
+<tr><th class="row-h">2 (3, 4)</th><td>0</td><td>1</td><td>1</td><td>4</td><td class="is-active">5</td><td>·</td></tr>
+<tr><th class="row-h">3 (4, 5)</th><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+</tbody></table></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 6. Vật 3 (4 kg, 5), j = 4.&lt;/b&gt; Hàng 3 chép j = 0..3 từ hàng trên. Ở j = 4: không chọn = dp[2][4] = 5; chọn = dp[2][0] + 5 = 5. Bằng nhau, giữ 5.">
+<div class="kn-scroll"><table class="dp-table">
+<thead><tr><th class="row-h">i (w, v)</th><th>j=0</th><th>j=1</th><th>j=2</th><th>j=3</th><th>j=4</th><th>j=5</th></tr></thead>
+<tbody>
+<tr><th class="row-h">0 (chưa có vật)</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th class="row-h">1 (1, 1)</th><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><th class="row-h">2 (3, 4)</th><td class="is-cmp">0</td><td>1</td><td>1</td><td>4</td><td class="is-cmp">5</td><td>5</td></tr>
+<tr><th class="row-h">3 (4, 5)</th><td>0</td><td>1</td><td>1</td><td>4</td><td class="is-active">5</td><td>·</td></tr>
+</tbody></table></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 7. Vật 3, j = 5.&lt;/b&gt; Không chọn = dp[2][5] = 5; chọn = dp[2][1] + 5 = 1 + 5 = 6. Lấy 6. Đáp án dp[3][5] = &lt;b&gt;6&lt;/b&gt;.">
+<div class="kn-scroll"><table class="dp-table">
+<thead><tr><th class="row-h">i (w, v)</th><th>j=0</th><th>j=1</th><th>j=2</th><th>j=3</th><th>j=4</th><th>j=5</th></tr></thead>
+<tbody>
+<tr><th class="row-h">0 (chưa có vật)</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th class="row-h">1 (1, 1)</th><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><th class="row-h">2 (3, 4)</th><td>0</td><td class="is-cmp">1</td><td>1</td><td>4</td><td>5</td><td class="is-cmp">5</td></tr>
+<tr><th class="row-h">3 (4, 5)</th><td>0</td><td>1</td><td>1</td><td>4</td><td>5</td><td class="is-active">6</td></tr>
+</tbody></table></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 8. Truy vết.&lt;/b&gt; dp[3][5] = 6 ≠ dp[2][5] = 5 nên lấy lều, j = 5 − 4 = 1. dp[2][1] = 1 = dp[1][1] nên bỏ bộ nồi. dp[1][1] = 1 ≠ dp[0][1] = 0 nên lấy đèn pin, j = 0. Kết quả: vật 1 và 3.">
+<div class="kn-scroll"><table class="dp-table">
+<thead><tr><th class="row-h">i (w, v)</th><th>j=0</th><th>j=1</th><th>j=2</th><th>j=3</th><th>j=4</th><th>j=5</th></tr></thead>
+<tbody>
+<tr><th class="row-h">0 (chưa có vật)</th><td class="is-ok">0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th class="row-h">1 (1, 1)</th><td>0</td><td class="is-ok">1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><th class="row-h">2 (3, 4)</th><td>0</td><td class="is-cmp">1</td><td>1</td><td>4</td><td>5</td><td>5</td></tr>
+<tr><th class="row-h">3 (4, 5)</th><td>0</td><td>1</td><td>1</td><td>4</td><td>5</td><td class="is-ok">6</td></tr>
+</tbody></table></div>
+      </div>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 440 190" width="440" role="img" aria-label="Ô dp[i][j] nhận giá trị từ ô dp[i-1][j] ngay phía trên và ô dp[i-1][j-w] ở hàng trên lùi trái w cột">
+        <rect class="fill-soft" x="90" y="30" width="100" height="44" rx="6"/>
+        <text x="140" y="57" text-anchor="middle">dp[i-1][j-w]</text>
+        <rect class="fill-soft" x="270" y="30" width="90" height="44" rx="6"/>
+        <text x="315" y="57" text-anchor="middle">dp[i-1][j]</text>
+        <rect class="fill-soft" x="270" y="126" width="90" height="44" rx="6"/>
+        <text x="315" y="153" text-anchor="middle">dp[i][j]</text>
+        <line class="edge is-active" x1="175" y1="74" x2="276" y2="128"/>
+        <line class="edge" x1="315" y1="74" x2="315" y2="124"/>
+        <text class="label-pen" x="150" y="128">chọn: + v[i]</text>
+        <text class="label-sm" x="325" y="104">không chọn</text>
+        <text class="label-sm" x="140" y="20" text-anchor="middle">lùi trái w[i] cột</text>
+        <text class="label-sm" x="10" y="57">hàng i-1</text>
+        <text class="label-sm" x="10" y="153">hàng i</text>
+      </svg>
+      <figcaption>Hình 1. Mỗi ô của cái túi 0/1 chỉ nhìn lên hàng trên: ngay phía trên (không chọn) hoặc lùi trái w[i] cột (chọn). Bài không giới hạn thì mũi tên “chọn” xuất phát từ chính hàng i.</figcaption>
+    </figure>
+
+    <h3>Mảng một chiều: j tăng hay giảm?</h3>
+    <p>Bây giờ em xem vì sao chiều duyệt quan trọng. Chỉ có một vật là bình nước (2 kg, 3), túi 5 kg. Ô nền đỏ là ô bị tính sai.</p>
+
+    <div class="stepper" data-title="Mảng một chiều: duyệt j tăng hay giảm?">
+      <div class="frame" data-caption="&lt;b&gt;Bắt đầu.&lt;/b&gt; Chỉ có một bình nước (2 kg, 3), W = 5. Đáp án đúng của bài 0/1 phải là 3 (chỉ có một bình). Mảng dp ban đầu toàn 0.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">0</span><span class="cell" data-i="2">0</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span><span class="cell" data-i="5">0</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Duyệt TĂNG, j = 2.&lt;/b&gt; dp[2] = max(0, dp[0] + 3) = 3. Ô dp[0] (vàng) là giá trị cũ, chưa có gì sai.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell is-cmp" data-i="0">0</span><span class="cell" data-i="1">0</span><span class="cell is-active" data-i="2" data-ptr="j">3</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span><span class="cell" data-i="5">0</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Duyệt TĂNG, j = 3.&lt;/b&gt; dp[3] = max(0, dp[1] + 3) = 3.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">0</span><span class="cell is-cmp" data-i="1">0</span><span class="cell" data-i="2">3</span><span class="cell is-active" data-i="3" data-ptr="j">3</span><span class="cell" data-i="4">0</span><span class="cell" data-i="5">0</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Duyệt TĂNG, j = 4: lỗi!&lt;/b&gt; dp[4] = dp[2] + 3 = 6. Nhưng dp[2] vừa được sửa ở bước trước và đã chứa bình nước. Cộng thêm 3 nghĩa là lấy bình nước &lt;b&gt;lần thứ hai&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">0</span><span class="cell is-cmp" data-i="2">3</span><span class="cell" data-i="3">3</span><span class="cell is-bad" data-i="4" data-ptr="j">6</span><span class="cell" data-i="5">0</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Duyệt TĂNG, kết thúc.&lt;/b&gt; dp = 0 0 3 3 6 6, dp[5] = 6: sai với bài 0/1. Đây lại là đáp án đúng của bài &lt;b&gt;không giới hạn&lt;/b&gt; (hai bình nước).">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">0</span><span class="cell" data-i="2">3</span><span class="cell" data-i="3">3</span><span class="cell is-bad" data-i="4">6</span><span class="cell is-bad" data-i="5">6</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Duyệt GIẢM, j = 5.&lt;/b&gt; Làm lại từ mảng 0. dp[5] = max(0, dp[3] + 3) = 3. Ô dp[3] chưa bị sửa trong lượt này nên vẫn là giá trị cũ 0.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">0</span><span class="cell" data-i="2">0</span><span class="cell is-cmp" data-i="3">0</span><span class="cell" data-i="4">0</span><span class="cell is-active" data-i="5" data-ptr="j">3</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Duyệt GIẢM, j = 4.&lt;/b&gt; dp[4] = dp[2] + 3 = 0 + 3 = 3. dp[2] vẫn là giá trị cũ vì ta đi từ phải sang trái.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">0</span><span class="cell is-cmp" data-i="2">0</span><span class="cell" data-i="3">0</span><span class="cell is-active" data-i="4" data-ptr="j">3</span><span class="cell" data-i="5">3</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Duyệt GIẢM, kết thúc.&lt;/b&gt; dp = 0 0 3 3 3 3, dp[5] = 3: đúng. Mỗi ô chỉ đọc ô bên trái còn “cũ”, nên bình nước được dùng tối đa một lần.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">0</span><span class="cell" data-i="1">0</span><span class="cell is-ok" data-i="2">3</span><span class="cell is-ok" data-i="3">3</span><span class="cell is-ok" data-i="4">3</span><span class="cell is-ok" data-i="5">3</span></div>
+      </div>
+    </div>
+
+    <h3>Đếm số cách: vòng ngoài khác nhau, kết quả khác nhau</h3>
+    <p>Mệnh giá {1, 2}. Bảng dưới so sánh hai cách đếm với tổng s từ 0 đến 4.</p>
+    <table class="trace">
+      <thead><tr><th>s</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead>
+      <tbody>
+        <tr><td>Có thứ tự (ngoài: tổng)</td><td>1</td><td>1</td><td>2</td><td>3</td><td>5</td></tr>
+        <tr><td>Không thứ tự, sau đồng 1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+        <tr class="hl"><td>Không thứ tự, sau đồng 2</td><td>1</td><td>1</td><td>2</td><td>2</td><td>3</td></tr>
+      </tbody>
+    </table>
+    <p>Kiểm tra bằng tay với s = 4. Có thứ tự: 1+1+1+1, 1+1+2, 1+2+1, 2+1+1, 2+2, đúng 5 cách. Không thứ tự: {1,1,1,1}, {1,1,2}, {2,2}, đúng 3 cách. Ba dãy 1+1+2, 1+2+1, 2+1+1 chỉ là một tập {1,1,2}.</p>
+
+    <h3>Đổi tiền ít đồng nhất với {1, 3, 4}, x = 6</h3>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">mn[s] = số đồng ít nhất để có đúng tổng s</p></div>
+      <div class="viz-body">
+        <div class="arr"><span class="arr-label">mn</span><span class="cell is-ok" data-i="0">0</span><span class="cell" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell is-cmp" data-i="3">1</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">2</span><span class="cell is-active" data-i="6" data-ptr="x">2</span></div>
+      </div>
+      <div class="viz-legend"><span><i class="is-active"></i>ô đáp án</span><span><i class="is-cmp"></i>ô tốt nhất để tới x (6 − 3 = 3)</span><span><i class="is-ok"></i>cơ sở</span></div>
+      <div class="viz-caption"><p>mn[6] = mn[3] + 1 = 2, tức 3 + 3. Tham lam (4 + 1 + 1) cần 3 đồng.</p></div>
+    </div>
+
+    <div class="playground" id="viz-knapsack">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: bảng cái túi và truy vết</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="kn-items">Đồ vật “w v”, cách nhau dấu ; <input type="text" id="kn-items" value="1 1; 3 4; 4 5"></label>
+          <label for="kn-w">Sức chứa W <input type="number" id="kn-w" value="5" min="0" max="30"></label>
+          <label for="kn-unb"><input type="checkbox" id="kn-unb"> Không giới hạn số lượng</label>
+          <button type="button" data-act="all">Điền cả bảng</button>
+          <button type="button" data-act="step" class="ghost">Từng ô</button>
+        </div>
+        <div class="kn-view kn-scroll"></div>
+        <div class="out" aria-live="polite">Nhập tối đa 8 đồ vật (mỗi vật “khối lượng giá trị”, khối lượng 1 đến 30, giá trị 0 đến 1000) và W từ 0 đến 30. Bấm “Từng ô” nhiều lần để xem từng ô được tính.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Chương trình 1: cái túi 0/1, có truy vết</h3>
+    <p>Đọc <code>n</code>, <code>W</code>, rồi n dòng “w v”. In ra giá trị lớn nhất, số vật được chọn và chỉ số các vật đó. Dùng bảng hai chiều để truy vết được; giá trị dùng <code>long long</code> vì tổng có thể vượt <span class="math">2·10<sup>9</sup></span>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">knapsack.cpp</span> Cái túi 0/1 bằng bảng dp[i][j] và truy vết</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, W;
+    cin &gt;&gt; n &gt;&gt; W;                       // số đồ vật, sức chứa của túi
+    vector&lt;int&gt; w(n + 1);
+    vector&lt;ll&gt; v(n + 1);
+    for (int i = 1; i &lt;= n; i++) cin &gt;&gt; w[i] &gt;&gt; v[i];
+
+    // dp[i][j] = giá trị lớn nhất khi chỉ dùng các vật 1..i, tổng khối lượng không quá j
+    vector&lt;vector&lt;ll&gt;&gt; dp(n + 1, vector&lt;ll&gt;(W + 1, 0));   // hàng 0 toàn số 0
+    for (int i = 1; i &lt;= n; i++) {
+        for (int j = 0; j &lt;= W; j++) {
+            dp[i][j] = dp[i - 1][j];                          // không chọn vật i
+            if (j &gt;= w[i])                                    // chọn vật i nếu còn đủ chỗ
+                dp[i][j] = max(dp[i][j], dp[i - 1][j - w[i]] + v[i]);
+        }
+    }
+
+    // Truy vết: đi ngược từ ô (n, W) lên hàng 0
+    vector&lt;int&gt; chosen;
+    int j = W;
+    for (int i = n; i &gt;= 1; i--) {
+        if (dp[i][j] != dp[i - 1][j]) {   // giá trị đổi =&gt; vật i đã được chọn
+            chosen.push_back(i);
+            j -= w[i];
+        }
+    }
+    reverse(chosen.begin(), chosen.end());
+
+    cout &lt;&lt; dp[n][W] &lt;&lt; '\n';
+    cout &lt;&lt; chosen.size() &lt;&lt; '\n';
+    for (int x : chosen) cout &lt;&lt; x &lt;&lt; ' ';
+    cout &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3 5
+1 1
+3 4
+4 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">6
+2
+1 3</code></pre></div>
+    </div>
+
+    <h3>Chương trình 2: cái túi 0/1, mảng một chiều</h3>
+    <p>Khi không cần truy vết (chỉ hỏi giá trị lớn nhất), dùng mảng một chiều cho nhẹ bộ nhớ. Đây là lời giải cho <i>Knapsack 1</i> của AtCoder.</p>
+    <figure class="code">
+      <figcaption><span class="fn">knapsack1d.cpp</span> Chỉ cần dp[0..W], duyệt j giảm</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, W;
+    cin &gt;&gt; n &gt;&gt; W;
+    vector&lt;ll&gt; dp(W + 1, 0);                 // dp[j]: giá trị lớn nhất với khối lượng không quá j
+    for (int i = 1; i &lt;= n; i++) {
+        int w; ll v;
+        cin &gt;&gt; w &gt;&gt; v;
+        for (int j = W; j &gt;= w; j--)         // duyệt GIẢM để mỗi vật dùng tối đa 1 lần
+            dp[j] = max(dp[j], dp[j - w] + v);
+    }
+    cout &lt;&lt; dp[W] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3 8
+3 30
+4 50
+5 60</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">90</code></pre></div>
+    </div>
+
+    <h3>Chương trình 3: ba bài đổi tiền trong một</h3>
+    <p>Đọc <code>n</code>, <code>x</code> và n mệnh giá. In ba dòng: số đồng ít nhất (−1 nếu không đổi được), số cách có thứ tự, số cách không thứ tự (cả hai lấy dư cho <span class="math">10<sup>9</sup> + 7</span>). Em để ý hai đoạn đếm chỉ khác nhau ở vị trí hai vòng lặp.</p>
+    <figure class="code">
+      <figcaption><span class="fn">coins.cpp</span> Ít đồng nhất, đếm có thứ tự, đếm không thứ tự</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+const ll MOD = 1000000007;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, x;
+    cin &gt;&gt; n &gt;&gt; x;                       // số mệnh giá, số tiền cần đổi
+    vector&lt;int&gt; c(n);
+    for (int &amp;a : c) cin &gt;&gt; a;
+
+    // 1) Ít đồng nhất: mn[s] = số đồng ít nhất để có đúng tổng s
+    const int INF = 1e9;
+    vector&lt;int&gt; mn(x + 1, INF);
+    mn[0] = 0;
+    for (int s = 1; s &lt;= x; s++)
+        for (int a : c)
+            if (a &lt;= s &amp;&amp; mn[s - a] != INF)
+                mn[s] = min(mn[s], mn[s - a] + 1);
+
+    // 2) Số cách CÓ thứ tự (1+2 khác 2+1): vòng ngoài là tổng
+    vector&lt;ll&gt; ord(x + 1, 0);
+    ord[0] = 1;
+    for (int s = 1; s &lt;= x; s++)
+        for (int a : c)
+            if (a &lt;= s) ord[s] = (ord[s] + ord[s - a]) % MOD;
+
+    // 3) Số cách KHÔNG thứ tự (1+2 giống 2+1): vòng ngoài là đồng xu
+    vector&lt;ll&gt; un(x + 1, 0);
+    un[0] = 1;
+    for (int a : c)
+        for (int s = a; s &lt;= x; s++)     // j tăng: mỗi mệnh giá dùng bao nhiêu lần cũng được
+            un[s] = (un[s] + un[s - a]) % MOD;
+
+    cout &lt;&lt; (mn[x] == INF ? -1 : mn[x]) &lt;&lt; '\n';
+    cout &lt;&lt; ord[x] &lt;&lt; '\n';
+    cout &lt;&lt; un[x] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3 6
+1 3 4</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2
+9
+4</code></pre></div>
+    </div>
+    <p>Kiểm tra tay: 6 = 3 + 3 (2 đồng). Không thứ tự có 4 cách: (1, 1, 1, 1, 1, 1), (1, 1, 1, 3), (1, 1, 4), (3, 3). Có thứ tự: (1, 1, 1, 3) có 4 cách xếp, (1, 1, 4) có 3 cách xếp, hai tập còn lại mỗi tập 1 cách, tổng 4 + 3 + 1 + 1 = 9.</p>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Bài</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Thử mọi tập con</td><td><span class="bigo">O(2ⁿ·n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Cái túi 0/1, bảng 2 chiều + truy vết</td><td><span class="bigo">O(n·W)</span></td><td><span class="bigo">O(n·W)</span></td></tr>
+        <tr><td>Cái túi 0/1 hoặc không giới hạn, mảng 1 chiều</td><td><span class="bigo">O(n·W)</span></td><td><span class="bigo">O(W)</span></td></tr>
+        <tr><td>Đổi tiền ít đồng nhất / đếm số cách</td><td><span class="bigo">O(n·x)</span></td><td><span class="bigo">O(x)</span></td></tr>
+        <tr><td>Tập tổng tạo được</td><td><span class="bigo">O(n·T)</span>, T = tổng các đồng</td><td><span class="bigo">O(T)</span></td></tr>
+        <tr><td>Đổi vai (W lớn, giá trị nhỏ)</td><td><span class="bigo">O(n·ΣV)</span></td><td><span class="bigo">O(ΣV)</span></td></tr>
+      </tbody>
+    </table>
+    <p>Một vài con số để em ước lượng (máy chấm làm khoảng <span class="math">10<sup>8</sup></span> phép tính đơn giản mỗi giây):</p>
+    <ul>
+      <li><i>Book Shop</i>: <span class="math">n = 1000</span>, <span class="math">x = 10<sup>5</sup></span>, tức <span class="math">10<sup>8</sup></span> phép tính, vừa đủ 1 giây với mảng một chiều. Bảng hai chiều kiểu <code>int</code> cần <span class="math">10<sup>8</sup> · 4</span> byte = 400 MB, quá giới hạn bộ nhớ.</li>
+      <li><i>Minimizing Coins</i>: <span class="math">n = 100</span>, <span class="math">x = 10<sup>6</sup></span>, tức <span class="math">10<sup>8</sup></span> phép tính, mảng chỉ 4 MB.</li>
+      <li><i>Knapsack 2</i>: <span class="math">W = 10<sup>9</sup></span> thì <span class="math">n·W = 10<sup>11</sup></span>, không kịp. Nhưng tổng giá trị chỉ tối đa <span class="math">100 · 1000 = 10<sup>5</sup></span>, đổi vai còn <span class="math">10<sup>7</sup></span>.</li>
+    </ul>
+
+    <div class="callout note"><p class="callout-title">Giả đa thức (pseudo-polynomial)</p>
+      <p><span class="bigo">O(n·W)</span> trông như đa thức, nhưng W là một <b>giá trị</b> trong dữ liệu, không phải số phần tử. Số W = 10<sup>9</sup> chỉ viết bằng 10 chữ số, mà thuật toán phải chạy 10<sup>9</sup> vòng. Thêm một chữ số vào W là thời gian tăng gấp 10. Vì thế người ta gọi đây là thuật toán giả đa thức: nhanh khi W nhỏ, vô dụng khi W rất lớn. Khi gặp W cỡ 10<sup>9</sup>, em phải tìm hướng khác (đổi vai, chia đôi tập hợp…).</p>
+    </div>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Cái túi không giới hạn</h3>
+    <p>Mỗi loại đồ vật có vô số cái. Chỉ cần đổi chiều duyệt j thành tăng:</p>
+<pre><code class="language-cpp">vector&lt;ll&gt; dp(W + 1, 0);
+for (int i = 1; i &lt;= n; i++)
+    for (int j = w[i]; j &lt;= W; j++)        // TĂNG: được lấy lại vật i
+        dp[j] = max(dp[j], dp[j - w[i]] + v[i]);</code></pre>
+    <p>Bài đổi tiền ít đồng nhất thực chất là cái túi không giới hạn với “giá trị” là −1 cho mỗi đồng và yêu cầu đúng tổng. Em có thể viết nó với vòng ngoài là đồng xu, j tăng, cũng cho cùng đáp án (vì min không quan tâm thứ tự).</p>
+
+    <h3>Cái túi có giới hạn số lượng</h3>
+    <p>Loại i có <span class="math">a<sub>i</sub></span> cái (bài <i>Cái túi 2</i> trên VNOJ). Cách ngây thơ là coi mỗi cái là một vật 0/1, tốn <span class="math">O(W·Σa<sub>i</sub>)</span>. Cách khéo là <b>tách nhị phân</b>: chia <span class="math">a</span> cái thành các gói 1, 2, 4, …, và phần dư. Ví dụ a = 13 thành 1 + 2 + 4 + 6. Mọi số từ 0 đến 13 đều ghép được từ các gói này, nên chỉ cần khoảng <span class="math">log₂ a</span> vật 0/1 thay vì a vật.</p>
+<pre><code class="language-cpp">// Loại i: khối lượng w, giá trị v, có a cái. Tách a thành các gói 1, 2, 4, ..., phần dư.
+for (int k = 1; a &gt; 0; k *= 2) {
+    int cnt = min(k, a);                 // gói gồm cnt cái
+    a -= cnt;
+    int W2 = cnt * w; ll V2 = cnt * v;   // gói được coi là MỘT vật 0/1
+    for (int j = M; j &gt;= W2; j--)
+        dp[j] = max(dp[j], dp[j - W2] + V2);
+}</code></pre>
+
+    <h3>Khối lượng phải đúng bằng W</h3>
+    <p>Nếu đề yêu cầu tổng khối lượng <b>đúng</b> bằng W, khởi tạo <code>dp[0] = 0</code> và các ô khác là “âm vô cùng” (không tạo được), giống cách dùng ∞ ở bài đổi tiền:</p>
+<pre><code class="language-cpp">const ll NEG = LLONG_MIN / 4;
+vector&lt;ll&gt; dp(W + 1, NEG);   // NEG = "không tạo được đúng khối lượng này"
+dp[0] = 0;
+for (int i = 1; i &lt;= n; i++)
+    for (int j = W; j &gt;= w[i]; j--)
+        if (dp[j - w[i]] != NEG) dp[j] = max(dp[j], dp[j - w[i]] + v[i]);
+// dp[W] == NEG nghĩa là không có cách nào nặng đúng W</code></pre>
+
+    <h3>Tập tổng tạo được và chia hai nhóm</h3>
+    <p>Bài <i>Money Sums</i>: có n đồng xu, liệt kê mọi tổng có thể ghép được. Đây là cái túi 0/1 với kiểu <code>bool</code>. Với đồng xu 4, 2, 5, 2 các tổng tạo được là 2, 4, 5, 6, 7, 8, 9, 11, 13 (9 tổng). Từ đây giải được bài “chia các vật thành hai nhóm có tổng gần nhau nhất”: tìm tổng tạo được s gần <span class="math">T/2</span> nhất, đáp án là <span class="math">T − 2s</span>. Biến thể đếm “có bao nhiêu tập con có tổng đúng S” thì thay <code>bool</code> bằng số đếm, vẫn duyệt giảm.</p>
+
+    <h3>W lớn, giá trị nhỏ: đổi vai (nâng cao)</h3>
+    <p>Bài <i>Knapsack 2</i>: <span class="math">n ≤ 100</span>, <span class="math">W ≤ 10<sup>9</sup></span>, nhưng <span class="math">v<sub>i</sub> ≤ 1000</span>. Không thể có mảng dài 10<sup>9</sup>. Ta đổi vai: <code>f[s]</code> = <b>khối lượng nhỏ nhất</b> để có <b>đúng</b> tổng giá trị s. Tổng giá trị tối đa chỉ <span class="math">10<sup>5</sup></span>. Cuối cùng đáp án là s lớn nhất mà <code>f[s] ≤ W</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">knapsack2.cpp</span> Cái túi với W lớn: QHĐ theo giá trị</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n; ll W;
+    cin &gt;&gt; n &gt;&gt; W;
+    vector&lt;ll&gt; w(n); vector&lt;int&gt; v(n);
+    int sumV = 0;
+    for (int i = 0; i &lt; n; i++) { cin &gt;&gt; w[i] &gt;&gt; v[i]; sumV += v[i]; }
+    const ll INF = LLONG_MAX / 4;
+    vector&lt;ll&gt; f(sumV + 1, INF);         // f[s] = khối lượng nhỏ nhất để có ĐÚNG tổng giá trị s
+    f[0] = 0;
+    for (int i = 0; i &lt; n; i++)
+        for (int s = sumV; s &gt;= v[i]; s--)
+            if (f[s - v[i]] != INF) f[s] = min(f[s], f[s - v[i]] + w[i]);
+    int ans = 0;
+    for (int s = 0; s &lt;= sumV; s++) if (f[s] &lt;= W) ans = s;  // giá trị lớn nhất còn vừa túi
+    cout &lt;&lt; ans &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <p>Đây là bài học quan trọng: khi một chiều quá lớn, hãy hỏi “chiều nào nhỏ?” và lấy chiều đó làm chỉ số mảng, chiều kia làm giá trị cần tối ưu.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Duyệt j tăng trong bài 0/1</p><p>Một vật bị lấy nhiều lần, đáp án lớn hơn thực tế. Ví dụ bình nước (2 kg, 3) với W = 5 cho 6 thay vì 3. Sửa: bài 0/1 luôn <code>for (j = W; j &gt;= w; j--)</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Khởi tạo sai ở bài “đúng bằng”</p><p>Đổi tiền mà khởi tạo <code>mn[s] = 0</code> thì đáp án luôn 0. Phải khởi tạo ∞ và <code>mn[0] = 0</code>. Ngược lại, cái túi “không quá W” thì khởi tạo toàn 0 là đúng.</p></div>
+    <div class="callout warn"><p class="callout-title">Tràn số khi cộng với ∞</p><p>Nếu đặt <code>INF = INT_MAX</code> rồi tính <code>mn[s-c] + 1</code>, kết quả tràn thành số âm và được chọn làm min. Sửa: dùng <code>INF = 1e9</code> và kiểm tra <code>mn[s-c] != INF</code> trước khi cộng.</p></div>
+    <div class="callout warn"><p class="callout-title">Quên long long</p><p>Ở <i>Knapsack 1</i>, giá trị mỗi vật tới 10<sup>9</sup>, 100 vật cộng lại tới 10<sup>11</sup>, vượt <code>int</code>. Dùng <code>long long</code> cho mảng dp.</p></div>
+    <div class="callout warn"><p class="callout-title">Đặt nhầm vòng ngoài khi đếm</p><p>Đề hỏi “số cách không phân biệt thứ tự” mà để vòng ngoài là tổng thì 1+2 và 2+1 bị đếm hai lần. Đọc kỹ ví dụ trong đề: với (2, 3, 5) và x = 9, <i>Coin Combinations I</i> ra 8 còn <i>II</i> ra 3. Nhớ lấy dư <code>% MOD</code> sau mỗi phép cộng.</p></div>
+    <div class="callout warn"><p class="callout-title">Bảng hai chiều quá lớn</p><p>n = 1000, W = 10<sup>5</sup> với <code>long long</code> là 800 MB. Nếu không cần truy vết thì dùng mảng một chiều. Nếu cần truy vết, có thể lưu riêng một bảng <code>bool</code> “có chọn vật i ở ô j không” (nhỏ hơn 8 lần), hoặc giảm giới hạn.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo kiểm tra</p><p>Viết thêm một chương trình thử mọi tập con (2<sup>n</sup>) cho n ≤ 15, sinh dữ liệu ngẫu nhiên nhỏ và so đáp án với chương trình QHĐ. Cách này bắt được hầu hết lỗi chiều duyệt và khởi tạo.</p></div>
+  </section>
+
+<section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Cài đặt cái túi 0/1 bằng mảng một chiều <code>dp[0..W]</code>, vòng lặp j phải chạy thế nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Từ w[i] tăng lên W</button>
+        <button type="button" class="quiz-opt" data-correct>B. Từ W giảm về w[i]</button>
+        <button type="button" class="quiz-opt">C. Chiều nào cũng được</button>
+      </div>
+      <p class="quiz-explain">Duyệt giảm thì dp[j - w[i]] chưa bị sửa trong lượt vật i, vẫn là giá trị “chưa dùng vật i”. Duyệt tăng sẽ cho lấy một vật nhiều lần, đó là bài không giới hạn.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Mệnh giá {1, 2}, tổng 3. Nếu 1+2 và 2+1 được tính là hai cách khác nhau thì có bao nhiêu cách?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 2</button>
+        <button type="button" class="quiz-opt" data-correct>B. 3</button>
+        <button type="button" class="quiz-opt">C. 4</button>
+      </div>
+      <p class="quiz-explain">Ba cách: 1+1+1, 1+2, 2+1. Đây là cách đếm có thứ tự, vòng ngoài là tổng. Nếu không phân biệt thứ tự thì chỉ có 2 cách.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Bài đổi tiền ít đồng nhất (cần đúng tổng x), khởi tạo mảng mn thế nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Mọi ô bằng 0</button>
+        <button type="button" class="quiz-opt">B. Mọi ô bằng ∞</button>
+        <button type="button" class="quiz-opt" data-correct>C. mn[0] = 0, các ô khác bằng ∞</button>
+      </div>
+      <p class="quiz-explain">Tổng 0 cần 0 đồng. Các tổng khác lúc đầu “chưa tạo được” nên là ∞. Khởi tạo toàn 0 thì min luôn ra 0; toàn ∞ thì không ô nào thoát được ∞.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. n = 100, W ≤ 10<sup>9</sup>, mỗi giá trị v ≤ 1000. Nên làm gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. QHĐ dp[j] theo khối lượng như thường</button>
+        <button type="button" class="quiz-opt" data-correct>B. QHĐ theo tổng giá trị: f[s] = khối lượng nhỏ nhất để đạt đúng giá trị s</button>
+        <button type="button" class="quiz-opt">C. Tham lam theo tỉ lệ v/w</button>
+      </div>
+      <p class="quiz-explain">Mảng theo khối lượng dài 10<sup>9</sup>, không đủ bộ nhớ và thời gian. Tổng giá trị chỉ tới 10<sup>5</sup>, nên đổi vai: 100 · 10<sup>5</sup> = 10<sup>7</sup> phép tính. Tham lam thì có phản ví dụ.</p>
+    </div>
+
+    <p><strong>Câu 5.</strong> Điền bảng cái túi 0/1 cho ba vật (2, 3), (3, 4), (4, 5) và W = 5. Giá trị lớn nhất là bao nhiêu, gồm những vật nào?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Hàng 1 (2, 3): 0 0 3 3 3 3. Hàng 2 (3, 4): 0 0 3 4 4 7 (ô j = 5: max(3, dp[1][2] + 4 = 7)). Hàng 3 (4, 5): 0 0 3 4 5 7 (ô j = 4: max(4, 0 + 5) = 5; ô j = 5: max(7, dp[2][1] + 5 = 5) = 7).</p>
+      <p>Đáp án 7. Truy vết: dp[3][5] = dp[2][5] nên bỏ vật 3; dp[2][5] = 7 ≠ dp[1][5] = 3 nên lấy vật 2, j = 2; dp[1][2] = 3 ≠ 0 nên lấy vật 1. Chọn vật 1 và 2 (2 + 3 = 5 kg, giá trị 3 + 4 = 7).</p>
+    </details>
+
+    <p><strong>Câu 6.</strong> Mệnh giá {2, 3, 5}, tổng 9. Tính số cách có thứ tự và không thứ tự, rồi giải thích vì sao hai số khác nhau.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Các tập đồng xu có tổng 9: {2, 2, 5}, {3, 3, 3}, {2, 2, 2, 3}. Vậy không thứ tự có <b>3</b> cách. Có thứ tự: {2, 2, 5} xếp được 3 cách (vị trí của đồng 5), {3, 3, 3} một cách, {2, 2, 2, 3} xếp được 4 cách (vị trí của đồng 3). Tổng 3 + 1 + 4 = <b>8</b>.</p>
+      <p>Vòng ngoài là tổng thì mỗi dãy được đếm theo “đồng cuối cùng”, nên các cách xếp khác nhau của cùng một tập đều được đếm. Vòng ngoài là đồng xu thì mọi tập chỉ được xây theo thứ tự mệnh giá tăng dần, mỗi tập đúng một lần.</p>
+    </details>
+
+    <p><strong>Câu 7.</strong> Có hai bình nước (2 kg, 3) giống hệt nhau và W = 5. Đáp án bài 0/1 là bao nhiêu? So với kết quả “duyệt tăng” khi chỉ có một bình, em rút ra điều gì?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Có hai bình thì lấy cả hai: 4 kg, giá trị 6. Con số này trùng với kết quả sai khi duyệt tăng với một bình. Nghĩa là duyệt tăng đã “tự nhân bản” vật: nó giải bài có vô số bình, không phải bài chỉ có một bình.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Các bài CSES nằm liền nhau trong mục <i>Dynamic Programming</i>, đề tiếng Anh ngắn và dễ đọc; bốn bài VNOJ có đề tiếng Việt.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/atcoder_dp_d">Atcoder DP D – Knapsack 1</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">N ≤ 100 đồ vật, túi chịu W ≤ 10<sup>5</sup>, giá trị mỗi vật tới 10<sup>9</sup>. Tìm tổng giá trị lớn nhất. Bản dịch tiếng Việt của bài AtCoder (bản gốc: <a href="https://atcoder.jp/contests/dp/tasks/dp_d">atcoder.jp/contests/dp/tasks/dp_d</a>).</p>
+        <p class="ex-skill"><b>Luyện:</b> cái túi 0/1 chuẩn, mảng một chiều, <code>long long</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chính là chương trình 2 ở trên. Nhớ ví dụ 2 có đáp án 5·10<sup>9</sup>, vượt <code>int</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1158">Book Shop</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Có n ≤ 1000 cuốn sách, mỗi cuốn có giá và số trang. Với tối đa x ≤ 10<sup>5</sup> tiền, mua mỗi cuốn nhiều nhất một lần sao cho tổng số trang lớn nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra cái túi 0/1 (giá = khối lượng, số trang = giá trị), tối ưu bộ nhớ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>n·x = 10<sup>8</sup>: bắt buộc mảng một chiều <code>int dp[x+1]</code>, duyệt giảm. Bảng hai chiều sẽ quá bộ nhớ.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1634">Minimizing Coins</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">n ≤ 100 mệnh giá, mỗi loại dùng không giới hạn. Tạo đúng tổng x ≤ 10<sup>6</sup> bằng ít đồng nhất; in −1 nếu không được.</p>
+        <p class="ex-skill"><b>Luyện:</b> đổi tiền ít đồng nhất, khởi tạo ∞, phản ví dụ của tham lam.</p>
+        <details class="hint"><summary>Gợi ý</summary><p><code>mn[0] = 0</code>, các ô khác 10<sup>9</sup>; với mỗi s thử mọi đồng c. Kiểm tra ∞ trước khi cộng 1.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1635">Coin Combinations I</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Đếm số cách tạo tổng x từ các mệnh giá, <b>có phân biệt thứ tự</b> (2+3 khác 3+2), lấy dư 10<sup>9</sup> + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm có thứ tự, vòng ngoài là tổng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p><code>dp[0] = 1</code>; với s tăng dần, cộng <code>dp[s - c]</code> cho mọi đồng c ≤ s. Ví dụ {2, 3, 5}, x = 9 phải ra 8.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1636">Coin Combinations II</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Giống bài trên nhưng <b>không phân biệt thứ tự</b>: chỉ đếm các tập đồng xu khác nhau có tổng x.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm không thứ tự, đổi vị trí hai vòng lặp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Vòng ngoài là đồng xu, vòng trong s tăng từ c đến x. Ví dụ {2, 3, 5}, x = 9 ra 3. Bài này giới hạn thời gian chặt: dùng mảng <code>int</code> và phép trừ MOD thay cho <code>%</code> nếu bị quá thời gian.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1745">Money Sums</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có n ≤ 100 đồng xu, mỗi đồng giá trị ≤ 1000. In ra mọi tổng (dương) có thể tạo được bằng cách chọn một số đồng xu.</p>
+        <p class="ex-skill"><b>Luyện:</b> cái túi 0/1 kiểu đúng/sai, tập tổng tạo được.</p>
+        <details class="hint"><summary>Gợi ý</summary><p><code>ok[0] = true</code>, mảng dài tổng các đồng (tối đa 10<sup>5</sup>), mỗi đồng duyệt s giảm. Ví dụ 4 2 5 2 cho 9 tổng.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/dttui2">DTTUI2 – Cái túi 2</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">N ≤ 100 loại đá quý, loại i có khối lượng w<sub>i</sub>, giá trị v<sub>i</sub> và số lượng a<sub>i</sub> ≤ 1000. Túi chịu M ≤ 10<sup>4</sup>. Tìm tổng giá trị lớn nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> cái túi có giới hạn số lượng, tách nhị phân.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Coi từng viên là một vật thì có tới 10<sup>5</sup> vật × 10<sup>4</sup> = 10<sup>9</sup>, quá chậm. Tách a<sub>i</sub> thành các gói 1, 2, 4, …, phần dư (mục Biến thể), mỗi gói là một vật 0/1.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/atcoder_dp_e">Atcoder DP E – Knapsack 2</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Như Knapsack 1 nhưng W ≤ 10<sup>9</sup> và mỗi giá trị v<sub>i</sub> ≤ 1000. Bản gốc: <a href="https://atcoder.jp/contests/dp/tasks/dp_e">atcoder.jp/contests/dp/tasks/dp_e</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> đổi vai khối lượng và giá trị khi W quá lớn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p><code>f[s]</code> = khối lượng nhỏ nhất để có đúng giá trị s, khởi tạo ∞, <code>f[0] = 0</code>. Đáp án là s lớn nhất có <code>f[s] ≤ W</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/dtdoi">DTDOI – Đổi tiền</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">N ≤ 100 mệnh giá (mỗi mệnh giá ≤ 100, luôn có mệnh giá 1), mỗi loại vô hạn. Đổi số tiền S ≤ 10<sup>9</sup> thành ít đồng nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> đổi tiền khi tổng quá lớn; kết hợp QHĐ với lập luận toán.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mảng dài 10<sup>9</sup> là không thể. Gọi c là mệnh giá lớn nhất. Có thể chứng minh (nguyên lý Dirichlet trên tổng tiền tố theo modulo c) rằng một cách tối ưu dùng ít hơn c đồng không phải c, nên phần không dùng đồng c nhỏ hơn c² ≤ 10<sup>4</sup>. QHĐ <code>mn[r]</code> với r &lt; c², rồi thử mọi r ≤ S có (S − r) chia hết cho c: đáp án là min của <code>mn[r] + (S − r)/c</code>.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/dp/dp-knapsack-1">VNOI Wiki – Quy hoạch động cái túi, phần 1</a> (tiếng Việt): các dạng cái túi, đếm, có giới hạn, kèm bài tập.</li>
+      <li><a href="https://wiki.vnoi.info/algo/dp/dp-knapsack-2">VNOI Wiki – Quy hoạch động cái túi, phần 2</a> (tiếng Việt, nâng cao).</li>
+      <li><a href="https://wiki.vnoi.info/algo/dp/basic-problems">VNOI Wiki – Một số bài toán quy hoạch động điển hình</a> (tiếng Việt): có cả cái túi và đổi tiền.</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer’s Handbook</a>, chương 7 “Dynamic programming” (coin problem, knapsack).</li>
+      <li><a href="https://cp-algorithms.com/dynamic_programming/knapsack.html">cp-algorithms – Knapsack Problem</a> (tiếng Anh): 0/1, không giới hạn, tách nhị phân.</li>
+      <li><a href="https://atcoder.jp/contests/dp">AtCoder – Educational DP Contest</a>: bộ 26 bài QHĐ, bài D và E là cái túi.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Cái túi 0/1: <code>dp[i][j] = max(dp[i-1][j], dp[i-1][j-w[i]] + v[i])</code>, đáp án <code>dp[n][W]</code>. Truy vết: ô khác ô trên thì đã chọn vật i.</li>
+        <li>Mảng một chiều: 0/1 thì <b>j giảm</b>; không giới hạn thì <b>j tăng</b>.</li>
+        <li>“Không quá W”: khởi tạo 0. “Đúng bằng”: <code>dp[0] = 0</code>, còn lại ∞ (bài min) hoặc −∞ (bài max).</li>
+        <li>Đổi tiền ít đồng nhất: <code>mn[s] = min(mn[s-c] + 1)</code>; tham lam sai với {1, 3, 4}, x = 6.</li>
+        <li>Đếm có thứ tự: vòng ngoài là tổng. Đếm không thứ tự: vòng ngoài là đồng xu. <code>dp[0] = 1</code>.</li>
+        <li>Tập tổng tạo được: cái túi 0/1 với <code>bool</code>, duyệt giảm.</li>
+        <li>Độ phức tạp <span class="bigo">O(n·W)</span>, giả đa thức. W lớn mà giá trị nhỏ thì QHĐ theo giá trị.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/knapsack.js"></script>
+</body>
+</html>

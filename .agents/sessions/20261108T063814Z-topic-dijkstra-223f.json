@@ -1,0 +1,12 @@
+{
+  "id": "20261108T063814Z-topic-dijkstra-223f",
+  "agent": "topic-dijkstra",
+  "task": "Soạn chủ đề dijkstra",
+  "topic": "dijkstra",
+  "status": "active",
+  "host": "MyPC",
+  "started_at": "2026-11-08T06:38:14Z",
+  "heartbeat_at": "2026-11-08T06:38:14Z",
+  "ended_at": null,
+  "summary": null
+}

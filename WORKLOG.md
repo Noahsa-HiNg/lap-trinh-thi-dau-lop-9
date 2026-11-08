@@ -62,7 +62,7 @@
 | `20261108T062724Z-topic-backtracking-16b3` | topic-backtracking | backtracking | done | 2026-11-08T06:27:24Z | 2026-11-08T06:29:46Z | Widget N hậu (4–8) assets/js/viz/backtracking.js; validate OK; 11 bài tập (7 VI), 7711 từ |
 | `20261108T062724Z-topic-binary-search-answer-4817` | topic-binary-search-answer | binary-search-answer | done | 2026-11-08T06:27:24Z | 2026-11-08T06:34:16Z | 9 bài tập (7 VI), 7540 từ, 8 câu tự kiểm tra, widget có |
 | `20261108T062727Z-topic-lis-af33` | topic-lis | lis | done | 2026-11-08T06:27:27Z | 2026-11-08T06:37:27Z | 7 bài tập (4 VI), ~6000 từ, 2 stepper (17 khung), SVG, widget lis.js |
-| `20261108T062729Z-topic-knapsack-cf1f` | topic-knapsack | knapsack | active | 2026-11-08T06:27:29Z | — |  |
+| `20261108T062729Z-topic-knapsack-cf1f` | topic-knapsack | knapsack | done | 2026-11-08T06:27:29Z | 2026-11-08T06:38:26Z | 9 bài tập (4 VI), 6309 từ, 2 stepper (16 khung), widget có |
 | `20261108T062729Z-topic-bfs-955c` | topic-bfs | bfs | active | 2026-11-08T06:27:29Z | — |  |
 | `20261108T062735Z-topic-flood-fill-2aed` | topic-flood-fill | flood-fill | active | 2026-11-08T06:27:35Z | — |  |
 | `20261108T062736Z-topic-stl-0fa2` | topic-stl | stl | active | 2026-11-08T06:27:36Z | — |  |
@@ -71,6 +71,7 @@
 | `20261108T062935Z-topic-strings-d55b` | topic-strings | strings | active | 2026-11-08T06:29:35Z | — |  |
 | `20261108T063014Z-topic-big-numbers-aaeb` | topic-big-numbers | big-numbers | active | 2026-11-08T06:30:14Z | — |  |
 | `20261108T063515Z-topic-lcs-7c82` | topic-lcs | lcs | active | 2026-11-08T06:35:15Z | — |  |
+| `20261108T063814Z-topic-dijkstra-223f` | topic-dijkstra | dijkstra | active | 2026-11-08T06:38:14Z | — |  |
 
 ## Dòng thời gian
 
@@ -367,3 +368,11 @@
 - `06:37:43` **topic-graph-dfs** · `graph-dfs` · _tiến độ_: Viết xong kiem-tra, bai-tap, tham-khao, tom-tat; đã xóa @@TIEP@@
 - `06:37:48` **topic-lcs** · `lcs` · _tiến độ_: Đã tìm xong 9 bài tập (5 VI), lưu exercises.md
 - `06:37:53` **orchestrator** · _commit_: Sửa khoảng cách giữa các hàng .arr để nhãn data-ptr/data-i không đè nhau; commit lis — assets/css/style.css
+- `06:38:14` **topic-dijkstra** · `dijkstra` · _bắt đầu_: Mở phiên: Soạn chủ đề dijkstra
+- `06:38:26` **topic-knapsack** · `knapsack` · _tiến độ_: Qua validate (0 lỗi, 0 cảnh báo), widget knapsack.js qua node --check
+- `06:38:26` **topic-knapsack** · `knapsack` · _hoàn thành_: Đóng phiên (done): 9 bài tập (4 VI), 6309 từ, 2 stepper (16 khung), widget có
+- `06:38:30` **topic-flood-fill** · `flood-fill` · _tiến độ_: Viết xong truc-quan (2 stepper, SVG) + cai-dat (3 chương trình đã chạy thử)
+- `06:38:36` **topic-bfs** · `bfs` · _tiến độ_: Viết xong minh họa (stepper 10 khung, SVG lớp, bàn cờ mã), cài đặt C++, BFS không gian trạng thái
+- `06:38:40` **topic-stl** · `stl` · _tiến độ_: Viết xong toàn bộ 14 section; còn widget
+- `06:39:06` **topic-stack-queue** · `stack-queue` · _tiến độ_: Viết xong Biến thể (hậu tố, undo, khử đệ quy, 4 dạng gần nhất, biểu đồ cột, bảng 0/1, deque) và Lỗi thường gặp
+- `06:51:08` **orchestrator** · _commit_: Commit knapsack; 9 agent dừng do giới hạn 5 giờ, sẽ nhắn để làm tiếp
