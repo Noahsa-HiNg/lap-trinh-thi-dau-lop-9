@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hai con trỏ &amp; cửa sổ trượt · Thi đấu lớp 9</title>
+<meta name="description" content="Kỹ thuật hai con trỏ ngược chiều và cùng chiều, cửa sổ trượt: tìm cặp có tổng cho trước, trộn hai dãy, đoạn con dài nhất hoặc ngắn nhất thỏa điều kiện trong O(n).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+.tp-view { overflow-x: auto; }
+</style>
+</head>
+<body data-page="topic" data-topic="two-pointers">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li><span>Cài đặt được hai con trỏ ngược chiều để tìm và đếm cặp có tổng bằng <span class="math">x</span> trên mảng đã sắp xếp, kể cả khi có phần tử trùng nhau.</span></li>
+      <li><span>Giải thích được vì sao hai con trỏ không bỏ sót đáp án và vì sao tổng số bước chỉ là <span class="bigo">O(n)</span>.</span></li>
+      <li><span>Dùng được hai con trỏ cùng chiều để trộn hai dãy đã sắp và ghép cặp giữa hai dãy.</span></li>
+      <li><span>Viết được cửa sổ trượt cho các dạng: đoạn dài nhất có tổng ≤ k, đoạn ngắn nhất có tổng ≥ s, đếm đoạn thỏa điều kiện, đoạn có không quá k giá trị phân biệt, cửa sổ độ dài cố định.</span></li>
+      <li><span>Nhận ra được khi nào dùng được hai con trỏ (tính đơn điệu) và khi nào phải đổi sang cộng dồn kết hợp <code>map</code>.</span></li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Hai con trỏ (two pointers) là kỹ thuật dùng hai chỉ số <span class="math">i</span> và <span class="math">j</span> cùng chạy trên một mảng (hoặc trên hai mảng). Mỗi bước, em chỉ dịch một trong hai chỉ số đi một ô, và <strong>không bao giờ dịch lùi</strong>. Nhờ vậy, thay vì xét mọi cặp hay mọi đoạn con (cỡ <span class="math">n²</span> trường hợp), em chỉ đi tổng cộng khoảng <span class="math">2n</span> bước.</p>
+    <p>Kỹ thuật có hai kiểu chính:</p>
+    <ul>
+      <li><strong>Ngược chiều:</strong> <span class="math">i</span> bắt đầu ở đầu mảng, <span class="math">j</span> ở cuối mảng, hai con trỏ đi dần vào nhau. Dùng cho bài tìm cặp có tổng (hoặc hiệu) cho trước trên mảng đã sắp xếp.</li>
+      <li><strong>Cùng chiều:</strong> cả hai con trỏ cùng đi từ trái sang phải. Khi hai con trỏ chạy trên cùng một mảng và kẹp giữa chúng một đoạn liên tiếp, ta gọi đoạn đó là <strong>cửa sổ trượt</strong> (sliding window). Khi chúng chạy trên hai mảng khác nhau, ta có bài trộn hai dãy hoặc ghép cặp hai dãy.</li>
+    </ul>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> lớp em xếp hàng theo chiều cao tăng dần, cô cần chọn hai bạn có tổng chiều cao đúng 300 cm để khiêng một tấm bảng. Cô đứng ở bạn thấp nhất, thầy đứng ở bạn cao nhất. Nếu hai bạn đang chọn cộng lại thấp quá, cô bước sang bạn cao hơn một chút. Nếu cao quá, thầy bước sang bạn thấp hơn một chút. Hai người đi dần vào giữa, không ai phải quay lại, và chẳng mấy chốc sẽ tìm ra cặp cần tìm (hoặc biết chắc là không có).</p></div>
+    </div>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung cửa sổ trượt:</strong> em đi tàu và nhìn qua một ô cửa sổ. Tàu chạy thì cảnh mới hiện ra ở mép phải, cảnh cũ khuất đi ở mép trái. Em không cần nhìn lại toàn bộ con đường, chỉ cần để ý cái vừa vào và cái vừa ra.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>Bài toán cặp tổng:</strong> cho mảng <span class="math">a[0..n−1]</span> đã sắp xếp tăng dần và số <span class="math">x</span>. Tìm (hoặc đếm) các cặp chỉ số <span class="math">i &lt; j</span> sao cho <span class="math">a[i] + a[j] = x</span>.</p>
+      <p><strong>Cửa sổ</strong> <span class="math">[l, r]</span> là đoạn liên tiếp <span class="math">a[l], a[l+1], …, a[r]</span>. Cửa sổ trượt là cách duy trì một cửa sổ, mỗi bước <em>mở rộng</em> mép phải (<span class="math">r</span> tăng 1) hoặc <em>co</em> mép trái (<span class="math">l</span> tăng 1), đồng thời cập nhật thông tin của cửa sổ (tổng, số giá trị phân biệt…) chỉ bằng phần tử vừa vào hoặc vừa ra.</p>
+    </div>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Hai con trỏ biến rất nhiều lời giải <span class="bigo">O(n²)</span> thành <span class="bigo">O(n)</span> (cộng thêm <span class="bigo">O(n log n)</span> nếu phải sắp xếp trước). Các dạng bài hay gặp:</p>
+    <ul>
+      <li>Tìm hoặc đếm cặp có tổng, hiệu cho trước; tìm cặp có tổng gần <span class="math">x</span> nhất.</li>
+      <li>Trộn hai dãy đã sắp thành một dãy sắp (bước chính của sắp xếp trộn trong bài <a href="sorting.html">Sắp xếp</a>).</li>
+      <li>Ghép cặp giữa hai nhóm: người với căn hộ, áo với người mặc, xe với hành khách…</li>
+      <li>Đoạn con liên tiếp dài nhất, ngắn nhất hoặc đếm số đoạn con thỏa một điều kiện “đoạn càng dài càng dễ vi phạm” (tổng ≤ k với số không âm, không có phần tử trùng, không quá k giá trị phân biệt…).</li>
+      <li>Thống kê trên mọi cửa sổ có độ dài cố định <span class="math">k</span> (tổng, số giá trị phân biệt).</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề có mảng <strong>đã sắp xếp</strong> (hoặc em được phép sắp xếp vì thứ tự không quan trọng), hoặc hỏi về <strong>đoạn con liên tiếp</strong> với các số <strong>không âm</strong>. Giới hạn thường là <span class="math">n ≤ 10⁵</span> đến <span class="math">10⁶</span>, nên <span class="bigo">O(n²)</span> chắc chắn quá thời gian. Câu hỏi then chốt: <em>khi một đầu dịch đi, đầu kia có bao giờ phải lùi lại không?</em> Nếu không bao giờ, hai con trỏ dùng được.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <h3>Bài toán mở đầu 1: tìm cặp có tổng x</h3>
+    <p>Cho dãy tăng dần <span class="math">2, 3, 5, 7, 9, 12</span> và <span class="math">x = 16</span>. Tìm hai phần tử có tổng 16.</p>
+    <p>Cách ngây thơ: thử mọi cặp <span class="math">(i, j)</span> với <span class="math">i &lt; j</span>. Có <span class="math">n(n−1)/2</span> cặp. Với 6 phần tử là 15 cặp, chẳng đáng kể. Nhưng với <span class="math">n = 10⁵</span> thì số cặp là <span class="math">10⁵ · (10⁵ − 1) / 2 ≈ 5 · 10⁹</span>. Máy chấm làm khoảng <span class="math">10⁸</span> phép tính mỗi giây, nên cần chừng 50 giây.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Thử mọi cặp</h4><p>Hai vòng lặp lồng nhau. <span class="bigo">O(n²)</span>: với <span class="math">n = 10⁵</span> là khoảng <span class="math">5 · 10⁹</span> phép so sánh, quá giới hạn 1 giây rất xa.</p></div>
+      <div class="good-side"><h4>Hai con trỏ ngược chiều</h4><p>Mỗi bước loại hẳn một phần tử. <span class="bigo">O(n)</span>: nhiều nhất <span class="math">n − 1 ≈ 10⁵</span> bước. Nếu mảng chưa sắp thì cộng thêm sắp xếp <span class="bigo">O(n log n)</span>, khoảng <span class="math">1,7 · 10⁶</span> phép tính.</p></div>
+    </div>
+    <h3>Bài toán mở đầu 2: đoạn con dài nhất có tổng ≤ k</h3>
+    <p>Cho dãy <strong>không âm</strong> <span class="math">a</span> và số <span class="math">k</span>. Tìm đoạn con liên tiếp dài nhất có tổng không vượt quá <span class="math">k</span>.</p>
+    <p>Cách ngây thơ: xét mọi đoạn <span class="math">[l, r]</span>. Có <span class="math">n(n+1)/2</span> đoạn. Dù dùng <a href="prefix-sum.html">mảng cộng dồn</a> để tính tổng mỗi đoạn trong <span class="bigo">O(1)</span>, với <span class="math">n = 10⁵</span> vẫn là khoảng <span class="math">5 · 10⁹</span> đoạn.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Xét mọi đoạn</h4><p><span class="bigo">O(n²)</span> nếu có cộng dồn, <span class="bigo">O(n³)</span> nếu cộng tay từng đoạn. Với <span class="math">n = 10⁵</span>: ít nhất <span class="math">5 · 10⁹</span> phép tính.</p></div>
+      <div class="good-side"><h4>Cửa sổ trượt</h4><p><span class="math">r</span> tăng <span class="math">n</span> lần, <span class="math">l</span> tăng nhiều nhất <span class="math">n</span> lần. Tổng cộng không quá <span class="math">2n = 2 · 10⁵</span> lần dịch con trỏ, tức <span class="bigo">O(n)</span>.</p></div>
+    </div>
+    <p>Điểm chung của hai bài: cách ngây thơ xét lại rất nhiều trường hợp mà ta <strong>đã biết chắc là vô ích</strong>. Hai con trỏ tận dụng thứ tự (mảng tăng dần, số không âm) để loại chúng đi hàng loạt.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>1. Hai con trỏ ngược chiều: tìm cặp có tổng x</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Sắp xếp.</strong> Nếu mảng chưa tăng dần thì sắp xếp nó (nhớ giữ lại chỉ số gốc nếu đề hỏi vị trí).</div></li>
+      <li><div><strong>Khởi tạo.</strong> Đặt <span class="math">i = 0</span> (phần tử nhỏ nhất) và <span class="math">j = n − 1</span> (phần tử lớn nhất).</div></li>
+      <li><div><strong>So sánh.</strong> Khi <span class="math">i &lt; j</span>, tính <span class="math">s = a[i] + a[j]</span>. Nếu <span class="math">s &lt; x</span> thì tăng <span class="math">i</span>; nếu <span class="math">s &gt; x</span> thì giảm <span class="math">j</span>; nếu <span class="math">s = x</span> thì đã tìm thấy.</div></li>
+      <li><div><strong>Kết thúc.</strong> Nếu <span class="math">i</span> gặp <span class="math">j</span> mà chưa thấy, kết luận không có cặp nào.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> TimCap(a, n, x):          <i>// a đã sắp tăng dần</i>
+    i ← 0;  j ← n − 1
+    <b>trong khi</b> i &lt; j:
+        s ← a[i] + a[j]
+        <b>nếu</b> s = x:  <b>trả về</b> (i, j)
+        <b>nếu</b> s &lt; x:  i ← i + 1      <i>// a[i] quá nhỏ, bỏ a[i]</i>
+        <b>ngược lại</b>:  j ← j − 1      <i>// a[j] quá lớn, bỏ a[j]</i>
+    <b>trả về</b> "không có"</pre>
+
+    <h3>2. Đếm số cặp có tổng x (có phần tử trùng)</h3>
+    <p>Khi tìm thấy <span class="math">a[i] + a[j] = x</span>, có thể có nhiều phần tử bằng <span class="math">a[i]</span> đứng liền sau <span class="math">i</span> và nhiều phần tử bằng <span class="math">a[j]</span> đứng liền trước <span class="math">j</span>. Ta đếm cả khối một lúc.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Như trên</strong> cho đến khi <span class="math">a[i] + a[j] = x</span>.</div></li>
+      <li><div><strong>Trường hợp a[i] = a[j].</strong> Vì mảng tăng dần nên mọi phần tử từ <span class="math">i</span> đến <span class="math">j</span> đều bằng nhau. Có <span class="math">c = j − i + 1</span> phần tử, chọn 2 trong số đó: cộng <span class="math">c(c−1)/2</span> rồi dừng.</div></li>
+      <li><div><strong>Trường hợp a[i] &lt; a[j].</strong> Đếm khối trái <span class="math">ci</span> phần tử bằng <span class="math">a[i]</span>, khối phải <span class="math">cj</span> phần tử bằng <span class="math">a[j]</span>. Cộng <span class="math">ci · cj</span>, rồi đưa <span class="math">i</span> qua hết khối trái, <span class="math">j</span> qua hết khối phải.</div></li>
+    </ol>
+
+    <h3>3. Hai con trỏ cùng chiều trên hai dãy: trộn</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> <span class="math">i = 0</span> trên dãy <span class="math">a</span> (độ dài <span class="math">n</span>), <span class="math">j = 0</span> trên dãy <span class="math">b</span> (độ dài <span class="math">m</span>), cả hai đã sắp tăng.</div></li>
+      <li><div><strong>Lấy phần tử nhỏ hơn.</strong> Khi cả hai còn phần tử: nếu <span class="math">a[i] ≤ b[j]</span> thì đưa <span class="math">a[i]</span> vào kết quả và tăng <span class="math">i</span>, ngược lại đưa <span class="math">b[j]</span> và tăng <span class="math">j</span>.</div></li>
+      <li><div><strong>Chép phần dư.</strong> Dãy nào còn thì chép nốt vào cuối.</div></li>
+    </ol>
+
+    <h3>4. Cửa sổ trượt: đoạn dài nhất có tổng ≤ k</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> <span class="math">l = 0</span>, <span class="math">tong = 0</span>, <span class="math">best = 0</span>.</div></li>
+      <li><div><strong>Mở rộng.</strong> Cho <span class="math">r</span> chạy từ 0 đến <span class="math">n − 1</span>: cộng <span class="math">a[r]</span> vào <span class="math">tong</span>.</div></li>
+      <li><div><strong>Co lại.</strong> Trong khi <span class="math">tong &gt; k</span>: trừ <span class="math">a[l]</span> khỏi <span class="math">tong</span> và tăng <span class="math">l</span>.</div></li>
+      <li><div><strong>Ghi nhận.</strong> Lúc này <span class="math">[l, r]</span> là đoạn dài nhất kết thúc tại <span class="math">r</span> thỏa điều kiện. Cập nhật <span class="math">best = max(best, r − l + 1)</span>. Nếu cần đếm số đoạn thỏa, cộng thêm <span class="math">r − l + 1</span>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> DaiNhat(a, n, k):          <i>// a[i] ≥ 0</i>
+    l ← 0;  tong ← 0;  best ← 0
+    <b>với</b> r <b>từ</b> 0 <b>đến</b> n − 1:
+        tong ← tong + a[r]         <i>// mở rộng mép phải</i>
+        <b>trong khi</b> tong &gt; k:
+            tong ← tong − a[l]     <i>// co mép trái</i>
+            l ← l + 1
+        best ← max(best, r − l + 1)
+    <b>trả về</b> best</pre>
+    <p>Khuôn mẫu chung của mọi cửa sổ trượt chỉ có ba dòng: <em>thêm a[r]</em> → <em>trong khi cửa sổ hỏng thì bỏ a[l]</em> → <em>ghi nhận đáp án</em>. Các biến thể ở mục <a href="#bien-the">Biến thể</a> chỉ đổi “thông tin của cửa sổ” và “thế nào là hỏng”.</p>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Hai con trỏ ngược chiều: vì sao không bỏ sót</h3>
+    <p>Ta giữ một <strong>bất biến</strong> (điều luôn đúng sau mỗi bước): <em>nếu có cặp đáp án <span class="math">(p, q)</span> thì <span class="math">i ≤ p</span> và <span class="math">q ≤ j</span></em>, tức là đáp án vẫn nằm trong vùng chưa bị loại. Lúc đầu <span class="math">i = 0</span>, <span class="math">j = n − 1</span> nên hiển nhiên đúng. Xét một bước:</p>
+    <ul>
+      <li><strong>Nếu <span class="math">a[i] + a[j] &lt; x</span>.</strong> Mọi phần tử còn lại <span class="math">a[i+1], …, a[j]</span> đều không lớn hơn <span class="math">a[j]</span> (mảng tăng dần). Vậy <span class="math">a[i] + a[t] ≤ a[i] + a[j] &lt; x</span> với mọi <span class="math">t</span> trong vùng. Phần tử <span class="math">a[i]</span> không thể ghép với ai để ra <span class="math">x</span>, bỏ nó đi (tăng <span class="math">i</span>) là an toàn.</li>
+      <li><strong>Nếu <span class="math">a[i] + a[j] &gt; x</span>.</strong> Lập luận đối xứng: mọi phần tử còn lại đều không nhỏ hơn <span class="math">a[i]</span>, nên <span class="math">a[t] + a[j] ≥ a[i] + a[j] &gt; x</span>. Phần tử <span class="math">a[j]</span> vô dụng, giảm <span class="math">j</span>.</li>
+    </ul>
+    <p>Mỗi bước, bất biến vẫn đúng. Khi <span class="math">i = j</span>, vùng còn lại chỉ có một phần tử, không còn cặp nào; nếu tới đây chưa gặp đáp án thì chắc chắn không có.</p>
+    <p>Có một cách nhìn bằng hình rất đẹp. Viết mọi cặp <span class="math">(i, j)</span> vào một bảng: hàng <span class="math">i</span>, cột <span class="math">j</span>. Ô <span class="math">(i, j)</span> ghi tổng <span class="math">a[i] + a[j]</span>. Vì mảng tăng, tổng tăng khi đi sang phải và tăng khi đi xuống dưới. Con trỏ đứng ở góc trên bên phải của vùng còn lại. Tổng nhỏ quá thì <strong>cả hàng</strong> <span class="math">i</span> (phần còn lại) đều nhỏ quá, xóa cả hàng. Tổng lớn quá thì <strong>cả cột</strong> <span class="math">j</span> đều lớn quá, xóa cả cột. Mỗi bước xóa một hàng hoặc một cột, nên chỉ cần khoảng <span class="math">n</span> bước để xóa hết bảng <span class="math">n²/2</span> ô. Em sẽ thấy bảng này trong phần <a href="#truc-quan">Minh họa trực quan</a>.</p>
+
+    <h3>Hai con trỏ ngược chiều: vì sao nhanh</h3>
+    <p>Mỗi vòng lặp hoặc tăng <span class="math">i</span>, hoặc giảm <span class="math">j</span>, nên khoảng cách <span class="math">j − i</span> giảm đúng 1. Khoảng cách ban đầu là <span class="math">n − 1</span>, vòng lặp dừng khi khoảng cách bằng 0. Vậy có nhiều nhất <span class="math">n − 1</span> vòng lặp. Với bài đếm có trùng, mỗi bước đi qua cả khối vẫn làm khoảng cách giảm đúng bằng số ô đi qua, nên tổng vẫn không quá <span class="math">n</span>.</p>
+
+    <h3>Cửa sổ trượt: vì sao đúng</h3>
+    <p>Gọi <span class="math">L(r)</span> là vị trí trái nhỏ nhất sao cho đoạn <span class="math">[L(r), r]</span> có tổng ≤ k. Đây chính là đoạn dài nhất kết thúc tại <span class="math">r</span>. Ý then chốt là <strong>tính đơn điệu</strong>:</p>
+    <ul>
+      <li>Vì các số không âm, nếu đoạn <span class="math">[l, r]</span> có tổng ≤ k thì mọi đoạn con nằm bên trong nó cũng có tổng ≤ k (bỏ bớt số không âm thì tổng không tăng).</li>
+      <li>Ngược lại, nếu <span class="math">[l, r]</span> đã có tổng &gt; k thì kéo dài sang phải thành <span class="math">[l, r+1]</span> càng không thể ≤ k.</li>
+    </ul>
+    <p>Từ đó <span class="math">L(r+1) ≥ L(r)</span>: khi <span class="math">r</span> tăng, mép trái tốt nhất không bao giờ lùi về bên trái. Vì vậy ta không cần thử lại các <span class="math">l</span> nhỏ hơn; chỉ cần đẩy <span class="math">l</span> tiếp từ chỗ cũ. Vòng <code>while</code> dừng đúng tại <span class="math">L(r)</span>: nó dừng ngay khi tổng ≤ k lần đầu tiên, và mọi vị trí trước đó đều có tổng &gt; k. Ta lấy max của <span class="math">r − L(r) + 1</span> trên mọi <span class="math">r</span>, mà đoạn tốt nhất nào cũng kết thúc tại một <span class="math">r</span> nào đó, nên không sót.</p>
+    <p>Khi đếm, mọi đoạn <span class="math">[t, r]</span> với <span class="math">L(r) ≤ t ≤ r</span> đều hợp lệ (vì nằm trong <span class="math">[L(r), r]</span>) và mọi <span class="math">t &lt; L(r)</span> đều hỏng. Vậy có đúng <span class="math">r − L(r) + 1</span> đoạn hợp lệ kết thúc tại <span class="math">r</span>.</p>
+
+    <h3>Cửa sổ trượt: vì sao nhanh</h3>
+    <p>Nhìn qua thì có vòng <code>while</code> nằm trong vòng <code>for</code>, tưởng là <span class="bigo">O(n²)</span>. Nhưng hãy đếm theo con trỏ <span class="math">l</span>: mỗi lần chạy thân <code>while</code>, <span class="math">l</span> tăng 1, và <span class="math">l</span> không bao giờ giảm, cũng không vượt quá <span class="math">n</span>. Vậy <strong>trong suốt cả chương trình</strong> thân <code>while</code> chạy không quá <span class="math">n</span> lần. Cộng với <span class="math">n</span> lần của vòng <code>for</code>, tổng là không quá <span class="math">2n</span>. Cách đếm “cộng dồn tất cả các lần chạy” này gọi là <strong>phân tích khấu hao</strong> (amortized analysis).</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Mỗi khi viết hai con trỏ, em tự hỏi hai câu: “Bước này bỏ đi cái gì, và vì sao bỏ nó không mất đáp án?” và “Con trỏ nào có thể lùi lại?”. Trả lời được câu đầu là em chứng minh được thuật toán đúng; câu thứ hai mà đáp “không con trỏ nào” là em biết nó chạy <span class="bigo">O(n)</span>.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+
+    <h3>Ví dụ 1: tìm cặp có tổng 16</h3>
+    <p>Mảng đã sắp tăng dần <span class="math">a = 2, 3, 5, 7, 9, 12</span>, cần tìm <span class="math">a[i] + a[j] = 16</span>. Hai ô có nhãn <span class="math">i</span>, <span class="math">j</span> là hai phần tử đang xét (tô màu “so sánh” khi tổng nhỏ hơn x, màu “bị loại” khi tổng lớn hơn x), ô mờ là phần tử đã bị loại, ô màu “đã xong” là đáp án. Bấm nút để xem từng bước.</p>
+    <div class="stepper" data-title="Hai con trỏ ngược chiều: a[i] + a[j] = 16">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; i = 0, j = 5: a[0] + a[5] = 2 + 12 = 14 &lt; 16. Ngay cả số lớn nhất (12) cũng không đủ bù cho 2, nên 2 không ghép được với ai. Bỏ a[0], tăng i.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-cmp" data-i="0" data-ptr="i">2</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">5</span><span class="cell" data-i="3">7</span><span class="cell" data-i="4">9</span><span class="cell is-cmp" data-i="5" data-ptr="j">12</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; i = 1, j = 5: 3 + 12 = 15 &lt; 16. Tương tự, bỏ a[1], tăng i.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">2</span><span class="cell is-cmp" data-i="1" data-ptr="i">3</span><span class="cell" data-i="2">5</span><span class="cell" data-i="3">7</span><span class="cell" data-i="4">9</span><span class="cell is-cmp" data-i="5" data-ptr="j">12</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; i = 2, j = 5: 5 + 12 = 17 &gt; 16. Ngay cả số nhỏ nhất còn lại (5) cộng với 12 cũng đã quá 16, nên 12 vô dụng. Bỏ a[5], giảm j.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">2</span><span class="cell is-dim" data-i="1">3</span><span class="cell is-cmp" data-i="2" data-ptr="i">5</span><span class="cell" data-i="3">7</span><span class="cell" data-i="4">9</span><span class="cell is-cmp" data-i="5" data-ptr="j">12</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; i = 2, j = 4: 5 + 9 = 14 &lt; 16. Bỏ a[2], tăng i.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">2</span><span class="cell is-dim" data-i="1">3</span><span class="cell is-cmp" data-i="2" data-ptr="i">5</span><span class="cell" data-i="3">7</span><span class="cell is-cmp" data-i="4" data-ptr="j">9</span><span class="cell is-dim" data-i="5">12</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; i = 3, j = 4: 7 + 9 = 16 = x. Tìm thấy! Nếu đánh số từ 1 thì đó là vị trí 4 và 5. Chỉ mất 5 lần so sánh thay vì 15 cặp.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">2</span><span class="cell is-dim" data-i="1">3</span><span class="cell is-dim" data-i="2">5</span><span class="cell is-ok" data-i="3" data-ptr="i">7</span><span class="cell is-ok" data-i="4" data-ptr="j">9</span><span class="cell is-dim" data-i="5">12</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Tổng kết.&lt;/b&gt; Mỗi dòng trong bảng vết là một lần so sánh; mỗi lần so sánh loại hẳn một phần tử (hoặc kết thúc).">
+        <table class="trace">
+          <thead><tr><th>Bước</th><th>i</th><th>j</th><th>a[i] + a[j]</th><th>So với 16</th><th>Hành động</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>0</td><td>5</td><td>2 + 12 = 14</td><td>nhỏ hơn</td><td>i++</td></tr>
+            <tr><td>2</td><td>1</td><td>5</td><td>3 + 12 = 15</td><td>nhỏ hơn</td><td>i++</td></tr>
+            <tr><td>3</td><td>2</td><td>5</td><td>5 + 12 = 17</td><td>lớn hơn</td><td>j−−</td></tr>
+            <tr><td>4</td><td>2</td><td>4</td><td>5 + 9 = 14</td><td>nhỏ hơn</td><td>i++</td></tr>
+            <tr class="hl"><td>5</td><td>3</td><td>4</td><td>7 + 9 = 16</td><td>bằng</td><td>tìm thấy</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3>Bảng mọi cặp: mỗi bước xóa cả một hàng hoặc một cột</h3>
+    <p>Bảng dưới ghi tổng <span class="math">a[i] + a[j]</span> của cả 15 cặp <span class="math">i &lt; j</span> (tiêu đề hàng là <span class="math">a[i]</span>, tiêu đề cột là <span class="math">a[j]</span>). Đi sang phải hay đi xuống, tổng đều tăng. Năm lần so sánh ở ví dụ 1 đã quyết định số phận của cả 15 ô.</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Ma trận cặp (i, j) với x = 16</p></div>
+      <div class="viz-body">
+        <div class="grid-viz" style="--cols:7">
+          <span class="g h">+</span><span class="g h">2</span><span class="g h">3</span><span class="g h">5</span><span class="g h">7</span><span class="g h">9</span><span class="g h">12</span>
+          <span class="g h">2</span><span class="g is-wall"></span><span class="g is-cmp">5</span><span class="g is-cmp">7</span><span class="g is-cmp">9</span><span class="g is-cmp">11</span><span class="g is-cmp">14</span>
+          <span class="g h">3</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-cmp">8</span><span class="g is-cmp">10</span><span class="g is-cmp">12</span><span class="g is-cmp">15</span>
+          <span class="g h">5</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-cmp">12</span><span class="g is-cmp">14</span><span class="g is-bad">17</span>
+          <span class="g h">7</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-ok">16</span><span class="g is-bad">19</span>
+          <span class="g h">9</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-bad">21</span>
+          <span class="g h">12</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span>
+        </div>
+      </div>
+      <div class="viz-legend"><span><i class="is-cmp"></i>bị loại cả hàng (tổng nhỏ hơn 16)</span><span><i class="is-bad"></i>bị loại cả cột (tổng lớn hơn 16)</span><span><i class="is-ok"></i>đáp án</span></div>
+      <div class="viz-caption"><p>Bước 1 xóa hàng của 2, bước 2 xóa hàng của 3, bước 3 xóa phần còn lại của cột 12, bước 4 xóa phần còn lại của hàng 5, bước 5 gặp ô 16. Ô góc trên bên phải của vùng còn lại luôn là ô (i, j) đang xét: nó là ô lớn nhất trong hàng và nhỏ nhất trong cột của mình, nên so sánh nó với x là đủ biết nên xóa hàng hay xóa cột.</p></div>
+    </div>
+
+    <h3>Ví dụ 2: cửa sổ trượt, đoạn dài nhất có tổng ≤ 5</h3>
+    <p>Dãy <span class="math">a = 3, 1, 2, 1, 1, 4, 2</span>, <span class="math">k = 5</span>. Các ô tô màu “đang xét” là cửa sổ <span class="math">[l, r]</span> hiện tại, ô mờ là phần đã bị đẩy ra khỏi cửa sổ, cửa sổ tô màu “bị loại” là lúc tổng đang vượt <span class="math">k</span>. Cột “đếm” cộng dồn số đoạn hợp lệ <span class="math">r − l + 1</span>.</p>
+    <div class="stepper" data-title="Cửa sổ trượt: tổng ≤ 5">
+      <div class="frame" data-caption="&lt;b&gt;r = 0.&lt;/b&gt; Thêm a[0] = 3, tổng = 3 ≤ 5. Cửa sổ [0, 0] dài 1. best = 1, đếm = 1.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-active" data-i="0" data-ptr="l=r">3</span><span class="cell" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell" data-i="3">1</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">4</span><span class="cell" data-i="6">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;r = 1.&lt;/b&gt; Thêm a[1] = 1, tổng = 4 ≤ 5. Cửa sổ [0, 1] dài 2. best = 2, đếm = 1 + 2 = 3.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-active" data-i="0" data-ptr="l">3</span><span class="cell is-active" data-i="1" data-ptr="r">1</span><span class="cell" data-i="2">2</span><span class="cell" data-i="3">1</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">4</span><span class="cell" data-i="6">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;r = 2.&lt;/b&gt; Thêm a[2] = 2, tổng = 6 &gt; 5. Cửa sổ hỏng, phải co mép trái.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-bad" data-i="0" data-ptr="l">3</span><span class="cell is-bad" data-i="1">1</span><span class="cell is-bad" data-i="2" data-ptr="r">2</span><span class="cell" data-i="3">1</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">4</span><span class="cell" data-i="6">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Co lại.&lt;/b&gt; Bỏ a[0] = 3, tổng = 3 ≤ 5, l = 1. Cửa sổ [1, 2] dài 2. best vẫn 2, đếm = 3 + 2 = 5.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">3</span><span class="cell is-active" data-i="1" data-ptr="l">1</span><span class="cell is-active" data-i="2" data-ptr="r">2</span><span class="cell" data-i="3">1</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">4</span><span class="cell" data-i="6">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;r = 3.&lt;/b&gt; Thêm a[3] = 1, tổng = 4. Cửa sổ [1, 3] dài 3. best = 3, đếm = 5 + 3 = 8.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">3</span><span class="cell is-active" data-i="1" data-ptr="l">1</span><span class="cell is-active" data-i="2">2</span><span class="cell is-active" data-i="3" data-ptr="r">1</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">4</span><span class="cell" data-i="6">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;r = 4.&lt;/b&gt; Thêm a[4] = 1, tổng = 5 ≤ 5 (bằng k vẫn được). Cửa sổ [1, 4] dài 4. best = 4, đếm = 8 + 4 = 12.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">3</span><span class="cell is-active" data-i="1" data-ptr="l">1</span><span class="cell is-active" data-i="2">2</span><span class="cell is-active" data-i="3">1</span><span class="cell is-active" data-i="4" data-ptr="r">1</span><span class="cell" data-i="5">4</span><span class="cell" data-i="6">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;r = 5.&lt;/b&gt; Thêm a[5] = 4, tổng = 9 &gt; 5. Cửa sổ hỏng.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">3</span><span class="cell is-bad" data-i="1" data-ptr="l">1</span><span class="cell is-bad" data-i="2">2</span><span class="cell is-bad" data-i="3">1</span><span class="cell is-bad" data-i="4">1</span><span class="cell is-bad" data-i="5" data-ptr="r">4</span><span class="cell" data-i="6">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Co lại 3 lần.&lt;/b&gt; Bỏ a[1] = 1 (tổng 8), bỏ a[2] = 2 (tổng 6), bỏ a[3] = 1 (tổng 5). l = 4. Cửa sổ [4, 5] dài 2, đếm = 12 + 2 = 14. Để ý: l nhảy 3 ô trong một bước, nhưng các ô đó sẽ không bao giờ phải xét lại.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">3</span><span class="cell is-dim" data-i="1">1</span><span class="cell is-dim" data-i="2">2</span><span class="cell is-dim" data-i="3">1</span><span class="cell is-active" data-i="4" data-ptr="l">1</span><span class="cell is-active" data-i="5" data-ptr="r">4</span><span class="cell" data-i="6">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;r = 6.&lt;/b&gt; Thêm a[6] = 2, tổng = 7 &gt; 5. Bỏ a[4] = 1 (tổng 6), bỏ a[5] = 4 (tổng 2). l = 6, cửa sổ [6, 6] dài 1, đếm = 14 + 1 = 15. Kết thúc: đoạn dài nhất là [1, 4] = 1, 2, 1, 1 (độ dài 4); có 15 đoạn có tổng ≤ 5.">
+        <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">3</span><span class="cell is-dim" data-i="1">1</span><span class="cell is-dim" data-i="2">2</span><span class="cell is-dim" data-i="3">1</span><span class="cell is-dim" data-i="4">1</span><span class="cell is-dim" data-i="5">4</span><span class="cell is-active" data-i="6" data-ptr="l=r">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bảng vết.&lt;/b&gt; r tăng 7 lần, l tăng 6 lần: tổng 13 lần dịch con trỏ, không quá 2n = 14.">
+        <table class="trace">
+          <thead><tr><th>r</th><th>a[r]</th><th>l sau khi co</th><th>tổng</th><th>độ dài</th><th>best</th><th>đếm</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>3</td><td>0</td><td>3</td><td>1</td><td>1</td><td>1</td></tr>
+            <tr><td>1</td><td>1</td><td>0</td><td>4</td><td>2</td><td>2</td><td>3</td></tr>
+            <tr><td>2</td><td>2</td><td>1</td><td>3</td><td>2</td><td>2</td><td>5</td></tr>
+            <tr><td>3</td><td>1</td><td>1</td><td>4</td><td>3</td><td>3</td><td>8</td></tr>
+            <tr class="hl"><td>4</td><td>1</td><td>1</td><td>5</td><td>4</td><td>4</td><td>12</td></tr>
+            <tr><td>5</td><td>4</td><td>4</td><td>5</td><td>2</td><td>4</td><td>14</td></tr>
+            <tr><td>6</td><td>2</td><td>6</td><td>2</td><td>1</td><td>4</td><td>15</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 520 150" width="520" role="img" aria-label="Hai con trỏ l và r chỉ đi về bên phải; mỗi con trỏ đi tối đa n bước">
+        <line class="edge" x1="20" y1="60" x2="500" y2="60"/>
+        <rect class="fill-soft" x="150" y="40" width="190" height="40" rx="6"/>
+        <text x="245" y="65" text-anchor="middle">cửa sổ [l, r]</text>
+        <line class="edge is-active" x1="150" y1="100" x2="150" y2="82"/>
+        <text class="label-sm" x="150" y="116" text-anchor="middle">l</text>
+        <line class="edge is-active" x1="340" y1="100" x2="340" y2="82"/>
+        <text class="label-sm" x="340" y="116" text-anchor="middle">r</text>
+        <line class="edge is-ok" x1="160" y1="132" x2="215" y2="132"/>
+        <line class="edge is-ok" x1="215" y1="132" x2="207" y2="127"/>
+        <line class="edge is-ok" x1="215" y1="132" x2="207" y2="137"/>
+        <line class="edge is-ok" x1="350" y1="132" x2="405" y2="132"/>
+        <line class="edge is-ok" x1="405" y1="132" x2="397" y2="127"/>
+        <line class="edge is-ok" x1="405" y1="132" x2="397" y2="137"/>
+        <text class="label-pen" x="20" y="28">l chỉ tiến khi cửa sổ hỏng</text>
+        <text class="label-pen" x="310" y="28">r tiến mỗi vòng lặp</text>
+        <text class="label-sm" x="20" y="146">0</text>
+        <text class="label-sm" x="480" y="146">n − 1</text>
+      </svg>
+      <figcaption>Hình 1. Cả hai con trỏ chỉ đi sang phải. Mỗi con trỏ đi nhiều nhất n bước, nên tổng số bước của cả thuật toán không quá 2n.</figcaption>
+    </figure>
+
+    <div class="playground" id="viz-two-pointers">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: xem i, j (hoặc l, r) di chuyển</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="tp-mode">Bài toán <select id="tp-mode">
+            <option value="pair">Tìm cặp a[i] + a[j] = x</option>
+            <option value="long">Đoạn dài nhất tổng ≤ x</option>
+            <option value="short">Đoạn ngắn nhất tổng ≥ x</option>
+          </select></label>
+          <label for="tp-input">Dãy a <input type="text" id="tp-input" value="2 3 5 7 9 12"></label>
+          <label for="tp-x">x <input type="number" id="tp-x" value="16"></label>
+          <button type="button" data-act="reset">Bắt đầu lại</button>
+          <button type="button" data-act="step">Bước tiếp</button>
+          <button type="button" class="ghost" data-act="play">Tự chạy</button>
+          <button type="button" class="ghost" data-act="rand">Dãy ngẫu nhiên</button>
+        </div>
+        <div class="tp-view"></div>
+        <div class="out" aria-live="polite">Nhập dãy (tối đa 14 số nguyên) và x, rồi bấm Bước tiếp.</div>
+      </div>
+    </div>
+    <p>Ở chế độ tìm cặp, widget tự sắp xếp dãy trước khi chạy. Ở hai chế độ cửa sổ, dãy phải gồm các số không âm; em thử nhập một số âm để xem vì sao widget từ chối.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Chương trình 1: đếm số cặp có tổng x</h3>
+    <p>Đề: cho <span class="math">n</span> số nguyên (chưa sắp xếp, có thể trùng nhau) và số <span class="math">x</span>. Đếm số cặp chỉ số <span class="math">i &lt; j</span> với <span class="math">a[i] + a[j] = x</span>. Thứ tự các số không ảnh hưởng tới số cặp, nên ta được phép sắp xếp. Phần đếm khối trùng làm đúng như mục <a href="#thuat-toan">Các bước</a>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_cap.cpp</span> Hai con trỏ ngược chiều, đếm cả khi có phần tử trùng</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    long long x;
+    cin &gt;&gt; n &gt;&gt; x;
+    vector&lt;long long&gt; a(n);
+    for (auto &amp;v : a) cin &gt;&gt; v;
+    sort(a.begin(), a.end());            // hai con trỏ cần mảng đã sắp xếp
+
+    long long dem = 0;                   // số cặp có thể tới ~5*10^11, phải dùng long long
+    int i = 0, j = n - 1;
+    while (i &lt; j) {
+        long long s = a[i] + a[j];
+        if (s &lt; x) i++;                  // a[i] quá nhỏ: bỏ a[i]
+        else if (s &gt; x) j--;             // a[j] quá lớn: bỏ a[j]
+        else if (a[i] == a[j]) {         // mọi phần tử từ i đến j đều bằng nhau
+            long long c = j - i + 1;
+            dem += c * (c - 1) / 2;      // chọn 2 trong c phần tử
+            break;
+        } else {
+            long long ci = 1, cj = 1;    // đếm khối giá trị bằng a[i] và khối bằng a[j]
+            while (i + 1 &lt; j &amp;&amp; a[i + 1] == a[i]) { i++; ci++; }
+            while (j - 1 &gt; i &amp;&amp; a[j - 1] == a[j]) { j--; cj++; }
+            dem += ci * cj;              // mỗi phần tử khối trái ghép với mỗi phần tử khối phải
+            i++; j--;
+        }
+    }
+    cout &lt;&lt; dem &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8 10
+5 1 9 3 7 5 5 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">5</code></pre></div>
+    </div>
+
+    <p>Giải thích: sau khi sắp xếp ta có <span class="math">1, 2, 3, 5, 5, 5, 7, 9</span>. Các cặp tổng 10 là <span class="math">1 + 9</span>, <span class="math">3 + 7</span> và ba cặp <span class="math">5 + 5</span> (chọn 2 trong 3 số 5: <span class="math">3 · 2 / 2 = 3</span>). Tổng cộng <span class="math">1 + 1 + 3 = 5</span> cặp. Với ví dụ của bài CNTPAIR02 (<span class="math">1 1 5 5</span>, <span class="math">k = 6</span>) chương trình in 4, vì khối trái có 2 số 1, khối phải có 2 số 5, ghép được <span class="math">2 · 2 = 4</span> cặp.</p>
+
+    <h3>Chương trình 2: cửa sổ trượt, đoạn dài nhất và số đoạn có tổng ≤ k</h3>
+    <p>Đề: cho <span class="math">n</span> số nguyên không âm và số <span class="math">k</span>. In ra độ dài đoạn con liên tiếp dài nhất có tổng ≤ k, và số đoạn con có tổng ≤ k. Cả hai câu trả lời dùng chung một vòng lặp.</p>
+    <figure class="code">
+      <figcaption><span class="fn">cua_so.cpp</span> Cửa sổ trượt: mở rộng phải, co trái khi vượt k</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    long long k;
+    cin &gt;&gt; n &gt;&gt; k;
+    vector&lt;long long&gt; a(n);
+    for (auto &amp;v : a) cin &gt;&gt; v;          // các số KHÔNG ÂM
+
+    long long tong = 0;                  // tổng cửa sổ a[l..r]
+    int l = 0, dai_nhat = 0;
+    long long so_doan = 0;               // số đoạn có tổng &lt;= k
+    for (int r = 0; r &lt; n; r++) {
+        tong += a[r];                    // mở rộng: đưa a[r] vào cửa sổ
+        while (l &lt;= r &amp;&amp; tong &gt; k) {     // vượt k: co trái cho tới khi hợp lệ
+            tong -= a[l];
+            l++;
+        }
+        // lúc này a[l..r] là đoạn dài nhất kết thúc tại r có tổng &lt;= k
+        // (nếu l &gt; r thì cửa sổ rỗng, độ dài 0)
+        dai_nhat = max(dai_nhat, r - l + 1);
+        so_doan += r - l + 1;            // các đoạn [l..r], [l+1..r], ..., [r..r] đều hợp lệ
+    }
+    cout &lt;&lt; dai_nhat &lt;&lt; '\n' &lt;&lt; so_doan &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">7 5
+3 1 2 1 1 4 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">4
+15</code></pre></div>
+    </div>
+
+    <p>Đây đúng là ví dụ 2 trong phần minh họa: đoạn dài nhất là <span class="math">1, 2, 1, 1</span> dài 4, và cột “đếm” của bảng vết kết thúc ở 15. Hai chương trình đều đã được biên dịch bằng <code>g++ -std=c++17 -O2 -Wall</code> và so khớp với cách thử mọi cặp, mọi đoạn trên hàng trăm bộ dữ liệu ngẫu nhiên nhỏ.</p>
+    <div class="callout warn"><p class="callout-title">Chú ý kiểu dữ liệu</p><p>Tổng cửa sổ có thể tới <span class="math">10⁶ · 10⁹ = 10¹⁵</span>, số cặp có thể tới <span class="math">n(n−1)/2 ≈ 5 · 10¹¹</span> với <span class="math">n = 10⁶</span>. Cả hai đều vượt <code>int</code> (khoảng <span class="math">2,1 · 10⁹</span>), nên phải dùng <code>long long</code>.</p></div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Bài toán</th><th>Cách ngây thơ</th><th>Hai con trỏ</th><th>Bộ nhớ thêm</th></tr></thead>
+      <tbody>
+        <tr><td>Tìm / đếm cặp tổng x (mảng đã sắp)</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Như trên, mảng chưa sắp</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n log n)</span> (do sắp xếp)</td><td><span class="bigo">O(1)</span> hoặc <span class="bigo">O(n)</span> nếu giữ chỉ số gốc</td></tr>
+        <tr><td>Trộn hai dãy đã sắp độ dài n, m</td><td><span class="bigo">O((n+m) log(n+m))</span> nếu ghép rồi sắp lại</td><td><span class="bigo">O(n + m)</span></td><td><span class="bigo">O(n + m)</span></td></tr>
+        <tr><td>Đoạn dài nhất / ngắn nhất / đếm đoạn theo tổng</td><td><span class="bigo">O(n²)</span> với cộng dồn</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Đoạn có ≤ k giá trị phân biệt</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n)</span> với mảng đếm, <span class="bigo">O(n log n)</span> với <code>map</code></td><td><span class="bigo">O(giá trị lớn nhất)</span> hoặc <span class="bigo">O(n)</span></td></tr>
+        <tr><td>Mọi cửa sổ độ dài cố định k</td><td><span class="bigo">O(n · k)</span></td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+      </tbody>
+    </table>
+    <p>Với <span class="math">n = 10⁶</span> (giới hạn của FINDPAIR, CNTPAIR02), hai con trỏ cần khoảng <span class="math">2 · 10⁶</span> bước, chạy trong vài mili giây; phần tốn thời gian nhất thực ra là <strong>đọc dữ liệu</strong>, nên nhớ dòng <code>ios::sync_with_stdio(false); cin.tie(nullptr);</code>. Nếu phải sắp xếp, <span class="math">n log₂ n ≈ 10⁶ · 20 = 2 · 10⁷</span> phép so sánh, vẫn dư sức trong 1 giây. Còn cách <span class="bigo">O(n²)</span> chỉ chịu được tới khoảng <span class="math">n ≈ 10⁴</span> (<span class="math">10⁸</span> phép tính).</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Tìm cặp nhưng phải in vị trí gốc</h3>
+    <p>Bài <em>Tổng hai giá trị</em> (CSES 1640) cho mảng chưa sắp và hỏi vị trí. Sắp xếp làm mất vị trí, nên em lưu cặp <code>pair&lt;giá trị, chỉ số gốc&gt;</code>, sắp theo giá trị, chạy hai con trỏ rồi in hai chỉ số gốc. Biến thể khác: tìm cặp có tổng <strong>gần x nhất</strong> (bài NKSGAME tìm <span class="math">min |b + c|</span>): vẫn đi như cũ, nhưng ở mỗi bước cập nhật <span class="math">|a[i] + a[j] − x|</span> nhỏ nhất.</p>
+
+    <h3>2. Trộn hai dãy đã sắp</h3>
+    <p>Hai dãy <span class="math">a</span> (<span class="math">n</span> phần tử) và <span class="math">b</span> (<span class="math">m</span> phần tử) đã tăng dần. Phần tử nhỏ nhất của dãy trộn chắc chắn là <span class="math">a[0]</span> hoặc <span class="math">b[0]</span>; lấy nó ra rồi lặp lại. Mỗi bước một con trỏ tiến 1 ô, nên tổng <span class="math">n + m</span> bước. Ví dụ <span class="math">a = 1, 4, 6, 9</span> và <span class="math">b = 2, 3, 7</span> cho <span class="math">1, 2, 3, 4, 6, 7, 9</span>. Đây là trái tim của sắp xếp trộn (merge sort).</p>
+    <figure class="code">
+      <figcaption><span class="fn">tron.cpp</span> Trộn hai dãy tăng dần</figcaption>
+<pre><code class="language-cpp">vector&lt;int&gt; c;
+int i = 0, j = 0;
+while (i &lt; n &amp;&amp; j &lt; m) {
+    if (a[i] &lt;= b[j]) c.push_back(a[i++]);
+    else              c.push_back(b[j++]);
+}
+while (i &lt; n) c.push_back(a[i++]);       // phần còn lại của a
+while (j &lt; m) c.push_back(b[j++]);       // phần còn lại của b</code></pre>
+    </figure>
+
+
+    <h3>3. Ghép cặp hai dãy (Apartments)</h3>
+    <p>Có <span class="math">n</span> người, người thứ <span class="math">i</span> muốn căn hộ kích thước khoảng <span class="math">a[i]</span>, chấp nhận chênh lệch tối đa <span class="math">k</span>; có <span class="math">m</span> căn hộ kích thước <span class="math">b[j]</span>. Mỗi người nhận nhiều nhất một căn. Hỏi ghép được nhiều nhất bao nhiêu người? Sắp cả hai dãy, rồi đi song song: căn quá nhỏ với người hiện tại thì cũng quá nhỏ với mọi người sau (họ muốn căn còn lớn hơn), bỏ căn; người không còn căn nào vừa thì bỏ người; vừa thì ghép ngay (ghép người nhỏ nhất với căn nhỏ nhất dùng được là lựa chọn <a href="greedy.html">tham lam</a> an toàn). Ví dụ của CSES: người <span class="math">60, 45, 80, 60</span>, căn <span class="math">30, 60, 75</span>, <span class="math">k = 5</span> cho đáp án 2.</p>
+    <figure class="code">
+      <figcaption><span class="fn">can_ho.cpp</span> Ghép cặp hai dãy đã sắp</figcaption>
+<pre><code class="language-cpp">sort(a.begin(), a.end());                // kích thước mong muốn của n người
+sort(b.begin(), b.end());                // kích thước của m căn hộ
+int i = 0, j = 0, ghep = 0;
+while (i &lt; n &amp;&amp; j &lt; m) {
+    if (b[j] &lt; a[i] - k) j++;            // căn j quá nhỏ với người i, càng nhỏ với người sau
+    else if (b[j] &gt; a[i] + k) i++;       // người i không còn căn nào vừa
+    else { ghep++; i++; j++; }           // ghép được: cả hai cùng tiến
+}</code></pre>
+    </figure>
+
+
+    <h3>4. Đoạn ngắn nhất có tổng ≥ s</h3>
+    <p>Ngược với bài dài nhất: lần này cửa sổ “tốt” là cửa sổ có tổng đủ lớn. Mỗi khi cửa sổ đạt, ta ghi nhận rồi cố bỏ bớt phần tử bên trái để nó ngắn hơn. Vẫn cần số không âm. Ví dụ <span class="math">2, 3, 1, 2, 4, 3</span> với <span class="math">s = 7</span> cho đáp án 2 (đoạn <span class="math">4, 3</span>); em có thể xem từng bước trong widget ở trên, chế độ “Đoạn ngắn nhất”.</p>
+    <figure class="code">
+      <figcaption><span class="fn">ngan_nhat.cpp</span> Đoạn ngắn nhất có tổng ≥ s</figcaption>
+<pre><code class="language-cpp">int l = 0, best = INT_MAX;               // INT_MAX nghĩa là "chưa tìm thấy"
+long long tong = 0;
+for (int r = 0; r &lt; n; r++) {
+    tong += a[r];
+    while (tong &gt;= s) {                  // còn đạt thì cố co cho ngắn hơn
+        best = min(best, r - l + 1);
+        tong -= a[l];
+        l++;
+    }
+}
+if (best == INT_MAX) best = 0;           // không có đoạn nào đạt</code></pre>
+    </figure>
+
+
+    <h3>5. Đếm đoạn thỏa điều kiện</h3>
+    <p>Như chương trình 2: nếu điều kiện có tính “đoạn con của đoạn tốt cũng tốt”, thì với mỗi <span class="math">r</span> có đúng <span class="math">r − l + 1</span> đoạn tốt kết thúc tại <span class="math">r</span>. Muốn đếm số đoạn có tổng <strong>đúng bằng</strong> <span class="math">x</span> (số dương, như CSES 1660), em có thể lấy <em>số đoạn có tổng ≤ x</em> trừ <em>số đoạn có tổng ≤ x − 1</em>; hoặc mỗi khi cửa sổ có tổng ≤ x thì kiểm tra xem nó có bằng x không (với số dương, mỗi <span class="math">r</span> có tối đa một đoạn tổng bằng x).</p>
+
+    <h3>6. Đoạn dài nhất có không quá k giá trị phân biệt</h3>
+    <p>Thông tin của cửa sổ lúc này là <strong>mảng đếm</strong> <code>cnt[v]</code> và biến <code>khac</code>. Thêm <span class="math">a[r]</span>: nếu <code>cnt</code> của nó từ 0 lên 1 thì có thêm một giá trị mới. Bỏ <span class="math">a[l]</span>: nếu <code>cnt</code> về 0 thì mất một giá trị. Điều kiện “≤ k giá trị phân biệt” có tính đơn điệu (bớt phần tử không làm tăng số giá trị khác nhau), nên cửa sổ trượt dùng được. Với yêu cầu “mọi phần tử trong đoạn đôi một khác nhau” (bài Playlist), điều kiện hỏng đổi thành <code>cnt[a[r]] &gt; 1</code>. Giá trị tới <span class="math">10⁹</span> thì nén giá trị trước hoặc dùng <code>map</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">k_phan_biet.cpp</span> Đoạn dài nhất có ≤ k giá trị phân biệt</figcaption>
+<pre><code class="language-cpp">vector&lt;int&gt; cnt(100001, 0);              // cnt[v] = số lần v có trong cửa sổ (giả sử 0 &lt;= a[i] &lt;= 10^5)
+int l = 0, khac = 0, best = 0;           // khac = số giá trị phân biệt trong cửa sổ
+for (int r = 0; r &lt; n; r++) {
+    if (cnt[a[r]]++ == 0) khac++;        // a[r] lần đầu xuất hiện trong cửa sổ
+    while (khac &gt; k) {
+        if (--cnt[a[l]] == 0) khac--;    // a[l] biến mất hẳn khỏi cửa sổ
+        l++;
+    }
+    best = max(best, r - l + 1);
+}</code></pre>
+    </figure>
+
+
+    <h3>7. Cửa sổ độ dài cố định k</h3>
+    <p>Khi đề hỏi về <strong>mọi đoạn dài đúng k</strong> (tổng lớn nhất, số giá trị phân biệt trong từng cửa sổ…), hai con trỏ cách nhau đúng <span class="math">k</span>: mỗi bước thêm <span class="math">a[r]</span> và bỏ <span class="math">a[r − k]</span>. Bài này không cần số không âm, vì không có bước “co cho tới khi hợp lệ”. Ví dụ <span class="math">a = 3, 1, 2, 1, 1, 4, 2</span>, <span class="math">k = 3</span>: các tổng là 6, 4, 4, 6, 7, nên tổng lớn nhất là 7.</p>
+    <figure class="code">
+      <figcaption><span class="fn">co_dinh.cpp</span> Tổng lớn nhất của cửa sổ dài k</figcaption>
+<pre><code class="language-cpp">long long tong = 0;
+for (int i = 0; i &lt; k; i++) tong += a[i];   // cửa sổ đầu tiên a[0..k-1]
+long long best = tong;
+for (int r = k; r &lt; n; r++) {
+    tong += a[r] - a[r - k];                 // thêm a[r], bỏ a[r-k]
+    best = max(best, tong);
+}</code></pre>
+    </figure>
+
+
+    <h3>8. Khi có số âm: cộng dồn kết hợp map (nâng cao)</h3>
+    <p>Với số âm, thêm phần tử có thể làm tổng <em>giảm</em>, tính đơn điệu biến mất: cửa sổ hỏng hôm nay có thể lành lại ngày mai, nên không thể đẩy <span class="math">l</span> một chiều. Ví dụ <span class="math">a = 5, −4, 1</span>, <span class="math">x = 2</span>: đoạn <span class="math">[0, 2]</span> có tổng 2 nhưng đoạn con <span class="math">[0, 0]</span> có tổng 5, cửa sổ sẽ bỏ số 5 đi mất và bỏ sót đáp án. Cách đúng: dùng <a href="prefix-sum.html">mảng cộng dồn</a>. Tổng đoạn <span class="math">(j, i]</span> bằng <span class="math">S_i − S_j</span>, nên đếm đoạn có tổng <span class="math">x</span> kết thúc tại <span class="math">i</span> chính là đếm số tiền tố cũ <span class="math">S_j = S_i − x</span>. Lưu số lần xuất hiện của từng tổng tiền tố trong <code>map</code> (xem thêm bài <a href="stl.html">STL</a>). Độ phức tạp <span class="bigo">O(n log n)</span>. Đây là bài CSES 1661.</p>
+    <figure class="code">
+      <figcaption><span class="fn">so_am.cpp</span> Đếm đoạn có tổng x khi có số âm</figcaption>
+<pre><code class="language-cpp">map&lt;long long, int&gt; dem;                 // dem[v] = số tiền tố có tổng bằng v
+dem[0] = 1;                              // tiền tố rỗng S_0 = 0
+long long S = 0, kq = 0;
+for (int i = 0; i &lt; n; i++) {
+    S += a[i];                           // S = S_{i+1}
+    kq += dem[S - x];                    // đoạn kết thúc tại i có tổng x  &lt;=&gt;  có tiền tố cũ bằng S - x
+    dem[S]++;
+}</code></pre>
+    </figure>
+
+
+    <h3>9. Cửa sổ cần biết max, min (nâng cao)</h3>
+    <p>Điều kiện “chênh lệch lớn nhất − nhỏ nhất trong đoạn ≤ D” cũng đơn điệu, nhưng khi bỏ <span class="math">a[l]</span> thì không biết max mới là bao nhiêu. Khi đó em giữ hai <strong>hàng đợi hai đầu đơn điệu</strong> (monotonic deque) để lấy max, min của cửa sổ trong <span class="bigo">O(1)</span> khấu hao. Kỹ thuật này học ở bài <a href="stack-queue.html">Ngăn xếp, hàng đợi &amp; ngăn xếp đơn điệu</a>; bài VMQUABEO ở cuối trang dùng nó.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Quên sắp xếp trước khi dùng hai con trỏ ngược chiều</p><p>Lập luận “a[i] cộng số lớn nhất còn lại vẫn thiếu” chỉ đúng khi mảng tăng dần. Với mảng <span class="math">5, 1, 4</span> và <span class="math">x = 5</span>, nếu không sắp: <span class="math">5 + 4 = 9 &gt; 5</span> nên giảm <span class="math">j</span>, rồi <span class="math">5 + 1 = 6 &gt; 5</span>, giảm <span class="math">j</span> lần nữa thì <span class="math">i = j</span> và kết luận “không có”, trong khi <span class="math">1 + 4 = 5</span>. Sửa: <code>sort</code> trước (giữ chỉ số gốc nếu đề hỏi vị trí).</p></div>
+    <div class="callout danger"><p class="callout-title">Dùng cửa sổ trượt theo tổng khi có số âm</p><p>Cửa sổ trượt dựa vào tính đơn điệu “thêm phần tử thì tổng không giảm”. Có số âm là mất tính chất này, chương trình vẫn chạy nhưng cho kết quả sai (ví dụ <span class="math">5, −4, 1</span> ở mục Biến thể). Sửa: đọc kỹ giới hạn <span class="math">a_i</span>; nếu có thể âm thì dùng cộng dồn kết hợp <code>map</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Đếm cặp sai khi có phần tử trùng</p><p>Đoạn mã “bằng thì <code>i++; j--;</code>” chỉ đúng khi các phần tử đôi một khác nhau. Với <span class="math">1, 1, 5, 5</span> và <span class="math">x = 6</span> nó đếm được 2, trong khi đáp án là 4. Sửa: đếm cả khối như Chương trình 1, và xử lý riêng trường hợp <span class="math">a[i] = a[j]</span>.</p></div>
+    <div class="callout warn"><p class="callout-title">Viết điều kiện <code>i &lt;= j</code> thay cho <code>i &lt; j</code></p><p>Khi <span class="math">i = j</span>, em đang ghép một phần tử với chính nó. Với <span class="math">a = 1, 3, 8</span> và <span class="math">x = 6</span>, vòng lặp sẽ báo <span class="math">3 + 3 = 6</span> là đáp án, sai vì đề cần hai vị trí khác nhau.</p></div>
+    <div class="callout warn"><p class="callout-title">Tràn số</p><p>Tổng cửa sổ và số cặp, số đoạn đều có thể vượt <span class="math">2,1 · 10⁹</span>. Khai báo <code>long long</code> cho <code>tong</code>, <code>dem</code>, <code>so_doan</code>, kể cả phép <code>a[i] + a[j]</code> khi <span class="math">a_i</span> tới <span class="math">10⁹</span> (hai số cộng lại tới <span class="math">2 · 10⁹</span>, đã tràn <code>int</code>).</p></div>
+    <div class="callout warn"><p class="callout-title">Sai thứ tự khi co cửa sổ</p><p>Phải trừ <code>a[l]</code> <strong>trước</strong> rồi mới <code>l++</code>. Viết ngược lại là em trừ nhầm phần tử vẫn còn trong cửa sổ. Ở bài “ngắn nhất tổng ≥ s”, phải ghi nhận độ dài <strong>trước</strong> khi bỏ <code>a[l]</code>.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo: luôn dùng một khuôn</p><p>Mọi cửa sổ trượt đều viết được theo khuôn <code>for r: thêm a[r]; while (hỏng) bỏ a[l++]; ghi nhận;</code>. Em chỉ cần nghĩ ba thứ: lưu thông tin gì về cửa sổ, thêm và bỏ một phần tử thì cập nhật thế nào, và thế nào là hỏng. Viết theo khuôn giúp tránh hầu hết lỗi lệch chỉ số.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Mảng <span class="math">1, 3, 4, 6, 8, 11</span>, cần tổng <span class="math">x = 10</span>. Lúc đầu <span class="math">i = 0</span>, <span class="math">j = 5</span>. Bước đầu tiên làm gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Tăng i, vì 1 là số nhỏ nhất</button>
+        <button type="button" class="quiz-opt" data-correct>B. Giảm j, vì 1 + 11 = 12 &gt; 10</button>
+        <button type="button" class="quiz-opt">C. Tăng i và giảm j cùng lúc</button>
+        <button type="button" class="quiz-opt">D. Dừng, vì không có cặp nào</button>
+      </div>
+      <p class="quiz-explain">1 + 11 = 12 lớn hơn 10. Ngay cả số nhỏ nhất cộng với 11 cũng đã thừa, nên 11 không ghép được với ai: bỏ 11, giảm j. Chạy tiếp: 1 + 8 = 9 (tăng i), 3 + 8 = 11 (giảm j), 3 + 6 = 9 (tăng i), 4 + 6 = 10, tìm thấy sau 5 lần so sánh.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Trong chương trình cửa sổ trượt, vòng <code>while</code> nằm trong vòng <code>for</code>. Vì sao tổng thời gian vẫn là O(n)?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Vì vòng while thường chỉ chạy 1 lần</button>
+        <button type="button" class="quiz-opt">B. Vì các số không âm nên tổng nhỏ</button>
+        <button type="button" class="quiz-opt" data-correct>C. Vì mỗi lần chạy thân while thì l tăng 1, mà l không bao giờ giảm và không vượt n</button>
+        <button type="button" class="quiz-opt">D. Thực ra là O(n²), chỉ nhanh trong thực tế</button>
+      </div>
+      <p class="quiz-explain">Đếm theo con trỏ l (phân tích khấu hao): cả chương trình thân while chạy tối đa n lần, cộng n lần của vòng for, tổng không quá 2n. Có một bước while chạy nhiều lần, nhưng khi đó các bước khác phải chạy ít.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Bài nào dưới đây <strong>không</strong> giải đúng được bằng cửa sổ trượt co trái khi vượt?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Đoạn dài nhất có tổng ≤ k, các số từ 0 đến 10⁹</button>
+        <button type="button" class="quiz-opt">B. Đoạn dài nhất không có phần tử lặp lại</button>
+        <button type="button" class="quiz-opt" data-correct>C. Đếm số đoạn có tổng bằng x, các số từ −10⁹ đến 10⁹</button>
+        <button type="button" class="quiz-opt">D. Đoạn ngắn nhất có tổng ≥ s, các số dương</button>
+      </div>
+      <p class="quiz-explain">Có số âm thì thêm phần tử có thể làm tổng giảm, mất tính đơn điệu. Bài C phải dùng cộng dồn kết hợp map (biến thể 8).</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Dãy đã sắp <span class="math">2, 2, 2, 2</span>, <span class="math">x = 4</span>. Có bao nhiêu cặp <span class="math">i &lt; j</span> với <span class="math">a[i] + a[j] = 4</span>?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 2</button>
+        <button type="button" class="quiz-opt">B. 4</button>
+        <button type="button" class="quiz-opt" data-correct>C. 6</button>
+        <button type="button" class="quiz-opt">D. 16</button>
+      </div>
+      <p class="quiz-explain">Ở bước đầu tiên đã có a[i] = a[j] = 2, nên mọi phần tử từ i đến j bằng nhau: c = 4, số cặp là 4 · 3 / 2 = 6.</p>
+    </div>
+    <p><strong>Câu 5.</strong> Dùng cửa sổ trượt, đếm số đoạn con có tổng ≤ 3 của dãy <span class="math">1, 2, 1, 0, 3</span>. Ghi lại <span class="math">l</span> và <span class="math">r − l + 1</span> ở mỗi bước.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>r = 0: tổng 1, l = 0, cộng 1 (đếm 1). r = 1: tổng 3, l = 0, cộng 2 (đếm 3). r = 2: tổng 4 &gt; 3, bỏ a[0] = 1 còn 3, l = 1, cộng 2 (đếm 5). r = 3: tổng 3, l = 1, cộng 3 (đếm 8). r = 4: tổng 6, bỏ 2 còn 4, bỏ 1 còn 3, l = 3, cộng 2 (đếm 10). Đáp án: <strong>10</strong> đoạn.</p>
+    </details>
+    <p><strong>Câu 6.</strong> Đề cho <span class="math">n ≤ 2 · 10⁵</span>, các số từ 1 đến 10⁹, hỏi đoạn dài nhất mà mọi phần tử đôi một khác nhau. Em lưu thông tin gì về cửa sổ, và thế nào là “hỏng”?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Lưu số lần xuất hiện của mỗi giá trị trong cửa sổ bằng <code>map&lt;int,int&gt; cnt</code> (giá trị tới 10⁹ nên không dùng mảng trực tiếp được, hoặc nén giá trị trước). Thêm a[r]: <code>cnt[a[r]]++</code>. Cửa sổ hỏng khi <code>cnt[a[r]] &gt; 1</code>; khi đó bỏ dần a[l] (<code>cnt[a[l]]--, l++</code>) cho tới khi <code>cnt[a[r]] == 1</code>. Đoạn con của đoạn không lặp cũng không lặp, nên tính đơn điệu đúng. Độ phức tạp O(n log n) do map.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Mười một bài, đều có đề tiếng Việt, xếp từ dễ đến khó. Các bài CSES ở đây là bản dịch tiếng Việt trên LQDOJ; FINDPAIR, TWOSUM, CNTPAIR02, NKSGAME, VMQUABEO nằm trong danh sách luyện tập của bài viết hai con trỏ trên VNOI Wiki.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/findpair">FINDPAIR – Tìm cặp số</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Mảng <span class="math">N ≤ 10⁶</span> phần tử đã sắp tăng dần. Tìm hai vị trí khác nhau có tổng bằng <span class="math">X</span>, in vị trí nhỏ trước; không có thì in “No solution”.</p>
+        <p class="ex-skill"><b>Luyện:</b> hai con trỏ ngược chiều cơ bản, đọc dữ liệu nhanh.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đúng mã giả TimCap ở mục Các bước. Nhớ in chỉ số theo đánh số từ 1.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1640">CSES 1640 – Tổng hai giá trị</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Mảng <span class="math">n ≤ 2 · 10⁵</span> số <strong>chưa sắp xếp</strong>. Tìm hai vị trí khác nhau có tổng <span class="math">x</span>, không có thì in IMPOSSIBLE.</p>
+        <p class="ex-skill"><b>Luyện:</b> sắp xếp mà vẫn giữ chỉ số gốc.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lưu <code>pair&lt;giá trị, chỉ số&gt;</code>, sắp theo giá trị rồi chạy hai con trỏ; in hai chỉ số gốc (cộng 1).</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cntpair02">CNTPAIR02 – Đếm cặp</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Dãy <span class="math">n ≤ 10⁶</span> số nguyên dương không giảm, đếm số cặp <span class="math">(i, j)</span> khác nhau có <span class="math">a_i + a_j = k</span>. Dãy có thể có nhiều số bằng nhau.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm cặp khi có phần tử trùng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chương trình 1 trong mục Cài đặt. Khi gặp tổng bằng k, đếm khối trái và khối phải; nếu <span class="math">a[i] = a[j]</span> thì cộng <span class="math">c(c−1)/2</span>. Kết quả dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1660">CSES 1660 – Tổng đoạn con I</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Mảng <span class="math">n ≤ 2 · 10⁵</span> số nguyên <strong>dương</strong>. Đếm số đoạn con có tổng đúng bằng <span class="math">x</span>.</p>
+        <p class="ex-skill"><b>Luyện:</b> cửa sổ trượt với số dương.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Thêm <span class="math">a[r]</span>, co trái khi tổng &gt; x, rồi nếu tổng = x thì tăng biến đếm.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1141">CSES 1141 – Danh sách phát</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Dãy <span class="math">n ≤ 2 · 10⁵</span> mã bài hát (tới <span class="math">10⁹</span>). Tìm đoạn liên tiếp dài nhất mà không bài nào lặp lại.</p>
+        <p class="ex-skill"><b>Luyện:</b> cửa sổ trượt với mảng đếm hoặc <code>map</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Cửa sổ hỏng khi <span class="math">a[r]</span> đã có trong cửa sổ. Dùng <code>map&lt;int,int&gt;</code> đếm số lần, hoặc nén giá trị rồi dùng mảng đếm.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1084">CSES 1084 – Căn hộ</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc"><span class="math">n</span> người muốn căn hộ kích thước gần <span class="math">a_i</span> (lệch tối đa <span class="math">k</span>), có <span class="math">m</span> căn hộ kích thước <span class="math">b_j</span>. Ghép nhiều cặp nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> hai con trỏ cùng chiều trên hai dãy, tham lam.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Biến thể 3 ở mục Biến thể: sắp cả hai dãy, căn quá nhỏ thì bỏ căn, người không vừa căn nào thì bỏ người, vừa thì ghép.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nksgame">NKSGAME – Trò chơi với dãy số (VOI 2008)</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Hai dãy <span class="math">b</span>, <span class="math">c</span> mỗi dãy <span class="math">n ≤ 10⁵</span> số nguyên (có thể âm). Tìm giá trị nhỏ nhất của <span class="math">|b_i + c_j|</span>.</p>
+        <p class="ex-skill"><b>Luyện:</b> hai con trỏ ngược chiều trên hai dãy, tìm tổng gần 0 nhất.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp <span class="math">b</span> tăng, <span class="math">c</span> tăng; <span class="math">i</span> từ đầu <span class="math">b</span>, <span class="math">j</span> từ cuối <span class="math">c</span>. Tổng dương thì giảm <span class="math">j</span>, âm thì tăng <span class="math">i</span>, mỗi bước cập nhật trị tuyệt đối nhỏ nhất.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/twosum">TWOSUM – Dãy 2-Sum</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Dãy <span class="math">N ≤ 5000</span> số không âm. Tìm đoạn liên tiếp dài nhất cắt được thành hai nửa trái, phải có tổng bằng nhau.</p>
+        <p class="ex-skill"><b>Luyện:</b> hai con trỏ đi ra hai phía từ một điểm cắt.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Cố định điểm cắt giữa <span class="math">k</span> và <span class="math">k+1</span>. Cho mép trái <span class="math">i</span> lùi dần; với mỗi <span class="math">i</span>, đẩy mép phải <span class="math">j</span> xa nhất mà tổng phải vẫn ≤ tổng trái (vì số không âm, <span class="math">j</span> chỉ tiến). Nếu hai tổng bằng nhau thì cập nhật. Tổng cộng <span class="math">O(N²) ≈ 2,5 · 10⁷</span>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses2428">CSES 2428 – Giá trị phân biệt trong đoạn con</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Mảng <span class="math">n ≤ 2 · 10⁵</span>. Đếm số đoạn con có nhiều nhất <span class="math">k</span> giá trị phân biệt.</p>
+        <p class="ex-skill"><b>Luyện:</b> kết hợp “đếm đoạn” và “k giá trị phân biệt”.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Biến thể 6 nhưng thay vì lấy max, cộng <span class="math">r − l + 1</span> vào đáp án ở mỗi <span class="math">r</span>. Đáp án có thể tới <span class="math">2 · 10¹⁰</span>, dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1661">CSES 1661 – Tổng đoạn con II</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Giống Tổng đoạn con I nhưng các số có thể <strong>âm</strong>. Đếm số đoạn con có tổng <span class="math">x</span>.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra lúc cửa sổ trượt không dùng được.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Biến thể 8: cộng dồn kết hợp <code>map</code> đếm số lần mỗi tổng tiền tố xuất hiện.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/vmquabeo">VMQUABEO – Quá béo</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Dãy độ cao <span class="math">N ≤ 10⁶</span>. Đếm số đoạn <span class="math">[l, r]</span> có <span class="math">r − l ≥ L</span> và chênh lệch giữa điểm cao nhất, thấp nhất không quá <span class="math">D</span>.</p>
+        <p class="ex-skill"><b>Luyện:</b> cửa sổ trượt kết hợp hàng đợi hai đầu đơn điệu.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Với mỗi <span class="math">r</span>, tìm <span class="math">l</span> nhỏ nhất để max − min ≤ D bằng cửa sổ trượt (max, min lấy từ hai deque đơn điệu). Mọi mép trái từ <span class="math">l</span> đến <span class="math">r − L</span> đều hợp lệ. Mẫu trong đề cho đáp án 5.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/basic/two-pointers">VNOI Wiki – Kĩ thuật hai con trỏ</a> (tiếng Việt): lý thuyết, nhiều ví dụ và danh sách bài luyện tập.</li>
+      <li><a href="https://wiki.vnoi.info/algo/data-structures/prefix-sum-and-difference-array">VNOI Wiki – Mảng cộng dồn và mảng hiệu</a> (tiếng Việt): nền tảng cho biến thể có số âm.</li>
+      <li><a href="https://usaco.guide/silver/two-pointers">USACO Guide – Two Pointers</a> (tiếng Anh): giải thích kèm bài tập phân loại theo độ khó.</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer’s Handbook</a> (tiếng Anh), chương 8 “Amortized analysis”: phương pháp hai con trỏ và phân tích khấu hao.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li><strong>Ngược chiều</strong> (mảng đã sắp): <span class="math">i</span> từ đầu, <span class="math">j</span> từ cuối; tổng nhỏ thì <code>i++</code>, lớn thì <code>j--</code>. Mỗi bước loại hẳn một phần tử (cả một hàng hoặc cột của bảng cặp), nên không sót và chỉ <span class="bigo">O(n)</span>.</li>
+        <li><strong>Đếm cặp có trùng:</strong> đếm khối trái nhân khối phải; khi <span class="math">a[i] = a[j]</span> thì cộng <span class="math">c(c−1)/2</span>.</li>
+        <li><strong>Cùng chiều trên hai dãy:</strong> trộn hai dãy đã sắp, ghép cặp hai nhóm, <span class="bigo">O(n + m)</span>.</li>
+        <li><strong>Khuôn cửa sổ trượt:</strong> <code>for r: thêm a[r]; while (hỏng) bỏ a[l++]; ghi nhận;</code>. Dài nhất: lấy max <span class="math">r − l + 1</span>; đếm: cộng <span class="math">r − l + 1</span>; ngắn nhất tổng ≥ s: ghi nhận trong lúc co.</li>
+        <li><strong>Cửa sổ dài cố định k:</strong> thêm <span class="math">a[r]</span>, bỏ <span class="math">a[r − k]</span>.</li>
+        <li><strong>Vì sao O(n):</strong> mỗi con trỏ chỉ đi một chiều, tối đa <span class="math">n</span> bước, tổng ≤ <span class="math">2n</span> (phân tích khấu hao).</li>
+        <li><strong>Dấu hiệu:</strong> dãy sắp được, đoạn liên tiếp, số không âm, “đoạn con của đoạn tốt cũng tốt”. Có số âm thì chuyển sang cộng dồn kết hợp <code>map</code>.</li>
+        <li><strong>Đừng quên:</strong> sắp xếp trước, <code>i &lt; j</code> (không phải ≤), <code>long long</code> cho tổng và số cặp.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/two-pointers.js"></script>
+</body>
+</html>

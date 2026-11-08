@@ -3,10 +3,10 @@
   "agent": "orchestrator",
   "task": "Dựng nền móng và điều phối 32 agent soạn chủ đề",
   "topic": null,
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-10-07T11:28:30Z",
   "heartbeat_at": "2026-10-08T03:26:01Z",
-  "ended_at": null,
-  "summary": null
+  "ended_at": "2026-11-08T06:26:30Z",
+  "summary": "Kết thúc phiên điều phối ngày 7–8/10 (12 chủ đề đã commit hoặc đạt chuẩn)"
 }

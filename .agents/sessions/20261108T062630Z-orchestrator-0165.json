@@ -1,0 +1,12 @@
+{
+  "id": "20261108T062630Z-orchestrator-0165",
+  "agent": "orchestrator",
+  "task": "Điều phối phần còn lại: hoàn thiện 4 trang dở, soạn 12 chủ đề còn lại",
+  "topic": null,
+  "status": "active",
+  "host": "MyPC",
+  "started_at": "2026-11-08T06:26:30Z",
+  "heartbeat_at": "2026-11-08T06:26:31Z",
+  "ended_at": null,
+  "summary": null
+}

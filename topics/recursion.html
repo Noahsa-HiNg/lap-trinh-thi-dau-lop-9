@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đệ quy &amp; chia để trị · Thi đấu lớp 9</title>
+<meta name="description" content="Hàm tự gọi chính nó: điều kiện dừng, ngăn xếp lời gọi, cây đệ quy, Fibonacci, tháp Hà Nội, chia để trị với merge sort, lũy thừa nhanh và đếm nghịch thế.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+.ms-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1.1rem; margin: 1.2rem 0; }
+.ms-row .arr { margin: 0; }
+</style>
+</head>
+<body data-page="topic" data-topic="recursion">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Viết được một hàm đệ quy đúng gồm hai phần: điều kiện dừng và lời gọi với bài toán nhỏ hơn.</li>
+      <li>Vẽ được ngăn xếp lời gọi và cây đệ quy của một hàm, đếm được số lời gọi.</li>
+      <li>Giải thích được vì sao Fibonacci đệ quy ngây thơ chậm, và vì sao tháp Hà Nội cần đúng 2<sup>n</sup> − 1 bước.</li>
+      <li>Áp dụng được lược đồ chia để trị (chia – trị – kết hợp) cho tìm max, merge sort, lũy thừa nhanh, đếm nghịch thế.</li>
+      <li>Nhận ra nguy cơ tràn stack và biết khi nào nên đổi đệ quy thành vòng lặp.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Đệ quy (recursion) là cách giải một bài toán bằng chính lời giải của <em>bài toán nhỏ hơn cùng dạng</em>. Trong C++, đó là một hàm tự gọi lại chính nó với dữ liệu nhỏ hơn, cho tới khi gặp trường hợp đủ nhỏ để trả lời ngay.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> em đang xếp hàng mua vé và muốn biết mình đứng thứ mấy, nhưng hàng quá dài để tự đếm. Em hỏi bạn đứng ngay trước: “Bạn đứng thứ mấy?”. Bạn ấy cũng không biết, nên lại hỏi người trước nữa. Cứ thế cho tới người đầu hàng: người này trả lời ngay “Tớ thứ 1”. Câu trả lời được truyền ngược về: người thứ hai nói “Tớ thứ 2”, rồi “thứ 3”… tới lượt em. Mỗi người chỉ làm một việc rất nhỏ: hỏi người trước, rồi cộng thêm 1.</p></div>
+    </div>
+
+    <p>Trong ví dụ trên có đủ hai thành phần của mọi lời giải đệ quy:</p>
+    <ul>
+      <li><strong>Điều kiện dừng (base case):</strong> người đầu hàng trả lời ngay, không hỏi ai nữa.</li>
+      <li><strong>Lời gọi đệ quy (recursive case):</strong> mỗi người hỏi người phía trước, tức là một bài toán “nhỏ hơn” (hàng ngắn hơn một người), rồi dùng câu trả lời đó để tự trả lời.</li>
+    </ul>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Một hàm gọi là <b>đệ quy</b> nếu trong thân hàm có lời gọi đến chính nó. Hàm đệ quy đúng phải có (1) ít nhất một <b>điều kiện dừng</b> trả kết quả mà không gọi lại, và (2) mọi lời gọi lại phải làm bài toán <b>tiến dần về điều kiện dừng</b> (ví dụ n giảm dần về 0).</p>
+    </div>
+
+    <p>Ví dụ quen thuộc nhất là giai thừa: <span class="math">n! = 1 · 2 · … · n</span>. Ta để ý <span class="math">n! = n · (n − 1)!</span> và <span class="math">0! = 1</span>. Viết thẳng hai dòng đó thành code là có hàm đệ quy:</p>
+    <pre class="pseudo"><b>hàm</b> fact(n):
+    <b>nếu</b> n ≤ 1: <b>trả về</b> 1          <i>// điều kiện dừng</i>
+    <b>trả về</b> n · fact(n − 1)        <i>// lời gọi với bài nhỏ hơn</i></pre>
+
+    <div class="definition" data-label="Chia để trị">
+      <p><b>Chia để trị (divide and conquer)</b> là một cách thiết kế thuật toán dùng đệ quy gồm ba bước: <b>Chia</b> bài toán thành vài bài con cùng dạng nhưng nhỏ hơn (thường là chia đôi); <b>Trị</b> từng bài con bằng đệ quy; <b>Kết hợp</b> lời giải các bài con thành lời giải bài lớn.</p>
+    </div>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Đệ quy không phải một “mẹo” riêng cho vài bài. Nó là <strong>cách suy nghĩ</strong> xuất hiện ở rất nhiều chủ đề sau này:</p>
+    <ul>
+      <li><strong>Bài có cấu trúc lồng nhau:</strong> tháp Hà Nội, mã Gray, hình fractal, biểu thức có ngoặc lồng ngoặc. Bài lớn chứa bên trong bản sao nhỏ hơn của chính nó.</li>
+      <li><strong>Quay lui</strong> (<a href="backtracking.html">chủ đề 6.2</a>): sinh mọi hoán vị, tổ hợp, dãy nhị phân đều viết bằng đệ quy.</li>
+      <li><strong>Quy hoạch động</strong> (<a href="dp-intro.html">chủ đề 7.1</a>): công thức truy hồi chính là một hàm đệ quy; thêm “ghi nhớ kết quả” là thành QHĐ.</li>
+      <li><strong>Đồ thị và cây</strong> (<a href="graph-dfs.html">DFS</a>): duyệt theo chiều sâu tự nhiên nhất khi viết đệ quy.</li>
+      <li><strong>Chia để trị:</strong> sắp xếp trộn (merge sort, xem thêm <a href="sorting.html">chủ đề sắp xếp</a>), lũy thừa nhanh (<a href="modular-power.html">chủ đề 2.4</a>), đếm nghịch thế, tìm kiếm nhị phân.</li>
+    </ul>
+
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề cho một <em>công thức truy hồi</em> (f(n) tính qua f(n−1), f(n/2)…); đề mô tả một vật “gồm hai nửa, mỗi nửa lại có cùng tính chất”; độ dài dữ liệu là lũy thừa của 2 (2<sup>k</sup>); số bước cần in ra cỡ 2<sup>n</sup> với n ≤ 16–20; hoặc đề cần đếm cặp (i, j) theo thứ tự với n ≤ 10<sup>5</sup> (thường chia đôi mảng).</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <h3>Bài toán mở đầu: tháp Hà Nội</h3>
+    <p>Có 3 cọc A, B, C. Cọc A có n đĩa, đĩa to ở dưới, đĩa nhỏ ở trên. Mỗi bước em được nhấc <em>một</em> đĩa trên cùng của một cọc sang cọc khác, và <em>không được</em> đặt đĩa to lên trên đĩa nhỏ. Hãy chuyển cả chồng sang cọc C.</p>
+    <p>Thử viết bằng vòng lặp ngay thì rất khó: em không biết bước thứ 37 phải chuyển đĩa nào. Nhưng nếu nghĩ đệ quy thì lời giải chỉ có 3 câu: “dời n − 1 đĩa nhỏ sang B; chuyển đĩa lớn nhất sang C; dời n − 1 đĩa nhỏ từ B sang C”. Hai câu “dời n − 1 đĩa” chính là cùng bài toán, chỉ nhỏ hơn.</p>
+    <p>Đệ quy giúp <strong>viết code ngắn và đúng</strong> cho những bài như vậy. Còn chia để trị giúp <strong>chạy nhanh hơn</strong> ở nhiều bài khác. Xem ví dụ đếm nghịch thế.</p>
+
+    <h3>Bài toán thứ hai: đếm nghịch thế</h3>
+    <p>Cho dãy n số. Một cặp chỉ số i &lt; j gọi là <b>nghịch thế</b> nếu a<sub>i</sub> &gt; a<sub>j</sub>. Ví dụ dãy 3 1 4 1 5 có 3 nghịch thế: (3, 1), (3, 1) và (4, 1). Đếm số nghịch thế với n = 10<sup>5</sup>.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p>Duyệt mọi cặp (i, j). Số cặp là n(n − 1)/2. Với n = 10<sup>5</sup> là 4 999 950 000, gần 5·10<sup>9</sup> phép so sánh, độ phức tạp <span class="bigo">O(n²)</span>, mất vài giây, quá giới hạn 1 giây.</p></div>
+      <div class="good-side"><h4>Chia để trị (merge sort)</h4><p>Chia đôi mảng, đếm nghịch thế trong mỗi nửa bằng đệ quy, rồi đếm cặp “một bên trái, một bên phải” ngay lúc trộn. Độ phức tạp <span class="bigo">O(n log n)</span>: khoảng 10<sup>5</sup> · 17 ≈ 1,7·10<sup>6</sup> phép tính, nhanh hơn khoảng 3 000 lần.</p></div>
+    </div>
+
+    <h3>Đệ quy không phải lúc nào cũng nhanh</h3>
+    <p>Đệ quy viết sai cách có thể chậm khủng khiếp. Hàm Fibonacci viết thẳng theo công thức <span class="math">F(n) = F(n − 1) + F(n − 2)</span> gọi chính nó <b>331 160 281</b> lần chỉ để tính F(40), trong khi vòng lặp chỉ cần 40 phép cộng. Học đệ quy cũng là học cách <em>đếm số lời gọi</em> để biết lời giải nhanh hay chậm.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <h3>Công thức viết một hàm đệ quy</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Định nghĩa rõ hàm làm gì.</strong> Viết bằng lời: “<code>f(n)</code> trả về tổng các chữ số của n”, “<code>hanoi(n, A, C, B)</code> chuyển n đĩa trên cùng từ A sang C”. Đây là “lời hứa” của hàm.</div></li>
+      <li><div><strong>Tìm điều kiện dừng.</strong> Trường hợp nhỏ nhất mà em trả lời được ngay: n = 0, n &lt; 10, đoạn chỉ có 1 phần tử, xâu rỗng…</div></li>
+      <li><div><strong>Tìm cách quy về bài nhỏ hơn.</strong> Giả sử hàm đã đúng với mọi dữ liệu nhỏ hơn (tin vào lời hứa), dùng nó để giải dữ liệu hiện tại.</div></li>
+      <li><div><strong>Kiểm tra “tiến về đích”.</strong> Mọi lời gọi đệ quy phải có dữ liệu nhỏ hơn hẳn và cuối cùng chạm điều kiện dừng.</div></li>
+      <li><div><strong>Đếm số lời gọi và độ sâu.</strong> Số lời gọi cho biết thời gian; độ sâu (số tầng chồng lên nhau) cho biết có tràn stack không.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> tongChuSo(n):                 <i>// tổng chữ số của n ≥ 0</i>
+    <b>nếu</b> n &lt; 10: <b>trả về</b> n            <i>// dừng: số có 1 chữ số</i>
+    <b>trả về</b> (n mod 10) + tongChuSo(n div 10)
+
+<b>hàm</b> inNhiPhan(n):                  <i>// in n ở hệ cơ số 2</i>
+    <b>nếu</b> n ≥ 2: inNhiPhan(n div 2)     <i>// in các bit phía trước trước</i>
+    in (n mod 2)                      <i>// rồi mới in bit cuối</i>
+
+<b>hàm</b> daoXau(s):
+    <b>nếu</b> độ dài s ≤ 1: <b>trả về</b> s
+    <b>trả về</b> daoXau(s bỏ ký tự đầu) + ký tự đầu của s</pre>
+
+    <h3>Tháp Hà Nội</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Dừng.</strong> Nếu n = 0 thì không có gì để chuyển.</div></li>
+      <li><div><strong>Bước 1.</strong> Chuyển n − 1 đĩa trên cùng từ cọc nguồn sang cọc trung gian (đệ quy, lúc này cọc đích đóng vai trung gian).</div></li>
+      <li><div><strong>Bước 2.</strong> Chuyển đĩa lớn nhất (đĩa thứ n) từ cọc nguồn sang cọc đích: 1 bước.</div></li>
+      <li><div><strong>Bước 3.</strong> Chuyển n − 1 đĩa từ cọc trung gian sang cọc đích (đệ quy, cọc nguồn đóng vai trung gian).</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> hanoi(n, nguon, dich, trungGian):
+    <b>nếu</b> n = 0: <b>trả về</b>
+    hanoi(n − 1, nguon, trungGian, dich)
+    in "chuyển đĩa", n, "từ", nguon, "sang", dich
+    hanoi(n − 1, trungGian, dich, nguon)</pre>
+
+    <h3>Chia để trị</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Dừng.</strong> Nếu bài toán đủ nhỏ (đoạn 1 phần tử, số mũ bằng 0) thì trả lời trực tiếp.</div></li>
+      <li><div><strong>Chia.</strong> Cắt dữ liệu thành các phần nhỏ hơn cùng dạng, thường là hai nửa <span class="math">[l, mid]</span> và <span class="math">[mid + 1, r]</span> với <span class="math">mid = (l + r) / 2</span>.</div></li>
+      <li><div><strong>Trị.</strong> Gọi đệ quy cho từng phần.</div></li>
+      <li><div><strong>Kết hợp.</strong> Ghép kết quả các phần thành kết quả cả đoạn. Bước này quyết định thuật toán nhanh hay chậm.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> maxDoan(a, l, r):                 <i>// max của a[l..r]</i>
+    <b>nếu</b> l = r: <b>trả về</b> a[l]
+    mid ← (l + r) div 2
+    <b>trả về</b> max(maxDoan(a, l, mid), maxDoan(a, mid+1, r))
+
+<b>hàm</b> mergeSort(a, l, r):              <i>// sắp a[l..r], trả về số nghịch thế</i>
+    <b>nếu</b> l ≥ r: <b>trả về</b> 0
+    mid ← (l + r) div 2
+    dem ← mergeSort(a, l, mid) + mergeSort(a, mid+1, r)
+    i ← l; j ← mid + 1
+    <b>lặp khi</b> còn cả hai nửa:
+        <b>nếu</b> a[i] ≤ a[j]: lấy a[i] ra, i ← i + 1
+        <b>ngược lại</b>: dem ← dem + (mid − i + 1); lấy a[j] ra, j ← j + 1
+    chép nốt phần còn lại; chép kết quả trộn về a[l..r]
+    <b>trả về</b> dem
+
+<b>hàm</b> luyThua(a, n):                   <i>// tính a^n</i>
+    <b>nếu</b> n = 0: <b>trả về</b> 1
+    h ← luyThua(a, n div 2)            <i>// gọi ĐÚNG MỘT lần</i>
+    <b>nếu</b> n chẵn: <b>trả về</b> h · h
+    <b>trả về</b> h · h · a</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <h3>Ngăn xếp lời gọi: mỗi lời gọi có “tờ giấy nháp” riêng</h3>
+    <p>Khi <code>fact(4)</code> gọi <code>fact(3)</code>, máy <em>không</em> xóa <code>fact(4)</code>. Nó tạm dừng <code>fact(4)</code> ngay tại chỗ đang tính dở, ghi nhớ “còn phải nhân 4 với kết quả”, rồi mở một <b>khung (frame)</b> mới cho <code>fact(3)</code>. Mỗi khung có biến <code>n</code> riêng: <code>n</code> của <code>fact(4)</code> là 4, <code>n</code> của <code>fact(3)</code> là 3, chúng không đè lên nhau.</p>
+    <p>Các khung xếp chồng lên nhau như chồng đĩa, gọi là <b>ngăn xếp lời gọi (call stack)</b>. Lời gọi mới đặt lên đỉnh; khi một lời gọi trả về, khung của nó bị nhấc đi và lời gọi ngay dưới chạy tiếp. Vì vậy:</p>
+    <ul>
+      <li>Các lời gọi <strong>bắt đầu</strong> theo thứ tự fact(4), fact(3), fact(2), fact(1).</li>
+      <li>Các lời gọi <strong>kết thúc</strong> theo thứ tự <em>ngược lại</em>: fact(1) xong trước, fact(4) xong sau cùng.</li>
+    </ul>
+    <p>Đó cũng là lý do <code>inNhiPhan</code> in đúng thứ tự: hàm gọi đệ quy <em>trước</em> rồi mới in, nên chữ số được in lúc “đi về”, tức bit đầu tiên ra trước. Với n = 13, các lời gọi là 13 → 6 → 3 → 1; lúc trả về chúng in 1, 1 (của 3), 0 (của 6), 1 (của 13), ra <code>1101</code>. Nếu đổi chỗ, in trước rồi mới gọi, em sẽ được <code>1011</code>, là xâu bị đảo ngược.</p>
+
+    <h3>Vì sao đúng: giống hệt chứng minh quy nạp</h3>
+    <p>Em đã học quy nạp toán học: chứng minh mệnh đề đúng với n = 1, rồi chứng minh “đúng với n − 1 thì đúng với n”. Hàm đệ quy được kiểm tra đúng theo y hệt cách đó:</p>
+    <ol>
+      <li><b>Bước cơ sở:</b> với dữ liệu ở điều kiện dừng, hàm trả đúng. Ví dụ <code>fact(1) = 1</code> đúng.</li>
+      <li><b>Bước quy nạp:</b> giả sử <code>fact(n − 1)</code> trả đúng (n − 1)!. Khi đó <code>n · fact(n − 1) = n · (n − 1)! = n!</code>, đúng.</li>
+      <li>Vì mỗi lời gọi làm n giảm 1, sau hữu hạn bước sẽ chạm n = 1. Vậy hàm đúng với mọi n ≥ 1.</li>
+    </ol>
+    <p>Điều này cho em một lời khuyên quan trọng: <strong>khi viết hàm đệ quy, đừng cố “đi theo” mọi lời gọi trong đầu</strong>. Chỉ cần tin rằng lời gọi nhỏ hơn làm đúng lời hứa, rồi kiểm tra em dùng nó đúng chưa. Gọi là “niềm tin đệ quy” (recursive leap of faith).</p>
+
+    <h3>Cây đệ quy và hàm Fibonacci</h3>
+    <p>Khi một lời gọi sinh ra <em>nhiều</em> lời gọi con, ta vẽ được một <b>cây đệ quy</b>: mỗi nút là một lời gọi, các con là những lời gọi nó sinh ra. Với <code>fib(n) = fib(n − 1) + fib(n − 2)</code>, mỗi nút có 2 con nên cây phình rất nhanh. Gọi C(n) là số lời gọi khi tính fib(n), ta có <span class="math">C(0) = C(1) = 1</span> và <span class="math">C(n) = 1 + C(n − 1) + C(n − 2)</span>. Giải ra được <span class="math">C(n) = 2·F(n + 1) − 1</span>:</p>
+    <table>
+      <thead><tr><th>n</th><th>F(n)</th><th>Số lời gọi C(n)</th></tr></thead>
+      <tbody>
+        <tr><td>5</td><td>5</td><td>15</td></tr>
+        <tr><td>10</td><td>55</td><td>177</td></tr>
+        <tr><td>20</td><td>6 765</td><td>21 891</td></tr>
+        <tr><td>30</td><td>832 040</td><td>2 692 537</td></tr>
+        <tr><td>40</td><td>102 334 155</td><td>331 160 281</td></tr>
+        <tr><td>50</td><td>12 586 269 025</td><td>40 730 022 147</td></tr>
+      </tbody>
+    </table>
+    <p>Mỗi khi n tăng 1, số lời gọi nhân lên khoảng 1,618 lần (tỉ lệ vàng). Nói gọn là “bùng nổ cỡ 2<sup>n</sup>”. Nguyên nhân: <strong>cùng một bài con bị tính đi tính lại</strong>. Trong cây fib(5) ở phần minh họa, fib(3) bị tính 2 lần, fib(2) bị tính 3 lần. Cách chữa là ghi nhớ kết quả đã tính (memoization): lần sau gặp lại thì lấy ra dùng, không gọi tiếp. Khi đó mỗi fib(k) chỉ tính một lần, tổng cộng O(n). Đây chính là ý tưởng mở đầu của <a href="dp-intro.html">quy hoạch động</a>.</p>
+
+    <h3>Tháp Hà Nội: vì sao 2<sup>n</sup> − 1 bước, và vì sao không thể ít hơn</h3>
+    <p>Gọi T(n) là số bước thuật toán thực hiện với n đĩa. Theo 3 bước: <span class="math">T(0) = 0</span>, <span class="math">T(n) = T(n − 1) + 1 + T(n − 1) = 2T(n − 1) + 1</span>. Tính thử: T(1) = 1, T(2) = 3, T(3) = 7, T(4) = 15. Cộng 1 vào hai vế: <span class="math">T(n) + 1 = 2(T(n − 1) + 1)</span>, nên T(n) + 1 nhân đôi mỗi lần, bằng 2<sup>n</sup>. Vậy <span class="math">T(n) = 2<sup>n</sup> − 1</span>.</p>
+    <p><strong>Không cách nào ít bước hơn.</strong> Gọi M(n) là số bước ít nhất có thể. Xét đĩa lớn nhất:</p>
+    <ul>
+      <li>Nó phải di chuyển ít nhất một lần. Ngay trước lần di chuyển <em>đầu tiên</em> của nó (từ A sang một cọc X), n − 1 đĩa nhỏ không được nằm trên nó và cũng không được nằm ở X (vì đĩa lớn sắp đặt lên X). Vậy cả n − 1 đĩa phải nằm gọn ở cọc thứ ba. Đưa chúng tới đó cần ít nhất M(n − 1) bước.</li>
+      <li>Sau lần di chuyển <em>cuối cùng</em> của đĩa lớn (vào C), n − 1 đĩa nhỏ lại đang nằm gọn ở một cọc khác C, và phải được đưa lên C: thêm ít nhất M(n − 1) bước.</li>
+      <li>Cộng lại: <span class="math">M(n) ≥ M(n − 1) + 1 + M(n − 1) = 2M(n − 1) + 1</span>, với M(1) = 1. Bằng quy nạp, M(n) ≥ 2<sup>n</sup> − 1. Thuật toán đệ quy đạt đúng con số này nên nó là <b>tối ưu</b>.</li>
+    </ul>
+    <p>Với n = 64 đĩa như truyền thuyết, cần 2<sup>64</sup> − 1 ≈ 1,8·10<sup>19</sup> bước. Mỗi giây một bước thì mất khoảng 585 tỉ năm.</p>
+
+    <h3>Chia để trị: vì sao đúng</h3>
+    <p>Lấy merge sort làm ví dụ. Giả sử (niềm tin đệ quy) hai lời gọi đã sắp đúng nửa trái và nửa phải. Bước trộn so sánh hai phần tử đầu của hai nửa, lấy cái nhỏ hơn ra trước. Vì mỗi nửa đã tăng dần, phần tử nhỏ nhất còn lại luôn đứng đầu một trong hai nửa, nên dãy trộn ra tăng dần. Điều kiện dừng: đoạn 1 phần tử tự nó đã được sắp.</p>
+    <p>Khi đếm nghịch thế, mỗi cặp (i, j) với i &lt; j rơi vào đúng một trong ba loại: cả hai ở nửa trái, cả hai ở nửa phải, hoặc i bên trái còn j bên phải. Hai loại đầu do đệ quy đếm. Loại thứ ba đếm lúc trộn: khi lấy a[j] của nửa phải ra trước a[i] (vì a[i] &gt; a[j]), thì mọi phần tử a[i], a[i + 1], …, a[mid] còn lại bên trái đều ≥ a[i] &gt; a[j], nên cả <span class="math">mid − i + 1</span> phần tử đó tạo nghịch thế với a[j]. Mỗi cặp được đếm đúng một lần.</p>
+
+    <h3>Chia để trị: vì sao nhanh</h3>
+    <p>Merge sort trên n phần tử: bước trộn tốn khoảng n thao tác, và có hai bài con cỡ n/2. Viết <span class="math">T(n) = 2T(n/2) + n</span>. Vẽ cây đệ quy: tầng trên cùng có 1 đoạn dài n, tầng sau 2 đoạn dài n/2, rồi 4 đoạn dài n/4… <em>Mỗi tầng tổng độ dài đúng bằng n</em>, nên mỗi tầng tốn n thao tác. Số tầng là số lần chia đôi n tới 1, khoảng log<sub>2</sub> n. Tổng cộng <span class="math">n · log<sub>2</sub> n</span>.</p>
+    <p>Lũy thừa nhanh còn nhanh hơn: mỗi lời gọi chỉ sinh <em>một</em> lời gọi con với số mũ giảm một nửa, nên số lời gọi chỉ khoảng log<sub>2</sub> n + 1. Với n = 10<sup>18</sup> chỉ khoảng 60 lời gọi, thay vì 10<sup>18</sup> phép nhân.</p>
+    <p>Ngược lại, tìm max bằng chia để trị có <span class="math">T(n) = 2T(n/2) + 1</span>, tổng cộng n − 1 phép so sánh, <em>bằng đúng</em> vòng lặp. Chia đôi không tự động làm nhanh hơn. Nó chỉ nhanh khi bước kết hợp rẻ hơn hẳn việc làm trực tiếp, hoặc khi các bài con trùng nhau được dùng chung (như lũy thừa nhanh dùng h hai lần nhưng chỉ tính một lần).</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi nộp một lời giải đệ quy, em hãy tự hỏi đủ ba câu: Dừng ở đâu? Lần gọi sau có nhỏ hơn không? Có bao nhiêu lời gọi và sâu bao nhiêu tầng?</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <h3>Ngăn xếp lời gọi của fact(4)</h3>
+    <p>Hàm <code>main</code> gọi <code>fact(4)</code>. Bảng dưới là ngăn xếp lời gọi: dòng trên cùng là <b>đỉnh</b> (lời gọi đang chạy), dòng dưới cùng là lời gọi cũ nhất. Em bấm từng bước để thấy ngăn xếp cao dần lên khi gọi, rồi thấp dần xuống khi trả về.</p>
+
+    <div class="stepper" data-title="Ngăn xếp lời gọi khi tính fact(4)">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; main gọi fact(4). Một khung mới được đặt lên đỉnh, có biến riêng n = 4. Vì 4 &gt; 1, nó cần fact(3) nên tạm dừng ở phép nhân 4 · ?.">
+        <table class="trace">
+          <thead><tr><th>Tầng</th><th>Lời gọi</th><th>n</th><th>Đang làm</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>1</td><td>fact(4)</td><td>4</td><td>chờ 4 · fact(3)</td></tr>
+            <tr><td>0</td><td>main</td><td>—</td><td>chờ fact(4)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; fact(3) được đặt lên đỉnh với n = 3 của riêng nó. Biến n = 4 của fact(4) vẫn còn nguyên ở tầng dưới.">
+        <table class="trace">
+          <thead><tr><th>Tầng</th><th>Lời gọi</th><th>n</th><th>Đang làm</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>2</td><td>fact(3)</td><td>3</td><td>chờ 3 · fact(2)</td></tr>
+            <tr><td>1</td><td>fact(4)</td><td>4</td><td>chờ 4 · fact(3)</td></tr>
+            <tr><td>0</td><td>main</td><td>—</td><td>chờ fact(4)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; fact(2) lên đỉnh, lại cần fact(1). Ngăn xếp cao 4 tầng (tính cả main).">
+        <table class="trace">
+          <thead><tr><th>Tầng</th><th>Lời gọi</th><th>n</th><th>Đang làm</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>3</td><td>fact(2)</td><td>2</td><td>chờ 2 · fact(1)</td></tr>
+            <tr><td>2</td><td>fact(3)</td><td>3</td><td>chờ 3 · fact(2)</td></tr>
+            <tr><td>1</td><td>fact(4)</td><td>4</td><td>chờ 4 · fact(3)</td></tr>
+            <tr><td>0</td><td>main</td><td>—</td><td>chờ fact(4)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; fact(1) gặp điều kiện dừng n ≤ 1, trả về 1 ngay mà không gọi thêm. Đây là lúc ngăn xếp cao nhất: 4 lời gọi fact chồng lên nhau.">
+        <table class="trace">
+          <thead><tr><th>Tầng</th><th>Lời gọi</th><th>n</th><th>Đang làm</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>4</td><td>fact(1)</td><td>1</td><td>dừng: trả về 1</td></tr>
+            <tr><td>3</td><td>fact(2)</td><td>2</td><td>chờ 2 · fact(1)</td></tr>
+            <tr><td>2</td><td>fact(3)</td><td>3</td><td>chờ 3 · fact(2)</td></tr>
+            <tr><td>1</td><td>fact(4)</td><td>4</td><td>chờ 4 · fact(3)</td></tr>
+            <tr><td>0</td><td>main</td><td>—</td><td>chờ fact(4)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; Khung fact(1) bị nhấc đi. fact(2) chạy tiếp từ chỗ tạm dừng: 2 · 1 = 2, rồi trả về 2.">
+        <table class="trace">
+          <thead><tr><th>Tầng</th><th>Lời gọi</th><th>n</th><th>Đang làm</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>3</td><td>fact(2)</td><td>2</td><td>2 · 1 = 2, trả về 2</td></tr>
+            <tr><td>2</td><td>fact(3)</td><td>3</td><td>chờ 3 · fact(2)</td></tr>
+            <tr><td>1</td><td>fact(4)</td><td>4</td><td>chờ 4 · fact(3)</td></tr>
+            <tr><td>0</td><td>main</td><td>—</td><td>chờ fact(4)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 6.&lt;/b&gt; fact(3) nhận 2, tính 3 · 2 = 6 và trả về 6.">
+        <table class="trace">
+          <thead><tr><th>Tầng</th><th>Lời gọi</th><th>n</th><th>Đang làm</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>2</td><td>fact(3)</td><td>3</td><td>3 · 2 = 6, trả về 6</td></tr>
+            <tr><td>1</td><td>fact(4)</td><td>4</td><td>chờ 4 · fact(3)</td></tr>
+            <tr><td>0</td><td>main</td><td>—</td><td>chờ fact(4)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 7.&lt;/b&gt; fact(4) nhận 6, tính 4 · 6 = 24 và trả về cho main. Các lời gọi kết thúc theo thứ tự ngược với lúc bắt đầu: fact(1), fact(2), fact(3), fact(4).">
+        <table class="trace">
+          <thead><tr><th>Tầng</th><th>Lời gọi</th><th>n</th><th>Đang làm</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>1</td><td>fact(4)</td><td>4</td><td>4 · 6 = 24, trả về 24</td></tr>
+            <tr><td>0</td><td>main</td><td>—</td><td>nhận 24, in ra</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3>Cây đệ quy của fib(5)</h3>
+    <p>Mỗi hình bầu dục là một lời gọi <code>fib(k)</code>, viết tắt f(k). Tổng cộng 15 lời gọi để tính được fib(5) = 5. Các nút cùng màu là cùng một bài con bị tính lại nhiều lần.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 584 304" width="584" role="img" aria-label="Cây đệ quy của fib(5): 15 lời gọi, fib(3) bị tính 2 lần, fib(2) bị tính 3 lần">
+        <line class="edge" x1="76" y1="216" x2="40" y2="278"/>
+        <line class="edge" x1="76" y1="216" x2="112" y2="278"/>
+        <line class="edge" x1="130" y1="154" x2="76" y2="216"/>
+        <line class="edge" x1="130" y1="154" x2="184" y2="216"/>
+        <line class="edge" x1="292" y1="154" x2="256" y2="216"/>
+        <line class="edge" x1="292" y1="154" x2="328" y2="216"/>
+        <line class="edge" x1="211" y1="92" x2="130" y2="154"/>
+        <line class="edge" x1="211" y1="92" x2="292" y2="154"/>
+        <line class="edge" x1="436" y1="154" x2="400" y2="216"/>
+        <line class="edge" x1="436" y1="154" x2="472" y2="216"/>
+        <line class="edge" x1="490" y1="92" x2="436" y2="154"/>
+        <line class="edge" x1="490" y1="92" x2="544" y2="154"/>
+        <line class="edge" x1="350.5" y1="30" x2="211" y2="92"/>
+        <line class="edge" x1="350.5" y1="30" x2="490" y2="92"/>
+        <ellipse class="node is-active" cx="350.5" cy="30" rx="27" ry="16"/><text x="350.5" y="35" text-anchor="middle">f(5)</text>
+        <ellipse class="node" cx="211" cy="92" rx="27" ry="16"/><text x="211" y="97" text-anchor="middle">f(4)</text>
+        <ellipse class="node is-cmp" cx="130" cy="154" rx="27" ry="16"/><text x="130" y="159" text-anchor="middle">f(3)</text>
+        <ellipse class="node is-bad" cx="76" cy="216" rx="27" ry="16"/><text x="76" y="221" text-anchor="middle">f(2)</text>
+        <ellipse class="node is-ok" cx="40" cy="278" rx="27" ry="16"/><text x="40" y="283" text-anchor="middle">f(1)</text>
+        <ellipse class="node is-ok" cx="112" cy="278" rx="27" ry="16"/><text x="112" y="283" text-anchor="middle">f(0)</text>
+        <ellipse class="node is-ok" cx="184" cy="216" rx="27" ry="16"/><text x="184" y="221" text-anchor="middle">f(1)</text>
+        <ellipse class="node is-bad" cx="292" cy="154" rx="27" ry="16"/><text x="292" y="159" text-anchor="middle">f(2)</text>
+        <ellipse class="node is-ok" cx="256" cy="216" rx="27" ry="16"/><text x="256" y="221" text-anchor="middle">f(1)</text>
+        <ellipse class="node is-ok" cx="328" cy="216" rx="27" ry="16"/><text x="328" y="221" text-anchor="middle">f(0)</text>
+        <ellipse class="node is-cmp" cx="490" cy="92" rx="27" ry="16"/><text x="490" y="97" text-anchor="middle">f(3)</text>
+        <ellipse class="node is-bad" cx="436" cy="154" rx="27" ry="16"/><text x="436" y="159" text-anchor="middle">f(2)</text>
+        <ellipse class="node is-ok" cx="400" cy="216" rx="27" ry="16"/><text x="400" y="221" text-anchor="middle">f(1)</text>
+        <ellipse class="node is-ok" cx="472" cy="216" rx="27" ry="16"/><text x="472" y="221" text-anchor="middle">f(0)</text>
+        <ellipse class="node is-ok" cx="544" cy="154" rx="27" ry="16"/><text x="544" y="159" text-anchor="middle">f(1)</text>
+      </svg>
+      <figcaption>Hình 1. Cây đệ quy fib(5): hai nút f(3) cùng một màu (bị tính 2 lần), ba nút f(2) cùng một màu khác (bị tính 3 lần); 8 lá là điều kiện dừng (5 lá f(1), 3 lá f(0)). Nếu ghi nhớ kết quả, chỉ cần 6 lời gọi khác nhau: f(0) … f(5).</figcaption>
+    </figure>
+
+    <h3>Tháp Hà Nội 3 đĩa trong 3 “bước lớn”</h3>
+    <figure class="diagram">
+      <svg viewBox="0 0 840 150" width="840" role="img" aria-label="Ba bước giải tháp Hà Nội 3 đĩa: dời 2 đĩa nhỏ sang B, chuyển đĩa lớn sang C, dời 2 đĩa nhỏ từ B sang C">
+        <line class="edge" x1="10" y1="110" x2="200" y2="110"/>
+        <line class="edge" x1="40" y1="110" x2="40" y2="40"/>
+        <text class="label-sm" x="40" y="126" text-anchor="middle">A</text>
+        <rect class="node is-active" x="15" y="95" width="50" height="13" rx="4"/>
+        <rect class="node is-cmp" x="21" y="80" width="38" height="13" rx="4"/>
+        <rect class="node is-ok" x="27" y="65" width="26" height="13" rx="4"/>
+        <line class="edge" x1="105" y1="110" x2="105" y2="40"/>
+        <text class="label-sm" x="105" y="126" text-anchor="middle">B</text>
+        <line class="edge" x1="170" y1="110" x2="170" y2="40"/>
+        <text class="label-sm" x="170" y="126" text-anchor="middle">C</text>
+        <text class="label-pen" x="105.0" y="146" text-anchor="middle">Ban đầu</text>
+        <line class="edge" x1="220" y1="110" x2="410" y2="110"/>
+        <line class="edge" x1="250" y1="110" x2="250" y2="40"/>
+        <text class="label-sm" x="250" y="126" text-anchor="middle">A</text>
+        <rect class="node is-active" x="225" y="95" width="50" height="13" rx="4"/>
+        <line class="edge" x1="315" y1="110" x2="315" y2="40"/>
+        <text class="label-sm" x="315" y="126" text-anchor="middle">B</text>
+        <rect class="node is-cmp" x="296" y="95" width="38" height="13" rx="4"/>
+        <rect class="node is-ok" x="302" y="80" width="26" height="13" rx="4"/>
+        <line class="edge" x1="380" y1="110" x2="380" y2="40"/>
+        <text class="label-sm" x="380" y="126" text-anchor="middle">C</text>
+        <text class="label-pen" x="315.0" y="146" text-anchor="middle">Sau bước 1</text>
+        <line class="edge" x1="430" y1="110" x2="620" y2="110"/>
+        <line class="edge" x1="460" y1="110" x2="460" y2="40"/>
+        <text class="label-sm" x="460" y="126" text-anchor="middle">A</text>
+        <line class="edge" x1="525" y1="110" x2="525" y2="40"/>
+        <text class="label-sm" x="525" y="126" text-anchor="middle">B</text>
+        <rect class="node is-cmp" x="506" y="95" width="38" height="13" rx="4"/>
+        <rect class="node is-ok" x="512" y="80" width="26" height="13" rx="4"/>
+        <line class="edge" x1="590" y1="110" x2="590" y2="40"/>
+        <text class="label-sm" x="590" y="126" text-anchor="middle">C</text>
+        <rect class="node is-active" x="565" y="95" width="50" height="13" rx="4"/>
+        <text class="label-pen" x="525.0" y="146" text-anchor="middle">Sau bước 2</text>
+        <line class="edge" x1="640" y1="110" x2="830" y2="110"/>
+        <line class="edge" x1="670" y1="110" x2="670" y2="40"/>
+        <text class="label-sm" x="670" y="126" text-anchor="middle">A</text>
+        <line class="edge" x1="735" y1="110" x2="735" y2="40"/>
+        <text class="label-sm" x="735" y="126" text-anchor="middle">B</text>
+        <line class="edge" x1="800" y1="110" x2="800" y2="40"/>
+        <text class="label-sm" x="800" y="126" text-anchor="middle">C</text>
+        <rect class="node is-active" x="775" y="95" width="50" height="13" rx="4"/>
+        <rect class="node is-cmp" x="781" y="80" width="38" height="13" rx="4"/>
+        <rect class="node is-ok" x="787" y="65" width="26" height="13" rx="4"/>
+        <text class="label-pen" x="735.0" y="146" text-anchor="middle">Sau bước 3</text>
+      </svg>
+      <figcaption>Hình 2. Bước 1: dời 2 đĩa nhỏ từ A sang B (đệ quy, mất 3 bước). Bước 2: chuyển đĩa lớn nhất từ A sang C (1 bước). Bước 3: dời 2 đĩa nhỏ từ B sang C (đệ quy, 3 bước). Tổng 3 + 1 + 3 = 7 = 2<sup>3</sup> − 1.</figcaption>
+    </figure>
+    <p>Bảy bước cụ thể do chương trình ở phần Cài đặt in ra (cọc 1 = A, 2 = B, 3 = C) là: A→C, A→B, C→B, A→C, B→A, B→C, A→C. Ba bước đầu chính là “dời 2 đĩa từ A sang B”, bước thứ tư là đĩa lớn, ba bước cuối là “dời 2 đĩa từ B sang C”.</p>
+
+    <div class="playground" id="viz-recursion">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: tháp Hà Nội n đĩa</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="rec-n">Số đĩa n (1–7) <input type="number" id="rec-n" min="1" max="7" value="3"></label>
+          <button type="button" data-act="reset">Đặt lại</button>
+          <button type="button" class="ghost" data-act="step">Bước tiếp</button>
+          <button type="button" class="ghost" data-act="play">Tự chạy</button>
+        </div>
+        <div data-role="stage"></div>
+        <div class="out" data-role="out">Chọn số đĩa rồi bấm “Bước tiếp” hoặc “Tự chạy”.</div>
+      </div>
+    </div>
+    <p>Widget cũng hiện <b>ngăn xếp lời gọi</b> <code>hanoi(…)</code> đang mở ở mỗi bước. Em để ý: đĩa nhỏ nhất di chuyển ở mọi bước lẻ, và độ sâu ngăn xếp không bao giờ vượt quá n.</p>
+
+    <h3>Merge sort đếm nghịch thế trên 8 phần tử</h3>
+    <p>Dãy <code>5 2 4 7 1 3 2 6</code>. Đếm tay theo định nghĩa: 5 lớn hơn 5 số đứng sau nó (2, 4, 1, 3, 2), 2 lớn hơn 1 số (1), 4 lớn hơn 3 số (1, 3, 2), 7 lớn hơn 4 số (1, 3, 2, 6), 1 không lớn hơn số nào, 3 lớn hơn 1 số (2), còn 2 và 6 không có. Tổng 5 + 1 + 3 + 4 + 1 = 14 nghịch thế. Xem merge sort đếm ra cùng con số.</p>
+
+    <div class="stepper" data-title="Merge sort đếm nghịch thế: 5 2 4 7 1 3 2 6">
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Dãy ban đầu 8 phần tử, bộ đếm nghịch thế = 0.">
+        <div class="ms-row">
+          <div class="arr"><span class="cell" data-i="0">5</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">4</span><span class="cell" data-i="3">7</span><span class="cell" data-i="4">1</span><span class="cell" data-i="5">3</span><span class="cell" data-i="6">2</span><span class="cell" data-i="7">6</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2. Chia.&lt;/b&gt; Đệ quy chia đôi liên tục: 8 → 4 + 4 → 2 + 2 + 2 + 2 → tám đoạn 1 phần tử. Đoạn 1 phần tử là điều kiện dừng: đã sắp, 0 nghịch thế.">
+        <div class="ms-row">
+          <div class="arr"><span class="cell">5</span><span class="cell">2</span><span class="cell">4</span><span class="cell">7</span></div>
+          <div class="arr"><span class="cell">1</span><span class="cell">3</span><span class="cell">2</span><span class="cell">6</span></div>
+        </div>
+        <div class="ms-row">
+          <div class="arr"><span class="cell">5</span><span class="cell">2</span></div>
+          <div class="arr"><span class="cell">4</span><span class="cell">7</span></div>
+          <div class="arr"><span class="cell">1</span><span class="cell">3</span></div>
+          <div class="arr"><span class="cell">2</span><span class="cell">6</span></div>
+        </div>
+        <div class="ms-row">
+          <div class="arr"><span class="cell is-dim">5</span></div><div class="arr"><span class="cell is-dim">2</span></div><div class="arr"><span class="cell is-dim">4</span></div><div class="arr"><span class="cell is-dim">7</span></div><div class="arr"><span class="cell is-dim">1</span></div><div class="arr"><span class="cell is-dim">3</span></div><div class="arr"><span class="cell is-dim">2</span></div><div class="arr"><span class="cell is-dim">6</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3. Trộn tầng dưới cùng.&lt;/b&gt; [5] + [2]: lấy 2 bên phải trước vì 5 &gt; 2, cộng mid − i + 1 = 1 (cặp (5, 2)). Ba cặp còn lại đã đúng thứ tự. Bộ đếm = 1.">
+        <div class="ms-row">
+          <div class="arr"><span class="cell is-bad">2</span><span class="cell is-bad">5</span></div>
+          <div class="arr"><span class="cell is-ok">4</span><span class="cell is-ok">7</span></div>
+          <div class="arr"><span class="cell is-ok">1</span><span class="cell is-ok">3</span></div>
+          <div class="arr"><span class="cell is-ok">2</span><span class="cell is-ok">6</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4. Trộn tầng giữa.&lt;/b&gt; [2 5] + [4 7]: lấy 2; so 5 với 4, lấy 4 bên phải trước, còn 1 phần tử bên trái (5) nên cộng 1. [1 3] + [2 6]: lấy 1; so 3 với 2, lấy 2 bên phải, cộng 1 (cặp (3, 2)). Bộ đếm = 1 + 1 + 1 = 3.">
+        <div class="ms-row">
+          <div class="arr"><span class="cell is-ok">2</span><span class="cell is-active">4</span><span class="cell is-ok">5</span><span class="cell is-ok">7</span></div>
+          <div class="arr"><span class="cell is-ok">1</span><span class="cell is-active">2</span><span class="cell is-ok">3</span><span class="cell is-ok">6</span></div>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 5. Trộn tầng trên cùng (nửa đầu).&lt;/b&gt; Trái = [2 4 5 7], phải = [1 2 3 6]. So 2 với 1: lấy 1, cả 4 số bên trái đều lớn hơn 1, cộng 4 (đếm = 7). So 2 với 2: bằng nhau, lấy 2 bên trái, không cộng. So 4 với 2: lấy 2 bên phải, còn 4, 5, 7 bên trái, cộng 3 (đếm = 10).">
+        <div class="arr"><span class="arr-label">trái</span><span class="cell is-dim">2</span><span class="cell" data-ptr="i">4</span><span class="cell">5</span><span class="cell">7</span></div>
+        <div class="arr"><span class="arr-label">phải</span><span class="cell is-dim">1</span><span class="cell is-dim">2</span><span class="cell" data-ptr="j">3</span><span class="cell">6</span></div>
+        <div class="arr"><span class="arr-label">kết quả</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 6. Trộn tầng trên cùng (nửa sau).&lt;/b&gt; So 4 với 3: lấy 3, cộng 3 (đếm = 13). Lấy 4, rồi 5 (đều nhỏ hơn 6). So 7 với 6: lấy 6, còn mỗi 7 bên trái, cộng 1 (đếm = 14). Cuối cùng chép 7.">
+        <div class="arr"><span class="arr-label">kết quả</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">2</span><span class="cell is-active">3</span><span class="cell is-ok">4</span><span class="cell is-ok">5</span><span class="cell is-active">6</span><span class="cell is-ok">7</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 7.&lt;/b&gt; Dãy đã sắp xong và bộ đếm = 1 (tầng dưới) + 2 (tầng giữa) + 11 (tầng trên) = 14, khớp với cách đếm tay. Merge sort chỉ cần 3 tầng trộn, mỗi tầng tốn khoảng 8 thao tác.">
+        <div class="arr"><span class="cell is-ok" data-i="0">1</span><span class="cell is-ok" data-i="1">2</span><span class="cell is-ok" data-i="2">2</span><span class="cell is-ok" data-i="3">3</span><span class="cell is-ok" data-i="4">4</span><span class="cell is-ok" data-i="5">5</span><span class="cell is-ok" data-i="6">6</span><span class="cell is-ok" data-i="7">7</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Chương trình 1: tháp Hà Nội</h3>
+    <p>Chương trình giải bài <a href="https://cses.fi/problemset/task/2165">CSES Tower of Hanoi</a>: nhập n (1 ≤ n ≤ 16), in số bước ít nhất, rồi in từng bước “a b” nghĩa là chuyển đĩa trên cùng của cọc a sang cọc b. Cọc trái là 1, giữa là 2, phải là 3. Ta lưu các bước vào vector trước để in được số bước ở dòng đầu.</p>
+    <figure class="code">
+      <figcaption><span class="fn">hanoi.cpp</span> Tháp Hà Nội bằng đệ quy</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+vector&lt;pair&lt;int,int&gt;&gt; moves;   // danh sách các bước (từ cọc, sang cọc)
+
+// Chuyển n đĩa trên cùng từ cọc "tu" sang cọc "den", dùng cọc "trung" làm trung gian
+void hanoi(int n, int tu, int den, int trung) {
+    if (n == 0) return;                 // điều kiện dừng: không có đĩa nào thì không làm gì
+    hanoi(n - 1, tu, trung, den);       // bước 1: dời n-1 đĩa nhỏ sang cọc trung gian
+    moves.push_back({tu, den});         // bước 2: chuyển đĩa lớn nhất sang cọc đích
+    hanoi(n - 1, trung, den, tu);       // bước 3: dời n-1 đĩa nhỏ từ trung gian lên đĩa lớn
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    if (!(cin &gt;&gt; n)) return 0;
+    hanoi(n, 1, 3, 2);                  // cọc trái = 1, giữa = 2, phải = 3
+    cout &lt;&lt; moves.size() &lt;&lt; '\n';       // luôn bằng 2^n - 1
+    for (auto [a, b] : moves) cout &lt;&lt; a &lt;&lt; ' ' &lt;&lt; b &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">7
+1 3
+1 2
+3 2
+1 3
+2 1
+2 3
+1 3</code></pre></div>
+    </div>
+    <p>Với n = 16, chương trình in 2<sup>16</sup> − 1 = 65 535 bước; độ sâu đệ quy chỉ 17 tầng nên không lo tràn stack.</p>
+
+    <h3>Chương trình 2: merge sort đếm nghịch thế</h3>
+    <p>Chương trình giải bài <a href="https://oj.vnoi.info/problem/nkinv">VNOJ NKINV – Dãy nghịch thế</a>: nhập n rồi n số, in số cặp i &lt; j mà a<sub>i</sub> &gt; a<sub>j</sub>. Kết quả có thể tới n(n − 1)/2, với n = 10<sup>5</sup> là gần 5·10<sup>9</sup>, vượt <code>int</code>, nên bộ đếm phải dùng <code>long long</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">nghich_the.cpp</span> Chia để trị: sắp xếp trộn kèm đếm</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int n;
+vector&lt;int&gt; a, tmp;
+
+// Sắp xếp a[l..r] tăng dần và trả về số cặp nghịch thế trong đoạn đó
+long long mergeSort(int l, int r) {
+    if (l &gt;= r) return 0;                       // đoạn 1 phần tử: đã sắp, không có nghịch thế
+    int mid = (l + r) / 2;
+    long long cnt = mergeSort(l, mid)           // CHIA + TRỊ: nghịch thế nằm gọn nửa trái
+                  + mergeSort(mid + 1, r);      //            nghịch thế nằm gọn nửa phải
+    // KẾT HỢP: trộn hai nửa đã sắp, đồng thời đếm cặp (trái, phải) nghịch thế
+    int i = l, j = mid + 1, k = l;
+    while (i &lt;= mid &amp;&amp; j &lt;= r) {
+        if (a[i] &lt;= a[j]) tmp[k++] = a[i++];    // bằng nhau không tính là nghịch thế
+        else {
+            cnt += mid - i + 1;                 // a[i..mid] đều lớn hơn a[j]
+            tmp[k++] = a[j++];
+        }
+    }
+    while (i &lt;= mid) tmp[k++] = a[i++];
+    while (j &lt;= r)   tmp[k++] = a[j++];
+    for (int t = l; t &lt;= r; t++) a[t] = tmp[t];
+    return cnt;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    if (!(cin &gt;&gt; n)) return 0;
+    a.resize(n);
+    tmp.resize(n);
+    for (int &amp;x : a) cin &gt;&gt; x;
+    cout &lt;&lt; mergeSort(0, n - 1) &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8
+5 2 4 7 1 3 2 6</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">14</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5
+3 1 4 1 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">3</code></pre></div>
+    </div>
+    <p>Mảng phụ <code>tmp</code> được cấp một lần ở <code>main</code> và dùng chung cho mọi lời gọi. Nếu mỗi lời gọi tự tạo một vector mới thì vẫn đúng nhưng chậm hơn nhiều.</p>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <p>Với hàm đệ quy, em đo hai thứ: <b>tổng số lời gọi</b> (nhân với công việc mỗi lời gọi) cho ra thời gian, và <b>độ sâu lớn nhất</b> của ngăn xếp cho ra bộ nhớ stack.</p>
+    <table>
+      <thead><tr><th>Hàm</th><th>Công thức truy hồi</th><th>Thời gian</th><th>Độ sâu stack</th></tr></thead>
+      <tbody>
+        <tr><td>Giai thừa, tổng 1..n</td><td>T(n) = T(n − 1) + 1</td><td><span class="bigo">O(n)</span></td><td>n</td></tr>
+        <tr><td>Tổng chữ số, in nhị phân</td><td>T(n) = T(n / 10) + 1, T(n / 2) + 1</td><td><span class="bigo">O(số chữ số)</span></td><td>số chữ số</td></tr>
+        <tr><td>Fibonacci ngây thơ</td><td>T(n) = T(n − 1) + T(n − 2) + 1</td><td><span class="bigo">O(1,618ⁿ)</span></td><td>n</td></tr>
+        <tr><td>Fibonacci có nhớ</td><td>mỗi f(k) tính một lần</td><td><span class="bigo">O(n)</span></td><td>n</td></tr>
+        <tr><td>Tháp Hà Nội</td><td>T(n) = 2T(n − 1) + 1</td><td><span class="bigo">O(2ⁿ)</span></td><td>n</td></tr>
+        <tr><td>Max bằng chia để trị</td><td>T(n) = 2T(n / 2) + 1</td><td><span class="bigo">O(n)</span></td><td>log₂ n</td></tr>
+        <tr><td>Merge sort, đếm nghịch thế</td><td>T(n) = 2T(n / 2) + n</td><td><span class="bigo">O(n log n)</span></td><td>log₂ n</td></tr>
+        <tr><td>Lũy thừa nhanh</td><td>T(n) = T(n / 2) + 1</td><td><span class="bigo">O(log n)</span></td><td>log₂ n</td></tr>
+      </tbody>
+    </table>
+    <p>Một vài con số để em cảm nhận (máy chấm làm khoảng 10<sup>8</sup>–10<sup>9</sup> phép tính đơn giản mỗi giây):</p>
+    <ul>
+      <li>Fibonacci ngây thơ: F(40) cần 331 160 281 lời gọi, mất cỡ 1 giây; F(50) cần khoảng 4·10<sup>10</sup> lời gọi, mất hàng phút. Bản có nhớ chỉ cần 51 lời gọi khác nhau.</li>
+      <li>Tháp Hà Nội: n = 16 có 65 535 bước, in ra tức thì; n = 30 đã hơn 10<sup>9</sup> bước, chỉ đếm được số bước chứ không in nổi.</li>
+      <li>Merge sort với n = 10<sup>6</sup>: khoảng 10<sup>6</sup> · 20 = 2·10<sup>7</sup> thao tác, dưới 0,1 giây. Bộ nhớ thêm O(n) cho mảng phụ.</li>
+    </ul>
+    <h3>Độ sâu và tràn stack</h3>
+    <p>Mỗi lời gọi đang mở chiếm một khung trên stack, vài chục tới vài trăm byte. Stack thường chỉ có 1–8 MB (tùy máy chấm và hệ điều hành; Codeforces đặt tới 256 MB, nhưng nhiều máy chấm Windows chỉ 1 MB). Thử nghiệm: hàm <code>sumTo(n) = n + sumTo(n − 1)</code> với stack 8 MB chạy tốt khi n = 10<sup>5</sup> nhưng bị lỗi <code>Segmentation fault</code> khi n = 10<sup>6</sup> nếu biên dịch không tối ưu (<code>-O0</code>). Với <code>-O2</code>, trình biên dịch tự đổi hàm này thành vòng lặp nên lại chạy được, nhưng em đừng trông vào may mắn đó.</p>
+    <div class="callout warn"><p class="callout-title">Quy tắc an toàn</p><p>Độ sâu cỡ log n (chia đôi) hoặc vài nghìn: luôn an toàn. Độ sâu 10<sup>5</sup>: thường ổn. Độ sâu 10<sup>6</sup> trở lên (ví dụ đệ quy theo n với n = 10<sup>6</sup>, DFS trên đường thẳng 10<sup>6</sup> đỉnh): rất dễ tràn, hãy đổi sang vòng lặp hoặc tự quản lý ngăn xếp.</p></div>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+    <h3>Đệ quy có nhớ (memoization)</h3>
+    <p>Thêm một mảng ghi nhớ: lần đầu tính <code>fib(k)</code> thì lưu lại, lần sau gặp lại thì trả ngay. Cây đệ quy 2<sup>n</sup> nút “co” lại còn n nút. Đây là cầu nối sang <a href="dp-intro.html">quy hoạch động</a>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">fib_nho.cpp</span> Fibonacci có nhớ, F(90) vẫn vừa long long</figcaption>
+<pre><code class="language-cpp">long long memo[91];
+bool daTinh[91];
+long long fib(int n) {
+    if (n &lt;= 1) return n;                  // điều kiện dừng
+    if (daTinh[n]) return memo[n];         // đã tính: lấy ra dùng, không gọi tiếp
+    daTinh[n] = true;
+    return memo[n] = fib(n - 1) + fib(n - 2);
+}
+// fib(90) = 2880067194370816120</code></pre>
+    </figure>
+
+    <h3>Lũy thừa nhanh đệ quy</h3>
+    <p>Dựa vào <span class="math">a<sup>n</sup> = (a<sup>n/2</sup>)<sup>2</sup></span> nếu n chẵn và <span class="math">a<sup>n</sup> = (a<sup>⌊n/2⌋</sup>)<sup>2</sup> · a</span> nếu n lẻ. Mấu chốt là <b>gọi một lần, dùng hai lần</b>. Phiên bản vòng lặp theo bit và phần đồng dư có ở <a href="modular-power.html">chủ đề lũy thừa nhanh</a>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">power.cpp</span> a^n mod 10^9+7 trong khoảng log₂ n lời gọi</figcaption>
+<pre><code class="language-cpp">const long long MOD = 1000000007;
+long long power(long long a, long long n) {
+    if (n == 0) return 1;                  // a^0 = 1
+    long long h = power(a, n / 2);         // gọi ĐÚNG MỘT lần
+    long long r = h * h % MOD;
+    if (n % 2 == 1) r = r * (a % MOD) % MOD;
+    return r;
+}
+// power(3, 13) = 1594323;  power(2, 10^18) = 719476260</code></pre>
+    </figure>
+
+    <h3>Sinh cấu trúc đệ quy: mã Gray</h3>
+    <p>Mã Gray n bit là dãy 2<sup>n</sup> xâu nhị phân, hai xâu liên tiếp khác nhau đúng 1 bit. Cách dựng đệ quy: lấy dãy G(n − 1), viết thêm 0 vào đầu mỗi xâu; rồi lấy G(n − 1) <em>theo thứ tự ngược</em>, viết thêm 1 vào đầu. Chỗ nối giữa hai nửa chỉ khác bit đầu. Với n = 3 được: 000 001 011 010 110 111 101 100. Cấu trúc này giống tháp Hà Nội: ở bước thứ i, bit bị đổi (đếm từ phải sang, bắt đầu từ 1) trùng với số hiệu đĩa mà tháp Hà Nội chuyển ở bước thứ i (đĩa 1 là đĩa nhỏ nhất).</p>
+
+    <h3>Chia để trị trên xâu</h3>
+    <p>Nhiều bài cho xâu độ dài 2<sup>k</sup> và định nghĩa tính chất theo kiểu “một nửa thỏa A, nửa kia thỏa B”. Viết hàm <code>giai(l, r, c)</code> thử cả hai cách: nửa trái toàn ký tự c và nửa phải giải tiếp với c + 1, hoặc ngược lại; lấy cách tốt hơn. Mỗi tầng tốn O(n), có log n tầng, tổng O(n log n). Bài a-Good String ở phần bài tập là ví dụ.</p>
+
+    <h3>Bảng nhớ nhanh độ phức tạp chia để trị</h3>
+    <table>
+      <thead><tr><th>Truy hồi</th><th>Kết quả</th><th>Ví dụ</th></tr></thead>
+      <tbody>
+        <tr><td>T(n) = T(n / 2) + O(1)</td><td><span class="bigo">O(log n)</span></td><td>lũy thừa nhanh, tìm kiếm nhị phân</td></tr>
+        <tr><td>T(n) = 2T(n / 2) + O(1)</td><td><span class="bigo">O(n)</span></td><td>max/min, tổng mảng bằng chia đôi</td></tr>
+        <tr><td>T(n) = 2T(n / 2) + O(n)</td><td><span class="bigo">O(n log n)</span></td><td>merge sort, đếm nghịch thế</td></tr>
+        <tr><td>T(n) = T(n − 1) + O(1)</td><td><span class="bigo">O(n)</span></td><td>giai thừa, duyệt danh sách</td></tr>
+        <tr><td>T(n) = 2T(n − 1) + O(1)</td><td><span class="bigo">O(2ⁿ)</span></td><td>tháp Hà Nội, sinh dãy nhị phân</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Khử đệ quy</h3>
+    <p>Mọi hàm đệ quy đều viết lại được bằng vòng lặp, có khi cần tự dùng một <code>stack</code> để thay cho ngăn xếp lời gọi. Hàm chỉ gọi lại chính nó <em>một lần ở cuối</em> (như giai thừa, tổng chữ số) đổi sang vòng lặp rất dễ. Nên khử khi độ sâu có thể tới 10<sup>6</sup>, hoặc khi vòng lặp vừa ngắn vừa rõ hơn. Nên giữ đệ quy khi bài có cấu trúc cây hoặc chia đôi, vì code đệ quy ngắn và ít lỗi hơn hẳn.</p>
+    <table>
+      <thead><tr><th></th><th>Đệ quy</th><th>Vòng lặp</th></tr></thead>
+      <tbody>
+        <tr><td>Độ dài code</td><td>Ngắn, sát công thức</td><td>Có khi dài, phải tự quản lý trạng thái</td></tr>
+        <tr><td>Tốc độ</td><td>Chậm hơn một chút (chi phí gọi hàm)</td><td>Nhanh hơn một chút</td></tr>
+        <tr><td>Bộ nhớ stack</td><td>Tỉ lệ với độ sâu, có thể tràn</td><td>Không dùng stack của hàm</td></tr>
+        <tr><td>Hợp với</td><td>Cây, chia đôi, quay lui, tháp Hà Nội</td><td>Duyệt tuần tự, độ sâu rất lớn</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Thiếu điều kiện dừng hoặc không tiến về đích</p><p>Viết <code>return n * fact(n);</code> (quên trừ 1) hoặc gọi <code>fact(-3)</code> khi điều kiện dừng là <code>n == 0</code>: hàm gọi mãi không dừng, stack đầy, chương trình chết với lỗi Runtime Error / Segmentation fault. Sửa: dùng điều kiện dừng “rộng” như <code>n &lt;= 1</code> và kiểm tra mỗi lời gọi đều làm dữ liệu nhỏ đi.</p></div>
+    <div class="callout danger"><p class="callout-title">Chia đoạn sai làm đệ quy vô hạn</p><p>Với đoạn [l, r] và <code>mid = (l + r) / 2</code>, phải chia thành [l, mid] và [mid + 1, r]. Nếu chia thành [l, mid] và [mid, r] thì với đoạn [3, 4] ta có mid = 3, nửa phải vẫn là [3, 4]: gọi lại y hệt, không bao giờ dừng.</p></div>
+    <div class="callout warn"><p class="callout-title">Gọi đệ quy hai lần cho cùng một việc</p><p>Viết <code>power(a, n/2) * power(a, n/2)</code> thay vì lưu vào biến h. Số lời gọi khi n = 16 tăng từ 6 lên 63, và nói chung từ khoảng log n lên khoảng 2n: mất hết cái lợi của lũy thừa nhanh. Fibonacci ngây thơ cũng chậm vì đúng lý do này.</p></div>
+    <div class="callout warn"><p class="callout-title">Truyền vector, string theo giá trị</p><p><code>void dfs(vector&lt;int&gt; a, …)</code> chép cả mảng ở mỗi lời gọi, có thể chậm gấp hàng nghìn lần hoặc tràn bộ nhớ. Truyền tham chiếu <code>const vector&lt;int&gt;&amp; a</code> hoặc dùng biến toàn cục. Tương tự, hàm đảo xâu kiểu <code>daoXau(s.substr(1)) + s[0]</code> tạo xâu mới ở mỗi tầng nên tốn <span class="bigo">O(n²)</span>: chỉ dùng để học, không dùng cho n lớn.</p></div>
+    <div class="callout warn"><p class="callout-title">Biến toàn cục bị lời gọi con ghi đè</p><p>Biến cục bộ là riêng của từng lời gọi, còn biến toàn cục thì mọi lời gọi dùng chung. Nếu em lưu “kết quả nửa trái” vào biến toàn cục rồi gọi đệ quy nửa phải, lời gọi con có thể ghi đè giá trị đó. Hãy lưu kết quả tạm vào biến cục bộ.</p></div>
+    <div class="callout warn"><p class="callout-title">Tràn số</p><p>20! = 2 432 902 008 176 640 000 vẫn vừa <code>long long</code> nhưng 21! thì không. Số nghịch thế tới gần n²/2 cũng cần <code>long long</code>. Số bước tháp Hà Nội 2<sup>n</sup> − 1 với n ≥ 63 vượt cả <code>long long</code>.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo gỡ lỗi</p><p>Thêm một tham số <code>depth</code> và in <code>string(2 * depth, ' ')</code> trước mỗi dòng gỡ lỗi: em sẽ thấy cây đệ quy hiện ra ngay trên màn hình, thụt lề theo tầng. Thử với n nhỏ (3–5) trước khi chạy n lớn.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Cho <code>int f(int n) { if (n == 0) return 0; return n % 10 + f(n / 10); }</code>. Giá trị f(2026) là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 2026</button>
+        <button type="button" class="quiz-opt" data-correct>B. 10</button>
+        <button type="button" class="quiz-opt">C. 6</button>
+        <button type="button" class="quiz-opt">D. Chạy vô hạn</button>
+      </div>
+      <p class="quiz-explain">f(2026) = 6 + f(202) = 6 + 2 + f(20) = 6 + 2 + 0 + f(2) = 6 + 2 + 0 + 2 + f(0) = 10. Hàm dừng vì n / 10 giảm dần về 0.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Hàm <code>void g(int n) { if (n == 0) return; g(n - 1); cout &lt;&lt; n &lt;&lt; ' '; }</code>. Lời gọi g(3) in ra gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 3 2 1</button>
+        <button type="button" class="quiz-opt" data-correct>B. 1 2 3</button>
+        <button type="button" class="quiz-opt">C. 3</button>
+        <button type="button" class="quiz-opt">D. 0 1 2 3</button>
+      </div>
+      <p class="quiz-explain">Lệnh in nằm <em>sau</em> lời gọi đệ quy, nên chạy lúc “đi về”. g(1) in xong trước, rồi g(2), rồi g(3). Nếu đặt lệnh in trước lời gọi thì kết quả là 3 2 1.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Hàm fib ngây thơ (dừng khi n ≤ 1) gọi tổng cộng bao nhiêu lời gọi khi tính fib(6)?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 8</button>
+        <button type="button" class="quiz-opt">B. 15</button>
+        <button type="button" class="quiz-opt" data-correct>C. 25</button>
+        <button type="button" class="quiz-opt">D. 64</button>
+      </div>
+      <p class="quiz-explain">C(n) = 1 + C(n − 1) + C(n − 2) với C(0) = C(1) = 1. Tính dần: C(2) = 3, C(3) = 5, C(4) = 9, C(5) = 15, C(6) = 1 + 15 + 9 = 25. Kiểm tra bằng công thức: 2·F(7) − 1 = 2·13 − 1 = 25.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Số bước ít nhất để giải tháp Hà Nội 10 đĩa là</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 100</button>
+        <button type="button" class="quiz-opt">B. 512</button>
+        <button type="button" class="quiz-opt" data-correct>C. 1023</button>
+        <button type="button" class="quiz-opt">D. 1024</button>
+      </div>
+      <p class="quiz-explain">2<sup>10</sup> − 1 = 1023. Phần “Cách hoạt động” đã chứng minh không thể ít hơn.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Thuật toán chia để trị có T(n) = 2T(n/2) + O(n). Độ phức tạp là</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. O(n)</button>
+        <button type="button" class="quiz-opt" data-correct>B. O(n log n)</button>
+        <button type="button" class="quiz-opt">C. O(n²)</button>
+        <button type="button" class="quiz-opt">D. O(2ⁿ)</button>
+      </div>
+      <p class="quiz-explain">Cây đệ quy có khoảng log₂ n tầng, mỗi tầng tổng công việc là n. Ví dụ tiêu biểu là merge sort.</p>
+    </div>
+
+    <p><strong>Câu 6.</strong> Trong lời giải tối ưu tháp Hà Nội 5 đĩa, đĩa nhỏ nhất di chuyển bao nhiêu lần? Đĩa lớn nhất bao nhiêu lần?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Đĩa lớn nhất (đĩa 5) di chuyển đúng 1 lần. Đĩa 4 nằm trong hai lần “dời 4 đĩa”, mỗi lần nó di chuyển 1 lần, tổng 2 lần. Tương tự đĩa k di chuyển 2<sup>5 − k</sup> lần: đĩa 3 là 4 lần, đĩa 2 là 8 lần, đĩa 1 (nhỏ nhất) là 16 lần. Kiểm tra: 1 + 2 + 4 + 8 + 16 = 31 = 2<sup>5</sup> − 1.</p></details>
+
+    <p><strong>Câu 7.</strong> Một bạn viết lũy thừa nhanh là <code>return n % 2 ? p(a, n/2) * p(a, n/2) * a : p(a, n/2) * p(a, n/2);</code> (dừng khi n = 0). Đếm số lời gọi khi n = 16 và so với cách đúng.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Gọi D(n) là số lời gọi: D(0) = 1, D(n) = 1 + 2·D(n / 2). Ta có D(1) = 3, D(2) = 7, D(4) = 15, D(8) = 31, D(16) = 63. Cách đúng chỉ gọi p(16), p(8), p(4), p(2), p(1), p(0): 6 lời gọi. Cách sai có T(n) = 2T(n/2) + 1 nên là O(n), không còn “nhanh”.</p></details>
+
+    <p><strong>Câu 8.</strong> Dãy 4 3 2 1 có bao nhiêu nghịch thế? Khi merge sort trộn hai nửa [3 4] và [1 2] ở tầng trên cùng, bước trộn cộng thêm bao nhiêu?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Mọi cặp đều nghịch thế: 4·3/2 = 6. Tầng dưới: [4] + [3] cho 1, [2] + [1] cho 1. Tầng trên: lấy 1 trước, còn 2 phần tử bên trái (3, 4) nên cộng 2; lấy 2, cộng 2 nữa. Bước trộn cộng 4. Tổng 1 + 1 + 4 = 6, khớp.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Sáu bài có đề tiếng Việt; bài Codeforces có tóm tắt tiếng Việt bên dưới.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cppcb0803">Hàm tổng chữ số</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Nhập số nguyên n (0 ≤ n ≤ 10<sup>18</sup>), in tổng các chữ số của n. Ví dụ 12345 cho 15.</p>
+        <p class="ex-skill"><b>Luyện:</b> viết hàm đệ quy đầu tiên, chọn điều kiện dừng, dùng <code>long long</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>s(n) = n mod 10 + s(n div 10), dừng khi n &lt; 10. Độ sâu tối đa 19 tầng.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/fibonacci">Dãy fibonacci</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Nhập n, in n số Fibonacci đầu tiên 1 1 2 3 5 8 …</p>
+        <p class="ex-skill"><b>Luyện:</b> công thức truy hồi, đệ quy có nhớ, so sánh với vòng lặp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Nếu gọi fib(i) ngây thơ cho từng i thì tổng số lời gọi rất lớn. Dùng mảng ghi nhớ hoặc tính dần bằng vòng lặp. Coi chừng tràn số nếu n lớn.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses2165">CSES – Tower of Hanoi | Tháp Hà Nội</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Nhập n (1 ≤ n ≤ 16), in số bước ít nhất để chuyển n đĩa từ cọc 1 sang cọc 3 và liệt kê từng bước. Bản gốc tiếng Anh: <a href="https://cses.fi/problemset/task/2165">CSES 2165</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> đệ quy với nhiều tham số, đổi vai trò các cọc.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chính là chương trình 1 ở phần Cài đặt. Cọc trung gian luôn là 6 − nguồn − đích.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/3d26hanoi1">Tháp Hà Nội 1</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có 2n đĩa thuộc n cỡ khác nhau, mỗi cỡ đúng 2 đĩa (n ≤ 10); được đặt đĩa lên đĩa cùng cỡ hoặc to hơn. Chuyển cả chồng từ A sang C với số bước ít nhất và in các bước.</p>
+        <p class="ex-skill"><b>Luyện:</b> sửa lại lời giải đệ quy quen thuộc cho một biến thể.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Coi mỗi cặp đĩa cùng cỡ như một “đĩa đôi”, chuyển một đĩa đôi tốn 2 bước. Số bước là 2(2<sup>n</sup> − 1). Thứ tự hai đĩa cùng cỡ có bị đảo không thì không quan trọng vì chúng giống nhau.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses2205">CSES – Gray Code | Mã Gray</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">In 2<sup>n</sup> xâu nhị phân độ dài n (n ≤ 16), mỗi xâu đúng một lần, hai xâu liên tiếp khác nhau đúng một vị trí. Bản gốc: <a href="https://cses.fi/problemset/task/2205">CSES 2205</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> dựng cấu trúc đệ quy (phản chiếu), chứng minh tính chất bằng quy nạp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>G(n) = (0 + mỗi xâu của G(n − 1)) rồi (1 + mỗi xâu của G(n − 1) theo thứ tự ngược). Xem phần Biến thể.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/1385/D">1385D – a-Good String</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Xâu s độ dài 2<sup>k</sup> gọi là “c-good” nếu nó dài 1 và bằng c, hoặc một nửa toàn ký tự c còn nửa kia là (c + 1)-good. Tìm số ký tự ít nhất cần sửa để s thành ‘a’-good.</p>
+        <p class="ex-skill"><b>Luyện:</b> chia để trị trên xâu, thử hai lựa chọn ở mỗi tầng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Hàm giai(l, r, c) trả về chi phí ít nhất. Thử: (số ký tự khác c ở nửa trái) + giai(nửa phải, c + 1), và đối xứng. Tổng O(n log n). Nhớ không truyền xâu theo giá trị.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nkinv">NKINV – Dãy nghịch thế</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho dãy N số (N ≤ 60 000), đếm số cặp chỉ số u &lt; v mà a<sub>u</sub> &gt; a<sub>v</sub>.</p>
+        <p class="ex-skill"><b>Luyện:</b> merge sort, đếm trong bước kết hợp, dùng <code>long long</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chương trình 2 ở phần Cài đặt. Khi lấy phần tử từ nửa phải trước, cộng số phần tử còn lại ở nửa trái. Hai số bằng nhau không phải nghịch thế, nên khi bằng thì lấy bên trái trước.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/basic/divide-and-conquer">VNOI Wiki – Chia để trị (Divide and Conquer)</a> (tiếng Việt)</li>
+      <li><a href="https://vi.wikipedia.org/wiki/Th%C3%A1p_H%C3%A0_N%E1%BB%99i">Wikipedia – Tháp Hà Nội</a> (tiếng Việt): lịch sử bài toán và các lời giải.</li>
+      <li><a href="https://cp-algorithms.com/algebra/binary-exp.html">CP-Algorithms – Binary Exponentiation</a> (tiếng Anh): lũy thừa nhanh dạng đệ quy và vòng lặp.</li>
+      <li><a href="https://cses.fi/problemset/">CSES Problem Set</a> (tiếng Anh): mục Introductory Problems có Tower of Hanoi, Gray Code.</li>
+      <li>Các chủ đề liên quan trong lộ trình: <a href="backtracking.html">Quay lui</a>, <a href="dp-intro.html">Nhập môn quy hoạch động</a>, <a href="sorting.html">Sắp xếp</a>, <a href="modular-power.html">Lũy thừa nhanh</a>, <a href="graph-dfs.html">DFS</a>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Hàm đệ quy = <b>điều kiện dừng</b> + <b>lời gọi với bài nhỏ hơn</b>; kiểm tra đúng bằng quy nạp, tin vào “lời hứa” của hàm.</li>
+        <li>Mỗi lời gọi có khung riêng trên <b>ngăn xếp lời gọi</b>; các lời gọi kết thúc theo thứ tự ngược với lúc bắt đầu.</li>
+        <li>Đếm <b>số lời gọi</b> (thời gian) và <b>độ sâu</b> (stack). Độ sâu 10<sup>6</sup> dễ tràn stack.</li>
+        <li>Fibonacci ngây thơ có 2F(n + 1) − 1 lời gọi vì bài con trùng lặp; ghi nhớ kết quả đưa về O(n), mở đường cho QHĐ.</li>
+        <li>Tháp Hà Nội: dời n − 1, chuyển đĩa lớn, dời n − 1; đúng 2<sup>n</sup> − 1 bước và không thể ít hơn.</li>
+        <li>Chia để trị: chia – trị – kết hợp. 2T(n/2) + n cho O(n log n) (merge sort, đếm nghịch thế); T(n/2) + 1 cho O(log n) (lũy thừa nhanh: gọi một lần, dùng hai lần).</li>
+        <li>Truyền mảng/xâu bằng tham chiếu; chia đoạn [l, mid] và [mid + 1, r]; dùng <code>long long</code> cho kết quả lớn.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/recursion.js"></script>
+</body>
+</html>

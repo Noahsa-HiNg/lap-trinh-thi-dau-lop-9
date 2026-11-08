@@ -1,5 +1,5 @@
 /* data/status.js — SINH TỰ ĐỘNG bởi scripts/validate.py --write-status. Đừng sửa tay. */
-/* 2026-10-08T03:26:01Z */
+/* 2026-11-08T06:26:31Z */
 window.TOPIC_STATUS = {
   "complexity": {
     "ok": true,
@@ -82,34 +82,84 @@ window.TOPIC_STATUS = {
     "interactive": true
   },
   "difference-array": {
-    "ok": false
+    "ok": false,
+    "exercises": 8,
+    "vi": 4,
+    "words": 6483,
+    "frames": 11,
+    "interactive": true
   },
   "sorting": {
-    "ok": false
+    "ok": true,
+    "exercises": 12,
+    "vi": 8,
+    "words": 7392,
+    "frames": 16,
+    "interactive": true
   },
   "two-pointers": {
-    "ok": false
+    "ok": true,
+    "exercises": 11,
+    "vi": 11,
+    "words": 6711,
+    "frames": 16,
+    "interactive": true
   },
   "binary-search": {
-    "ok": false
+    "ok": true,
+    "exercises": 9,
+    "vi": 6,
+    "words": 6242,
+    "frames": 6,
+    "interactive": true
   },
   "binary-search-answer": {
-    "ok": false
+    "ok": false,
+    "exercises": 0,
+    "vi": 0,
+    "words": 5306,
+    "frames": 6,
+    "interactive": true
   },
   "recursion": {
-    "ok": false
+    "ok": true,
+    "exercises": 7,
+    "vi": 6,
+    "words": 6661,
+    "frames": 14,
+    "interactive": true
   },
   "backtracking": {
-    "ok": false
+    "ok": false,
+    "exercises": 11,
+    "vi": 7,
+    "words": 7711,
+    "frames": 17,
+    "interactive": true
   },
   "greedy": {
-    "ok": false
+    "ok": true,
+    "exercises": 9,
+    "vi": 9,
+    "words": 7520,
+    "frames": 13,
+    "interactive": true
   },
   "dp-intro": {
-    "ok": false
+    "ok": true,
+    "exercises": 9,
+    "vi": 7,
+    "words": 7365,
+    "frames": 13,
+    "interactive": true
   },
   "dp-grid": {
-    "ok": false
+    "ok": false,
+    "exercises": 9,
+    "vi": 5,
+    "words": 7555,
+    "frames": 15,
+    "interactive": true
   },
   "lis": {
     "ok": false

@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nhập môn quy hoạch động · Thi đấu lớp 9</title>
+<meta name="description" content="Từ Fibonacci đệ quy chậm đến đệ quy có nhớ và bảng phương án; quy trình 4 bước của quy hoạch động; bài leo cầu thang, bậc hỏng và chú ếch Frog 1.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="dp-intro">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được vì sao đệ quy Fibonacci thường chạy rất chậm, và đếm được số lời gọi của nó.</li>
+      <li>Biến một hàm đệ quy thành <strong>đệ quy có nhớ</strong> (top-down) và thành <strong>bảng phương án</strong> (bottom-up).</li>
+      <li>Nêu được hai điều kiện để dùng quy hoạch động: bài con gối nhau và cấu trúc con tối ưu.</li>
+      <li>Viết ra giấy đủ <strong>quy trình 4 bước</strong> (trạng thái, công thức, cơ sở, đáp án) trước khi viết code.</li>
+      <li>Cài đặt được bài leo cầu thang (bước 1..k, có bậc hỏng) và bài chú ếch Frog 1 bằng C++.</li>
+      <li>Phân biệt được khi nào dùng quy hoạch động, khi nào dùng tham lam, khi nào dùng quay lui.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Quy hoạch động (dynamic programming, viết tắt QHĐ hoặc DP) là cách giải một bài toán lớn bằng cách chia nó thành các bài toán con nhỏ hơn, giải mỗi bài con <strong>đúng một lần</strong>, ghi kết quả vào một bảng, rồi dùng lại kết quả đó mỗi khi cần. Nói gọn: <em>đừng bao giờ tính lại thứ mình đã tính rồi</em>.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> thầy viết lên bảng <span class="math">1 + 1 + 1 + 1 + 1 + 1 + 1 + 1</span> và hỏi “bằng mấy?”. Em đếm và trả lời: 8. Thầy viết thêm “<span class="math">1 +</span>” vào bên trái và hỏi lại. Em trả lời ngay: 9. Em không đếm lại từ đầu, vì em <strong>nhớ</strong> phần bên phải bằng 8, chỉ cần cộng thêm 1. Quy hoạch động chính là thói quen “nhớ kết quả cũ” đó, được viết thành chương trình.</p></div>
+    </div>
+
+    <p>Em đã học đệ quy ở bài <a href="recursion.html">Đệ quy</a>: một hàm gọi lại chính nó với dữ liệu nhỏ hơn. Đệ quy giúp ta viết lời giải rất gọn. Nhưng có một vấn đề: nhiều hàm đệ quy gọi đi gọi lại <strong>cùng một bài con</strong> hàng triệu lần. Quy hoạch động sửa đúng chỗ đó. Ta vẫn giữ cách chia bài toán như đệ quy, chỉ thêm một cuốn “sổ ghi nhớ”.</p>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>Quy hoạch động</strong> là phương pháp giải bài toán bằng cách:</p>
+      <ol>
+        <li>xác định một họ <strong>bài toán con</strong> (gọi là các <strong>trạng thái</strong>), mỗi trạng thái được mô tả bằng một vài số, ví dụ <span class="math">dp[i]</span>;</li>
+        <li>tìm <strong>công thức truy hồi</strong> (công thức chuyển) tính mỗi trạng thái từ các trạng thái nhỏ hơn;</li>
+        <li>tính các trạng thái theo đúng thứ tự từ nhỏ đến lớn, mỗi trạng thái một lần, và <strong>lưu lại</strong> trong bảng.</li>
+      </ol>
+      <p>Bảng lưu kết quả gọi là <strong>bảng phương án</strong> (thường là mảng <code>dp</code>).</p>
+    </div>
+
+    <p>Có hai cách viết quy hoạch động, kết quả như nhau:</p>
+    <ul>
+      <li><strong>Đệ quy có nhớ (top-down, memoization)</strong>: vẫn viết hàm đệ quy, nhưng trước khi tính thì tra sổ; tính xong thì ghi vào sổ.</li>
+      <li><strong>Bảng phương án (bottom-up, tabulation)</strong>: bỏ đệ quy, dùng vòng lặp điền bảng từ ô nhỏ nhất lên ô lớn nhất.</li>
+    </ul>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Quy hoạch động là một trong những kỹ thuật quan trọng nhất của lập trình thi đấu. Trong đề thi học sinh giỏi THCS, bài QHĐ thường là bài “phân loại”: em nào nắm vững QHĐ sẽ lấy được điểm mà cách vét cạn không lấy được. Các bài QHĐ ở cấp THCS thường thuộc ba dạng:</p>
+    <table>
+      <thead><tr><th>Dạng</th><th>Công thức thường gặp</th><th>Ví dụ</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Đếm số cách</strong></td><td>dp[i] = <em>tổng</em> các trạng thái trước</td><td>Leo cầu thang, đếm đường đi trên lưới, đếm số cách đổi tiền</td></tr>
+        <tr><td><strong>Tối ưu</strong> (lớn nhất / nhỏ nhất)</td><td>dp[i] = <em>max</em> hoặc <em>min</em> các trạng thái trước (cộng thêm chi phí)</td><td>Chú ếch Frog 1, đổi tiền ít tờ nhất, cái túi</td></tr>
+        <tr><td><strong>Dãy con</strong></td><td>dp[i] gắn với “dãy kết thúc tại vị trí i”</td><td>Dãy con tăng dài nhất, xâu con chung dài nhất</td></tr>
+      </tbody>
+    </table>
+    <p>Bài này là cửa ngõ. Sau khi nắm quy trình 4 bước ở đây, em sẽ dùng lại nó ở các bài tiếp theo: <a href="dp-grid.html">QHĐ trên lưới</a>, <a href="lis.html">dãy con tăng dài nhất</a>, <a href="knapsack.html">bài toán cái túi</a> và <a href="lcs.html">xâu con chung dài nhất</a>.</p>
+    <p>Ngoài thi đấu, QHĐ có mặt ở rất nhiều nơi: phần mềm sửa lỗi chính tả so sánh hai từ bằng QHĐ, ứng dụng bản đồ tìm đường ngắn nhất dựa trên ý tưởng tương tự, các chương trình so sánh hai đoạn văn bản (tìm chỗ khác nhau) cũng dùng QHĐ.</p>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p>
+      <ul>
+        <li>Đề hỏi “<strong>có bao nhiêu cách</strong>…”, thường kèm “in ra phần dư khi chia cho 10<sup>9</sup> + 7” (vì đáp án rất lớn).</li>
+        <li>Đề hỏi “chi phí <strong>nhỏ nhất</strong>”, “tổng <strong>lớn nhất</strong>” và em tìm được phản ví dụ cho cách tham lam.</li>
+        <li>Mỗi bước đi chỉ phụ thuộc vào vài bước ngay trước nó (“nhảy 1 hoặc 2 bậc”, “đi sang phải hoặc xuống dưới”).</li>
+        <li>Giới hạn n cỡ 10<sup>3</sup> đến 10<sup>6</sup>: quá lớn để vét cạn mọi cách, nhưng vừa đủ cho một bảng n ô.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p>Hãy bắt đầu với dãy Fibonacci: <span class="math">F(0) = 0</span>, <span class="math">F(1) = 1</span>, và <span class="math">F(n) = F(n − 1) + F(n − 2)</span> với n ≥ 2. Dãy bắt đầu bằng 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55… Cách viết tự nhiên nhất là chép nguyên công thức thành hàm đệ quy:</p>
+    <figure class="code">
+      <figcaption><span class="fn">fib_thuong.cpp</span> Đệ quy thường, đúng nhưng rất chậm</figcaption>
+<pre><code class="language-cpp">long long fib(int n) {
+    if (n &lt;= 1) return n;              // cơ sở: F(0) = 0, F(1) = 1
+    return fib(n - 1) + fib(n - 2);    // công thức truy hồi
+}</code></pre>
+    </figure>
+    <p>Code đúng, nhưng thử gọi <code>fib(45)</code> thì em sẽ phải chờ vài giây. Vì sao? Ta thêm một biến đếm số lần hàm được gọi và chạy thật bằng C++ (biên dịch với <code>-O2</code>). Kết quả:</p>
+    <table class="trace">
+      <thead><tr><th>n</th><th>F(n)</th><th>Số lời gọi đệ quy thường</th><th>Thời gian đo được</th><th>Số lời gọi khi có nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>10</td><td>55</td><td>177</td><td>tức thì</td><td>19</td></tr>
+        <tr><td>20</td><td>6 765</td><td>21 891</td><td>tức thì</td><td>39</td></tr>
+        <tr><td>30</td><td>832 040</td><td>2 692 537</td><td>khoảng 0,002 giây</td><td>59</td></tr>
+        <tr class="hl"><td>40</td><td>102 334 155</td><td>331 160 281</td><td>khoảng 0,3 giây</td><td>79</td></tr>
+        <tr class="hl"><td>45</td><td>1 134 903 170</td><td>3 672 623 805</td><td>khoảng 5 giây</td><td>89</td></tr>
+        <tr><td>50</td><td>12 586 269 025</td><td>40 730 022 147 (tính bằng công thức)</td><td>gần 1 phút</td><td>99</td></tr>
+      </tbody>
+    </table>
+    <p>Với n = 45, hàm bị gọi hơn <strong>3,6 tỉ lần</strong>, trong khi chỉ có 46 giá trị khác nhau cần tính là F(0), F(1), …, F(45). Mỗi khi n tăng thêm 1, số lời gọi nhân lên khoảng 1,6 lần. Đó là tốc độ tăng theo <strong>hàm mũ</strong>. Thực ra có một công thức chính xác: số lời gọi của <code>fib(n)</code> bằng <span class="math">2·F(n + 1) − 1</span>. Ví dụ n = 30: 2 · 1 346 269 − 1 = 2 692 537, khớp với số chương trình đếm được.</p>
+
+    <h3>Thủ phạm: bài con gối nhau</h3>
+    <p>Hãy xem ai gọi ai khi tính <code>fib(6)</code>: <code>fib(6)</code> gọi <code>fib(5)</code> và <code>fib(4)</code>. Nhưng <code>fib(5)</code> lại gọi <code>fib(4)</code> một lần nữa. Thế là <code>fib(4)</code> bị tính 2 lần, <code>fib(3)</code> bị tính 3 lần, <code>fib(2)</code> bị tính 5 lần. Khi n = 40, riêng <code>fib(3)</code> đã bị tính lại <strong>39 088 169 lần</strong>, lần nào cũng ra cùng một kết quả là 2. Hiện tượng nhiều nhánh khác nhau cùng dẫn tới một bài con được gọi là <strong>bài con gối nhau</strong> (overlapping subproblems). Em sẽ thấy cây lời gọi được vẽ đầy đủ ở phần Minh họa trực quan.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Đệ quy thường</h4><p>Mỗi lời gọi lại sinh ra hai lời gọi mới, các bài con bị tính lặp. Số lời gọi khoảng <span class="bigo">O(1,62<sup>n</sup>)</span>. Với n = 45 là 3,6 tỉ lời gọi, vài giây; n = 50 thì gần 1 phút; n = 100 thì vũ trụ cũng không chờ nổi.</p></div>
+      <div class="good-side"><h4>Quy hoạch động</h4><p>Mỗi giá trị F(i) chỉ tính một lần rồi ghi vào bảng. Bảng phương án chỉ cần n − 1 phép cộng: <span class="bigo">O(n)</span>. Với n = 45 là 44 phép cộng; đệ quy có nhớ cũng chỉ 89 lời gọi.</p></div>
+    </div>
+    <p>Từ 3 672 623 805 lời gọi xuống còn 89 lời gọi: nhanh hơn khoảng 40 triệu lần, chỉ nhờ thêm một mảng ghi nhớ. Đó là sức mạnh của quy hoạch động.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Phần này có ba ý: hai cách cài đặt QHĐ (từ trên xuống và từ dưới lên), và quy trình 4 bước để <strong>thiết kế</strong> một lời giải QHĐ cho bài mới.</p>
+
+    <h3>Cách 1. Đệ quy có nhớ (top-down)</h3>
+    <p>Giữ nguyên hàm đệ quy, thêm một mảng <code>nho[]</code> và một mảng đánh dấu <code>daTinh[]</code>. Trước khi tính, hàm tra xem bài con này đã có trong sổ chưa.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Chuẩn bị sổ.</strong> Tạo mảng <code>nho[0..n]</code>, đánh dấu tất cả là “chưa tính”.</div></li>
+      <li><div><strong>Cơ sở.</strong> Nếu n ≤ 1, trả về n như cũ.</div></li>
+      <li><div><strong>Tra sổ.</strong> Nếu <code>daTinh[n]</code> là đúng, trả về ngay <code>nho[n]</code>, không gọi đệ quy nữa.</div></li>
+      <li><div><strong>Tính và ghi sổ.</strong> Tính <code>fib(n − 1) + fib(n − 2)</code>, lưu vào <code>nho[n]</code>, đánh dấu đã tính, rồi trả về.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> fib(n):
+    <b>nếu</b> n ≤ 1: <b>trả về</b> n
+    <b>nếu</b> daTinh[n]: <b>trả về</b> nho[n]      <i>// đã có trong sổ</i>
+    nho[n] ← fib(n − 1) + fib(n − 2)
+    daTinh[n] ← đúng                   <i>// ghi vào sổ</i>
+    <b>trả về</b> nho[n]</pre>
+
+    <h3>Cách 2. Bảng phương án (bottom-up)</h3>
+    <p>Thay vì đi từ trên xuống rồi chờ đệ quy trả về, ta đi thẳng từ dưới lên: điền F(0), F(1), rồi F(2), F(3)… Khi tính F(i), hai ô F(i − 1) và F(i − 2) chắc chắn đã có sẵn.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Tạo bảng.</strong> Mảng <code>f[0..n]</code>.</div></li>
+      <li><div><strong>Điền cơ sở.</strong> <code>f[0] = 0</code>, <code>f[1] = 1</code>.</div></li>
+      <li><div><strong>Điền lần lượt.</strong> Với i từ 2 đến n: <code>f[i] = f[i − 1] + f[i − 2]</code>.</div></li>
+      <li><div><strong>Lấy đáp án.</strong> Kết quả nằm ở <code>f[n]</code>.</div></li>
+    </ol>
+    <pre class="pseudo">f[0] ← 0;  f[1] ← 1                  <i>// cơ sở</i>
+<b>với</b> i <b>từ</b> 2 <b>đến</b> n:                     <i>// thứ tự: nhỏ đến lớn</i>
+    f[i] ← f[i − 1] + f[i − 2]          <i>// công thức chuyển</i>
+<b>trả về</b> f[n]                          <i>// đáp án</i></pre>
+
+    <h3>Quy trình 4 bước thiết kế lời giải QHĐ</h3>
+    <p>Fibonacci đã cho sẵn công thức. Bài thật thì không. Khi gặp một bài mới, em hãy <strong>viết ra giấy</strong> bốn điều sau trước khi gõ code. Thầy cô gọi đây là “quy trình 4 bước”:</p>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> <code>dp[i]</code> (hoặc <code>dp[i][j]</code>) nghĩa là gì? Phải nói được bằng <strong>một câu</strong> rõ ràng, ví dụ “dp[i] là số cách leo lên đúng bậc i”.</div></li>
+      <li><div><strong>Công thức chuyển.</strong> <code>dp[i]</code> được tính từ những trạng thái nhỏ hơn nào? Thường bằng cách hỏi: “bước <strong>cuối cùng</strong> để đến trạng thái i là gì?”.</div></li>
+      <li><div><strong>Cơ sở.</strong> Những ô nào biết ngay giá trị mà không cần công thức? Ví dụ <code>dp[0] = 1</code>.</div></li>
+      <li><div><strong>Đáp án.</strong> Kết quả nằm ở ô nào (ví dụ <code>dp[n]</code>), hay là max / min / tổng của nhiều ô?</div></li>
+    </ol>
+    <p>Sau 4 bước, em chỉ cần chọn <strong>thứ tự tính</strong> sao cho mọi ô ở vế phải đã có trước khi tính ô ở vế trái. Với mảng một chiều mà dp[i] chỉ dùng các ô nhỏ hơn i, thứ tự đơn giản là cho i tăng dần.</p>
+    <pre class="pseudo"><i>// Khung chung của một lời giải QHĐ bottom-up</i>
+khởi tạo các ô cơ sở
+<b>với</b> mỗi trạng thái i <b>theo thứ tự</b> từ nhỏ đến lớn:
+    dp[i] ← kết hợp (tổng / max / min) các dp[j] với j “nhỏ hơn” i
+<b>trả về</b> ô đáp án</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Hai điều kiện để dùng quy hoạch động</h3>
+    <p>Không phải bài nào cũng giải được bằng QHĐ. Cần có đủ hai điều kiện:</p>
+    <ol>
+      <li><strong>Bài con gối nhau</strong> (overlapping subproblems): nhiều con đường khác nhau dẫn tới <em>cùng một</em> bài con. Nếu không có điều này thì ghi nhớ cũng chẳng để làm gì, vì không bài con nào được hỏi lại. Ví dụ sắp xếp trộn (merge sort) chia mảng thành hai nửa rời nhau, không nửa nào bị tính lại, nên đó là “chia để trị” chứ không phải QHĐ.</li>
+      <li><strong>Cấu trúc con tối ưu</strong> (optimal substructure): lời giải tốt nhất của bài lớn được <em>ghép</em> từ lời giải tốt nhất của các bài con. Ví dụ ở bài chú ếch: đường rẻ nhất tới đá 6 mà đi qua đá 5 thì đoạn từ đá 1 tới đá 5 của nó cũng phải là đường rẻ nhất tới đá 5. Nếu không, ta thay đoạn đó bằng đường rẻ hơn và được đường tới đá 6 rẻ hơn nữa, vô lý.</li>
+    </ol>
+    <p>Với bài <strong>đếm</strong>, điều kiện thứ hai được thay bằng: các cách của bài lớn được chia thành các nhóm <strong>không trùng nhau</strong> và <strong>không sót</strong>, mỗi nhóm đếm được bằng một bài con.</p>
+
+    <h3>Vì sao đúng: ví dụ bài leo cầu thang</h3>
+    <p>Bài toán: cầu thang có n bậc, em đứng ở mặt đất (gọi là bậc 0). Mỗi bước em leo 1 bậc hoặc 2 bậc. Hỏi có bao nhiêu cách leo lên đúng bậc n?</p>
+    <p>Gọi <span class="math">dp[i]</span> là số cách leo lên đúng bậc i. Xét một cách bất kỳ để lên bậc i (với i ≥ 2). Nó có một <strong>bước cuối cùng</strong>, và bước đó chỉ có thể là:</p>
+    <ul>
+      <li>bước 1 bậc, nghĩa là ngay trước đó em đứng ở bậc i − 1. Số cách như vậy bằng số cách lên bậc i − 1, tức <span class="math">dp[i − 1]</span>;</li>
+      <li>bước 2 bậc, nghĩa là ngay trước đó em đứng ở bậc i − 2. Số cách như vậy bằng <span class="math">dp[i − 2]</span>.</li>
+    </ul>
+    <p>Hai nhóm này <strong>không trùng nhau</strong> (bước cuối khác nhau thì hai cách khác nhau) và <strong>không sót</strong> (mọi cách đều có bước cuối là 1 hoặc 2). Vậy <span class="math">dp[i] = dp[i − 1] + dp[i − 2]</span>. Cơ sở: <span class="math">dp[0] = 1</span> (một cách duy nhất là “không làm gì”) và <span class="math">dp[1] = 1</span>.</p>
+    <p>Lập luận này là một phép <strong>quy nạp</strong>: nếu mọi ô nhỏ hơn i đã đúng thì ô i cũng đúng. Ô cơ sở đúng, nên ô 2 đúng, rồi ô 3 đúng, cứ thế tới ô n. Đây là lý do vì sao QHĐ cho kết quả chính xác: nó không đoán, nó chia trường hợp theo bước cuối một cách đầy đủ.</p>
+    <p>Thú vị là dp[i] chính là F(i + 1): 1, 1, 2, 3, 5, 8, 13… Bài leo cầu thang “là” dãy Fibonacci mặc áo mới.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>QHĐ tính mỗi trạng thái đúng <strong>một lần</strong>. Vì vậy thời gian chạy được tính bằng một công thức rất dễ nhớ:</p>
+    <div class="math-block">Thời gian = (số trạng thái) × (chi phí tính một trạng thái)</div>
+    <p>Leo cầu thang có n + 1 trạng thái (bậc 0 đến bậc n), mỗi trạng thái cộng 2 số, nên tổng cộng khoảng 2n phép tính: <span class="bigo">O(n)</span>. Nếu mỗi bước được leo 1 đến k bậc, mỗi trạng thái cộng k số, tổng là <span class="bigo">O(n·k)</span>. Với đệ quy có nhớ cũng vậy: mỗi trạng thái chỉ thật sự “tính” một lần, các lần gọi sau chỉ là tra sổ mất <span class="bigo">O(1)</span>.</p>
+
+    <h3>Cách nghĩ ra trạng thái</h3>
+    <p>Đây là phần khó nhất và cũng là phần hay nhất của QHĐ. Câu hỏi thần kỳ là:</p>
+    <div class="callout note"><p class="callout-title">Câu hỏi chìa khóa</p><p>“Để quyết định <strong>bước cuối cùng</strong>, ta cần biết gì về phần đã đi trước đó?” Thông tin cần biết đó chính là trạng thái.</p></div>
+    <ul>
+      <li><strong>Leo cầu thang:</strong> bước cuối là 1 hoặc 2 bậc, nên chỉ cần biết “đang đứng ở bậc nào”. Trạng thái: dp[i].</li>
+      <li><strong>Chú ếch:</strong> cú nhảy cuối xuất phát từ đá i − 1 hoặc i − 2, chi phí phụ thuộc độ cao hai đá. Cần biết “đang ở đá nào”. Trạng thái: dp[i] là chi phí nhỏ nhất để tới đá i.</li>
+      <li><strong>Dãy con tăng:</strong> phần tử kế tiếp phải lớn hơn phần tử cuối, nên trạng thái phải nhớ “dãy kết thúc tại vị trí i” (xem <a href="lis.html">LIS</a>).</li>
+      <li><strong>Cái túi:</strong> thêm một vật cần biết túi còn chứa được bao nhiêu, nên trạng thái phải có thêm khối lượng j (xem <a href="knapsack.html">cái túi</a>).</li>
+    </ul>
+    <p>Nếu một câu mô tả trạng thái mà em đọc lên thấy mơ hồ (“dp[i] là kết quả với i”), hãy dừng lại và viết lại cho rõ: <em>kết quả gì, của đoạn nào, đã thỏa điều kiện gì</em>.</p>
+
+    <h3>Thứ tự tính</h3>
+    <p>Trong cách bottom-up, phải tính bài con <strong>trước</strong> bài lớn. Nếu dp[i] dùng dp[i − 1] và dp[i − 2] thì vòng lặp i phải chạy tăng dần. Nếu lỡ chạy giảm dần, lúc tính dp[i] thì dp[i − 1] vẫn còn bằng 0, kết quả sai hoàn toàn. Cách top-down tự lo thứ tự giúp em (đệ quy sẽ gọi xuống bài con trước), đổi lại tốn thêm bộ nhớ ngăn xếp cho các lời gọi.</p>
+
+    <h3>So sánh hai cách cài đặt</h3>
+    <table>
+      <thead><tr><th>Tiêu chí</th><th>Đệ quy có nhớ (top-down)</th><th>Bảng phương án (bottom-up)</th></tr></thead>
+      <tbody>
+        <tr><td>Cách viết</td><td>Chép công thức thành hàm, thêm sổ ghi nhớ</td><td>Vòng lặp điền bảng</td></tr>
+        <tr><td>Thứ tự tính</td><td>Tự động, không cần nghĩ</td><td>Em phải tự chọn cho đúng</td></tr>
+        <tr><td>Tính những ô nào</td><td>Chỉ các ô thật sự cần</td><td>Mọi ô trong bảng</td></tr>
+        <tr><td>Rủi ro</td><td>Tràn ngăn xếp khi đệ quy quá sâu (n cỡ 10<sup>6</sup>)</td><td>Gần như không</td></tr>
+        <tr><td>Tốc độ thực tế</td><td>Chậm hơn một chút (chi phí gọi hàm)</td><td>Nhanh, dễ tiết kiệm bộ nhớ</td></tr>
+      </tbody>
+    </table>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Khi mới học, em cứ viết đệ quy trước cho đúng, rồi thêm sổ ghi nhớ. Khi đã quen, hãy chuyển sang bảng phương án: code ngắn hơn, chạy nhanh hơn, và không lo tràn ngăn xếp.</p></div>
+  </section>
+
+  <section id="vi-du-mau">
+    <h2>Ba bài mẫu theo quy trình 4 bước</h2>
+    <p>Bây giờ ta áp dụng quy trình 4 bước cho ba bài, từ dễ đến khó hơn một chút. Em hãy để ý: khung lời giải gần như giữ nguyên, chỉ có câu mô tả trạng thái và công thức thay đổi.</p>
+
+    <h3>Bài 1. Leo cầu thang, mỗi bước 1 hoặc 2 bậc</h3>
+    <p><strong>Đề:</strong> cầu thang n bậc, em đứng ở mặt đất (bậc 0), mỗi bước leo 1 hoặc 2 bậc. Có bao nhiêu cách lên đúng bậc n?</p>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> dp[i] là số cách leo từ mặt đất lên đúng bậc i.</div></li>
+      <li><div><strong>Công thức.</strong> Bước cuối là 1 bậc (từ i − 1) hoặc 2 bậc (từ i − 2): dp[i] = dp[i − 1] + dp[i − 2].</div></li>
+      <li><div><strong>Cơ sở.</strong> dp[0] = 1, dp[1] = 1.</div></li>
+      <li><div><strong>Đáp án.</strong> dp[n].</div></li>
+    </ol>
+    <p>Với n = 6: dp = 1, 1, 2, 3, 5, 8, <strong>13</strong>. Kiểm tra tay với n = 3: các cách là 1+1+1, 1+2, 2+1, đúng 3 cách, khớp dp[3] = 3.</p>
+    <div class="callout warn"><p class="callout-title">Vì sao dp[0] = 1 chứ không phải 0?</p><p>Nếu đặt dp[0] = 0 thì dp[2] = dp[1] + dp[0] = 1, nhưng thật ra có 2 cách lên bậc 2 (1+1 và 2). Cách “bước thẳng 2 bậc từ mặt đất” chính là cách được đếm qua dp[0]. Nên dp[0] = 1 là “có đúng một cách đứng ở mặt đất”: không làm gì cả.</p></div>
+
+    <h3>Bài 2. Mở rộng: mỗi bước 1 đến k bậc, có bậc hỏng</h3>
+    <p><strong>Đề:</strong> như bài 1, nhưng mỗi bước được leo từ 1 đến k bậc, và có một số bậc bị hỏng, không được đặt chân lên. Đếm số cách lên bậc n (lấy dư cho 10<sup>9</sup> + 7).</p>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> dp[i] là số cách lên đúng bậc i mà không giẫm bậc hỏng nào.</div></li>
+      <li><div><strong>Công thức.</strong> Nếu bậc i hỏng thì dp[i] = 0 (không ai đứng được ở đó). Ngược lại, bước cuối dài s bậc với 1 ≤ s ≤ k và s ≤ i: dp[i] = dp[i − 1] + dp[i − 2] + … + dp[i − k].</div></li>
+      <li><div><strong>Cơ sở.</strong> dp[0] = 1.</div></li>
+      <li><div><strong>Đáp án.</strong> dp[n].</div></li>
+    </ol>
+    <p>Mẹo hay: đặt dp[bậc hỏng] = 0 thì mọi cách “đi qua” bậc hỏng tự động bị loại, vì khi cộng dp[bậc hỏng] vào các ô sau, ta chỉ cộng thêm 0. Ví dụ với k = 3, không có bậc hỏng: dp = 1, 1, 2, 4, 7, 13, 24, 44 (dp[3] = 1 + 1 + 2 = 4, dp[4] = 1 + 2 + 4 = 7…). Bài “gieo xúc xắc” CSES Dice Combinations chính là trường hợp k = 6.</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">n = 6, bước 1 hoặc 2, bậc 3 bị hỏng</p></div>
+      <div class="viz-body">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">1</span><span class="cell" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell is-bad" data-i="3" data-ptr="hỏng">0</span><span class="cell" data-i="4">2</span><span class="cell" data-i="5">2</span><span class="cell is-ok" data-i="6">4</span></div>
+      </div>
+      <div class="viz-legend"><span><i class="is-bad"></i>bậc hỏng, dp = 0</span><span><i class="is-ok"></i>đáp án</span></div>
+      <div class="viz-caption"><p>dp[4] = dp[3] + dp[2] = 0 + 2 = 2: chỉ còn cách bước 2 bậc từ bậc 2. dp[5] = dp[4] + dp[3] = 2 + 0 = 2. dp[6] = dp[5] + dp[4] = 2 + 2 = 4. Bốn cách đó là 1+1+2+1+1, 1+1+2+2, 2+2+1+1 và 2+2+2: cách nào cũng nhảy qua bậc 3.</p></div>
+    </div>
+
+    <h3>Bài 3. Chú ếch Frog 1: bài tối ưu đầu tiên</h3>
+    <p><strong>Đề</strong> (AtCoder DP A, có bản tiếng Việt trên VNOJ): có n hòn đá, đá i cao h[i]. Ếch đứng ở đá 1, mỗi lần nhảy tới đá i + 1 hoặc i + 2, nhảy từ đá i tới đá j tốn |h[i] − h[j]|. Tìm tổng chi phí nhỏ nhất để tới đá n.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> dp[i] là chi phí nhỏ nhất để ếch đi từ đá 1 tới đá i.</div></li>
+      <li><div><strong>Công thức.</strong> Cú nhảy cuối xuất phát từ đá i − 1 hoặc đá i − 2, nên dp[i] = min(dp[i − 1] + |h[i] − h[i − 1]|, dp[i − 2] + |h[i] − h[i − 2]|).</div></li>
+      <li><div><strong>Cơ sở.</strong> dp[1] = 0; dp[2] = |h[2] − h[1]| (chỉ có một cách tới đá 2).</div></li>
+      <li><div><strong>Đáp án.</strong> dp[n].</div></li>
+    </ol>
+    <p>So với bài đếm, chỉ có hai thay đổi: <strong>cộng</strong> đổi thành <strong>min</strong>, và mỗi lựa chọn cộng thêm chi phí của cú nhảy cuối. Đó là sự khác nhau giữa dạng “đếm số cách” và dạng “tối ưu”.</p>
+    <div class="callout danger"><p class="callout-title">Tham lam không dùng được</p><p>Thử cách “mỗi lần nhảy tới đá rẻ hơn” với h = 30, 10, 60, 10, 60, 50. Từ đá 1: tới đá 2 tốn 20, tới đá 3 tốn 30, chọn đá 2. Từ đá 2: tới đá 3 tốn 50, tới đá 4 tốn 0, chọn đá 4. Từ đá 4: tới đá 5 tốn 50, tới đá 6 tốn 40, chọn đá 6. Tổng 20 + 0 + 40 = <strong>60</strong>. Nhưng đường 1 → 3 → 5 → 6 chỉ tốn 30 + 0 + 10 = <strong>40</strong>. Tham lam nhìn trước một bước nên bị lừa; QHĐ xét hết mọi khả năng mà vẫn nhanh.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Phần này có ba hình: bảng leo cầu thang được điền từng ô, cây lời gọi của Fibonacci trước và sau khi ghi nhớ, và bảng của chú ếch. Cuối phần là một công cụ để em tự thử.</p>
+
+    <h3>Điền bảng leo cầu thang</h3>
+    <p>Cầu thang 6 bậc, mỗi bước 1 hoặc 2 bậc. Ô màu tím là ô đang tính, hai ô màu vàng là hai ô nó lấy giá trị, ô xanh là đáp án. Bấm nút để đi từng khung.</p>
+    <div class="stepper" data-title="Điền bảng leo cầu thang, n = 6, bước 1 hoặc 2 bậc">
+      <div class="frame" data-caption="&lt;b&gt;Khung 1.&lt;/b&gt; Cơ sở: dp[0] = 1 (đứng ở mặt đất, không leo bước nào: đúng 1 cách). Các ô khác chưa biết.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell is-active" data-i="0" data-ptr="i">1</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 2.&lt;/b&gt; i = 1: chỉ có thể bước 1 bậc từ bậc 0 (không có bậc −1). dp[1] = dp[0] = 1.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell is-cmp" data-i="0">1</span><span class="cell is-active" data-i="1" data-ptr="i">1</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 3.&lt;/b&gt; i = 2: bước cuối 1 bậc (từ bậc 1) hoặc 2 bậc (từ bậc 0). dp[2] = dp[1] + dp[0] = 1 + 1 = &lt;b&gt;2&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell is-cmp" data-i="0">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell is-active" data-i="2" data-ptr="i">2</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 4.&lt;/b&gt; i = 3: bước cuối 1 bậc (từ bậc 2) hoặc 2 bậc (từ bậc 1). dp[3] = dp[2] + dp[1] = 2 + 1 = &lt;b&gt;3&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell is-cmp" data-i="2">2</span><span class="cell is-active" data-i="3" data-ptr="i">3</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 5.&lt;/b&gt; i = 4: bước cuối 1 bậc (từ bậc 3) hoặc 2 bậc (từ bậc 2). dp[4] = dp[3] + dp[2] = 3 + 2 = &lt;b&gt;5&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">1</span><span class="cell" data-i="1">1</span><span class="cell is-cmp" data-i="2">2</span><span class="cell is-cmp" data-i="3">3</span><span class="cell is-active" data-i="4" data-ptr="i">5</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 6.&lt;/b&gt; i = 5: bước cuối 1 bậc (từ bậc 4) hoặc 2 bậc (từ bậc 3). dp[5] = dp[4] + dp[3] = 5 + 3 = &lt;b&gt;8&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">1</span><span class="cell" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell is-cmp" data-i="3">3</span><span class="cell is-cmp" data-i="4">5</span><span class="cell is-active" data-i="5" data-ptr="i">8</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 7.&lt;/b&gt; i = 6: bước cuối 1 bậc (từ bậc 5) hoặc 2 bậc (từ bậc 4). dp[6] = dp[5] + dp[4] = 8 + 5 = &lt;b&gt;13&lt;/b&gt;. Đây là ô đáp án: có 13 cách leo lên bậc 6.">
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">1</span><span class="cell" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell" data-i="3">3</span><span class="cell is-cmp" data-i="4">5</span><span class="cell is-cmp" data-i="5">8</span><span class="cell is-ok" data-i="6" data-ptr="i">13</span></div>
+      </div>
+    </div>
+
+    <h3>Cây lời gọi của fib(6)</h3>
+    <p>Mỗi hình tròn là một lần gọi hàm, số trong hình tròn là tham số n. Hình 1 là đệ quy thường: các nút tô đỏ là những bài con <strong>đã được tính ở chỗ khác</strong> nhưng vẫn bị tính lại từ đầu.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 612 302" width="612" role="img" aria-label="Cây lời gọi fib(6) khi đệ quy thường: 25 lời gọi, các nút tô đỏ là bài con bị tính lại">
+      <line class="edge" x1="53" y1="226" x2="30" y2="276"/>
+      <line class="edge" x1="53" y1="226" x2="76" y2="276"/>
+      <line class="edge" x1="87.5" y1="176" x2="53" y2="226"/>
+      <line class="edge" x1="87.5" y1="176" x2="122" y2="226"/>
+      <line class="edge" x1="191" y1="176" x2="168" y2="226"/>
+      <line class="edge" x1="191" y1="176" x2="214" y2="226"/>
+      <line class="edge" x1="139.25" y1="126" x2="87.5" y2="176"/>
+      <line class="edge is-bad" x1="139.25" y1="126" x2="191" y2="176"/>
+      <line class="edge" x1="283" y1="176" x2="260" y2="226"/>
+      <line class="edge" x1="283" y1="176" x2="306" y2="226"/>
+      <line class="edge is-bad" x1="317.5" y1="126" x2="283" y2="176"/>
+      <line class="edge" x1="317.5" y1="126" x2="352" y2="176"/>
+      <line class="edge" x1="228.375" y1="76" x2="139.25" y2="126"/>
+      <line class="edge is-bad" x1="228.375" y1="76" x2="317.5" y2="126"/>
+      <line class="edge" x1="421" y1="176" x2="398" y2="226"/>
+      <line class="edge" x1="421" y1="176" x2="444" y2="226"/>
+      <line class="edge is-bad" x1="455.5" y1="126" x2="421" y2="176"/>
+      <line class="edge" x1="455.5" y1="126" x2="490" y2="176"/>
+      <line class="edge" x1="559" y1="126" x2="536" y2="176"/>
+      <line class="edge" x1="559" y1="126" x2="582" y2="176"/>
+      <line class="edge is-bad" x1="507.25" y1="76" x2="455.5" y2="126"/>
+      <line class="edge is-bad" x1="507.25" y1="76" x2="559" y2="126"/>
+      <line class="edge" x1="367.812" y1="26" x2="228.375" y2="76"/>
+      <line class="edge is-bad" x1="367.812" y1="26" x2="507.25" y2="76"/>
+      <circle class="node is-active" cx="367.812" cy="26" r="15"/><text x="367.812" y="31" text-anchor="middle">6</text>
+      <circle class="node is-active" cx="228.375" cy="76" r="15"/><text x="228.375" y="81" text-anchor="middle">5</text>
+      <circle class="node is-active" cx="139.25" cy="126" r="15"/><text x="139.25" y="131" text-anchor="middle">4</text>
+      <circle class="node is-active" cx="87.5" cy="176" r="15"/><text x="87.5" y="181" text-anchor="middle">3</text>
+      <circle class="node is-active" cx="53" cy="226" r="15"/><text x="53" y="231" text-anchor="middle">2</text>
+      <circle class="node" cx="30" cy="276" r="15"/><text x="30" y="281" text-anchor="middle">1</text>
+      <circle class="node" cx="76" cy="276" r="15"/><text x="76" y="281" text-anchor="middle">0</text>
+      <circle class="node" cx="122" cy="226" r="15"/><text x="122" y="231" text-anchor="middle">1</text>
+      <circle class="node is-bad" cx="191" cy="176" r="15"/><text x="191" y="181" text-anchor="middle">2</text>
+      <circle class="node" cx="168" cy="226" r="15"/><text x="168" y="231" text-anchor="middle">1</text>
+      <circle class="node" cx="214" cy="226" r="15"/><text x="214" y="231" text-anchor="middle">0</text>
+      <circle class="node is-bad" cx="317.5" cy="126" r="15"/><text x="317.5" y="131" text-anchor="middle">3</text>
+      <circle class="node is-bad" cx="283" cy="176" r="15"/><text x="283" y="181" text-anchor="middle">2</text>
+      <circle class="node" cx="260" cy="226" r="15"/><text x="260" y="231" text-anchor="middle">1</text>
+      <circle class="node" cx="306" cy="226" r="15"/><text x="306" y="231" text-anchor="middle">0</text>
+      <circle class="node" cx="352" cy="176" r="15"/><text x="352" y="181" text-anchor="middle">1</text>
+      <circle class="node is-bad" cx="507.25" cy="76" r="15"/><text x="507.25" y="81" text-anchor="middle">4</text>
+      <circle class="node is-bad" cx="455.5" cy="126" r="15"/><text x="455.5" y="131" text-anchor="middle">3</text>
+      <circle class="node is-bad" cx="421" cy="176" r="15"/><text x="421" y="181" text-anchor="middle">2</text>
+      <circle class="node" cx="398" cy="226" r="15"/><text x="398" y="231" text-anchor="middle">1</text>
+      <circle class="node" cx="444" cy="226" r="15"/><text x="444" y="231" text-anchor="middle">0</text>
+      <circle class="node" cx="490" cy="176" r="15"/><text x="490" y="181" text-anchor="middle">1</text>
+      <circle class="node is-bad" cx="559" cy="126" r="15"/><text x="559" y="131" text-anchor="middle">2</text>
+      <circle class="node" cx="536" cy="176" r="15"/><text x="536" y="181" text-anchor="middle">1</text>
+      <circle class="node" cx="582" cy="176" r="15"/><text x="582" y="181" text-anchor="middle">0</text>
+      </svg>
+      <figcaption>Hình 1. Đệ quy thường gọi 25 lần. fib(4) bị tính 2 lần, fib(3) 3 lần, fib(2) 5 lần. Cả nhánh con bên phải của gốc là phần lặp lại.</figcaption>
+    </figure>
+    <p>Hình 2 là đệ quy có nhớ. Lần đầu gặp fib(4), fib(3), fib(2), máy tính thật sự (nút tím). Những lần sau chỉ tra sổ (nút xanh) và dừng ngay, không mọc thêm nhánh nào.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 290 302" width="290" role="img" aria-label="Cây lời gọi fib(6) khi có nhớ: 11 lời gọi, các nút tô xanh lấy ngay kết quả đã lưu">
+      <line class="edge" x1="53" y1="226" x2="30" y2="276"/>
+      <line class="edge" x1="53" y1="226" x2="76" y2="276"/>
+      <line class="edge" x1="87.5" y1="176" x2="53" y2="226"/>
+      <line class="edge" x1="87.5" y1="176" x2="122" y2="226"/>
+      <line class="edge" x1="127.75" y1="126" x2="87.5" y2="176"/>
+      <line class="edge is-ok" x1="127.75" y1="126" x2="168" y2="176"/>
+      <line class="edge" x1="170.875" y1="76" x2="127.75" y2="126"/>
+      <line class="edge is-ok" x1="170.875" y1="76" x2="214" y2="126"/>
+      <line class="edge" x1="215.438" y1="26" x2="170.875" y2="76"/>
+      <line class="edge is-ok" x1="215.438" y1="26" x2="260" y2="76"/>
+      <circle class="node is-active" cx="215.438" cy="26" r="15"/><text x="215.438" y="31" text-anchor="middle">6</text>
+      <circle class="node is-active" cx="170.875" cy="76" r="15"/><text x="170.875" y="81" text-anchor="middle">5</text>
+      <circle class="node is-active" cx="127.75" cy="126" r="15"/><text x="127.75" y="131" text-anchor="middle">4</text>
+      <circle class="node is-active" cx="87.5" cy="176" r="15"/><text x="87.5" y="181" text-anchor="middle">3</text>
+      <circle class="node is-active" cx="53" cy="226" r="15"/><text x="53" y="231" text-anchor="middle">2</text>
+      <circle class="node" cx="30" cy="276" r="15"/><text x="30" y="281" text-anchor="middle">1</text>
+      <circle class="node" cx="76" cy="276" r="15"/><text x="76" y="281" text-anchor="middle">0</text>
+      <circle class="node" cx="122" cy="226" r="15"/><text x="122" y="231" text-anchor="middle">1</text>
+      <circle class="node is-ok" cx="168" cy="176" r="15"/><text x="168" y="181" text-anchor="middle">2</text>
+      <circle class="node is-ok" cx="214" cy="126" r="15"/><text x="214" y="131" text-anchor="middle">3</text>
+      <circle class="node is-ok" cx="260" cy="76" r="15"/><text x="260" y="81" text-anchor="middle">4</text>
+      </svg>
+      <figcaption>Hình 2. Đệ quy có nhớ chỉ gọi 11 lần = 2 · 6 − 1. Cây chỉ còn một “xương sống” 6 → 5 → 4 → 3 → 2 → 1, mỗi nút có thêm một lá tra sổ.</figcaption>
+    </figure>
+    <p>Với n = 6, chênh lệch là 25 so với 11. Có vẻ không nhiều. Nhưng khi n = 45, đó là 3 672 623 805 so với 89: cây bên trái phình ra theo hàm mũ, còn cây bên phải chỉ dài thêm 2 nút mỗi khi n tăng 1.</p>
+
+    <h3>Bảng của chú ếch</h3>
+    <p>Sáu hòn đá cao h = 30, 10, 60, 10, 60, 50. Hàng trên là độ cao, hàng dưới là dp. Ở mỗi khung, hai ô màu vàng là hai đá mà ếch có thể nhảy từ đó tới.</p>
+    <div class="stepper" data-title="Chú ếch Frog 1: h = 30 10 60 10 60 50">
+      <div class="frame" data-caption="&lt;b&gt;Khung 1.&lt;/b&gt; Cơ sở: ếch đang ở đá 1 nên dp[1] = 0.">
+        <div class="arr"><span class="arr-label">h</span><span class="cell is-active" data-i="1">30</span><span class="cell is-dim" data-i="2">10</span><span class="cell is-dim" data-i="3">60</span><span class="cell is-dim" data-i="4">10</span><span class="cell is-dim" data-i="5">60</span><span class="cell is-dim" data-i="6">50</span></div>
+        <div class="arr"><span class="arr-label">dp</span><span class="cell is-active" data-i="1" data-ptr="i">0</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 2.&lt;/b&gt; Đá 2 chỉ đến được từ đá 1: dp[2] = dp[1] + |10 − 30| = 0 + 20 = &lt;b&gt;20&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">h</span><span class="cell is-cmp" data-i="1">30</span><span class="cell is-active" data-i="2">10</span><span class="cell is-dim" data-i="3">60</span><span class="cell is-dim" data-i="4">10</span><span class="cell is-dim" data-i="5">60</span><span class="cell is-dim" data-i="6">50</span></div>
+        <div class="arr"><span class="arr-label">dp</span><span class="cell is-cmp" data-i="1">0</span><span class="cell is-active" data-i="2" data-ptr="i">20</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 3.&lt;/b&gt; Đá 3: từ đá 2 tốn 20 + |60 − 10| = 70; từ đá 1 tốn 0 + |60 − 30| = 30. Lấy nhỏ hơn: dp[3] = &lt;b&gt;30&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">h</span><span class="cell is-cmp" data-i="1">30</span><span class="cell is-cmp" data-i="2">10</span><span class="cell is-active" data-i="3">60</span><span class="cell is-dim" data-i="4">10</span><span class="cell is-dim" data-i="5">60</span><span class="cell is-dim" data-i="6">50</span></div>
+        <div class="arr"><span class="arr-label">dp</span><span class="cell is-cmp" data-i="1">0</span><span class="cell is-cmp" data-i="2">20</span><span class="cell is-active" data-i="3" data-ptr="i">30</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 4.&lt;/b&gt; Đá 4: từ đá 3 tốn 30 + |10 − 60| = 80; từ đá 2 tốn 20 + |10 − 10| = 20. Lấy nhỏ hơn: dp[4] = &lt;b&gt;20&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">h</span><span class="cell" data-i="1">30</span><span class="cell is-cmp" data-i="2">10</span><span class="cell is-cmp" data-i="3">60</span><span class="cell is-active" data-i="4">10</span><span class="cell is-dim" data-i="5">60</span><span class="cell is-dim" data-i="6">50</span></div>
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="1">0</span><span class="cell is-cmp" data-i="2">20</span><span class="cell is-cmp" data-i="3">30</span><span class="cell is-active" data-i="4" data-ptr="i">20</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 5.&lt;/b&gt; Đá 5: từ đá 4 tốn 20 + |60 − 10| = 70; từ đá 3 tốn 30 + |60 − 60| = 30. Lấy nhỏ hơn: dp[5] = &lt;b&gt;30&lt;/b&gt;.">
+        <div class="arr"><span class="arr-label">h</span><span class="cell" data-i="1">30</span><span class="cell" data-i="2">10</span><span class="cell is-cmp" data-i="3">60</span><span class="cell is-cmp" data-i="4">10</span><span class="cell is-active" data-i="5">60</span><span class="cell is-dim" data-i="6">50</span></div>
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="1">0</span><span class="cell" data-i="2">20</span><span class="cell is-cmp" data-i="3">30</span><span class="cell is-cmp" data-i="4">20</span><span class="cell is-active" data-i="5" data-ptr="i">30</span><span class="cell is-dim" data-i="6">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 6.&lt;/b&gt; Đá 6: từ đá 5 tốn 30 + |50 − 60| = 40; từ đá 4 tốn 20 + |50 − 10| = 60. Lấy nhỏ hơn: dp[6] = &lt;b&gt;40&lt;/b&gt;. Đáp án là 40.">
+        <div class="arr"><span class="arr-label">h</span><span class="cell" data-i="1">30</span><span class="cell" data-i="2">10</span><span class="cell" data-i="3">60</span><span class="cell is-cmp" data-i="4">10</span><span class="cell is-cmp" data-i="5">60</span><span class="cell is-ok" data-i="6">50</span></div>
+        <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="1">0</span><span class="cell" data-i="2">20</span><span class="cell" data-i="3">30</span><span class="cell is-cmp" data-i="4">20</span><span class="cell is-cmp" data-i="5">30</span><span class="cell is-ok" data-i="6" data-ptr="i">40</span></div>
+      </div>
+    </div>
+    <p>Để biết đường đi tối ưu, ta lần ngược: dp[6] = 40 lấy từ đá 5 (30 + 10); dp[5] = 30 lấy từ đá 3 (30 + 0); dp[3] = 30 lấy từ đá 1. Vậy đường đi là 1 → 3 → 5 → 6.</p>
+
+    <h3>Tự tay thử</h3>
+    <div class="playground" id="viz-dp-intro">
+      <div class="viz-head"><p class="viz-title">Bảng leo cầu thang với tập bước tùy chọn</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="dpi-n">Số bậc n <input type="number" id="dpi-n" value="8" min="1" max="40"></label>
+          <label for="dpi-steps">Các bước được phép <input type="text" id="dpi-steps" value="1 2"></label>
+          <label for="dpi-broken">Bậc hỏng <input type="text" id="dpi-broken" value="3"></label>
+          <button type="button" data-act="run">Chạy từng bước</button>
+          <button type="button" data-act="all">Hiện ngay</button>
+        </div>
+        <div class="dpi-view"></div>
+        <div class="out" aria-live="polite">Nhập n (1 đến 40), các bước được phép (ví dụ “1 2” hoặc “1 3 5”) và các bậc hỏng (có thể để trống).</div>
+      </div>
+      <div class="viz-head"><p class="viz-title">Đếm số lời gọi Fibonacci</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="dpi-fib">n <input type="number" id="dpi-fib" value="45" min="0" max="90"></label>
+          <button type="button" data-act="fib">Đếm</button>
+        </div>
+        <div class="out dpi-fib-out" aria-live="polite">Nhập n từ 0 đến 90 để so sánh đệ quy thường với đệ quy có nhớ.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Chương trình chính giải bài leo cầu thang tổng quát: n bậc, mỗi bước leo 1 đến k bậc, có m bậc hỏng, đáp án lấy dư cho 10<sup>9</sup> + 7. Mỗi bước của quy trình 4 bước được đánh dấu bằng chú thích.</p>
+    <p><strong>Input:</strong> dòng 1 gồm n, k, m (1 ≤ n ≤ 10<sup>6</sup>, 1 ≤ k ≤ 100, 0 ≤ m ≤ n); dòng 2 gồm m số là chỉ số các bậc hỏng. <strong>Output:</strong> số cách lên bậc n, lấy dư cho 10<sup>9</sup> + 7.</p>
+    <figure class="code">
+      <figcaption><span class="fn">leo_cau_thang.cpp</span> Bảng phương án, bước 1..k, có bậc hỏng</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const long long MOD = 1000000007LL;   // đáp án rất lớn nên lấy dư
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, k, m;                    // n bậc, mỗi bước leo 1..k bậc, m bậc hỏng
+    cin &gt;&gt; n &gt;&gt; k &gt;&gt; m;
+    vector&lt;bool&gt; hong(n + 1, false);   // hong[i] = true nếu bậc i bị hỏng
+    for (int t = 0; t &lt; m; t++) {
+        int x; cin &gt;&gt; x;
+        if (1 &lt;= x &amp;&amp; x &lt;= n) hong[x] = true;
+    }
+
+    // Bước 1 - Trạng thái: dp[i] = số cách đứng được trên bậc i (mặt đất là bậc 0)
+    vector&lt;long long&gt; dp(n + 1, 0);
+
+    // Bước 3 - Cơ sở: ở mặt đất có đúng 1 cách (đứng yên)
+    dp[0] = 1;
+
+    // Thứ tự tính: i tăng dần, vì dp[i] cần các ô nhỏ hơn i
+    for (int i = 1; i &lt;= n; i++) {
+        if (hong[i]) { dp[i] = 0; continue; }   // không được đặt chân lên bậc hỏng
+        // Bước 2 - Công thức: bước cuối dài s bậc, đến từ bậc i - s
+        for (int s = 1; s &lt;= k &amp;&amp; s &lt;= i; s++) {
+            dp[i] = (dp[i] + dp[i - s]) % MOD;
+        }
+    }
+
+    // Bước 4 - Đáp án: nằm ở ô dp[n]
+    cout &lt;&lt; dp[n] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">6 2 1
+3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">4</code></pre></div>
+    </div>
+    <p>Đây đúng là ví dụ “bậc 3 hỏng” ở trên. Thử thêm: với Input <code>5 3 0</code> (5 bậc, bước 1..3, không bậc hỏng), chương trình in <code>13</code>; với Input <code>6 2 0</code>, chương trình in <code>13</code> như bảng ở phần minh họa.</p>
+
+    <h3>Chú ếch Frog 1</h3>
+    <figure class="code">
+      <figcaption><span class="fn">frog1.cpp</span> Dạng tối ưu: lấy min thay vì cộng</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;long long&gt; h(n + 1);
+    for (int i = 1; i &lt;= n; i++) cin &gt;&gt; h[i];
+
+    // dp[i] = chi phí nhỏ nhất để ếch đến được hòn đá i
+    const long long INF = LLONG_MAX / 4;
+    vector&lt;long long&gt; dp(n + 1, INF);
+    dp[1] = 0;                                   // cơ sở: đang đứng sẵn ở đá 1
+
+    for (int i = 2; i &lt;= n; i++) {
+        // nhảy 1 bước từ đá i - 1
+        dp[i] = dp[i - 1] + llabs(h[i] - h[i - 1]);
+        // nhảy 2 bước từ đá i - 2 (chỉ khi i - 2 &gt;= 1)
+        if (i &gt;= 3)
+            dp[i] = min(dp[i], dp[i - 2] + llabs(h[i] - h[i - 2]));
+    }
+
+    cout &lt;&lt; dp[n] &lt;&lt; '\n';                       // đáp án: ô cuối cùng
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">6
+30 10 60 10 60 50</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">40</code></pre></div>
+    </div>
+
+    <h3>Ba cách tính Fibonacci, có đếm lời gọi</h3>
+    <p>Chương trình này để em tự chạy và so sánh. Nhập n = 30 rồi n = 40, rồi n = 45, và quan sát thời gian chờ.</p>
+    <figure class="code">
+      <figcaption><span class="fn">fib_ba_cach.cpp</span> Đệ quy thường, đệ quy có nhớ, bảng phương án</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+long long soLoiGoi = 0;              // đếm số lần hàm được gọi
+
+// Cách 1: đệ quy thường, tính đi tính lại
+long long fibThuong(int n) {
+    soLoiGoi++;
+    if (n &lt;= 1) return n;
+    return fibThuong(n - 1) + fibThuong(n - 2);
+}
+
+// Cách 2: đệ quy có nhớ (top-down, memoization)
+long long nho[100];
+bool daTinh[100];
+long long fibNho(int n) {
+    soLoiGoi++;
+    if (n &lt;= 1) return n;
+    if (daTinh[n]) return nho[n];    // đã tính rồi: trả lời ngay
+    daTinh[n] = true;
+    return nho[n] = fibNho(n - 1) + fibNho(n - 2);
+}
+
+// Cách 3: bảng phương án (bottom-up), không đệ quy
+long long fibBang(int n) {
+    vector&lt;long long&gt; f(max(n + 1, 2));
+    f[0] = 0; f[1] = 1;
+    for (int i = 2; i &lt;= n; i++) f[i] = f[i - 1] + f[i - 2];
+    return f[n];
+}
+
+int main() {
+    int n;
+    cin &gt;&gt; n;
+    soLoiGoi = 0;
+    long long a = fibThuong(n);
+    cout &lt;&lt; "De quy thuong: F(" &lt;&lt; n &lt;&lt; ") = " &lt;&lt; a &lt;&lt; ", so loi goi = " &lt;&lt; soLoiGoi &lt;&lt; '\n';
+    soLoiGoi = 0;
+    long long b = fibNho(n);
+    cout &lt;&lt; "Co nho:        F(" &lt;&lt; n &lt;&lt; ") = " &lt;&lt; b &lt;&lt; ", so loi goi = " &lt;&lt; soLoiGoi &lt;&lt; '\n';
+    cout &lt;&lt; "Bang phuong an: F(" &lt;&lt; n &lt;&lt; ") = " &lt;&lt; fibBang(n) &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">30</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">De quy thuong: F(30) = 832040, so loi goi = 2692537
+Co nho:        F(30) = 832040, so loi goi = 59
+Bang phuong an: F(30) = 832040</code></pre></div>
+    </div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <p>Nhắc lại công thức: thời gian = số trạng thái × chi phí mỗi trạng thái; bộ nhớ = kích thước bảng (cộng ngăn xếp nếu dùng đệ quy).</p>
+    <table>
+      <thead><tr><th>Lời giải</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Fibonacci đệ quy thường</td><td><span class="bigo">O(1,62<sup>n</sup>)</span></td><td><span class="bigo">O(n)</span> (ngăn xếp)</td></tr>
+        <tr><td>Fibonacci đệ quy có nhớ</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span> (sổ + ngăn xếp)</td></tr>
+        <tr><td>Fibonacci bảng phương án</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Fibonacci / leo cầu thang dùng 2 biến</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Leo cầu thang bước 1..k, có bậc hỏng</td><td><span class="bigo">O(n·k)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Frog 1 (nhảy 1 hoặc 2)</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Frog 2 (nhảy tối đa K đá)</td><td><span class="bigo">O(n·K)</span></td><td><span class="bigo">O(n)</span></td></tr>
+      </tbody>
+    </table>
+    <p>Ví dụ cụ thể, với máy chấm làm được khoảng 10<sup>8</sup> phép tính đơn giản mỗi giây:</p>
+    <ul>
+      <li>Dice Combinations: n = 10<sup>6</sup>, k = 6, khoảng 6 · 10<sup>6</sup> phép cộng, chạy dưới 0,1 giây. Mảng dp gồm 10<sup>6</sup> số <code>long long</code> tốn 8 MB.</li>
+      <li>Frog 2: n = 10<sup>5</sup>, K = 100, khoảng 10<sup>7</sup> phép so sánh, vẫn rất nhanh.</li>
+      <li>Fibonacci đệ quy thường với n = 45 cần 3,67 · 10<sup>9</sup> lời gọi: quá giới hạn 1 giây nhiều lần. Bảng phương án chỉ cần 44 phép cộng.</li>
+    </ul>
+    <div class="callout tip"><p class="callout-title">Ước lượng nhanh trước khi code</p><p>Nhân số trạng thái với số lựa chọn ở mỗi trạng thái. Kết quả dưới khoảng 10<sup>8</sup> là yên tâm. Đồng thời nhân số ô của bảng với 8 byte (nếu dùng <code>long long</code>) để chắc chắn không vượt giới hạn bộ nhớ, thường là 256 MB.</p></div>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Tiết kiệm bộ nhớ: chỉ giữ vài ô cuối</h3>
+    <p>Ở bài leo cầu thang, dp[i] chỉ cần dp[i − 1] và dp[i − 2]. Các ô cũ hơn không bao giờ được dùng nữa. Vậy ta chỉ cần giữ <strong>hai biến</strong> và “trượt” chúng lên mỗi bậc:</p>
+    <figure class="code">
+      <figcaption><span class="fn">hai_bien.cpp</span> Bộ nhớ O(1)</figcaption>
+<pre><code class="language-cpp">long long a = 1, b = 1;            // a = dp[i-2], b = dp[i-1]; lúc đầu là dp[0], dp[1]
+for (int i = 2; i &lt;= n; i++) {
+    long long c = (a + b) % MOD;   // c = dp[i]
+    a = b;                          // dịch cửa sổ lên một bậc
+    b = c;
+}
+// với n &gt;= 1, đáp án dp[n] nằm trong b</code></pre>
+    </figure>
+    <p>Với bước 1..k, em giữ k ô cuối bằng mảng vòng: ô dp[i] lưu ở vị trí <code>i % k</code>. Mẹo này rất hữu ích khi n lên tới 10<sup>7</sup> hoặc khi bảng có hai chiều (xem <a href="dp-grid.html">QHĐ trên lưới</a>: chỉ cần giữ hàng trước). Nhưng nhớ: khi cần <strong>truy vết</strong> (in ra đường đi), em phải giữ cả bảng.</p>
+
+    <h3>Đệ quy có nhớ cho bài leo cầu thang</h3>
+    <p>Nếu thấy công thức dễ nghĩ theo kiểu đệ quy hơn, em viết top-down như sau. Chú ý dùng −1 làm dấu “chưa tính”, vì 0 có thể là một đáp án thật (ví dụ ở bậc hỏng).</p>
+    <figure class="code">
+      <figcaption><span class="fn">top_down.cpp</span> Đệ quy có nhớ, nhớ gọi <code>nho.assign(n + 1, -1)</code> trước</figcaption>
+<pre><code class="language-cpp">vector&lt;long long&gt; nho;                 // nho[i] = -1 nghĩa là chưa tính
+long long dem(int i) {
+    if (i &lt; 0) return 0;               // bước quá đà xuống dưới mặt đất: 0 cách
+    if (i == 0) return 1;              // cơ sở
+    if (nho[i] != -1) return nho[i];   // tra sổ
+    return nho[i] = (dem(i - 1) + dem(i - 2)) % MOD;
+}</code></pre>
+    </figure>
+
+    <h3>Truy vết: in ra đường đi tối ưu</h3>
+    <p>Bảng dp cho biết chi phí nhỏ nhất, nhưng đề đôi khi hỏi cả đường đi. Ta đi ngược từ ô đáp án: ở đá i, kiểm tra xem dp[i] được tạo ra từ lựa chọn nào, rồi lùi về đó.</p>
+    <figure class="code">
+      <figcaption><span class="fn">truy_vet.cpp</span> Lần ngược đường đi của chú ếch (sau khi đã có dp)</figcaption>
+<pre><code class="language-cpp">vector&lt;int&gt; duong;
+int i = n;
+while (i &gt; 1) {
+    duong.push_back(i);
+    if (i &gt;= 3 &amp;&amp; dp[i] == dp[i - 2] + llabs(h[i] - h[i - 2])) i -= 2;  // đến từ đá i - 2
+    else i -= 1;                                                       // đến từ đá i - 1
+}
+duong.push_back(1);
+reverse(duong.begin(), duong.end());   // với ví dụ trên: 1 3 5 6</code></pre>
+    </figure>
+
+    <h3>Các dạng QHĐ em sẽ gặp ở THCS</h3>
+    <ul>
+      <li><strong>Đếm số cách</strong> (cộng): leo cầu thang, gieo xúc xắc, đếm đường đi trên lưới có ô cấm (<a href="dp-grid.html">QHĐ trên lưới</a>), đếm số cách đổi tiền.</li>
+      <li><strong>Tối ưu</strong> (max/min): chú ếch, xếp hàng mua vé, đổi tiền ít tờ nhất, tổng lớn nhất trên lưới, <a href="knapsack.html">cái túi</a>.</li>
+      <li><strong>Dãy con</strong>: <a href="lis.html">dãy con tăng dài nhất</a>, <a href="lcs.html">xâu con chung dài nhất</a>.</li>
+      <li><strong>Thêm chiều cho trạng thái</strong>: bài Vacation (mỗi ngày chọn 1 trong 3 hoạt động, không lặp hai ngày liền) cần dp[i][c] = điểm lớn nhất sau i ngày nếu ngày i chọn hoạt động c. Khi “đang ở đâu” chưa đủ để quyết định bước cuối, em thêm thông tin vào trạng thái.</li>
+    </ul>
+
+    <h3>Quy hoạch động, tham lam hay quay lui?</h3>
+    <table>
+      <thead><tr><th></th><th><a href="backtracking.html">Quay lui</a></th><th><a href="greedy.html">Tham lam</a></th><th>Quy hoạch động</th></tr></thead>
+      <tbody>
+        <tr><td>Ý tưởng</td><td>Thử <em>mọi</em> cách, từng cách một</td><td>Mỗi bước chọn cái tốt nhất <em>ngay lúc đó</em></td><td>Gom các cách có chung bài con, tính mỗi bài con một lần</td></tr>
+        <tr><td>Luôn đúng?</td><td>Có</td><td>Chỉ khi chứng minh được</td><td>Có, nếu trạng thái và công thức đúng</td></tr>
+        <tr><td>Tốc độ</td><td>Rất chậm (hàm mũ)</td><td>Rất nhanh</td><td>Nhanh (đa thức)</td></tr>
+        <tr><td>Leo cầu thang n = 45</td><td>Duyệt 1 836 311 903 cách, quá chậm</td><td>Không áp dụng (bài đếm)</td><td>44 phép cộng</td></tr>
+        <tr><td>Frog 1, ví dụ trên</td><td>Đúng nhưng chậm khi n lớn</td><td>Ra 60, <strong>sai</strong></td><td>Ra 40, đúng</td></tr>
+        <tr><td>Khi nào dùng</td><td>n rất nhỏ (cỡ 20), cần liệt kê mọi cách</td><td>Có chứng minh hoặc không tìm được phản ví dụ</td><td>Có bài con gối nhau và cấu trúc con tối ưu</td></tr>
+      </tbody>
+    </table>
+    <p>Một cách nhớ: quay lui đi từng con đường; QHĐ nhận ra nhiều con đường “gặp nhau” ở cùng một bài con nên chỉ đi đoạn chung một lần; tham lam chỉ đi đúng một con đường và hy vọng nó tốt nhất.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">1. Tràn số khi dùng int</p><p>F(46) = 1 836 311 903 vẫn vừa kiểu <code>int</code>, nhưng F(47) = 2 971 215 073 đã vượt 2 147 483 647. Số cách leo cầu thang tăng nhanh như vậy. <strong>Sửa:</strong> dùng <code>long long</code> (chứa được tới F(92)), và nếu đề yêu cầu thì lấy dư <code>% MOD</code> <em>ngay sau mỗi phép cộng</em>, không đợi đến cuối.</p></div>
+    <div class="callout danger"><p class="callout-title">2. Sai giá trị cơ sở</p><p>Đặt dp[0] = 0 trong bài đếm làm mọi ô sau đều sai (dp[2] ra 1 thay vì 2). Ở bài min, quên khởi tạo các ô chưa đến được bằng “vô cùng” (<code>INF</code>) cũng gây sai. <strong>Sửa:</strong> tự kiểm tra bằng tay với n = 0, 1, 2, 3 trước khi nộp.</p></div>
+    <div class="callout danger"><p class="callout-title">3. Truy cập ra ngoài mảng</p><p>Tính dp[i − 2] khi i = 1 là đọc dp[−1]: hành vi không xác định, có thể ra số rác. <strong>Sửa:</strong> thêm điều kiện <code>s &lt;= i</code> như trong code mẫu, hoặc tính riêng các ô đầu.</p></div>
+    <div class="callout warn"><p class="callout-title">4. Sai thứ tự tính</p><p>Chạy vòng lặp i giảm dần khi dp[i] cần dp[i − 1]: lúc đó dp[i − 1] chưa được tính, vẫn bằng 0. <strong>Sửa:</strong> luôn tự hỏi “ô ở vế phải đã có chưa?”.</p></div>
+    <div class="callout warn"><p class="callout-title">5. Dùng 0 làm dấu “chưa tính” trong đệ quy có nhớ</p><p>Nếu một trạng thái có đáp án thật bằng 0 (bậc hỏng, chi phí 0), hàm sẽ tưởng là chưa tính và tính lại mãi, chậm như đệ quy thường. <strong>Sửa:</strong> dùng −1 hoặc một mảng <code>bool daTinh[]</code> riêng.</p></div>
+    <div class="callout warn"><p class="callout-title">6. Tràn ngăn xếp với đệ quy có nhớ</p><p>Gọi đệ quy sâu 10<sup>6</sup> tầng có thể làm chương trình chết (stack overflow) trên một số máy chấm. <strong>Sửa:</strong> với n lớn, viết bảng phương án bằng vòng lặp.</p></div>
+    <div class="callout warn"><p class="callout-title">7. Trạng thái mơ hồ</p><p>“dp[i] là đáp án với i” chưa phải một trạng thái. Câu đúng phải nói rõ: số cách / chi phí nhỏ nhất / độ dài lớn nhất… <em>của cái gì</em>, <em>kết thúc ở đâu</em>. Trạng thái mơ hồ dẫn đến công thức sai mà rất khó tìm lỗi.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo kiểm tra</p><p>Viết thêm một lời giải quay lui (thử mọi cách) cho n nhỏ, chạy cả hai với nhiều n ngẫu nhiên từ 1 đến 15 và so kết quả. Nếu khớp hết, em có thể yên tâm khá nhiều về công thức QHĐ.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Hàm <code>fib</code> đệ quy thường (không ghi nhớ) được gọi tổng cộng bao nhiêu lần khi tính fib(5)?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 9 lần</button>
+        <button type="button" class="quiz-opt" data-correct>B. 15 lần</button>
+        <button type="button" class="quiz-opt">C. 25 lần</button>
+        <button type="button" class="quiz-opt">D. 5 lần</button>
+      </div>
+      <p class="quiz-explain">Số lời gọi bằng 2·F(n + 1) − 1 = 2 · 8 − 1 = 15. Đếm tay: fib(5) gọi fib(4) (9 lời gọi) và fib(3) (5 lời gọi), cộng chính nó: 9 + 5 + 1 = 15. Con số 9 là số lời gọi khi <em>có nhớ</em> (2 · 5 − 1), còn 25 là của fib(6).</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Cầu thang 5 bậc, mỗi bước leo được 1 bậc hoặc 3 bậc. Có bao nhiêu cách lên bậc 5?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 3</button>
+        <button type="button" class="quiz-opt" data-correct>B. 4</button>
+        <button type="button" class="quiz-opt">C. 5</button>
+        <button type="button" class="quiz-opt">D. 8</button>
+      </div>
+      <p class="quiz-explain">dp[i] = dp[i − 1] + dp[i − 3]. Ta có dp[0..5] = 1, 1, 1, 2, 3, 4. Bốn cách là 1+1+1+1+1, 1+1+3, 1+3+1, 3+1+1.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Sắp xếp trộn (merge sort) chia mảng làm hai nửa, sắp xếp từng nửa rồi trộn lại. Vì sao ghi nhớ kết quả bài con không giúp nó nhanh hơn?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Vì nó không có cấu trúc con tối ưu.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Vì hai nửa rời nhau, không bài con nào bị hỏi lại (không có bài con gối nhau).</button>
+        <button type="button" class="quiz-opt">C. Vì mảng quá lớn, không đủ bộ nhớ để ghi nhớ.</button>
+      </div>
+      <p class="quiz-explain">Ghi nhớ chỉ có ích khi cùng một bài con được gọi nhiều lần. Ở merge sort, mỗi đoạn mảng chỉ được sắp xếp đúng một lần, nên sổ ghi nhớ chẳng bao giờ được tra trúng.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Một bạn viết <code>for (int i = n; i &gt;= 2; i--) dp[i] = dp[i - 1] + dp[i - 2];</code> sau khi gán dp[0] = dp[1] = 1, các ô khác bằng 0. Với n = 4, dp[4] bằng bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt" data-correct>A. 0</button>
+        <button type="button" class="quiz-opt">B. 5</button>
+        <button type="button" class="quiz-opt">C. 3</button>
+      </div>
+      <p class="quiz-explain">Khi i = 4, dp[3] và dp[2] vẫn đang là 0, nên dp[4] = 0. Sau đó dp[3] = 0 + 0 = 0 và dp[2] = 1 + 1 = 2, nhưng đã muộn. Lỗi do sai thứ tự tính: phải cho i tăng dần để có kết quả đúng là 5.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Bài nào dưới đây <strong>không</strong> nên giải bằng tham lam mà nên dùng QHĐ?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Tìm số lớn nhất trong dãy.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Chú ếch Frog 1: chi phí nhảy nhỏ nhất.</button>
+        <button type="button" class="quiz-opt">C. Tính tổng các số trong dãy.</button>
+      </div>
+      <p class="quiz-explain">Ở Frog 1, nhảy tới đá rẻ hơn ở mỗi bước có thể dẫn tới tổng đắt hơn (ví dụ h = 30, 10, 60, 10, 60, 50: tham lam ra 60, đúng là 40). A và C chỉ cần một vòng lặp đơn giản.</p>
+    </div>
+
+    <p><strong>Câu 6.</strong> Cầu thang 7 bậc, mỗi bước 1 hoặc 2 bậc, bậc 4 và bậc 5 đều hỏng. Điền bảng dp[0..7] và cho biết có bao nhiêu cách lên bậc 7.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>dp[0] = 1, dp[1] = 1, dp[2] = 2, dp[3] = 3, dp[4] = 0 (hỏng), dp[5] = 0 (hỏng), dp[6] = dp[5] + dp[4] = 0, dp[7] = dp[6] + dp[5] = 0. Đáp án: <strong>0 cách</strong>. Giải thích bằng lời: hai bậc hỏng liền nhau tạo ra một “khe” rộng 2 bậc mà bước dài nhất chỉ là 2 bậc, nên từ bậc 3 không thể nhảy qua tới bậc 6.</p>
+    </details>
+
+    <p><strong>Câu 7.</strong> Có n người xếp hàng mua vé. Người i tự mua mất t[i] phút; nếu người i + 1 nhờ người i mua hộ thì cả hai mất r[i] phút. Hãy viết đủ quy trình 4 bước, rồi tính tay với t = 2, 5, 7, 8, 4 và r = 4, 9, 10, 10.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p><strong>Trạng thái:</strong> dp[i] là tổng thời gian nhỏ nhất để phục vụ xong i người đầu hàng. <strong>Công thức:</strong> người i hoặc tự mua, hoặc được người i − 1 mua hộ: dp[i] = min(dp[i − 1] + t[i], dp[i − 2] + r[i − 1]). <strong>Cơ sở:</strong> dp[0] = 0, dp[1] = t[1]. <strong>Đáp án:</strong> dp[n].</p>
+      <p>Tính tay: dp[0] = 0, dp[1] = 2, dp[2] = min(2 + 5, 0 + 4) = 4, dp[3] = min(4 + 7, 2 + 9) = 11, dp[4] = min(11 + 8, 4 + 10) = 14, dp[5] = min(14 + 4, 11 + 10) = <strong>18</strong>. Đây chính là bài NKTICK trong phần bài tập.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Với mỗi bài, em hãy viết quy trình 4 bước ra giấy trước khi code. Bảy bài có đề tiếng Việt; hai bài CSES có tóm tắt tiếng Việt bên dưới.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/fibo">FIBO – Tính số Fibo thứ n</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Với F(1) = F(2) = 1, tính F(n) cho tối đa 5 giá trị n ≤ 50.</p>
+        <p class="ex-skill"><b>Luyện:</b> bảng phương án đầu tiên, dùng <code>long long</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tính sẵn f[1..50] một lần bằng vòng lặp, rồi trả lời từng truy vấn. F(50) khoảng 1,26 · 10<sup>10</sup>, vượt <code>int</code>. Đệ quy thường với n = 50 sẽ quá thời gian.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/vsteps">VSTEPS – Bậc thang</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cầu thang N ≤ 10<sup>5</sup> bậc, có K bậc thủng. Lucky đứng ở bậc 1, mỗi bước lên 1 hoặc 2 bậc. Đếm số cách lên bậc N, lấy dư cho 14062008.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm số cách, bậc hỏng có dp = 0.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chú ý điểm xuất phát là bậc 1 (không phải 0): đặt dp[1] = 1, rồi tính từ i = 2. Bậc thủng giữ dp = 0. Lấy dư sau mỗi phép cộng.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1633">CSES – Dice Combinations | Kết hợp xúc xắc</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đếm số cách tạo tổng n (n ≤ 10<sup>6</sup>) bằng cách gieo xúc xắc một hoặc nhiều lần (thứ tự khác nhau là khác cách), lấy dư cho 10<sup>9</sup> + 7. Bản gốc: <a href="https://cses.fi/problemset/task/1633">CSES 1633</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> leo cầu thang với bước 1..6.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>dp[i] = dp[i − 1] + … + dp[i − 6] (chỉ những chỉ số không âm), dp[0] = 1. Đúng là chương trình mẫu với k = 6.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/atcoder_dp_a">Atcoder DP A – Frog 1</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">N ≤ 10<sup>5</sup> hòn đá; ếch nhảy tới đá i + 1 hoặc i + 2, tốn |h<sub>i</sub> − h<sub>j</sub>|. Tìm chi phí nhỏ nhất từ đá 1 tới đá N. Bản gốc: <a href="https://atcoder.jp/contests/dp/tasks/dp_a">AtCoder DP A</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> QHĐ dạng tối ưu (min).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đã giải chi tiết trong bài. Hãy tự viết lại mà không nhìn code mẫu.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/atcoder_dp_b">Atcoder DP B – Frog 2</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Như Frog 1 nhưng mỗi lần ếch nhảy tới bất kỳ đá nào trong i + 1, …, i + K (K ≤ 100).</p>
+        <p class="ex-skill"><b>Luyện:</b> công thức có vòng lặp bên trong, độ phức tạp O(N·K).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>dp[i] = min theo j từ max(1, i − K) đến i − 1 của dp[j] + |h<sub>i</sub> − h<sub>j</sub>|. Khởi tạo dp bằng một số rất lớn.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nktick">NKTICK – Xếp hàng mua vé</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">N ≤ 60000 người xếp hàng; người i tự mua mất t<sub>i</sub>, hoặc người i + 1 nhờ người i mua hộ thì cả hai mất r<sub>i</sub>. Tìm tổng thời gian nhỏ nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> tự đặt trạng thái theo “bước cuối” cho bài có lời văn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xem câu 7 phần Tự kiểm tra. Bước cuối: người i tự mua, hoặc được người i − 1 mua hộ.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1637">Removing Digits</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 10<sup>6</sup>. Mỗi bước, trừ n đi một chữ số (khác 0) có mặt trong n. Hỏi cần ít nhất bao nhiêu bước để n về 0?</p>
+        <p class="ex-skill"><b>Luyện:</b> trạng thái là chính con số, các lựa chọn thay đổi theo từng trạng thái.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>dp[x] = số bước ít nhất đưa x về 0; dp[0] = 0; dp[x] = 1 + min dp[x − d] với d là các chữ số khác 0 của x. Tính x tăng dần.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/atcoder_dp_c">Atcoder DP C – Vacation</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">N ≤ 10<sup>5</sup> ngày, mỗi ngày chọn một trong ba hoạt động A, B, C với điểm a<sub>i</sub>, b<sub>i</sub>, c<sub>i</sub>; không được chọn cùng một hoạt động hai ngày liền. Tìm tổng điểm lớn nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> thêm một chiều vào trạng thái khi “đang ở ngày nào” chưa đủ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>dp[i][c] = điểm lớn nhất sau i ngày nếu ngày i chọn hoạt động c. Khi tính dp[i][c], lấy max của dp[i − 1] ở hai hoạt động khác c.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1634">Minimizing Coins</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Có n ≤ 100 loại đồng xu (mỗi loại dùng không giới hạn). Tìm số đồng xu ít nhất có tổng đúng bằng x ≤ 10<sup>6</sup>, in −1 nếu không làm được.</p>
+        <p class="ex-skill"><b>Luyện:</b> bài mà tham lam (lấy đồng to nhất trước) sai; giá trị “vô cùng” cho trạng thái không đạt được.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giống leo cầu thang mà “các bước được phép” là mệnh giá đồng xu, nhưng lấy min thay vì cộng: dp[s] = 1 + min dp[s − c]. Phản ví dụ cho tham lam: xu {1, 3, 4}, x = 6.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/dp/basic-problems">VNOI Wiki – Một số bài toán quy hoạch động điển hình</a> (tiếng Việt)</li>
+      <li><a href="https://atcoder.jp/contests/dp">AtCoder – Educational DP Contest</a> (26 bài QHĐ kinh điển, bản dịch tiếng Việt có trên VNOJ với mã <code>atcoder_dp_a</code>, <code>atcoder_dp_b</code>…)</li>
+      <li><a href="https://cp-algorithms.com/dynamic_programming/intro-to-dp.html">CP-Algorithms – Introduction to Dynamic Programming</a> (tiếng Anh)</li>
+      <li><a href="https://usaco.guide/gold/intro-dp">USACO Guide – Introduction to DP</a> (tiếng Anh, nhiều bài luyện theo mức)</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer's Handbook</a>, chương 7 “Dynamic programming” (tiếng Anh, miễn phí)</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>QHĐ = chia thành bài con + giải mỗi bài con <strong>một lần</strong> + lưu vào bảng. Fibonacci n = 45: từ 3,67 tỉ lời gọi xuống 89 lời gọi.</li>
+        <li>Hai điều kiện: <strong>bài con gối nhau</strong> và <strong>cấu trúc con tối ưu</strong> (bài đếm: chia trường hợp không trùng, không sót).</li>
+        <li>Quy trình 4 bước, viết ra giấy: <strong>trạng thái</strong> (một câu), <strong>công thức</strong> (theo bước cuối), <strong>cơ sở</strong>, <strong>đáp án</strong>.</li>
+        <li>Top-down: đệ quy + sổ ghi nhớ (dùng −1 làm “chưa tính”). Bottom-up: vòng lặp điền bảng, tính ô nhỏ trước.</li>
+        <li>Leo cầu thang: dp[i] = dp[i − 1] + dp[i − 2], dp[0] = 1; bậc hỏng thì dp = 0; bước 1..k thì cộng k ô trước.</li>
+        <li>Bài tối ưu (Frog 1): thay cộng bằng min, cộng thêm chi phí bước cuối. Tham lam có thể sai.</li>
+        <li>Độ phức tạp = số trạng thái × chi phí mỗi trạng thái. Chỉ cần vài ô cuối thì giữ vài biến để bộ nhớ O(1).</li>
+        <li>Nhớ <code>long long</code>, lấy dư sau mỗi phép cộng, kiểm tra tay với n = 0, 1, 2, 3.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/dp-intro.js"></script>
+</body>
+</html>

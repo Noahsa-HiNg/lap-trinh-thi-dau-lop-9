@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tham lam · Thi đấu lớp 9</title>
+<meta name="description" content="Thuật toán tham lam: chọn nhiều hoạt động nhất theo giờ kết thúc, xếp lịch giảm tổng thời gian chờ, đổi tiền và phản ví dụ {1, 3, 4}, cái túi phân số, Missing Coin Sum, lập luận hoán đổi và cách tìm phản ví dụ bằng test ngẫu nhiên.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="greedy">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Phát biểu được ý tưởng tham lam: ở mỗi bước chọn phương án tốt nhất trước mắt và không bao giờ quay lại sửa.</li>
+      <li>Cài đặt được bài chọn nhiều hoạt động nhất (sắp theo giờ kết thúc) và bài xếp lịch giảm tổng thời gian chờ (làm việc ngắn trước).</li>
+      <li>Chứng minh được một lời giải tham lam bằng <strong>lập luận hoán đổi</strong> (exchange argument).</li>
+      <li>Chỉ ra được phản ví dụ cho một tiêu chí tham lam sai, ví dụ đổi 6 đồng bằng mệnh giá {1, 3, 4}, và biết khi nào phải chuyển sang quy hoạch động.</li>
+      <li>Viết được chương trình đối chiếu lời giải tham lam với lời giải trâu trên test ngẫu nhiên để tự tìm phản ví dụ.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Thuật toán <strong>tham lam</strong> (greedy) giải bài toán tối ưu bằng cách đi từng bước. Ở mỗi bước, nó chọn phương án <em>trông có vẻ tốt nhất ngay lúc đó</em>, chốt luôn lựa chọn ấy, rồi đi tiếp. Nó không thử lại, không quay lui, không xét xem lựa chọn cũ có làm hỏng tương lai hay không.</p>
+    <p>Nghe thì liều lĩnh, nhưng với rất nhiều bài, cách “ăn ngay phần ngon nhất” lại cho đúng đáp án tối ưu, và chạy cực nhanh: thường chỉ cần sắp xếp một lần rồi duyệt một lượt. Cái khó của tham lam không nằm ở code (code thường chỉ mươi dòng) mà nằm ở hai câu hỏi: <em>tham theo tiêu chí nào?</em> và <em>làm sao biết tiêu chí đó đúng?</em></p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> cô bán hàng cần trả lại em 87 nghìn đồng. Cô không ngồi liệt kê mọi cách ghép tờ tiền. Cô lấy ngay tờ lớn nhất không vượt quá số còn thiếu: tờ 50 nghìn (còn 37), tờ 20 (còn 17), tờ 10 (còn 7), tờ 5 (còn 2), tờ 2 (còn 0). Năm tờ, và đó đúng là ít tờ nhất. Mỗi bước cô chỉ nhìn “bây giờ lấy tờ nào là lớn nhất”, không nghĩ xa hơn. Đó chính là tham lam.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Thuật toán <strong>tham lam</strong> xây dựng lời giải qua một dãy lựa chọn. Tại mỗi bước, nó chọn phần tử tốt nhất theo một <em>tiêu chí cục bộ</em> cố định (lớn nhất, nhỏ nhất, kết thúc sớm nhất…) trong số các phần tử còn hợp lệ, thêm vào lời giải và không bao giờ loại bỏ về sau.</p>
+      <p>Một bài toán có <strong>tính chất lựa chọn tham lam</strong> (greedy-choice property) nếu luôn tồn tại một lời giải tối ưu chứa lựa chọn tham lam đầu tiên. Khi đó, sau lựa chọn này, phần còn lại là một bài toán nhỏ hơn cùng dạng, và ta lặp lại.</p>
+    </div>
+
+    <p>Bài này đi qua năm bài toán kinh điển, mỗi bài dạy một bài học khác nhau:</p>
+    <ul>
+      <li><strong>Chọn nhiều hoạt động nhất</strong>: tham theo giờ kết thúc sớm nhất, chứng minh bằng hoán đổi từng bước. Hai tiêu chí nghe hợp lý khác (bắt đầu sớm nhất, ngắn nhất) đều sai.</li>
+      <li><strong>Xếp lịch giảm tổng thời gian chờ</strong>: việc ngắn làm trước, chứng minh bằng hoán đổi hai việc kề nhau. Bài Tasks and Deadlines là một biến tướng.</li>
+      <li><strong>Đổi tiền</strong>: tham lam đúng với tiền Việt Nam nhưng <em>sai</em> với mệnh giá {1, 3, 4}. Gặp trường hợp này phải dùng <a href="dp-intro.html">quy hoạch động</a>.</li>
+      <li><strong>Cái túi phân số</strong> (tham lam đúng) và <strong>cái túi 0/1</strong> (tham lam sai).</li>
+      <li><strong>Missing Coin Sum</strong>: tham lam đi kèm một bất biến toán học khéo.</li>
+    </ul>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Tham lam xuất hiện ở hầu hết các kỳ thi học sinh giỏi Tin học, thường trong vai một bài “nghĩ thì khó, code thì ngắn”. Những dạng hay gặp:</p>
+    <ul>
+      <li><strong>Lập lịch</strong>: chọn nhiều cuộc họp, buổi chiếu phim, ca làm không chồng nhau nhất; xếp thứ tự làm việc để tổng thời gian chờ hay tổng tiền phạt nhỏ nhất.</li>
+      <li><strong>Trả tiền, chia đồ</strong>: dùng ít tờ tiền nhất với hệ mệnh giá “đẹp”; xếp người lên thuyền, cáp treo sao cho tốn ít chuyến nhất.</li>
+      <li><strong>Ghép cặp sau sắp xếp</strong>: người nặng nhất đi với người nhẹ nhất; điểm đen ghép với điểm trắng kề bên.</li>
+      <li><strong>Chọn theo tỉ lệ</strong>: lấy món có giá trị trên một ki-lô-gam cao nhất trước (cái túi phân số).</li>
+      <li><strong>Bất biến khi duyệt dãy đã sắp</strong>: “mọi số từ 1 đến s đều tạo được”, rồi xét phần tử tiếp theo.</li>
+    </ul>
+    <p>Tham lam cũng là bước đệm cho các thuật toán lớn hơn em sẽ học sau: Dijkstra (luôn mở rộng đỉnh gần nhất), Kruskal (luôn lấy cạnh nhẹ nhất) đều là tham lam đã được chứng minh đúng.</p>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề hỏi “nhiều nhất”, “ít nhất”, “lớn nhất”, “nhỏ nhất” và n lớn (10<sup>5</sup> đến 10<sup>6</sup>), quá lớn để quay lui hay quy hoạch động theo giá trị. Lời giải thường có dạng: <em>sắp xếp theo một tiêu chí</em> rồi <em>duyệt một lượt</em>, mỗi bước quyết định ngay lấy hay bỏ. Nếu em thấy mình muốn nói “cứ lấy cái kết thúc sớm nhất / rẻ nhất / ngắn nhất trước”, đó là lúc nghĩ đến tham lam, và cũng là lúc phải nghi ngờ nó.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu (lễ hội phim).</strong> Một lễ hội chiếu n bộ phim. Phim thứ i chiếu từ thời điểm a<sub>i</sub> đến b<sub>i</sub>. Em chỉ có một đôi mắt, nên không xem được hai phim chồng lên nhau (một phim kết thúc lúc 5 thì phim bắt đầu lúc 5 vẫn xem kịp). Hỏi em xem trọn vẹn được nhiều nhất bao nhiêu phim? Giới hạn: n ≤ 2·10<sup>5</sup>.</p>
+    <p><strong>Cách ngây thơ</strong> là thử mọi tập con các phim, kiểm tra tập nào không có hai phim chồng nhau và lấy tập đông nhất. Có 2<sup>n</sup> tập con. Với n = 20 đã là 2<sup>20</sup> ≈ 10<sup>6</sup> tập, mỗi tập kiểm tra khoảng 20 phép, tức 2·10<sup>7</sup> phép, còn chạy được. Nhưng với n = 60 thì 2<sup>60</sup> ≈ 1,15·10<sup>18</sup> tập, máy tính chạy cả trăm năm. Với n = 2·10<sup>5</sup> thì không thể nghĩ tới.</p>
+    <p><strong>Cách tham lam</strong>: sắp các phim theo giờ kết thúc tăng dần, rồi duyệt một lượt, gặp phim nào bắt đầu không sớm hơn giờ kết thúc của phim vừa chọn thì lấy. Chi phí là một lần sắp xếp <span class="bigo">O(n log n)</span>, với n = 2·10<sup>5</sup> khoảng 2·10<sup>5</sup> × 18 ≈ 3,6·10<sup>6</sup> phép so sánh, cộng một vòng lặp 2·10<sup>5</sup> bước. Chạy chưa tới 0,1 giây.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Thử mọi tập con</h4><p>Luôn đúng nhưng <span class="bigo">O(2<sup>n</sup> · n)</span>. Với n = 20 mất khoảng 2·10<sup>7</sup> phép; n = 60 đã là 7·10<sup>19</sup> phép, không bao giờ xong. Chỉ dùng được để lấy subtask nhỏ hoặc làm lời giải trâu để đối chiếu.</p></div>
+      <div class="good-side"><h4>Tham lam theo giờ kết thúc</h4><p>Sắp xếp rồi duyệt một lượt: <span class="bigo">O(n log n)</span>. Với n = 2·10<sup>5</sup> chỉ khoảng 4·10<sup>6</sup> phép. Đúng với mọi dữ liệu, có chứng minh hẳn hoi (phần Cách hoạt động).</p></div>
+    </div>
+    <p>Nhưng không phải bài nào cũng có lối tắt như vậy. Ở bài đổi tiền với mệnh giá {1, 3, 4}, tham lam cho đáp án <em>sai</em>. Vì vậy học tham lam là học hai việc song song: <strong>tìm tiêu chí</strong> và <strong>kiểm chứng tiêu chí</strong>. Phần còn lại của bài dạy cả hai.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>Khung chung của một lời giải tham lam</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Chọn tiêu chí.</strong> Quyết định “tốt nhất trước mắt” nghĩa là gì: kết thúc sớm nhất, ngắn nhất, lớn nhất, tỉ lệ cao nhất…</div></li>
+      <li><div><strong>Sắp xếp</strong> các phần tử theo tiêu chí đó (hoặc dùng hàng đợi ưu tiên nếu tiêu chí thay đổi khi chạy).</div></li>
+      <li><div><strong>Duyệt một lượt.</strong> Với mỗi phần tử: nếu thêm vào vẫn hợp lệ thì lấy, không thì bỏ. Đã quyết định thì không quay lại.</div></li>
+      <li><div><strong>Kiểm chứng.</strong> Chứng minh bằng hoán đổi, hoặc ít nhất đối chiếu với lời giải trâu trên nhiều test nhỏ ngẫu nhiên.</div></li>
+    </ol>
+
+    <h3>Thuật toán 1: chọn nhiều hoạt động nhất</h3>
+    <p>Đầu vào: n hoạt động, hoạt động i chiếm đoạn thời gian [a<sub>i</sub>, b<sub>i</sub>). Hai hoạt động <em>tương thích</em> nếu cái này kết thúc không muộn hơn lúc cái kia bắt đầu. Cần chọn nhiều hoạt động đôi một tương thích nhất.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Sắp xếp</strong> các hoạt động theo giờ kết thúc b tăng dần.</div></li>
+      <li><div><strong>Khởi tạo</strong> mốc <code>last = −∞</code> (giờ kết thúc của hoạt động vừa chọn) và <code>dem = 0</code>.</div></li>
+      <li><div><strong>Duyệt</strong> theo thứ tự đã sắp. Nếu <code>a ≥ last</code> thì chọn hoạt động này: <code>dem++</code>, <code>last = b</code>. Ngược lại bỏ qua.</div></li>
+      <li><div><strong>Kết thúc.</strong> <code>dem</code> là đáp án.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> ChonHoatDong(a, b, n):
+    sắp các hoạt động theo b <b>tăng dần</b>
+    last ← −∞;  dem ← 0
+    <b>với</b> mỗi hoạt động (a, b) <b>theo thứ tự đã sắp</b>:
+        <b>nếu</b> a ≥ last:          <i>// không chồng lên hoạt động đã chọn</i>
+            dem ← dem + 1
+            last ← b              <i>// mốc mới là giờ kết thúc vừa chọn</i>
+    <b>trả về</b> dem</pre>
+
+    <h3>Thuật toán 2: xếp lịch giảm tổng thời gian chờ</h3>
+    <p>Đầu vào: một quầy phục vụ, n khách, khách i cần t<sub>i</sub> phút. Quầy phục vụ lần lượt từng người, bắt đầu từ thời điểm 0. Khách i xong việc lúc C<sub>i</sub> (tính từ thời điểm 0, gồm cả thời gian xếp hàng lẫn thời gian được phục vụ). Cần xếp thứ tự để <strong>tổng C<sub>i</sub></strong> nhỏ nhất.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Sắp xếp</strong> các khách theo t tăng dần: ai nhanh phục vụ trước.</div></li>
+      <li><div><strong>Cộng dồn</strong>: <code>T</code> là thời điểm hiện tại. Lần lượt cộng <code>T += t</code> rồi <code>tong += T</code>.</div></li>
+      <li><div><strong>Kết thúc.</strong> <code>tong</code> là tổng thời gian chờ nhỏ nhất.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> XepLich(t, n):
+    sắp t <b>tăng dần</b>
+    T ← 0;  tong ← 0
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> n:
+        T ← T + t[i]          <i>// khách i xong lúc T</i>
+        tong ← tong + T
+    <b>trả về</b> tong</pre>
+
+    <h3>Thuật toán 3: đổi tiền tham lam (và khi nào không dùng được)</h3>
+    <p>Đầu vào: các mệnh giá c<sub>1</sub> &lt; c<sub>2</sub> &lt; … &lt; c<sub>k</sub> (luôn có c<sub>1</sub> = 1), mỗi loại có vô hạn tờ, và số tiền S. Cần trả đúng S bằng ít tờ nhất.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Duyệt mệnh giá từ lớn đến nhỏ.</strong></div></li>
+      <li><div><strong>Lấy càng nhiều càng tốt</strong>: dùng <code>S / c</code> tờ mệnh giá c, phần còn lại là <code>S % c</code>.</div></li>
+      <li><div><strong>Kết thúc</strong> khi S = 0 (chắc chắn xảy ra vì có tờ 1 đồng).</div></li>
+      <li><div><strong>Cảnh báo.</strong> Chỉ đúng với một số hệ mệnh giá (như tiền Việt Nam). Với hệ bất kỳ phải dùng quy hoạch động <code>f[s] = min(f[s − c] + 1)</code>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> DoiTienThamLam(c[1..k], S):
+    so ← 0
+    <b>với</b> i <b>từ</b> k <b>xuống</b> 1:        <i>// mệnh giá lớn trước</i>
+        so ← so + S <b>div</b> c[i]
+        S  ← S <b>mod</b> c[i]
+    <b>trả về</b> so</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Phần này trả lời câu hỏi quan trọng nhất của tham lam: <em>vì sao lựa chọn “ăn xổi” lại không làm hỏng đáp án?</em> Công cụ chính là <strong>lập luận hoán đổi</strong>, gồm bốn bước:</p>
+    <ol>
+      <li>Lấy một lời giải tối ưu <strong>bất kỳ</strong> O (em không cần biết nó là gì).</li>
+      <li>Tìm chỗ đầu tiên O khác lời giải tham lam G.</li>
+      <li>Sửa O ở chỗ đó cho giống G (thay, hoặc đổi chỗ hai phần tử) và chỉ ra rằng lời giải mới <strong>vẫn hợp lệ</strong> và <strong>không tệ hơn</strong>.</li>
+      <li>Lặp lại: mỗi lần sửa, O giống G thêm một bước. Cuối cùng O biến thành G mà không bao giờ tệ đi, nên G cũng tối ưu.</li>
+    </ol>
+
+    <h3>Chọn hoạt động: vì sao phải sắp theo giờ kết thúc</h3>
+    <p><strong>Trực giác.</strong> Chọn hoạt động kết thúc sớm nhất nghĩa là “trả lại thời gian” sớm nhất. Phần thời gian còn trống cho các hoạt động sau là lớn nhất có thể.</p>
+    <p><strong>Chứng minh hoán đổi.</strong> Gọi g<sub>1</sub> là hoạt động kết thúc sớm nhất (lựa chọn đầu tiên của tham lam). Lấy một lời giải tối ưu bất kỳ O = {o<sub>1</sub>, o<sub>2</sub>, …, o<sub>m</sub>}, xếp theo giờ kết thúc tăng dần.</p>
+    <ul>
+      <li>Nếu o<sub>1</sub> = g<sub>1</sub>: O đã bắt đầu giống tham lam.</li>
+      <li>Nếu o<sub>1</sub> ≠ g<sub>1</sub>: vì g<sub>1</sub> kết thúc sớm nhất trong <em>tất cả</em> hoạt động nên b(g<sub>1</sub>) ≤ b(o<sub>1</sub>). Hoạt động o<sub>2</sub> bắt đầu không sớm hơn b(o<sub>1</sub>), nên cũng không sớm hơn b(g<sub>1</sub>). Vậy thay o<sub>1</sub> bằng g<sub>1</sub> thì g<sub>1</sub> không chồng lên o<sub>2</sub>, o<sub>3</sub>, … Tập mới O' = {g<sub>1</sub>, o<sub>2</sub>, …, o<sub>m</sub>} vẫn hợp lệ và vẫn có m hoạt động, tức vẫn tối ưu.</li>
+    </ul>
+    <p>Vậy luôn có một lời giải tối ưu bắt đầu bằng g<sub>1</sub>. Bỏ g<sub>1</sub> và mọi hoạt động bắt đầu trước b(g<sub>1</sub>), phần còn lại là bài toán cùng dạng nhưng nhỏ hơn. Tham lam lại lấy hoạt động kết thúc sớm nhất trong phần còn lại, đúng là điều vòng lặp của em làm (nó bỏ qua những phim có a &lt; last). Lặp lập luận trên từng bước, ta biến O thành G mà số hoạt động không giảm. Vậy G tối ưu.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 520 190" width="520" role="img" aria-label="Hoán đổi hoạt động đầu tiên của lời giải tối ưu bằng hoạt động kết thúc sớm nhất">
+        <text class="label-sm" x="10" y="22">Lời giải tối ưu O</text>
+        <rect class="node is-cmp" x="60" y="32" width="150" height="24" rx="5"/><text x="135" y="49" text-anchor="middle">o₁</text>
+        <rect class="node is-ok" x="240" y="32" width="110" height="24" rx="5"/><text x="295" y="49" text-anchor="middle">o₂</text>
+        <rect class="node is-ok" x="380" y="32" width="110" height="24" rx="5"/><text x="435" y="49" text-anchor="middle">o₃</text>
+        <text class="label-sm" x="10" y="92">Hoạt động kết thúc sớm nhất g₁</text>
+        <rect class="node is-active" x="100" y="102" width="80" height="24" rx="5"/><text x="140" y="119" text-anchor="middle">g₁</text>
+        <line class="edge is-active" x1="180" y1="102" x2="180" y2="170"/>
+        <line class="edge" x1="210" y1="32" x2="210" y2="170"/>
+        <line class="edge" x1="240" y1="32" x2="240" y2="170"/>
+        <text class="label-sm" x="168" y="184">b(g₁)</text>
+        <text class="label-sm" x="200" y="160">b(o₁)</text>
+        <text class="label-sm" x="244" y="184">a(o₂)</text>
+        <text class="label-pen" x="300" y="122">b(g₁) ≤ b(o₁) ≤ a(o₂)</text>
+        <text class="label-pen" x="300" y="148">nên thay o₁ bằng g₁ vẫn hợp lệ</text>
+      </svg>
+      <figcaption>Hình 1. Hoán đổi bước đầu: g₁ kết thúc không muộn hơn o₁, nên nằm gọn trước o₂. Số hoạt động giữ nguyên.</figcaption>
+    </figure>
+
+    <h3>Hai tiêu chí nghe hợp lý nhưng sai</h3>
+    <p>Muốn tin một tiêu chí, em phải thử phá nó. Hai “ứng viên” học sinh hay nghĩ tới:</p>
+    <table>
+      <thead><tr><th>Tiêu chí</th><th>Phản ví dụ</th><th>Tham lam chọn</th><th>Tối ưu</th></tr></thead>
+      <tbody>
+        <tr><td>Bắt đầu sớm nhất</td><td>[0, 10), [1, 2), [3, 4)</td><td>[0, 10) rồi hết chỗ: <strong>1</strong> hoạt động</td><td>[1, 2), [3, 4): <strong>2</strong></td></tr>
+        <tr><td>Ngắn nhất</td><td>[0, 5), [4, 7), [6, 10)</td><td>[4, 7) dài 3, chồng cả hai cái kia: <strong>1</strong></td><td>[0, 5), [6, 10): <strong>2</strong></td></tr>
+        <tr class="hl"><td>Kết thúc sớm nhất</td><td>không có phản ví dụ</td><td colspan="2">luôn tối ưu (đã chứng minh ở trên)</td></tr>
+      </tbody>
+    </table>
+    <p>Chỉ cần <strong>một</strong> phản ví dụ là đủ bác bỏ một tiêu chí. Ngược lại, thử mười ví dụ thấy đúng vẫn chưa phải là chứng minh.</p>
+
+    <h3>Xếp lịch: vì sao việc ngắn làm trước</h3>
+    <p>Giả sử trong một thứ tự nào đó có hai khách <strong>kề nhau</strong> i rồi j, với t<sub>i</sub> &gt; t<sub>j</sub> (người chậm đứng trước người nhanh). Gọi T là thời điểm bắt đầu phục vụ người i. Hãy so trước và sau khi đổi chỗ hai người:</p>
+    <table>
+      <thead><tr><th></th><th>Thứ tự i, j</th><th>Thứ tự j, i</th></tr></thead>
+      <tbody>
+        <tr><td>Người đứng trước xong lúc</td><td>T + t<sub>i</sub></td><td>T + t<sub>j</sub></td></tr>
+        <tr><td>Người đứng sau xong lúc</td><td>T + t<sub>i</sub> + t<sub>j</sub></td><td>T + t<sub>j</sub> + t<sub>i</sub></td></tr>
+        <tr class="hl"><td>Tổng của hai người</td><td>2T + 2t<sub>i</sub> + t<sub>j</sub></td><td>2T + 2t<sub>j</sub> + t<sub>i</sub></td></tr>
+      </tbody>
+    </table>
+    <p>Mọi người khác không bị ảnh hưởng: người đứng trước cặp này vẫn xong như cũ, người đứng sau vẫn bắt đầu lúc T + t<sub>i</sub> + t<sub>j</sub>. Vậy đổi chỗ làm tổng giảm đúng <span class="math">(2t<sub>i</sub> + t<sub>j</sub>) − (2t<sub>j</sub> + t<sub>i</sub>) = t<sub>i</sub> − t<sub>j</sub> &gt; 0</span>.</p>
+    <p>Nghĩa là: <strong>thứ tự nào còn một cặp kề nhau “chậm trước, nhanh sau” thì chưa tối ưu</strong>, vì đổi cặp đó sẽ tốt hơn. Thứ tự không còn cặp nào như thế chính là thứ tự t tăng dần. Đây là lập luận giống hệt sắp xếp nổi bọt: cứ đổi các cặp kề sai thứ tự, tổng chỉ giảm, cuối cùng ta được dãy đã sắp.</p>
+    <p><strong>Tasks and Deadlines</strong> (CSES 1630) là cùng bài này đội lốt: phần thưởng mỗi việc là d − f (thời hạn trừ thời điểm xong). Tổng thưởng = (tổng d) − (tổng f). Tổng d cố định dù làm theo thứ tự nào, nên chỉ cần tổng f nhỏ nhất, tức là làm việc ngắn trước. Thời hạn d <em>không hề</em> ảnh hưởng thứ tự!</p>
+
+    <h3>Đổi tiền: vì sao đúng với tiền Việt Nam, sai với {1, 3, 4}</h3>
+    <p>Tiền Việt Nam (tính theo nghìn đồng) có các mệnh giá 1, 2, 5, 10, 20, 50, 100, 200, 500. Xét một cách trả <strong>ít tờ nhất</strong> bất kỳ. Nó phải thỏa:</p>
+    <ul>
+      <li>Có nhiều nhất một tờ 1 (hai tờ 1 đổi thành một tờ 2, bớt một tờ).</li>
+      <li>Có nhiều nhất hai tờ 2 (ba tờ 2 = 6 = 5 + 1, ba tờ thành hai tờ), và không có cùng lúc hai tờ 2 với một tờ 1 (2 + 2 + 1 = 5, ba tờ thành một tờ).</li>
+      <li>Vậy phần dùng tờ 1 và 2 có tổng nhiều nhất là 4. Thêm tối đa một tờ 5 (hai tờ 5 đổi thành tờ 10), phần nhỏ hơn 10 có tổng nhiều nhất 9.</li>
+    </ul>
+    <p>Phần nhỏ hơn 10 có tổng ≤ 9 &lt; 10, nên số tờ 10 trở lên phải gánh gần hết. Lặp lại lập luận cho các bậc 10–20–50, 100–200–500 (cùng khuôn 1–2–5), ta thấy ở mỗi bậc, tổng các tờ nhỏ hơn mệnh giá c luôn bé hơn c. Do đó cách tối ưu phải dùng đúng S div c tờ c ở mệnh giá lớn nhất, đó chính là việc tham lam làm.</p>
+    <p>Với mệnh giá {1, 3, 4} và S = 6, tham lam lấy 4 trước (còn 2), rồi 1 + 1: tổng <strong>3 tờ</strong>. Nhưng 3 + 3 chỉ cần <strong>2 tờ</strong>. Lập luận ở trên gãy vì hai tờ 3 (tổng 6) vượt quá 4 mà lại không đổi được thành ít tờ hơn có chứa tờ 4. Khi tham lam sai, ta dùng <a href="knapsack.html">quy hoạch động đổi tiền</a>: f[s] = số tờ ít nhất để trả s, f[s] = min(f[s − c] + 1) với mọi mệnh giá c ≤ s.</p>
+    <table class="trace">
+      <thead><tr><th>s</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead>
+      <tbody>
+        <tr><td>Tham lam</td><td>0</td><td>1</td><td>2</td><td>1</td><td>1</td><td>2 (4+1)</td><td>3 (4+1+1)</td></tr>
+        <tr class="hl"><td>Tối ưu f[s]</td><td>0</td><td>1</td><td>2</td><td>1</td><td>1</td><td>2</td><td>2 (3+3)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Mọi thuật toán tham lam ở trên đều gồm một lần sắp xếp <span class="bigo">O(n log n)</span> và một vòng lặp <span class="bigo">O(n)</span>, mỗi phần tử chỉ được xét đúng một lần, quyết định trong <span class="bigo">O(1)</span>. Tham lam nhanh vì nó <em>không bao giờ xét lại</em>: nó chỉ đi một con đường duy nhất trong cây lựa chọn khổng lồ mà quay lui phải duyệt hết. Cái giá phải trả là phải chứng minh con đường ấy dẫn tới đích.</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Tham lam đúng thì đẹp, sai thì mất trắng điểm. Trước khi nộp, em hãy tự hỏi: “Mình đã thử phá tiêu chí này chưa?”</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <h3>Ví dụ 1: chọn nhiều phim nhất</h3>
+    <p>Bảy phim A–G với giờ chiếu: A 1–3, B 2–5, C 4–7, D 1–8, E 5–9, F 8–10, G 9–11. Đường dọc màu nhấn là <strong>mốc</strong> (giờ kết thúc của phim vừa chọn). Thanh xanh là phim được chọn, thanh đỏ là phim bị loại. Em bấm qua từng bước và tự đoán trước quyết định ở mỗi bước.</p>
+<div class="stepper" data-title="Chọn nhiều phim nhất: sắp theo giờ kết thúc">
+<div class="frame" data-caption="&lt;b&gt;Đầu vào.&lt;/b&gt; Bảy phim, mỗi thanh là một phim từ lúc bắt đầu đến lúc kết thúc. Thứ tự đề cho lộn xộn, nhìn vào rất khó chọn.">
+<figure class="diagram"><svg viewBox="0 0 520 260" width="520" role="img" aria-label="Dòng thời gian bảy phim">
+<line class="edge" x1="50" y1="238" x2="506" y2="238"/>
+<text class="label-sm" x="50" y="254" text-anchor="middle">0</text>
+<text class="label-sm" x="88" y="254" text-anchor="middle">1</text>
+<text class="label-sm" x="126" y="254" text-anchor="middle">2</text>
+<text class="label-sm" x="164" y="254" text-anchor="middle">3</text>
+<text class="label-sm" x="202" y="254" text-anchor="middle">4</text>
+<text class="label-sm" x="240" y="254" text-anchor="middle">5</text>
+<text class="label-sm" x="278" y="254" text-anchor="middle">6</text>
+<text class="label-sm" x="316" y="254" text-anchor="middle">7</text>
+<text class="label-sm" x="354" y="254" text-anchor="middle">8</text>
+<text class="label-sm" x="392" y="254" text-anchor="middle">9</text>
+<text class="label-sm" x="430" y="254" text-anchor="middle">10</text>
+<text class="label-sm" x="468" y="254" text-anchor="middle">11</text>
+<text class="label-sm" x="506" y="254" text-anchor="middle">12</text>
+<text x="30" y="51" text-anchor="middle">D</text>
+<rect class="node" x="88" y="36" width="266" height="20" rx="5"/>
+<text class="label-sm" x="221.0" y="50" text-anchor="middle">1–8</text>
+<text x="30" y="81" text-anchor="middle">B</text>
+<rect class="node" x="126" y="66" width="114" height="20" rx="5"/>
+<text class="label-sm" x="183.0" y="80" text-anchor="middle">2–5</text>
+<text x="30" y="111" text-anchor="middle">G</text>
+<rect class="node" x="392" y="96" width="76" height="20" rx="5"/>
+<text class="label-sm" x="430.0" y="110" text-anchor="middle">9–11</text>
+<text x="30" y="141" text-anchor="middle">A</text>
+<rect class="node" x="88" y="126" width="76" height="20" rx="5"/>
+<text class="label-sm" x="126.0" y="140" text-anchor="middle">1–3</text>
+<text x="30" y="171" text-anchor="middle">E</text>
+<rect class="node" x="240" y="156" width="152" height="20" rx="5"/>
+<text class="label-sm" x="316.0" y="170" text-anchor="middle">5–9</text>
+<text x="30" y="201" text-anchor="middle">C</text>
+<rect class="node" x="202" y="186" width="114" height="20" rx="5"/>
+<text class="label-sm" x="259.0" y="200" text-anchor="middle">4–7</text>
+<text x="30" y="231" text-anchor="middle">F</text>
+<rect class="node" x="354" y="216" width="76" height="20" rx="5"/>
+<text class="label-sm" x="392.0" y="230" text-anchor="middle">8–10</text>
+</svg></figure></div>
+<div class="frame" data-caption="&lt;b&gt;Bước 1: sắp xếp.&lt;/b&gt; Xếp lại theo thời điểm kết thúc tăng dần: A(3), B(5), C(7), D(8), E(9), F(10), G(11). Chưa chọn phim nào nên chưa có mốc.">
+<figure class="diagram"><svg viewBox="0 0 520 260" width="520" role="img" aria-label="Dòng thời gian bảy phim">
+<line class="edge" x1="50" y1="238" x2="506" y2="238"/>
+<text class="label-sm" x="50" y="254" text-anchor="middle">0</text>
+<text class="label-sm" x="88" y="254" text-anchor="middle">1</text>
+<text class="label-sm" x="126" y="254" text-anchor="middle">2</text>
+<text class="label-sm" x="164" y="254" text-anchor="middle">3</text>
+<text class="label-sm" x="202" y="254" text-anchor="middle">4</text>
+<text class="label-sm" x="240" y="254" text-anchor="middle">5</text>
+<text class="label-sm" x="278" y="254" text-anchor="middle">6</text>
+<text class="label-sm" x="316" y="254" text-anchor="middle">7</text>
+<text class="label-sm" x="354" y="254" text-anchor="middle">8</text>
+<text class="label-sm" x="392" y="254" text-anchor="middle">9</text>
+<text class="label-sm" x="430" y="254" text-anchor="middle">10</text>
+<text class="label-sm" x="468" y="254" text-anchor="middle">11</text>
+<text class="label-sm" x="506" y="254" text-anchor="middle">12</text>
+<text x="30" y="51" text-anchor="middle">A</text>
+<rect class="node" x="88" y="36" width="76" height="20" rx="5"/>
+<text class="label-sm" x="126.0" y="50" text-anchor="middle">1–3</text>
+<text x="30" y="81" text-anchor="middle">B</text>
+<rect class="node" x="126" y="66" width="114" height="20" rx="5"/>
+<text class="label-sm" x="183.0" y="80" text-anchor="middle">2–5</text>
+<text x="30" y="111" text-anchor="middle">C</text>
+<rect class="node" x="202" y="96" width="114" height="20" rx="5"/>
+<text class="label-sm" x="259.0" y="110" text-anchor="middle">4–7</text>
+<text x="30" y="141" text-anchor="middle">D</text>
+<rect class="node" x="88" y="126" width="266" height="20" rx="5"/>
+<text class="label-sm" x="221.0" y="140" text-anchor="middle">1–8</text>
+<text x="30" y="171" text-anchor="middle">E</text>
+<rect class="node" x="240" y="156" width="152" height="20" rx="5"/>
+<text class="label-sm" x="316.0" y="170" text-anchor="middle">5–9</text>
+<text x="30" y="201" text-anchor="middle">F</text>
+<rect class="node" x="354" y="186" width="76" height="20" rx="5"/>
+<text class="label-sm" x="392.0" y="200" text-anchor="middle">8–10</text>
+<text x="30" y="231" text-anchor="middle">G</text>
+<rect class="node" x="392" y="216" width="76" height="20" rx="5"/>
+<text class="label-sm" x="430.0" y="230" text-anchor="middle">9–11</text>
+</svg></figure></div>
+<div class="frame" data-caption="&lt;b&gt;Xét A (1–3).&lt;/b&gt; Chưa chọn gì nên lấy luôn. A kết thúc sớm nhất, để lại nhiều thời gian nhất cho phần sau. Mốc mới = 3. Đã chọn: 1 phim.">
+<figure class="diagram"><svg viewBox="0 0 520 260" width="520" role="img" aria-label="Dòng thời gian bảy phim">
+<line class="edge" x1="50" y1="238" x2="506" y2="238"/>
+<text class="label-sm" x="50" y="254" text-anchor="middle">0</text>
+<text class="label-sm" x="88" y="254" text-anchor="middle">1</text>
+<text class="label-sm" x="126" y="254" text-anchor="middle">2</text>
+<text class="label-sm" x="164" y="254" text-anchor="middle">3</text>
+<text class="label-sm" x="202" y="254" text-anchor="middle">4</text>
+<text class="label-sm" x="240" y="254" text-anchor="middle">5</text>
+<text class="label-sm" x="278" y="254" text-anchor="middle">6</text>
+<text class="label-sm" x="316" y="254" text-anchor="middle">7</text>
+<text class="label-sm" x="354" y="254" text-anchor="middle">8</text>
+<text class="label-sm" x="392" y="254" text-anchor="middle">9</text>
+<text class="label-sm" x="430" y="254" text-anchor="middle">10</text>
+<text class="label-sm" x="468" y="254" text-anchor="middle">11</text>
+<text class="label-sm" x="506" y="254" text-anchor="middle">12</text>
+<line class="edge is-active" x1="164" y1="12" x2="164" y2="238"/>
+<text class="label-pen" x="169" y="24">mốc = 3</text>
+<text x="30" y="51" text-anchor="middle">A</text>
+<rect class="node is-ok" x="88" y="36" width="76" height="20" rx="5"/>
+<text class="label-sm" x="126.0" y="50" text-anchor="middle">1–3</text>
+<text x="30" y="81" text-anchor="middle">B</text>
+<rect class="node" x="126" y="66" width="114" height="20" rx="5"/>
+<text class="label-sm" x="183.0" y="80" text-anchor="middle">2–5</text>
+<text x="30" y="111" text-anchor="middle">C</text>
+<rect class="node" x="202" y="96" width="114" height="20" rx="5"/>
+<text class="label-sm" x="259.0" y="110" text-anchor="middle">4–7</text>
+<text x="30" y="141" text-anchor="middle">D</text>
+<rect class="node" x="88" y="126" width="266" height="20" rx="5"/>
+<text class="label-sm" x="221.0" y="140" text-anchor="middle">1–8</text>
+<text x="30" y="171" text-anchor="middle">E</text>
+<rect class="node" x="240" y="156" width="152" height="20" rx="5"/>
+<text class="label-sm" x="316.0" y="170" text-anchor="middle">5–9</text>
+<text x="30" y="201" text-anchor="middle">F</text>
+<rect class="node" x="354" y="186" width="76" height="20" rx="5"/>
+<text class="label-sm" x="392.0" y="200" text-anchor="middle">8–10</text>
+<text x="30" y="231" text-anchor="middle">G</text>
+<rect class="node" x="392" y="216" width="76" height="20" rx="5"/>
+<text class="label-sm" x="430.0" y="230" text-anchor="middle">9–11</text>
+</svg></figure></div>
+<div class="frame" data-caption="&lt;b&gt;Xét B (2–5).&lt;/b&gt; B bắt đầu lúc 2, sớm hơn mốc 3, tức là chồng lên A. Loại B.">
+<figure class="diagram"><svg viewBox="0 0 520 260" width="520" role="img" aria-label="Dòng thời gian bảy phim">
+<line class="edge" x1="50" y1="238" x2="506" y2="238"/>
+<text class="label-sm" x="50" y="254" text-anchor="middle">0</text>
+<text class="label-sm" x="88" y="254" text-anchor="middle">1</text>
+<text class="label-sm" x="126" y="254" text-anchor="middle">2</text>
+<text class="label-sm" x="164" y="254" text-anchor="middle">3</text>
+<text class="label-sm" x="202" y="254" text-anchor="middle">4</text>
+<text class="label-sm" x="240" y="254" text-anchor="middle">5</text>
+<text class="label-sm" x="278" y="254" text-anchor="middle">6</text>
+<text class="label-sm" x="316" y="254" text-anchor="middle">7</text>
+<text class="label-sm" x="354" y="254" text-anchor="middle">8</text>
+<text class="label-sm" x="392" y="254" text-anchor="middle">9</text>
+<text class="label-sm" x="430" y="254" text-anchor="middle">10</text>
+<text class="label-sm" x="468" y="254" text-anchor="middle">11</text>
+<text class="label-sm" x="506" y="254" text-anchor="middle">12</text>
+<line class="edge is-active" x1="164" y1="12" x2="164" y2="238"/>
+<text class="label-pen" x="169" y="24">mốc = 3</text>
+<text x="30" y="51" text-anchor="middle">A</text>
+<rect class="node is-ok" x="88" y="36" width="76" height="20" rx="5"/>
+<text class="label-sm" x="126.0" y="50" text-anchor="middle">1–3</text>
+<text x="30" y="81" text-anchor="middle">B</text>
+<rect class="node is-bad" x="126" y="66" width="114" height="20" rx="5"/>
+<text class="label-sm" x="183.0" y="80" text-anchor="middle">2–5</text>
+<text x="30" y="111" text-anchor="middle">C</text>
+<rect class="node" x="202" y="96" width="114" height="20" rx="5"/>
+<text class="label-sm" x="259.0" y="110" text-anchor="middle">4–7</text>
+<text x="30" y="141" text-anchor="middle">D</text>
+<rect class="node" x="88" y="126" width="266" height="20" rx="5"/>
+<text class="label-sm" x="221.0" y="140" text-anchor="middle">1–8</text>
+<text x="30" y="171" text-anchor="middle">E</text>
+<rect class="node" x="240" y="156" width="152" height="20" rx="5"/>
+<text class="label-sm" x="316.0" y="170" text-anchor="middle">5–9</text>
+<text x="30" y="201" text-anchor="middle">F</text>
+<rect class="node" x="354" y="186" width="76" height="20" rx="5"/>
+<text class="label-sm" x="392.0" y="200" text-anchor="middle">8–10</text>
+<text x="30" y="231" text-anchor="middle">G</text>
+<rect class="node" x="392" y="216" width="76" height="20" rx="5"/>
+<text class="label-sm" x="430.0" y="230" text-anchor="middle">9–11</text>
+</svg></figure></div>
+<div class="frame" data-caption="&lt;b&gt;Xét C (4–7).&lt;/b&gt; 4 ≥ 3 nên C không chồng lên A. Chọn C, mốc mới = 7. Đã chọn: 2 phim.">
+<figure class="diagram"><svg viewBox="0 0 520 260" width="520" role="img" aria-label="Dòng thời gian bảy phim">
+<line class="edge" x1="50" y1="238" x2="506" y2="238"/>
+<text class="label-sm" x="50" y="254" text-anchor="middle">0</text>
+<text class="label-sm" x="88" y="254" text-anchor="middle">1</text>
+<text class="label-sm" x="126" y="254" text-anchor="middle">2</text>
+<text class="label-sm" x="164" y="254" text-anchor="middle">3</text>
+<text class="label-sm" x="202" y="254" text-anchor="middle">4</text>
+<text class="label-sm" x="240" y="254" text-anchor="middle">5</text>
+<text class="label-sm" x="278" y="254" text-anchor="middle">6</text>
+<text class="label-sm" x="316" y="254" text-anchor="middle">7</text>
+<text class="label-sm" x="354" y="254" text-anchor="middle">8</text>
+<text class="label-sm" x="392" y="254" text-anchor="middle">9</text>
+<text class="label-sm" x="430" y="254" text-anchor="middle">10</text>
+<text class="label-sm" x="468" y="254" text-anchor="middle">11</text>
+<text class="label-sm" x="506" y="254" text-anchor="middle">12</text>
+<line class="edge is-active" x1="316" y1="12" x2="316" y2="238"/>
+<text class="label-pen" x="321" y="24">mốc = 7</text>
+<text x="30" y="51" text-anchor="middle">A</text>
+<rect class="node is-ok" x="88" y="36" width="76" height="20" rx="5"/>
+<text class="label-sm" x="126.0" y="50" text-anchor="middle">1–3</text>
+<text x="30" y="81" text-anchor="middle">B</text>
+<rect class="node is-bad" x="126" y="66" width="114" height="20" rx="5"/>
+<text class="label-sm" x="183.0" y="80" text-anchor="middle">2–5</text>
+<text x="30" y="111" text-anchor="middle">C</text>
+<rect class="node is-ok" x="202" y="96" width="114" height="20" rx="5"/>
+<text class="label-sm" x="259.0" y="110" text-anchor="middle">4–7</text>
+<text x="30" y="141" text-anchor="middle">D</text>
+<rect class="node" x="88" y="126" width="266" height="20" rx="5"/>
+<text class="label-sm" x="221.0" y="140" text-anchor="middle">1–8</text>
+<text x="30" y="171" text-anchor="middle">E</text>
+<rect class="node" x="240" y="156" width="152" height="20" rx="5"/>
+<text class="label-sm" x="316.0" y="170" text-anchor="middle">5–9</text>
+<text x="30" y="201" text-anchor="middle">F</text>
+<rect class="node" x="354" y="186" width="76" height="20" rx="5"/>
+<text class="label-sm" x="392.0" y="200" text-anchor="middle">8–10</text>
+<text x="30" y="231" text-anchor="middle">G</text>
+<rect class="node" x="392" y="216" width="76" height="20" rx="5"/>
+<text class="label-sm" x="430.0" y="230" text-anchor="middle">9–11</text>
+</svg></figure></div>
+<div class="frame" data-caption="&lt;b&gt;Xét D (1–8).&lt;/b&gt; 1 &lt; 7, chồng lên phim đã chọn. Loại.">
+<figure class="diagram"><svg viewBox="0 0 520 260" width="520" role="img" aria-label="Dòng thời gian bảy phim">
+<line class="edge" x1="50" y1="238" x2="506" y2="238"/>
+<text class="label-sm" x="50" y="254" text-anchor="middle">0</text>
+<text class="label-sm" x="88" y="254" text-anchor="middle">1</text>
+<text class="label-sm" x="126" y="254" text-anchor="middle">2</text>
+<text class="label-sm" x="164" y="254" text-anchor="middle">3</text>
+<text class="label-sm" x="202" y="254" text-anchor="middle">4</text>
+<text class="label-sm" x="240" y="254" text-anchor="middle">5</text>
+<text class="label-sm" x="278" y="254" text-anchor="middle">6</text>
+<text class="label-sm" x="316" y="254" text-anchor="middle">7</text>
+<text class="label-sm" x="354" y="254" text-anchor="middle">8</text>
+<text class="label-sm" x="392" y="254" text-anchor="middle">9</text>
+<text class="label-sm" x="430" y="254" text-anchor="middle">10</text>
+<text class="label-sm" x="468" y="254" text-anchor="middle">11</text>
+<text class="label-sm" x="506" y="254" text-anchor="middle">12</text>
+<line class="edge is-active" x1="316" y1="12" x2="316" y2="238"/>
+<text class="label-pen" x="321" y="24">mốc = 7</text>
+<text x="30" y="51" text-anchor="middle">A</text>
+<rect class="node is-ok" x="88" y="36" width="76" height="20" rx="5"/>
+<text class="label-sm" x="126.0" y="50" text-anchor="middle">1–3</text>
+<text x="30" y="81" text-anchor="middle">B</text>
+<rect class="node is-bad" x="126" y="66" width="114" height="20" rx="5"/>
+<text class="label-sm" x="183.0" y="80" text-anchor="middle">2–5</text>
+<text x="30" y="111" text-anchor="middle">C</text>
+<rect class="node is-ok" x="202" y="96" width="114" height="20" rx="5"/>
+<text class="label-sm" x="259.0" y="110" text-anchor="middle">4–7</text>
+<text x="30" y="141" text-anchor="middle">D</text>
+<rect class="node is-bad" x="88" y="126" width="266" height="20" rx="5"/>
+<text class="label-sm" x="221.0" y="140" text-anchor="middle">1–8</text>
+<text x="30" y="171" text-anchor="middle">E</text>
+<rect class="node" x="240" y="156" width="152" height="20" rx="5"/>
+<text class="label-sm" x="316.0" y="170" text-anchor="middle">5–9</text>
+<text x="30" y="201" text-anchor="middle">F</text>
+<rect class="node" x="354" y="186" width="76" height="20" rx="5"/>
+<text class="label-sm" x="392.0" y="200" text-anchor="middle">8–10</text>
+<text x="30" y="231" text-anchor="middle">G</text>
+<rect class="node" x="392" y="216" width="76" height="20" rx="5"/>
+<text class="label-sm" x="430.0" y="230" text-anchor="middle">9–11</text>
+</svg></figure></div>
+<div class="frame" data-caption="&lt;b&gt;Xét E (5–9).&lt;/b&gt; 5 &lt; 7, chồng lên C. Loại.">
+<figure class="diagram"><svg viewBox="0 0 520 260" width="520" role="img" aria-label="Dòng thời gian bảy phim">
+<line class="edge" x1="50" y1="238" x2="506" y2="238"/>
+<text class="label-sm" x="50" y="254" text-anchor="middle">0</text>
+<text class="label-sm" x="88" y="254" text-anchor="middle">1</text>
+<text class="label-sm" x="126" y="254" text-anchor="middle">2</text>
+<text class="label-sm" x="164" y="254" text-anchor="middle">3</text>
+<text class="label-sm" x="202" y="254" text-anchor="middle">4</text>
+<text class="label-sm" x="240" y="254" text-anchor="middle">5</text>
+<text class="label-sm" x="278" y="254" text-anchor="middle">6</text>
+<text class="label-sm" x="316" y="254" text-anchor="middle">7</text>
+<text class="label-sm" x="354" y="254" text-anchor="middle">8</text>
+<text class="label-sm" x="392" y="254" text-anchor="middle">9</text>
+<text class="label-sm" x="430" y="254" text-anchor="middle">10</text>
+<text class="label-sm" x="468" y="254" text-anchor="middle">11</text>
+<text class="label-sm" x="506" y="254" text-anchor="middle">12</text>
+<line class="edge is-active" x1="316" y1="12" x2="316" y2="238"/>
+<text class="label-pen" x="321" y="24">mốc = 7</text>
+<text x="30" y="51" text-anchor="middle">A</text>
+<rect class="node is-ok" x="88" y="36" width="76" height="20" rx="5"/>
+<text class="label-sm" x="126.0" y="50" text-anchor="middle">1–3</text>
+<text x="30" y="81" text-anchor="middle">B</text>
+<rect class="node is-bad" x="126" y="66" width="114" height="20" rx="5"/>
+<text class="label-sm" x="183.0" y="80" text-anchor="middle">2–5</text>
+<text x="30" y="111" text-anchor="middle">C</text>
+<rect class="node is-ok" x="202" y="96" width="114" height="20" rx="5"/>
+<text class="label-sm" x="259.0" y="110" text-anchor="middle">4–7</text>
+<text x="30" y="141" text-anchor="middle">D</text>
+<rect class="node is-bad" x="88" y="126" width="266" height="20" rx="5"/>
+<text class="label-sm" x="221.0" y="140" text-anchor="middle">1–8</text>
+<text x="30" y="171" text-anchor="middle">E</text>
+<rect class="node is-bad" x="240" y="156" width="152" height="20" rx="5"/>
+<text class="label-sm" x="316.0" y="170" text-anchor="middle">5–9</text>
+<text x="30" y="201" text-anchor="middle">F</text>
+<rect class="node" x="354" y="186" width="76" height="20" rx="5"/>
+<text class="label-sm" x="392.0" y="200" text-anchor="middle">8–10</text>
+<text x="30" y="231" text-anchor="middle">G</text>
+<rect class="node" x="392" y="216" width="76" height="20" rx="5"/>
+<text class="label-sm" x="430.0" y="230" text-anchor="middle">9–11</text>
+</svg></figure></div>
+<div class="frame" data-caption="&lt;b&gt;Xét F (8–10).&lt;/b&gt; 8 ≥ 7, chọn F, mốc mới = 10. Đã chọn: 3 phim.">
+<figure class="diagram"><svg viewBox="0 0 520 260" width="520" role="img" aria-label="Dòng thời gian bảy phim">
+<line class="edge" x1="50" y1="238" x2="506" y2="238"/>
+<text class="label-sm" x="50" y="254" text-anchor="middle">0</text>
+<text class="label-sm" x="88" y="254" text-anchor="middle">1</text>
+<text class="label-sm" x="126" y="254" text-anchor="middle">2</text>
+<text class="label-sm" x="164" y="254" text-anchor="middle">3</text>
+<text class="label-sm" x="202" y="254" text-anchor="middle">4</text>
+<text class="label-sm" x="240" y="254" text-anchor="middle">5</text>
+<text class="label-sm" x="278" y="254" text-anchor="middle">6</text>
+<text class="label-sm" x="316" y="254" text-anchor="middle">7</text>
+<text class="label-sm" x="354" y="254" text-anchor="middle">8</text>
+<text class="label-sm" x="392" y="254" text-anchor="middle">9</text>
+<text class="label-sm" x="430" y="254" text-anchor="middle">10</text>
+<text class="label-sm" x="468" y="254" text-anchor="middle">11</text>
+<text class="label-sm" x="506" y="254" text-anchor="middle">12</text>
+<line class="edge is-active" x1="430" y1="12" x2="430" y2="238"/>
+<text class="label-pen" x="435" y="24">mốc = 10</text>
+<text x="30" y="51" text-anchor="middle">A</text>
+<rect class="node is-ok" x="88" y="36" width="76" height="20" rx="5"/>
+<text class="label-sm" x="126.0" y="50" text-anchor="middle">1–3</text>
+<text x="30" y="81" text-anchor="middle">B</text>
+<rect class="node is-bad" x="126" y="66" width="114" height="20" rx="5"/>
+<text class="label-sm" x="183.0" y="80" text-anchor="middle">2–5</text>
+<text x="30" y="111" text-anchor="middle">C</text>
+<rect class="node is-ok" x="202" y="96" width="114" height="20" rx="5"/>
+<text class="label-sm" x="259.0" y="110" text-anchor="middle">4–7</text>
+<text x="30" y="141" text-anchor="middle">D</text>
+<rect class="node is-bad" x="88" y="126" width="266" height="20" rx="5"/>
+<text class="label-sm" x="221.0" y="140" text-anchor="middle">1–8</text>
+<text x="30" y="171" text-anchor="middle">E</text>
+<rect class="node is-bad" x="240" y="156" width="152" height="20" rx="5"/>
+<text class="label-sm" x="316.0" y="170" text-anchor="middle">5–9</text>
+<text x="30" y="201" text-anchor="middle">F</text>
+<rect class="node is-ok" x="354" y="186" width="76" height="20" rx="5"/>
+<text class="label-sm" x="392.0" y="200" text-anchor="middle">8–10</text>
+<text x="30" y="231" text-anchor="middle">G</text>
+<rect class="node" x="392" y="216" width="76" height="20" rx="5"/>
+<text class="label-sm" x="430.0" y="230" text-anchor="middle">9–11</text>
+</svg></figure></div>
+<div class="frame" data-caption="&lt;b&gt;Xét G (9–11).&lt;/b&gt; 9 &lt; 10, chồng lên F. Loại. Hết danh sách: đáp án là 3 phim A, C, F.">
+<figure class="diagram"><svg viewBox="0 0 520 260" width="520" role="img" aria-label="Dòng thời gian bảy phim">
+<line class="edge" x1="50" y1="238" x2="506" y2="238"/>
+<text class="label-sm" x="50" y="254" text-anchor="middle">0</text>
+<text class="label-sm" x="88" y="254" text-anchor="middle">1</text>
+<text class="label-sm" x="126" y="254" text-anchor="middle">2</text>
+<text class="label-sm" x="164" y="254" text-anchor="middle">3</text>
+<text class="label-sm" x="202" y="254" text-anchor="middle">4</text>
+<text class="label-sm" x="240" y="254" text-anchor="middle">5</text>
+<text class="label-sm" x="278" y="254" text-anchor="middle">6</text>
+<text class="label-sm" x="316" y="254" text-anchor="middle">7</text>
+<text class="label-sm" x="354" y="254" text-anchor="middle">8</text>
+<text class="label-sm" x="392" y="254" text-anchor="middle">9</text>
+<text class="label-sm" x="430" y="254" text-anchor="middle">10</text>
+<text class="label-sm" x="468" y="254" text-anchor="middle">11</text>
+<text class="label-sm" x="506" y="254" text-anchor="middle">12</text>
+<line class="edge is-active" x1="430" y1="12" x2="430" y2="238"/>
+<text class="label-pen" x="435" y="24">mốc = 10</text>
+<text x="30" y="51" text-anchor="middle">A</text>
+<rect class="node is-ok" x="88" y="36" width="76" height="20" rx="5"/>
+<text class="label-sm" x="126.0" y="50" text-anchor="middle">1–3</text>
+<text x="30" y="81" text-anchor="middle">B</text>
+<rect class="node is-bad" x="126" y="66" width="114" height="20" rx="5"/>
+<text class="label-sm" x="183.0" y="80" text-anchor="middle">2–5</text>
+<text x="30" y="111" text-anchor="middle">C</text>
+<rect class="node is-ok" x="202" y="96" width="114" height="20" rx="5"/>
+<text class="label-sm" x="259.0" y="110" text-anchor="middle">4–7</text>
+<text x="30" y="141" text-anchor="middle">D</text>
+<rect class="node is-bad" x="88" y="126" width="266" height="20" rx="5"/>
+<text class="label-sm" x="221.0" y="140" text-anchor="middle">1–8</text>
+<text x="30" y="171" text-anchor="middle">E</text>
+<rect class="node is-bad" x="240" y="156" width="152" height="20" rx="5"/>
+<text class="label-sm" x="316.0" y="170" text-anchor="middle">5–9</text>
+<text x="30" y="201" text-anchor="middle">F</text>
+<rect class="node is-ok" x="354" y="186" width="76" height="20" rx="5"/>
+<text class="label-sm" x="392.0" y="200" text-anchor="middle">8–10</text>
+<text x="30" y="231" text-anchor="middle">G</text>
+<rect class="node is-bad" x="392" y="216" width="76" height="20" rx="5"/>
+<text class="label-sm" x="430.0" y="230" text-anchor="middle">9–11</text>
+</svg></figure></div>
+</div>
+    <p>Thử kiểm tra bằng tay: có cách nào xem được 4 phim không? Hãy cắm ba “cọc” tại các thời điểm 2,5; 6,5 và 9,5. Phim nào cũng chứa ít nhất một cọc: A, B, D chứa 2,5; C, E chứa 6,5; F, G chứa 9,5. Hai phim được chọn thì không chồng nhau, nên không thể cùng chứa một cọc. Ba cọc nên chọn được nhiều nhất 3 phim, đúng như tham lam tìm ra. (Để ý: các cọc này đặt ngay trước giờ kết thúc của A, C, F, chính là các phim tham lam chọn.)</p>
+
+    <h3>Ví dụ 2: hoán đổi hai việc kề nhau</h3>
+    <p>Ba khách cần lần lượt 5, 1, 3 phút. Chiều cao mỗi cột là thời gian phục vụ. Ta liên tục đổi chỗ cặp kề nhau “chậm trước, nhanh sau” và theo dõi tổng thời gian chờ.</p>
+    <div class="stepper" data-title="Xếp lịch: đổi chỗ cặp kề sai thứ tự">
+      <div class="frame" data-caption="&lt;b&gt;Thứ tự ban đầu 5, 1, 3.&lt;/b&gt; Các khách xong lúc 5, 6, 9. Tổng = 5 + 6 + 9 = &lt;b&gt;20&lt;/b&gt;. Cặp đầu (5, 1) là chậm trước nhanh sau.">
+        <div class="bars" style="--max:5">
+          <span class="bar is-cmp" style="--v:5" data-v="5"></span>
+          <span class="bar is-cmp" style="--v:1" data-v="1"></span>
+          <span class="bar" style="--v:3" data-v="3"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Đổi (5, 1) thành (1, 5).&lt;/b&gt; Xong lúc 1, 6, 9. Tổng = &lt;b&gt;16&lt;/b&gt;, giảm 4 = 5 − 1, đúng công thức t&lt;sub&gt;i&lt;/sub&gt; − t&lt;sub&gt;j&lt;/sub&gt;. Khách thứ ba không bị ảnh hưởng (vẫn xong lúc 9).">
+        <div class="bars" style="--max:5">
+          <span class="bar is-ok" style="--v:1" data-v="1"></span>
+          <span class="bar is-cmp" style="--v:5" data-v="5"></span>
+          <span class="bar is-cmp" style="--v:3" data-v="3"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Đổi (5, 3) thành (3, 5).&lt;/b&gt; Xong lúc 1, 4, 9. Tổng = &lt;b&gt;14&lt;/b&gt;, giảm 2 = 5 − 3. Không còn cặp kề nào sai thứ tự: dãy đã tăng dần.">
+        <div class="bars" style="--max:5">
+          <span class="bar is-ok" style="--v:1" data-v="1"></span>
+          <span class="bar is-ok" style="--v:3" data-v="3"></span>
+          <span class="bar is-ok" style="--v:5" data-v="5"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Đối chiếu bằng lời giải trâu.&lt;/b&gt; Liệt kê cả 3! = 6 thứ tự: nhỏ nhất đúng là 14, ứng với thứ tự tăng dần. Người làm cuối luôn xong lúc 9 = 5 + 1 + 3, chỉ hai người đầu thay đổi tổng.">
+        <table class="trace">
+          <thead><tr><th>Thứ tự</th><th>Xong lúc</th><th>Tổng</th></tr></thead>
+          <tbody>
+            <tr class="hl"><td>1, 3, 5</td><td>1, 4, 9</td><td>14</td></tr>
+            <tr><td>1, 5, 3</td><td>1, 6, 9</td><td>16</td></tr>
+            <tr><td>3, 1, 5</td><td>3, 4, 9</td><td>16</td></tr>
+            <tr><td>3, 5, 1</td><td>3, 8, 9</td><td>20</td></tr>
+            <tr><td>5, 1, 3</td><td>5, 6, 9</td><td>20</td></tr>
+            <tr><td>5, 3, 1</td><td>5, 8, 9</td><td>22</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3>Ví dụ 3: so tham lam với tối ưu khi đổi tiền</h3>
+    <p>Bảng dưới so hai cách trả tiền với vài hệ mệnh giá. Dòng ghi “sai” là chỗ tham lam thua.</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Tham lam có luôn dùng ít tờ nhất?</p></div>
+      <div class="viz-body">
+        <table>
+          <thead><tr><th>Mệnh giá</th><th>S</th><th>Tham lam</th><th>Tối ưu</th><th>Kết luận</th></tr></thead>
+          <tbody>
+            <tr><td>1, 2, 5, 10, 20, 50 (nghìn)</td><td>87</td><td>50 + 20 + 10 + 5 + 2: 5 tờ</td><td>5 tờ</td><td>đúng</td></tr>
+            <tr><td>1, 3, 4</td><td>6</td><td>4 + 1 + 1: 3 tờ</td><td>3 + 3: 2 tờ</td><td><strong>sai</strong></td></tr>
+            <tr><td>1, 7, 8</td><td>14</td><td>8 + 1×6: 7 tờ</td><td>7 + 7: 2 tờ</td><td><strong>sai</strong></td></tr>
+            <tr><td>1, 5, 6, 9</td><td>11</td><td>9 + 1 + 1: 3 tờ</td><td>6 + 5: 2 tờ</td><td><strong>sai</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="viz-caption"><p>Hệ {1, 7, 8} được chương trình test ngẫu nhiên ở phần Biến thể tự tìm ra. Hệ tiền thật của các nước được thiết kế để tham lam luôn đúng.</p></div>
+    </div>
+
+    <div class="playground" id="viz-greedy">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: tham lam hay quy hoạch động?</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="greedy-coins">Mệnh giá <input type="text" id="greedy-coins" value="1 3 4"></label>
+          <label for="greedy-s">Số tiền S <input type="number" id="greedy-s" value="6" min="1" max="100000"></label>
+          <button type="button" data-act="run">So sánh</button>
+          <button type="button" class="ghost" data-act="find">Tìm phản ví dụ nhỏ nhất</button>
+        </div>
+        <div class="out">Nhập các mệnh giá (cách nhau bởi dấu cách, tối đa 10 số, mỗi số từ 1 đến 1000) và số tiền S rồi bấm “So sánh”.</div>
+      </div>
+    </div>
+    <p>Gợi ý thử: “1 2 5 10 20 50” (luôn đúng), “1 3 4” với S = 6, “1 5 6 9” với S = 11, “1 10 25” (hệ xu của Mỹ khi bỏ đồng 5, thử S = 30). Nút “Tìm phản ví dụ nhỏ nhất” làm đúng việc của lời giải trâu: duyệt S từ 1 trở lên và so hai đáp án.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Chọn nhiều phim nhất (CSES Movie Festival)</h3>
+    <p>Mẹo nhỏ: lưu mỗi phim thành cặp <code>(kết thúc, bắt đầu)</code> thì hàm <code>sort</code> mặc định sẽ sắp theo phần tử đầu, tức theo giờ kết thúc. Biến <code>ketThucCuoi</code> chính là mốc trong minh họa.</p>
+    <figure class="code">
+      <figcaption><span class="fn">movie_festival.cpp</span> Tham lam theo giờ kết thúc</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;pair&lt;long long, long long&gt;&gt; phim(n);   // (kết thúc, bắt đầu)
+    for (int i = 0; i &lt; n; i++) {
+        long long a, b;                            // a = bắt đầu, b = kết thúc
+        cin &gt;&gt; a &gt;&gt; b;
+        phim[i] = {b, a};                          // đặt kết thúc lên trước để sort theo kết thúc
+    }
+
+    // Bước 1: sắp xếp theo thời điểm kết thúc tăng dần
+    sort(phim.begin(), phim.end());
+
+    // Bước 2: duyệt, phim nào bắt đầu không sớm hơn lúc phim vừa chọn kết thúc thì lấy
+    int dem = 0;
+    long long ketThucCuoi = LLONG_MIN;             // chưa chọn phim nào
+    for (auto [b, a] : phim) {
+        if (a &gt;= ketThucCuoi) {                    // không chồng lên phim đã chọn
+            dem++;
+            ketThucCuoi = b;                       // cập nhật mốc kết thúc mới
+        }
+    }
+
+    cout &lt;&lt; dem &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">7
+1 3
+2 5
+4 7
+1 8
+5 9
+8 10
+9 11</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">3</code></pre></div>
+    </div>
+    <p>Với ví dụ của CSES (ba phim 3–5, 4–9, 5–8), chương trình in 2: chọn 3–5 rồi 5–8 (phim bắt đầu đúng lúc phim trước kết thúc vẫn xem được, nên điều kiện là <code>a &gt;= ketThucCuoi</code>, không phải <code>&gt;</code>).</p>
+
+    <h3>Tasks and Deadlines (CSES 1630)</h3>
+    <p>Áp dụng trực tiếp kết quả “việc ngắn làm trước”. Tổng thưởng có thể âm và lên tới khoảng 2·10<sup>5</sup> × 2·10<sup>11</sup>, nên mọi biến tổng phải là <code>long long</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">tasks_deadlines.cpp</span> Xếp lịch theo thời gian xử lý tăng dần</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;long long&gt; a(n);       // a[i] = thời gian làm việc i
+    long long tongHan = 0;        // tổng các thời hạn d
+    for (int i = 0; i &lt; n; i++) {
+        long long d;
+        cin &gt;&gt; a[i] &gt;&gt; d;
+        tongHan += d;
+    }
+
+    // Tổng thưởng = tổng d - tổng f. Tổng d cố định nên cần tổng f nhỏ nhất:
+    // làm việc ngắn trước (lập luận hoán đổi hai việc kề nhau).
+    sort(a.begin(), a.end());
+
+    long long t = 0, tongF = 0;   // t = thời điểm hiện tại
+    for (long long x : a) {
+        t += x;                   // việc này xong tại thời điểm t
+        tongF += t;
+    }
+
+    cout &lt;&lt; tongHan - tongF &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+6 10
+8 15
+5 12</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2</code></pre></div>
+    </div>
+    <p>Kiểm tra tay: sắp thời lượng thành 5, 6, 8; các việc xong lúc 5, 11, 19, tổng f = 35. Tổng thời hạn = 10 + 15 + 12 = 37. Thưởng = 37 − 35 = 2.</p>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Bài toán</th><th>Cách làm</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Chọn hoạt động</td><td>Sắp theo kết thúc + duyệt</td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Chọn hoạt động (trâu)</td><td>Thử mọi tập con</td><td><span class="bigo">O(2<sup>n</sup> · n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Xếp lịch, Tasks and Deadlines</td><td>Sắp theo t + cộng dồn</td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Xếp lịch (trâu)</td><td>Thử mọi hoán vị</td><td><span class="bigo">O(n! · n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Đổi tiền tham lam</td><td>Duyệt k mệnh giá</td><td><span class="bigo">O(k)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Đổi tiền QHĐ</td><td>f[s] với s = 0..S</td><td><span class="bigo">O(S · k)</span></td><td><span class="bigo">O(S)</span></td></tr>
+        <tr><td>Cái túi phân số</td><td>Sắp theo tỉ lệ + duyệt</td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Missing Coin Sum</td><td>Sắp tăng + duyệt</td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+      </tbody>
+    </table>
+    <p>Phần tốn nhất của hầu hết lời giải tham lam là <a href="sorting.html">sắp xếp</a>. Với n = 2·10<sup>5</sup>: n log<sub>2</sub> n ≈ 2·10<sup>5</sup> × 18 ≈ 3,6·10<sup>6</sup> phép, chạy dưới 0,1 giây. Ngay cả n = 10<sup>6</sup> (khoảng 2·10<sup>7</sup> phép) vẫn kịp trong 1 giây.</p>
+    <p>So với cách trâu thì chênh lệch khổng lồ: thử mọi thứ tự của chỉ 12 khách đã là 12! ≈ 4,8·10<sup>8</sup> hoán vị, nhân thêm 12 phép mỗi hoán vị là gần 6·10<sup>9</sup> phép, quá giờ. Còn đổi tiền bằng QHĐ với S = 10<sup>9</sup> thì cần mảng 10<sup>9</sup> phần tử, không đủ bộ nhớ; tham lam (khi đúng) chỉ cần k phép chia. Đây là lý do người ta cố tìm tham lam đúng cho từng hệ mệnh giá.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Cái túi phân số và cái túi 0/1</h3>
+    <p>Một cái túi chịu được W = 50 kg. Có ba món: món 1 nặng 10 kg giá 60, món 2 nặng 20 kg giá 100, món 3 nặng 30 kg giá 120. Giá trị trên mỗi ki-lô-gam lần lượt là 6, 5, 4.</p>
+    <ul>
+      <li><strong>Cái túi phân số</strong> (được cắt món, như cân gạo, cân đường): tham lam lấy món có tỉ lệ cao nhất trước. Lấy hết món 1 (10 kg, 60), hết món 2 (thêm 20 kg, tổng 30 kg, 160), còn 20 kg thì lấy 20/30 món 3 được 80. Tổng <strong>240</strong>, và đây là tối ưu.</li>
+      <li><strong>Cái túi 0/1</strong> (mỗi món lấy cả hoặc bỏ cả): cũng tham lam theo tỉ lệ thì lấy món 1, món 2 (30 kg, 160), món 3 không vừa. Được <strong>160</strong>. Nhưng lấy món 2 và món 3 (đúng 50 kg) được <strong>220</strong>. Tham lam sai!</li>
+    </ul>
+    <p><strong>Vì sao bản phân số đúng?</strong> Giả sử một cách xếp tối ưu còn chừa lại x kg của món tỉ lệ cao p, trong khi lại chứa x kg của món tỉ lệ thấp q &lt; p. Đổi x kg món thấp lấy x kg món cao: khối lượng không đổi, giá trị tăng x(p − q) &gt; 0, mâu thuẫn với tối ưu. Vậy phải lấy hết món tỉ lệ cao trước, đúng như tham lam. Bản 0/1 không làm được phép đổi “x kg” này vì không được cắt món; bài đó cần <a href="knapsack.html">quy hoạch động cái túi</a>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">fractional_knapsack.cpp</span> Cái túi phân số</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    double W;
+    cin &gt;&gt; n &gt;&gt; W;
+    vector&lt;pair&lt;double, double&gt;&gt; vat(n);          // (khối lượng, giá trị)
+    for (auto&amp; [w, v] : vat) cin &gt;&gt; w &gt;&gt; v;
+    // sắp theo tỉ lệ giá trị / khối lượng giảm dần (so sánh chéo để tránh chia)
+    sort(vat.begin(), vat.end(), [](auto&amp; p, auto&amp; q) {
+        return p.second * q.first &gt; q.second * p.first;
+    });
+    double tong = 0;
+    for (auto [w, v] : vat) {
+        if (W &lt;= 0) break;
+        double lay = min(w, W);                   // lấy hết, hoặc lấy phần còn vừa
+        tong += v * (lay / w);
+        W -= lay;
+    }
+    cout &lt;&lt; fixed &lt;&lt; setprecision(2) &lt;&lt; tong &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3 50
+10 60
+20 100
+30 120</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">240.00</code></pre></div>
+    </div>
+
+    <h3>Missing Coin Sum: tham lam với một bất biến</h3>
+    <p>Bài CSES 2183: có n đồng xu, tìm số tiền nguyên dương nhỏ nhất <em>không</em> tạo được bằng cách chọn một tập con các đồng xu. Ý tưởng: sắp các đồng xu tăng dần và giữ bất biến “dùng các đồng đã xét, tạo được <strong>mọi</strong> số từ 1 đến s”.</p>
+    <ul>
+      <li>Xét đồng tiếp theo có giá trị x. Nếu x ≤ s + 1: ghép x với các tổng 0, 1, …, s đã có, ta tạo thêm được x, x + 1, …, x + s. Vì x ≤ s + 1 nên đoạn mới nối liền đoạn cũ, giờ tạo được mọi số từ 1 đến s + x.</li>
+      <li>Nếu x &gt; s + 1: đồng này và mọi đồng sau (đều ≥ x) đều lớn hơn s + 1, còn các đồng đã xét cộng lại chỉ được s. Vậy s + 1 không bao giờ tạo được. Dừng, đáp án là s + 1.</li>
+    </ul>
+    <p>Ví dụ đồng xu 2, 9, 1, 2, 7. Sắp lại: 1, 2, 2, 7, 9. Ban đầu s = 0. Đồng 1 ≤ 1 nên s = 1; đồng 2 ≤ 2 nên s = 3; đồng 2 ≤ 4 nên s = 5; đồng 7 &gt; 6 nên dừng. Đáp án <strong>6</strong> (thật vậy: 1, 2, 2 chỉ tạo được tới 5, còn 7 và 9 thì quá lớn).</p>
+    <figure class="code">
+      <figcaption><span class="fn">missing_coin_sum.cpp</span> Bất biến “tạo được 1..s”</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;long long&gt; x(n);
+    for (auto&amp; v : x) cin &gt;&gt; v;
+    sort(x.begin(), x.end());
+    long long s = 0;                 // bất biến: tạo được mọi số từ 1 đến s
+    for (long long v : x) {
+        if (v &gt; s + 1) break;        // không đồng nào tạo được s + 1
+        s += v;                      // giờ tạo được mọi số từ 1 đến s + v
+    }
+    cout &lt;&lt; s + 1 &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5
+2 9 1 2 7</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">6</code></pre></div>
+    </div>
+
+    <h3>Xếp lịch có trọng số (tiền phạt khác nhau)</h3>
+    <p>Mở rộng bài xếp lịch: việc i mất B<sub>i</sub> ngày, và mỗi ngày chờ tới khi xong phải trả A<sub>i</sub> đồng (bài “Lập lịch sửa chữa ô tô” ở phần bài tập). Cần tổng A<sub>i</sub> · C<sub>i</sub> nhỏ nhất. Làm lại phép hoán đổi hai việc kề nhau i, j bắt đầu lúc T:</p>
+    <div class="math-block">(i trước) − (j trước) = [A<sub>i</sub>(T + B<sub>i</sub>) + A<sub>j</sub>(T + B<sub>i</sub> + B<sub>j</sub>)] − [A<sub>j</sub>(T + B<sub>j</sub>) + A<sub>i</sub>(T + B<sub>j</sub> + B<sub>i</sub>)] = A<sub>j</sub>B<sub>i</sub> − A<sub>i</sub>B<sub>j</sub></div>
+    <p>Vậy i nên đứng trước j khi A<sub>j</sub>B<sub>i</sub> &lt; A<sub>i</sub>B<sub>j</sub>, tức B<sub>i</sub>/A<sub>i</sub> &lt; B<sub>j</sub>/A<sub>j</sub>: sắp theo “số ngày trên mỗi đồng phạt” tăng dần. Khi viết hàm so sánh, hãy so <strong>nhân chéo</strong> <code>B[i] * A[j] &lt; B[j] * A[i]</code> (kiểu <code>long long</code>) thay vì chia số thực, để tránh sai số. Khi mọi A<sub>i</sub> = 1, ta quay về bài “việc ngắn làm trước”.</p>
+
+    <h3>Tự tìm phản ví dụ: lời giải trâu và test ngẫu nhiên</h3>
+    <p>Trong phòng thi, em thường không có thời gian chứng minh chặt chẽ. Cách thực tế nhất để kiểm chứng tham lam là <strong>đối chiếu</strong>:</p>
+    <ol>
+      <li>Viết <strong>lời giải trâu</strong> chắc chắn đúng (quay lui, thử mọi tập con, QHĐ), chạy được với n nhỏ. Xem lại bài <a href="brute-force-formula.html">duyệt trâu</a> và <a href="backtracking.html">quay lui</a>.</li>
+      <li>Viết bộ <strong>sinh test ngẫu nhiên</strong> nhỏ (n từ 1 đến 8, giá trị từ 1 đến 10).</li>
+      <li>Chạy cả hai trên hàng nghìn test. Thấy khác nhau thì in test đó ra: đó là phản ví dụ, nhỏ và dễ đọc.</li>
+    </ol>
+    <p>Chương trình dưới thử 1 000 hệ mệnh giá ngẫu nhiên gồm 1 và hai số trong khoảng 2 đến 10, với mọi S từ 1 đến 30. Hạt giống cố định nên lần nào chạy cũng ra cùng kết quả.</p>
+    <figure class="code">
+      <figcaption><span class="fn">tim_phan_vi_du.cpp</span> Đối chiếu tham lam với QHĐ trên test ngẫu nhiên</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int thamLam(vector&lt;int&gt; c, int S) {          // c sắp tăng
+    int so = 0;
+    for (int i = (int)c.size() - 1; i &gt;= 0; i--) { so += S / c[i]; S %= c[i]; }
+    return so;
+}
+int toiUu(const vector&lt;int&gt;&amp; c, int S) {     // QHĐ, chắc chắn đúng
+    vector&lt;int&gt; f(S + 1, 1e9);
+    f[0] = 0;
+    for (int s = 1; s &lt;= S; s++)
+        for (int x : c) if (x &lt;= s) f[s] = min(f[s], f[s - x] + 1);
+    return f[S];
+}
+
+int main() {
+    mt19937 rng(2024);                       // hạt giống cố định để chạy lại được
+    for (int lan = 1; lan &lt;= 1000; lan++) {
+        // sinh tập 3 mệnh giá ngẫu nhiên: luôn có 1, hai số còn lại trong [2, 10]
+        set&lt;int&gt; st = {1};
+        while (st.size() &lt; 3) st.insert(2 + rng() % 9);
+        vector&lt;int&gt; c(st.begin(), st.end());
+        for (int S = 1; S &lt;= 30; S++)
+            if (thamLam(c, S) != toiUu(c, S)) {
+                cout &lt;&lt; "Lần " &lt;&lt; lan &lt;&lt; ": mệnh giá {" &lt;&lt; c[0] &lt;&lt; ", " &lt;&lt; c[1] &lt;&lt; ", " &lt;&lt; c[2]
+                     &lt;&lt; "}, S = " &lt;&lt; S &lt;&lt; ": tham lam " &lt;&lt; thamLam(c, S)
+                     &lt;&lt; " tờ, tối ưu " &lt;&lt; toiUu(c, S) &lt;&lt; " tờ\n";
+                return 0;
+            }
+    }
+    cout &lt;&lt; "Không tìm thấy phản ví dụ\n";
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">(không có)</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">Lần 3: mệnh giá {1, 7, 8}, S = 14: tham lam 7 tờ, tối ưu 2 tờ</code></pre></div>
+    </div>
+    <p>Chỉ sau 3 lần thử đã có phản ví dụ: 14 = 8 + 1 × 6 (7 tờ) trong khi 14 = 7 + 7 (2 tờ). Nếu chạy hàng nghìn test mà không thấy khác biệt, em có thể tự tin hơn nhiều (dù đó vẫn chưa phải chứng minh).</p>
+
+    <h3>Tham lam kết hợp kỹ thuật khác</h3>
+    <ul>
+      <li><strong>Tham lam + hai con trỏ</strong>: bài Ferris Wheel xếp trẻ lên cáp treo; sắp cân nặng, ghép người nặng nhất với người nhẹ nhất nếu vừa. Xem <a href="two-pointers.html">hai con trỏ</a>.</li>
+      <li><strong>Tham lam + hàng đợi ưu tiên</strong>: khi “phần tử tốt nhất” thay đổi trong lúc chạy (ví dụ luôn ghép hai số nhỏ nhất), dùng <code>priority_queue</code> trong <a href="stl.html">STL</a>.</li>
+      <li><strong>Tham lam + chặt nhị phân</strong>: đoán đáp án X, rồi kiểm tra “có làm được với X không” bằng tham lam. Xem <a href="binary-search-answer.html">chặt nhị phân trên kết quả</a>.</li>
+      <li><strong>Tham lam một phần + QHĐ</strong>: đổi tiền với mệnh giá bất kỳ ≤ 100 nhưng S ≤ 10<sup>9</sup>. Có thể chứng minh lời giải tối ưu dùng ít hơn c<sub>max</sub> tờ khác c<sub>max</sub> (nếu nhiều hơn, theo nguyên lý Dirichlet có một nhóm tờ tổng chia hết cho c<sub>max</sub>, thay nhóm đó bằng tờ c<sub>max</sub> không tệ hơn). Vậy chỉ cần QHĐ cho phần nhỏ (cỡ 10<sup>4</sup>), phần lớn còn lại trả bằng tờ c<sub>max</sub>.</li>
+    </ul>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Tin tham lam mà không kiểm chứng</p><p>Lỗi đắt nhất: nghĩ ra một tiêu chí “nghe hợp lý”, thử hai ví dụ trong đề thấy đúng rồi nộp. Ví dụ đổi tiền tham lam với mệnh giá bất kỳ, hay chọn hoạt động ngắn nhất. Cách sửa: luôn tự tìm phản ví dụ nhỏ (3–4 phần tử) trong 5 phút; nếu có thời gian, viết lời giải trâu và test ngẫu nhiên như phần Biến thể.</p></div>
+    <div class="callout danger"><p class="callout-title">Sắp sai tiêu chí</p><p>Chọn hoạt động mà sắp theo giờ <em>bắt đầu</em>, hoặc lưu cặp <code>(bắt đầu, kết thúc)</code> rồi <code>sort</code> mặc định (vô tình sắp theo bắt đầu). Cách sửa: lưu <code>(kết thúc, bắt đầu)</code> hoặc viết hàm so sánh rõ ràng theo kết thúc.</p></div>
+    <div class="callout warn"><p class="callout-title">Nhầm dấu &gt; và &gt;=</p><p>Đề nói phim kết thúc lúc 5 thì phim bắt đầu lúc 5 vẫn xem được: điều kiện là <code>a &gt;= last</code>. Có đề lại tính hai đoạn chạm đầu mút là giao nhau: điều kiện là <code>a &gt; last</code>. Đọc kỹ đề và thử ngay ví dụ có hai đoạn chạm nhau.</p></div>
+    <div class="callout warn"><p class="callout-title">Tràn số khi cộng dồn</p><p>Tổng thời gian chờ là tổng của n thời điểm, mỗi thời điểm có thể tới 2·10<sup>11</sup>. Tổng lên tới cỡ 10<sup>16</sup>, vượt <code>int</code>. Dùng <code>long long</code> cho mọi biến tổng. Khi so sánh tỉ lệ, nhân chéo bằng <code>long long</code> thay vì chia <code>double</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Khởi tạo mốc sai</p><p>Đặt <code>last = 0</code> trong khi giờ bắt đầu có thể âm hoặc bằng 0 sẽ loại nhầm phim đầu tiên trong một số đề. An toàn nhất là <code>last = LLONG_MIN</code> hoặc một giá trị nhỏ hơn mọi giờ bắt đầu.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo chứng minh nhanh trong phòng thi</p><p>Với bài “xếp thứ tự”, hãy viết ngay biểu thức chênh lệch khi đổi chỗ <strong>hai phần tử kề nhau</strong>. Biểu thức đó thường cho thẳng tiêu chí sắp xếp (như t<sub>i</sub> − t<sub>j</sub> hay A<sub>j</sub>B<sub>i</sub> − A<sub>i</sub>B<sub>j</sub>). Với bài “chọn tập con”, hãy thử thay phần tử đầu tiên của lời giải tối ưu bằng lựa chọn tham lam.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Để chọn được nhiều hoạt động không chồng nhau nhất, nên sắp các hoạt động theo tiêu chí nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Giờ bắt đầu tăng dần</button>
+        <button type="button" class="quiz-opt">B. Độ dài tăng dần</button>
+        <button type="button" class="quiz-opt" data-correct>C. Giờ kết thúc tăng dần</button>
+        <button type="button" class="quiz-opt">D. Giờ kết thúc giảm dần</button>
+      </div>
+      <p class="quiz-explain">Kết thúc sớm nhất để lại nhiều thời gian nhất cho phần sau, và lập luận hoán đổi chứng minh luôn có lời giải tối ưu bắt đầu bằng hoạt động đó. A sai với [0, 10), [1, 2), [3, 4); B sai với [0, 5), [4, 7), [6, 10).</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Với mệnh giá {1, 3, 4} và S = 6, tham lam (lấy tờ lớn nhất trước) dùng bao nhiêu tờ, và tối ưu là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Tham lam 2 tờ, tối ưu 2 tờ</button>
+        <button type="button" class="quiz-opt" data-correct>B. Tham lam 3 tờ, tối ưu 2 tờ</button>
+        <button type="button" class="quiz-opt">C. Tham lam 3 tờ, tối ưu 3 tờ</button>
+        <button type="button" class="quiz-opt">D. Tham lam 2 tờ, tối ưu 1 tờ</button>
+      </div>
+      <p class="quiz-explain">Tham lam: 4 + 1 + 1 = 3 tờ. Tối ưu: 3 + 3 = 2 tờ. Một phản ví dụ là đủ kết luận tham lam không dùng được cho hệ này.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Trong bài Tasks and Deadlines (thưởng d − f cho mỗi việc), thứ tự làm việc tối ưu là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Thời hạn d tăng dần</button>
+        <button type="button" class="quiz-opt" data-correct>B. Thời gian làm tăng dần</button>
+        <button type="button" class="quiz-opt">C. Hiệu d − thời gian làm giảm dần</button>
+        <button type="button" class="quiz-opt">D. Thứ tự nào cũng như nhau</button>
+      </div>
+      <p class="quiz-explain">Tổng thưởng = tổng d − tổng f. Tổng d cố định, nên cần tổng thời điểm xong nhỏ nhất, tức làm việc ngắn trước. Thời hạn không ảnh hưởng thứ tự.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Các đồng xu 1, 1, 3, 10. Số tiền nhỏ nhất không tạo được là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 4</button>
+        <button type="button" class="quiz-opt">B. 5</button>
+        <button type="button" class="quiz-opt" data-correct>C. 6</button>
+        <button type="button" class="quiz-opt">D. 16</button>
+      </div>
+      <p class="quiz-explain">s = 0 → đồng 1: s = 1 → đồng 1: s = 2 → đồng 3 ≤ 3: s = 5 → đồng 10 &gt; 6: dừng. Đáp án 6.</p>
+    </div>
+    <p><strong>Câu 5.</strong> Bốn khách cần 4, 2, 7, 1 phút. Tính tổng thời gian chờ (tổng các thời điểm xong) nhỏ nhất và cho biết thứ tự phục vụ.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Sắp tăng dần: 1, 2, 4, 7. Các khách xong lúc 1, 3, 7, 14. Tổng = 1 + 3 + 7 + 14 = <strong>25</strong>. Có thể kiểm tra: mỗi t<sub>i</sub> được cộng một lần cho chính nó và một lần cho mỗi người đứng sau, nên tổng = 4·1 + 3·2 + 2·4 + 1·7 = 4 + 6 + 8 + 7 = 25. Người đứng đầu “bị nhân” nhiều nhất, nên phải là người nhanh nhất.</p></details>
+    <p><strong>Câu 6.</strong> Tiêu chí “chọn hoạt động chồng lên ít hoạt động khác nhất” có đúng không? Hãy thử tìm phản ví dụ, hoặc giải thích em sẽ kiểm chứng bằng cách nào.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Tiêu chí này <strong>sai</strong>, nhưng phản ví dụ khá khó nghĩ ra bằng tay. Một phản ví dụ gồm 11 đoạn: [0, 2), [2, 4), [4, 6), [6, 8) (bốn đoạn liền nhau), ba bản [1, 3), ba bản [5, 7) và một đoạn [3, 5). Đoạn [3, 5) chỉ chồng 2 đoạn, ít nhất, nên được chọn trước; nhưng nó “cắt” mất [2, 4) và [4, 6), sau đó chỉ chọn thêm được 2 đoạn, tổng 3. Trong khi bốn đoạn liền nhau cho 4. Đây đúng là tình huống nên dùng lời giải trâu (thử mọi tập con với n ≤ 12) và sinh test ngẫu nhiên để máy tìm giúp. Bài học: một tiêu chí “trông thông minh” vẫn có thể sai, và không tìm ra phản ví dụ bằng tay chưa có nghĩa là đúng.</p></details>
+    <p><strong>Câu 7.</strong> Vì sao tham lam theo tỉ lệ giá trị/khối lượng đúng cho cái túi phân số nhưng sai cho cái túi 0/1? Cho một ví dụ.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Ở bản phân số, nếu còn chừa món tỉ lệ cao mà lại lấy món tỉ lệ thấp, ta đổi một lượng nhỏ x kg và giá trị tăng, nên tối ưu phải lấy món tỉ lệ cao trước. Ở bản 0/1 không được cắt món, phép đổi này không thực hiện được. Ví dụ W = 50, ba món (10 kg, 60), (20 kg, 100), (30 kg, 120): tham lam theo tỉ lệ được 160, còn lấy hai món sau được 220.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Các bài CSES đều có bản dịch tiếng Việt trên LQDOJ (đề gốc tiếng Anh ở <a href="https://cses.fi/problemset/">CSES Problem Set</a>). Với mỗi bài, trước khi code, hãy viết ra tiêu chí tham lam và thử tìm phản ví dụ.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/20ts10dla2">Đổi tiền (TS10 Đắk Lắk 2020)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đổi X trăm nghìn đồng (X ≤ 100) ra tờ 500, 200, 100 nghìn sao cho tổng số tờ ít nhất; in số tờ mỗi loại.</p>
+        <p class="ex-skill"><b>Luyện:</b> đổi tiền tham lam với hệ mệnh giá đúng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lấy càng nhiều tờ 500 càng tốt (X div 5), phần dư lấy tờ 200, cuối cùng tờ 100. Hệ 1–2–5 là hệ tham lam đúng như đã chứng minh trong bài.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1629">CSES Movie Festival – Lễ hội phim</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">n ≤ 2·10<sup>5</sup> phim, biết giờ bắt đầu và kết thúc; hỏi xem trọn vẹn được nhiều nhất bao nhiêu phim.</p>
+        <p class="ex-skill"><b>Luyện:</b> chọn hoạt động theo giờ kết thúc (bài mẫu của chủ đề).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đúng chương trình mẫu ở phần Cài đặt. Chú ý điều kiện <code>a &gt;= last</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1090">CSES Ferris Wheel – Bánh xe Ferris</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Mỗi cabin chở tối đa hai trẻ, tổng cân nặng không quá x; tìm số cabin ít nhất cho n trẻ.</p>
+        <p class="ex-skill"><b>Luyện:</b> tham lam ghép cặp sau sắp xếp, hai con trỏ.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp cân nặng. Trẻ nặng nhất luôn chiếm một cabin; nếu trẻ nhẹ nhất ngồi chung được thì cho ngồi chung (hoán đổi: ai đi cùng trẻ nặng nhất cũng có thể đổi thành trẻ nhẹ nhất). Hai con trỏ từ hai đầu.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1074">CSES Stick Lengths – Độ dài que</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Đưa n que về cùng một độ dài; kéo dài hay cắt ngắn đều tốn chi phí bằng độ chênh lệch. Tìm tổng chi phí nhỏ nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> lập luận dịch chuyển để chọn điểm tối ưu (trung vị).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Nếu độ dài đích có nhiều que ở bên trái hơn bên phải, dịch đích sang trái 1 đơn vị sẽ giảm chi phí. Vậy đích tối ưu là trung vị của dãy đã sắp. Tổng chi phí cần <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1630">CSES Tasks and Deadlines – Nhiệm vụ và thời hạn</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Mỗi việc có thời lượng và thời hạn d; làm xong lúc f được thưởng d − f (có thể âm). Phải làm hết, tìm tổng thưởng lớn nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> xếp lịch, hoán đổi hai việc kề nhau.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tách tổng thưởng thành tổng d trừ tổng f. Phần tổng d không đổi; còn lại là bài “việc ngắn làm trước”.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/car">Lập lịch sửa chữa ô tô</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Xe i cần B[i] ngày sửa, mỗi ngày tới lúc giao xe phải trả A[i] tiền phạt; sửa lần lượt từng xe sao cho tổng tiền phạt nhỏ nhất và in thứ tự sửa.</p>
+        <p class="ex-skill"><b>Luyện:</b> xếp lịch có trọng số, hàm so sánh nhân chéo.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xem mục “Xếp lịch có trọng số”: sắp theo B/A tăng dần, so bằng <code>B[i] * A[j] &lt; B[j] * A[i]</code>. Ví dụ trong đề cho 44 với thứ tự 4 2 3 1.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/bwpoints">BWPOINTS – Nối điểm đen trắng (VOI 2011)</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Có n điểm đen và n điểm trắng trên trục số; nối nhiều cặp đen–trắng nhất sao cho các đoạn nối đôi một không có điểm chung.</p>
+        <p class="ex-skill"><b>Luyện:</b> tham lam trên dãy đã sắp, giống chọn hoạt động.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Trộn hai loại điểm và sắp theo tọa độ. Đi từ trái sang phải: hễ hai điểm kề nhau khác màu thì nối chúng (đoạn ngắn nhất, “kết thúc sớm nhất”) rồi nhảy qua cả hai; nếu cùng màu thì bỏ điểm trái.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses2183">CSES Missing Coin Sum – Tổng xu bị thiếu</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Có n ≤ 2·10<sup>5</sup> đồng xu giá trị tới 10<sup>9</sup>; tìm số tiền nhỏ nhất không tạo được bằng một tập con các đồng xu.</p>
+        <p class="ex-skill"><b>Luyện:</b> tham lam với bất biến “tạo được mọi số 1..s”.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp tăng, giữ s. Đồng x ≤ s + 1 thì s += x, ngược lại dừng và in s + 1. Nhớ dùng <code>long long</code> cho s.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/dtdoi">Đổi tiền (DTDOI)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Tập N ≤ 100 mệnh giá bất kỳ (≤ 100, luôn có 1), số tiền S ≤ 10<sup>9</sup>; tìm số đồng ít nhất để đổi S.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra tham lam thuần sai, kết hợp tham lam với quy hoạch động.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tham lam thuần sai (nhớ {1, 3, 4}), QHĐ thuần thì S quá lớn. Gọi m là mệnh giá lớn nhất: lời giải tối ưu chỉ cần ít đồng khác m (xem mục “Tham lam một phần + QHĐ”). Chạy QHĐ f[r] cho r tới khoảng m² (≤ 10<sup>4</sup>), rồi thử mọi r có S − r chia hết cho m: đáp án là min của f[r] + (S − r)/m.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/greedy-new">VNOI Wiki – Tham lam</a> (tiếng Việt): khái niệm, lập luận hoán đổi, nhiều bài tập từ dễ đến rất khó.</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer’s Handbook</a>, chương 6 “Greedy algorithms” (tiếng Anh): đổi tiền, lập lịch, Tasks and Deadlines.</li>
+      <li><a href="https://cp-algorithms.com/schedules/schedule_one_machine.html">CP-Algorithms – Scheduling jobs on one machine</a> (tiếng Anh): xếp lịch có trọng số và chứng minh hoán đổi.</li>
+      <li><a href="https://en.wikipedia.org/wiki/Activity_selection_problem">Wikipedia – Activity selection problem</a> (tiếng Anh).</li>
+      <li><a href="https://en.wikipedia.org/wiki/Change-making_problem">Wikipedia – Change-making problem</a> (tiếng Anh): khi nào đổi tiền tham lam đúng.</li>
+      <li>Bài liên quan trong lộ trình: <a href="sorting.html">Sắp xếp</a>, <a href="brute-force-formula.html">Duyệt trâu</a>, <a href="dp-intro.html">Nhập môn quy hoạch động</a>, <a href="knapsack.html">Cái túi và đổi tiền</a>, <a href="binary-search-answer.html">Chặt nhị phân trên kết quả</a>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Tham lam: mỗi bước chọn phương án tốt nhất trước mắt, không xét lại. Thường là <strong>sắp xếp + duyệt một lượt</strong>, <span class="bigo">O(n log n)</span>.</li>
+        <li>Chọn nhiều hoạt động nhất: sắp theo <strong>giờ kết thúc</strong>, lấy nếu bắt đầu ≥ mốc. Bắt đầu sớm nhất và ngắn nhất đều sai.</li>
+        <li>Tổng thời gian chờ nhỏ nhất: <strong>việc ngắn làm trước</strong>. Có trọng số: sắp theo B/A, so nhân chéo.</li>
+        <li>Đổi tiền tham lam đúng với tiền Việt Nam (1–2–5), sai với {1, 3, 4} và S = 6. Không chắc thì dùng QHĐ f[s] = min(f[s − c] + 1).</li>
+        <li>Cái túi phân số: tham theo tỉ lệ giá trị/khối lượng là đúng; cái túi 0/1 thì sai, phải QHĐ.</li>
+        <li>Missing Coin Sum: sắp tăng, giữ “tạo được 1..s”, gặp x &gt; s + 1 thì đáp án là s + 1.</li>
+        <li>Chứng minh bằng <strong>hoán đổi</strong>: sửa lời giải tối ưu từng bước cho giống tham lam mà không tệ đi.</li>
+        <li>Không chứng minh được thì <strong>đối chiếu với lời giải trâu</strong> trên test ngẫu nhiên nhỏ; một phản ví dụ là đủ bác bỏ.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/greedy.js"></script>
+</body>
+</html>

@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tìm kiếm nhị phân trên mảng · Thi đấu lớp 9</title>
+<meta name="description" content="Tìm kiếm nhị phân trên mảng đã sắp xếp: lo, hi, mid, bất biến, mẫu an toàn có biến ans, lower_bound, upper_bound, đếm phần tử trong đoạn giá trị và trả lời nhiều truy vấn.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="binary-search">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được vì sao tìm kiếm nhị phân chỉ cần khoảng 20 bước cho một triệu phần tử và 60 bước cho 10<sup>18</sup>.</li>
+      <li>Nêu được điều kiện bắt buộc: mảng đã sắp xếp, hay tổng quát hơn là câu hỏi “có/không” đổi từ sai sang đúng đúng một lần.</li>
+      <li>Cài đặt được mẫu an toàn có biến <code>ans</code>, không bị lặp vô hạn, không lệch một.</li>
+      <li>Dùng thành thạo <code>lower_bound</code>, <code>upper_bound</code>, <code>binary_search</code> để đếm số lần xuất hiện, đếm phần tử trong đoạn [a, b], tìm phần tử cuối cùng ≤ x.</li>
+      <li>Trả lời được hàng trăm nghìn truy vấn bằng cách sắp xếp một lần rồi chặt nhị phân cho từng truy vấn.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Tìm kiếm nhị phân (binary search) là cách tìm một giá trị trong mảng <strong>đã sắp xếp</strong> bằng cách liên tục nhìn vào phần tử ở giữa, rồi bỏ đi một nửa không thể chứa đáp án. Mỗi lần nhìn, vùng cần tìm co lại còn một nửa, nên chỉ sau vài chục lần là xong, dù mảng có hàng triệu phần tử.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div>
+        <p><strong>Trò chơi đoán số.</strong> Bạn em nghĩ một số từ 1 đến 100. Em đoán, bạn chỉ trả lời “lớn hơn”, “nhỏ hơn” hoặc “đúng rồi”. Nếu em đoán lần lượt 1, 2, 3, … thì xui nhất phải đoán 100 lần. Nhưng nếu lần nào em cũng đoán số <em>ở giữa</em> khoảng còn lại (50, rồi 25 hoặc 75, …) thì mỗi câu trả lời loại được một nửa số khả năng. Xui nhất em chỉ cần <strong>7 lần</strong>, vì 2<sup>7</sup> = 128 ≥ 100.</p>
+        <p>Tra từ điển giấy cũng vậy: em không lật từng trang từ đầu, mà mở ở giữa, xem từ cần tìm nằm trước hay sau, rồi mở tiếp ở giữa nửa còn lại.</p>
+      </div>
+    </div>
+
+    <p>Trong bài này em sẽ dùng các tên gọi sau, đi theo em suốt cả chuyên đề:</p>
+    <ul>
+      <li><strong>lo</strong> (low) và <strong>hi</strong> (high): chỉ số đầu và cuối của vùng còn nghi ngờ, tức là đáp án chắc chắn nằm trong đoạn [lo, hi] nếu nó tồn tại.</li>
+      <li><strong>mid</strong> (middle): chỉ số ở giữa, <code>mid = lo + (hi − lo) / 2</code> (chia lấy phần nguyên).</li>
+      <li><strong>ans</strong>: đáp án tốt nhất tìm được tới lúc này.</li>
+    </ul>
+
+    <div class="definition" data-label="Bài toán">
+      <p>Cho mảng <span class="math">a[0], a[1], …, a[n−1]</span> đã sắp xếp <strong>không giảm</strong> (a[0] ≤ a[1] ≤ … ≤ a[n−1]) và một số <span class="math">x</span>.</p>
+      <ul>
+        <li><strong>lower_bound(x)</strong> là chỉ số <em>nhỏ nhất</em> <span class="math">i</span> sao cho <span class="math">a[i] ≥ x</span>; nếu không có thì bằng <span class="math">n</span>.</li>
+        <li><strong>upper_bound(x)</strong> là chỉ số <em>nhỏ nhất</em> <span class="math">i</span> sao cho <span class="math">a[i] &gt; x</span>; nếu không có thì bằng <span class="math">n</span>.</li>
+      </ul>
+      <p>Tìm kiếm nhị phân tính được mỗi giá trị trên bằng khoảng <span class="math">log<sub>2</sub> n</span> phép so sánh.</p>
+    </div>
+
+    <p>Ví dụ với mảng <span class="math">a = [1, 3, 3, 3, 7, 9, 9, 12, 15, 20]</span> (chỉ số từ 0): lower_bound(3) = 1 vì a[1] = 3 là số đầu tiên ≥ 3; upper_bound(3) = 4 vì a[4] = 7 là số đầu tiên &gt; 3; lower_bound(10) = 7 vì a[7] = 12; lower_bound(25) = 10 = n vì không có số nào ≥ 25.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Tìm kiếm nhị phân là một trong những kỹ thuật được dùng nhiều nhất trong lập trình thi đấu. Trên mảng, nó giúp em trả lời rất nhanh các câu hỏi dạng:</p>
+    <ul>
+      <li><strong>Có hay không?</strong> Số x có xuất hiện trong dãy không.</li>
+      <li><strong>Bao nhiêu?</strong> Có bao nhiêu số ≤ x, &lt; x, ≥ x, &gt; x; số x xuất hiện mấy lần; có bao nhiêu số nằm trong đoạn giá trị [a, b].</li>
+      <li><strong>Gần nhất?</strong> Số nhỏ nhất ≥ x, số lớn nhất ≤ x, phần tử gần x nhất.</li>
+      <li><strong>Ghép cặp.</strong> Với mỗi phần tử, tìm “bạn” phù hợp trong một mảng khác đã sắp (tổng bằng x, tổng gần 0 nhất, hiệu lớn hơn d…).</li>
+    </ul>
+    <p>Điểm mạnh nhất là khi có <strong>nhiều truy vấn</strong>: em chỉ sắp xếp mảng một lần, mất <span class="bigo">O(n log n)</span>, rồi mỗi truy vấn chỉ tốn <span class="bigo">O(log n)</span>.</p>
+    <p>Xa hơn, ý tưởng “chia đôi vùng nghi ngờ” không chỉ dùng trên mảng. Nếu em có một câu hỏi có/không mà câu trả lời đổi từ <em>sai</em> sang <em>đúng</em> đúng một lần, em có thể chặt nhị phân trên chính đáp án. Đó là bài <a href="binary-search-answer.html">Chặt nhị phân trên kết quả</a>, học ngay sau bài này. Kỹ thuật này cũng là chìa khóa để giải <a href="lis.html">dãy con tăng dài nhất</a> trong <span class="bigo">O(n log n)</span>.</p>
+
+    <div class="callout note">
+      <p class="callout-title">Dấu hiệu nhận biết</p>
+      <ul>
+        <li>Đề cho dãy n số (n ≤ 2·10<sup>5</sup>) và q truy vấn (q ≤ 2·10<sup>5</sup>), mỗi truy vấn hỏi “có bao nhiêu số ≤ x / trong đoạn [a, b]”.</li>
+        <li>Đề yêu cầu tìm cặp phần tử thỏa một bất đẳng thức hoặc có tổng cho trước, và n quá lớn để thử mọi cặp.</li>
+        <li>Đề có dãy đã sắp sẵn, hoặc thứ tự các phần tử không quan trọng (em được phép sắp lại).</li>
+        <li>Đề có cụm “nhỏ nhất mà…”, “lớn nhất sao cho…”, “đầu tiên thỏa…”.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Lớp em có một danh sách <span class="math">n = 200 000</span> điểm thi (đã có trong máy). Thầy hỏi <span class="math">q = 200 000</span> câu, mỗi câu dạng: “có bao nhiêu bạn được từ <span class="math">l</span> đến <span class="math">r</span> điểm?”.</p>
+
+    <p><strong>Cách ngây thơ.</strong> Với mỗi câu hỏi, em duyệt hết n điểm và đếm. Mỗi câu tốn n = 2·10<sup>5</sup> phép so sánh, cả q câu tốn <span class="math">2·10<sup>5</sup> × 2·10<sup>5</sup> = 4·10<sup>10</sup></span> phép so sánh. Máy chấm làm khoảng 10<sup>8</sup> phép tính mỗi giây (xem bài <a href="complexity.html">Độ phức tạp</a>), nên cần khoảng 400 giây. Quá thời gian rất xa.</p>
+
+    <p><strong>Cách dùng tìm kiếm nhị phân.</strong> Sắp xếp điểm tăng dần một lần (khoảng n·log<sub>2</sub> n ≈ 2·10<sup>5</sup> × 18 ≈ 3,6·10<sup>6</sup> phép tính). Khi đó các bạn có điểm trong [l, r] đứng thành một <em>đoạn liền nhau</em> trong mảng: từ vị trí lower_bound(l) đến trước vị trí upper_bound(r). Số bạn cần đếm là</p>
+    <div class="math-block">số bạn trong [l, r] = upper_bound(r) − lower_bound(l)</div>
+    <p>Mỗi câu hỏi chỉ cần 2 lần chặt nhị phân, mỗi lần khoảng 18 bước (vì 2<sup>18</sup> = 262 144 ≥ 2·10<sup>5</sup>). Cả q câu tốn khoảng 2·10<sup>5</sup> × 2 × 18 ≈ 7,2·10<sup>6</sup> bước. Cộng cả phần sắp xếp, tổng chừng 10<sup>7</sup> phép tính, chạy dưới 0,1 giây.</p>
+
+    <div class="versus">
+      <div class="bad-side">
+        <h4>Tìm tuần tự (linear search)</h4>
+        <p>Mỗi truy vấn duyệt cả mảng: <span class="bigo">O(n)</span>. Với q truy vấn: <span class="bigo">O(n·q)</span>. Với n = q = 2·10<sup>5</sup> là 4·10<sup>10</sup> phép tính, khoảng 400 giây.</p>
+      </div>
+      <div class="good-side">
+        <h4>Sắp xếp + tìm kiếm nhị phân</h4>
+        <p>Sắp xếp một lần <span class="bigo">O(n log n)</span>, mỗi truy vấn <span class="bigo">O(log n)</span>. Tổng <span class="bigo">O((n + q) log n)</span>, khoảng 10<sup>7</sup> phép tính, dưới 0,1 giây.</p>
+      </div>
+    </div>
+
+    <p>Bảng dưới đây cho thấy số lần so sánh trong trường hợp xấu nhất khi tìm một giá trị trong mảng n phần tử. Với tìm kiếm nhị phân, con số đó là <span class="math">⌈log<sub>2</sub>(n + 1)⌉</span>, tức là số k nhỏ nhất mà 2<sup>k</sup> &gt; n.</p>
+    <table>
+      <thead><tr><th>n</th><th>Tìm tuần tự (xấu nhất)</th><th>Tìm nhị phân (xấu nhất)</th><th>Vì sao</th></tr></thead>
+      <tbody>
+        <tr><td>10</td><td>10</td><td>4</td><td>2<sup>4</sup> = 16 &gt; 10</td></tr>
+        <tr><td>100</td><td>100</td><td>7</td><td>2<sup>7</sup> = 128 &gt; 100</td></tr>
+        <tr><td>1 000</td><td>1 000</td><td>10</td><td>2<sup>10</sup> = 1 024 &gt; 1 000</td></tr>
+        <tr><td>10<sup>6</sup></td><td>1 000 000</td><td>20</td><td>2<sup>20</sup> = 1 048 576 &gt; 10<sup>6</sup></td></tr>
+        <tr><td>10<sup>9</sup></td><td>1 000 000 000</td><td>30</td><td>2<sup>30</sup> ≈ 1,07·10<sup>9</sup> &gt; 10<sup>9</sup></td></tr>
+        <tr><td>10<sup>18</sup></td><td>không thể</td><td>60</td><td>2<sup>60</sup> ≈ 1,15·10<sup>18</sup> &gt; 10<sup>18</sup></td></tr>
+      </tbody>
+    </table>
+    <p>Con số 60 ở dòng cuối rất đáng nhớ: dù “mảng” là cả dải số từ 1 đến 10<sup>18</sup> (không thể lưu vào máy), chặt nhị phân vẫn chỉ cần 60 bước. Đây chính là cơ sở của <a href="binary-search-answer.html">chặt nhị phân trên kết quả</a>.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Em sẽ học <strong>một mẫu duy nhất</strong> và dùng nó cho mọi bài: tìm chỉ số <em>nhỏ nhất</em> thỏa một điều kiện. Với lower_bound, điều kiện là <span class="math">a[mid] ≥ x</span>.</p>
+
+    <h3>Mẫu an toàn: tìm vị trí đầu tiên có a[i] ≥ x</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Kiểm tra điều kiện.</strong> Mảng phải đã sắp xếp không giảm. Nếu chưa, gọi <code>sort</code> trước.</div></li>
+      <li><div><strong>Khởi tạo.</strong> <code>lo = 0</code>, <code>hi = n − 1</code> (cả mảng đều đang bị nghi ngờ), <code>ans = n</code> (nghĩa là “chưa thấy phần tử nào ≥ x”).</div></li>
+      <li><div><strong>Lặp khi còn vùng nghi ngờ</strong> (<code>lo ≤ hi</code>). Tính <code>mid = lo + (hi − lo) / 2</code>.</div></li>
+      <li><div><strong>Nếu a[mid] ≥ x:</strong> mid là một ứng viên. Ghi <code>ans = mid</code>, rồi tìm xem bên trái còn ứng viên nhỏ hơn không: <code>hi = mid − 1</code>.</div></li>
+      <li><div><strong>Ngược lại (a[mid] &lt; x):</strong> mid và mọi phần tử bên trái mid đều &lt; x, bỏ hết: <code>lo = mid + 1</code>.</div></li>
+      <li><div><strong>Kết thúc.</strong> Khi <code>lo &gt; hi</code>, vùng nghi ngờ rỗng. Trả về <code>ans</code>.</div></li>
+    </ol>
+
+    <pre class="pseudo"><b>hàm</b> LowerBound(a, n, x):          <i>// a đã sắp không giảm</i>
+    lo ← 0;  hi ← n − 1;  ans ← n      <i>// ans = n: chưa tìm thấy</i>
+    <b>khi</b> lo ≤ hi:
+        mid ← lo + (hi − lo) / 2       <i>// chia lấy phần nguyên</i>
+        <b>nếu</b> a[mid] ≥ x:
+            ans ← mid                  <i>// mid thỏa, ghi nhận</i>
+            hi ← mid − 1               <i>// tìm tiếp bên trái</i>
+        <b>ngược lại</b>:
+            lo ← mid + 1               <i>// bỏ nửa trái cùng mid</i>
+    <b>trả về</b> ans</pre>
+
+    <h3>Ba hàm anh em chỉ khác một dấu</h3>
+    <p>Đổi điều kiện ở dòng <b>nếu</b>, em có ngay các hàm khác. Phần còn lại giữ nguyên.</p>
+    <table>
+      <thead><tr><th>Muốn tìm</th><th>Điều kiện “thỏa” tại mid</th><th>Tên trong thư viện C++</th></tr></thead>
+      <tbody>
+        <tr><td>Vị trí đầu tiên có a[i] ≥ x</td><td><code>a[mid] &gt;= x</code></td><td><code>lower_bound</code></td></tr>
+        <tr><td>Vị trí đầu tiên có a[i] &gt; x</td><td><code>a[mid] &gt; x</code></td><td><code>upper_bound</code></td></tr>
+        <tr><td>Có x trong mảng không</td><td>lower_bound(x) &lt; n và a[lower_bound(x)] == x</td><td><code>binary_search</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Phiên bản cổ điển: tìm đúng giá trị x</h3>
+    <p>Sách giáo khoa thường viết dạng “thấy thì dừng ngay”. Nó đúng khi em chỉ cần biết <em>có hay không</em>, nhưng nếu x xuất hiện nhiều lần, nó trả về một vị trí bất kỳ trong số đó, không chắc là vị trí đầu tiên. Vì vậy trong thi đấu nên dùng mẫu có <code>ans</code> ở trên.</p>
+    <pre class="pseudo"><b>hàm</b> TimX(a, n, x):
+    lo ← 0;  hi ← n − 1
+    <b>khi</b> lo ≤ hi:
+        mid ← lo + (hi − lo) / 2
+        <b>nếu</b> a[mid] = x: <b>trả về</b> mid      <i>// thấy rồi, dừng</i>
+        <b>nếu</b> a[mid] &lt; x: lo ← mid + 1     <i>// x nằm bên phải</i>
+        <b>ngược lại</b>:   hi ← mid − 1     <i>// x nằm bên trái</i>
+    <b>trả về</b> −1                          <i>// không có x</i></pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Hãy nhìn mảng đã sắp qua “cặp kính” của điều kiện <span class="math">a[i] ≥ x</span>. Vì mảng tăng dần, các phần tử nhỏ hơn x đứng hết ở đầu, các phần tử ≥ x đứng hết ở cuối. Nếu ghi S (sai) và Đ (đúng) dưới từng ô, em luôn thấy dạng</p>
+    <div class="math-block">S S S … S Đ Đ … Đ</div>
+    <p>Đáp án của lower_bound chính là <strong>vị trí của chữ Đ đầu tiên</strong>, tức là chỗ “đổi từ sai sang đúng”. Tìm kiếm nhị phân là cách tìm chỗ đổi đó mà không phải đọc hết dãy.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 560 150" width="560" role="img" aria-label="Mảng 1 3 3 3 7 9 9 12 15 20 với điều kiện a[i] lớn hơn hoặc bằng 7: bốn ô đầu sai, sáu ô sau đúng, ranh giới ở chỉ số 4">
+        <text class="label-sm" x="20" y="22">i</text>
+        <text class="label-sm" x="20" y="62">a[i]</text>
+        <text class="label-sm" x="20" y="108">a[i] ≥ 7?</text>
+        <g>
+          <rect class="node is-bad" x="90" y="38" width="42" height="36" rx="6"/><text x="111" y="62" text-anchor="middle">1</text><text class="label-sm" x="111" y="22" text-anchor="middle">0</text><text x="111" y="110" text-anchor="middle">S</text>
+          <rect class="node is-bad" x="136" y="38" width="42" height="36" rx="6"/><text x="157" y="62" text-anchor="middle">3</text><text class="label-sm" x="157" y="22" text-anchor="middle">1</text><text x="157" y="110" text-anchor="middle">S</text>
+          <rect class="node is-bad" x="182" y="38" width="42" height="36" rx="6"/><text x="203" y="62" text-anchor="middle">3</text><text class="label-sm" x="203" y="22" text-anchor="middle">2</text><text x="203" y="110" text-anchor="middle">S</text>
+          <rect class="node is-bad" x="228" y="38" width="42" height="36" rx="6"/><text x="249" y="62" text-anchor="middle">3</text><text class="label-sm" x="249" y="22" text-anchor="middle">3</text><text x="249" y="110" text-anchor="middle">S</text>
+          <rect class="node is-ok" x="274" y="38" width="42" height="36" rx="6"/><text x="295" y="62" text-anchor="middle">7</text><text class="label-sm" x="295" y="22" text-anchor="middle">4</text><text x="295" y="110" text-anchor="middle">Đ</text>
+          <rect class="node is-ok" x="320" y="38" width="42" height="36" rx="6"/><text x="341" y="62" text-anchor="middle">9</text><text class="label-sm" x="341" y="22" text-anchor="middle">5</text><text x="341" y="110" text-anchor="middle">Đ</text>
+          <rect class="node is-ok" x="366" y="38" width="42" height="36" rx="6"/><text x="387" y="62" text-anchor="middle">9</text><text class="label-sm" x="387" y="22" text-anchor="middle">6</text><text x="387" y="110" text-anchor="middle">Đ</text>
+          <rect class="node is-ok" x="412" y="38" width="42" height="36" rx="6"/><text x="433" y="62" text-anchor="middle">12</text><text class="label-sm" x="433" y="22" text-anchor="middle">7</text><text x="433" y="110" text-anchor="middle">Đ</text>
+          <rect class="node is-ok" x="458" y="38" width="42" height="36" rx="6"/><text x="479" y="62" text-anchor="middle">15</text><text class="label-sm" x="479" y="22" text-anchor="middle">8</text><text x="479" y="110" text-anchor="middle">Đ</text>
+          <rect class="node is-ok" x="504" y="38" width="42" height="36" rx="6"/><text x="525" y="62" text-anchor="middle">20</text><text class="label-sm" x="525" y="22" text-anchor="middle">9</text><text x="525" y="110" text-anchor="middle">Đ</text>
+        </g>
+        <line class="edge is-active" x1="272" y1="30" x2="272" y2="122"/>
+        <text class="label-pen" x="200" y="142">chỗ đổi S → Đ: lower_bound(7) = 4</text>
+      </svg>
+      <figcaption>Hình 1. Trên mảng đã sắp, điều kiện a[i] ≥ x luôn có dạng “sai… sai, đúng… đúng”. Đáp án là chữ Đ đầu tiên.</figcaption>
+    </figure>
+
+    <p>Mỗi bước, em nhìn ô giữa vùng nghi ngờ. Nếu a[mid] là Đ, chữ Đ đầu tiên nằm ở mid hoặc bên trái: ghi <code>ans = mid</code> rồi thu vùng về [lo, mid − 1]. Nếu a[mid] là S, mọi ô bên trái mid cũng là S: vùng mới là [mid + 1, hi]. Dù câu trả lời là gì, em đều bỏ được khoảng một nửa.</p>
+
+    <h3>Vì sao đúng: bất biến của vòng lặp</h3>
+    <p>Một <strong>bất biến</strong> (invariant) là một mệnh đề luôn đúng ở đầu mỗi vòng lặp. Mẫu an toàn giữ hai bất biến:</p>
+    <ol>
+      <li>Mọi ô có chỉ số <span class="math">&lt; lo</span> đều là S (đã bị loại vì chắc chắn &lt; x).</li>
+      <li>Mọi ô có chỉ số <span class="math">&gt; hi</span> đều là Đ, và <code>ans</code> là chỉ số nhỏ nhất trong số các ô Đ đã thấy, tức là <code>ans = hi + 1</code> (hoặc <code>ans = n</code> nếu chưa thấy ô Đ nào).</li>
+    </ol>
+    <p>Lúc đầu lo = 0, hi = n − 1, ans = n: không có ô nào bên trái lo hay bên phải hi, nên cả hai bất biến hiển nhiên đúng. Mỗi bước, nếu a[mid] là S thì mọi ô từ lo đến mid đều là S, gán lo = mid + 1 vẫn giữ bất biến 1. Nếu a[mid] là Đ thì mọi ô từ mid đến hi đều là Đ, gán hi = mid − 1 và ans = mid = hi + 1 vẫn giữ bất biến 2.</p>
+    <p>Khi vòng lặp dừng, lo = hi + 1. Mọi ô bên trái lo là S, mọi ô từ lo trở đi là Đ. Vậy chữ Đ đầu tiên nằm đúng ở lo, và lo = hi + 1 = ans. Thuật toán trả về đúng đáp án, kể cả khi không có ô Đ nào (ans = n) hay mọi ô đều Đ (ans = 0).</p>
+
+    <h3>Vì sao dừng và vì sao nhanh</h3>
+    <p>Gọi <span class="math">len = hi − lo + 1</span> là độ dài vùng nghi ngờ. Vì <span class="math">lo ≤ mid ≤ hi</span>, sau mỗi bước, vùng mới là [lo, mid − 1] hoặc [mid + 1, hi], đều <em>không chứa mid</em>. Mỗi vùng dài không quá <span class="math">⌊len / 2⌋</span>. Vậy len giảm ít nhất một nửa sau mỗi bước, và chắc chắn giảm ít nhất 1, nên vòng lặp không thể chạy mãi.</p>
+    <p>Bắt đầu với len = n, sau k bước còn không quá <span class="math">n / 2<sup>k</sup></span>. Vòng lặp dừng khi len = 0, tức là sau không quá <span class="math">⌊log<sub>2</sub> n⌋ + 1</span> bước. Với n = 10<sup>6</sup>, đó là 20 bước.</p>
+
+    <h3>Vì sao viết mid = lo + (hi − lo) / 2</h3>
+    <p>Về toán, <span class="math">lo + (hi − lo)/2</span> và <span class="math">(lo + hi)/2</span> bằng nhau (khi chia nguyên với số không âm). Nhưng nếu lo và hi đều gần 2·10<sup>9</sup> (giới hạn của <code>int</code> là 2 147 483 647), tổng <code>lo + hi</code> vượt giới hạn và bị tràn số, cho ra số âm. Còn <code>hi − lo</code> thì luôn nhỏ, không tràn. Trên mảng thường thì chỉ số nhỏ, nhưng khi chặt trên giá trị tới 10<sup>18</sup> lỗi này xảy ra thật. Em tập thói quen viết dạng an toàn ngay từ đầu.</p>
+
+    <div class="callout teacher">
+      <p class="callout-title">Lời thầy cô</p>
+      <p>Đừng học thuộc năm kiểu chặt nhị phân khác nhau. Hãy luôn tự hỏi: “Điều kiện của mình có dạng S…SĐ…Đ không? Mình muốn chữ Đ đầu tiên.” Rồi viết đúng một mẫu có <code>ans</code>. Muốn tìm chữ S cuối cùng thì lấy ans − 1.</p>
+    </div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+
+    <h3>Ví dụ 1: lower_bound(23) trên mảng 16 phần tử</h3>
+    <p>Mảng đã sắp gồm 16 số, trong đó số 23 xuất hiện 3 lần (chỉ số 8, 9, 10). Ta cần vị trí <em>đầu tiên</em> có a[i] ≥ 23. Ô màu nhạt là phần đã bị loại, ô tô đậm là <code>mid</code> đang xét, ô xanh là <code>ans</code> đã ghi nhận. Nhãn đỏ dưới ô là con trỏ lo, mid, hi.</p>
+
+    <div class="stepper" data-title="Chặt nhị phân tìm lower_bound(23)">
+      <div class="frame" data-caption="&lt;b&gt;Khởi tạo.&lt;/b&gt; Tìm lower_bound(23): vị trí đầu tiên có a[i] ≥ 23. lo = 0, hi = 15, ans = 16 (chưa thấy). Cả 16 ô đều đang bị nghi ngờ.">
+        <div class="arr"><span class="cell" data-i="0" data-ptr="lo">2</span><span class="cell" data-i="1">5</span><span class="cell" data-i="2">8</span><span class="cell" data-i="3">8</span><span class="cell" data-i="4">11</span><span class="cell" data-i="5">14</span><span class="cell" data-i="6">17</span><span class="cell" data-i="7">20</span><span class="cell" data-i="8">23</span><span class="cell" data-i="9">23</span><span class="cell" data-i="10">23</span><span class="cell" data-i="11">29</span><span class="cell" data-i="12">31</span><span class="cell" data-i="13">35</span><span class="cell" data-i="14">40</span><span class="cell" data-i="15" data-ptr="hi">44</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; mid = 0 + (15 − 0)/2 = 7. a[7] = 20 &lt; 23: sai. Mọi ô từ 0 đến 7 đều &lt; 23, bỏ hết. lo = 8.">
+        <div class="arr"><span class="cell" data-i="0" data-ptr="lo">2</span><span class="cell" data-i="1">5</span><span class="cell" data-i="2">8</span><span class="cell" data-i="3">8</span><span class="cell" data-i="4">11</span><span class="cell" data-i="5">14</span><span class="cell" data-i="6">17</span><span class="cell is-active" data-i="7" data-ptr="mid">20</span><span class="cell" data-i="8">23</span><span class="cell" data-i="9">23</span><span class="cell" data-i="10">23</span><span class="cell" data-i="11">29</span><span class="cell" data-i="12">31</span><span class="cell" data-i="13">35</span><span class="cell" data-i="14">40</span><span class="cell" data-i="15" data-ptr="hi">44</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Vùng còn [8, 15]. mid = 8 + 7/2 = 11. a[11] = 29 ≥ 23: đúng. Ghi ans = 11, tìm tiếp bên trái: hi = 10.">
+        <div class="arr"><span class="cell is-dim" data-i="0">2</span><span class="cell is-dim" data-i="1">5</span><span class="cell is-dim" data-i="2">8</span><span class="cell is-dim" data-i="3">8</span><span class="cell is-dim" data-i="4">11</span><span class="cell is-dim" data-i="5">14</span><span class="cell is-dim" data-i="6">17</span><span class="cell is-dim" data-i="7">20</span><span class="cell" data-i="8" data-ptr="lo">23</span><span class="cell" data-i="9">23</span><span class="cell" data-i="10">23</span><span class="cell is-active" data-i="11" data-ptr="mid">29</span><span class="cell" data-i="12">31</span><span class="cell" data-i="13">35</span><span class="cell" data-i="14">40</span><span class="cell" data-i="15" data-ptr="hi">44</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; Vùng còn [8, 10]. mid = 8 + 2/2 = 9. a[9] = 23 ≥ 23: đúng. Ghi ans = 9, hi = 8. Chú ý: ta chưa dừng dù đã thấy 23, vì có thể còn 23 ở bên trái.">
+        <div class="arr"><span class="cell is-dim" data-i="0">2</span><span class="cell is-dim" data-i="1">5</span><span class="cell is-dim" data-i="2">8</span><span class="cell is-dim" data-i="3">8</span><span class="cell is-dim" data-i="4">11</span><span class="cell is-dim" data-i="5">14</span><span class="cell is-dim" data-i="6">17</span><span class="cell is-dim" data-i="7">20</span><span class="cell" data-i="8" data-ptr="lo">23</span><span class="cell is-active" data-i="9" data-ptr="mid">23</span><span class="cell" data-i="10" data-ptr="hi">23</span><span class="cell is-ok" data-i="11" data-ptr="ans">29</span><span class="cell is-dim" data-i="12">31</span><span class="cell is-dim" data-i="13">35</span><span class="cell is-dim" data-i="14">40</span><span class="cell is-dim" data-i="15">44</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; Vùng còn [8, 8]. mid = 8. a[8] = 23 ≥ 23: đúng. Ghi ans = 8, hi = 7.">
+        <div class="arr"><span class="cell is-dim" data-i="0">2</span><span class="cell is-dim" data-i="1">5</span><span class="cell is-dim" data-i="2">8</span><span class="cell is-dim" data-i="3">8</span><span class="cell is-dim" data-i="4">11</span><span class="cell is-dim" data-i="5">14</span><span class="cell is-dim" data-i="6">17</span><span class="cell is-dim" data-i="7">20</span><span class="cell is-active" data-i="8" data-ptr="lo/mid/hi">23</span><span class="cell is-ok" data-i="9" data-ptr="ans">23</span><span class="cell is-dim" data-i="10">23</span><span class="cell is-dim" data-i="11">29</span><span class="cell is-dim" data-i="12">31</span><span class="cell is-dim" data-i="13">35</span><span class="cell is-dim" data-i="14">40</span><span class="cell is-dim" data-i="15">44</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kết thúc.&lt;/b&gt; lo = 8 &gt; hi = 7, vùng nghi ngờ rỗng. Trả về ans = 8. Chỉ 4 lần so sánh thay vì 9 lần nếu đi từ đầu mảng.">
+        <div class="arr"><span class="cell is-dim" data-i="0">2</span><span class="cell is-dim" data-i="1">5</span><span class="cell is-dim" data-i="2">8</span><span class="cell is-dim" data-i="3">8</span><span class="cell is-dim" data-i="4">11</span><span class="cell is-dim" data-i="5">14</span><span class="cell is-dim" data-i="6">17</span><span class="cell is-dim" data-i="7">20</span><span class="cell is-ok" data-i="8" data-ptr="ans">23</span><span class="cell is-dim" data-i="9">23</span><span class="cell is-dim" data-i="10">23</span><span class="cell is-dim" data-i="11">29</span><span class="cell is-dim" data-i="12">31</span><span class="cell is-dim" data-i="13">35</span><span class="cell is-dim" data-i="14">40</span><span class="cell is-dim" data-i="15">44</span></div>
+      </div>
+    </div>
+
+    <p>Bảng vết (trace) dưới đây tóm tắt lại cả quá trình. Em hãy tự chạy tay lại một lần trên giấy với <span class="math">x = 24</span>: em sẽ thấy đáp án là 11 (vì a[11] = 29 là số đầu tiên ≥ 24), và upper_bound(23) cũng bằng 11.</p>
+    <table class="trace">
+      <thead><tr><th>Bước</th><th>lo</th><th>hi</th><th>mid</th><th>a[mid]</th><th>a[mid] ≥ 23?</th><th>Hành động</th><th>ans</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>0</td><td>15</td><td>7</td><td>20</td><td>sai</td><td>lo = 8</td><td>16</td></tr>
+        <tr><td>2</td><td>8</td><td>15</td><td>11</td><td>29</td><td>đúng</td><td>hi = 10</td><td>11</td></tr>
+        <tr><td>3</td><td>8</td><td>10</td><td>9</td><td>23</td><td>đúng</td><td>hi = 8</td><td>9</td></tr>
+        <tr class="hl"><td>4</td><td>8</td><td>8</td><td>8</td><td>23</td><td>đúng</td><td>hi = 7</td><td>8</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Ví dụ 2: đoán số từ 1 đến 100</h3>
+    <p>Đoán số là chặt nhị phân trên dải số 1..100 (không cần mảng thật). Trường hợp xấu nhất là số bí mật bằng 100: lần nào em cũng nghe “lớn hơn”. Bảng dưới cho thấy em vẫn chỉ cần 7 lần đoán.</p>
+    <table class="trace">
+      <thead><tr><th>Lần đoán</th><th>Khoảng còn lại [lo, hi]</th><th>Số khả năng</th><th>Đoán mid</th><th>Bạn trả lời</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>[1, 100]</td><td>100</td><td>50</td><td>lớn hơn</td></tr>
+        <tr><td>2</td><td>[51, 100]</td><td>50</td><td>75</td><td>lớn hơn</td></tr>
+        <tr><td>3</td><td>[76, 100]</td><td>25</td><td>88</td><td>lớn hơn</td></tr>
+        <tr><td>4</td><td>[89, 100]</td><td>12</td><td>94</td><td>lớn hơn</td></tr>
+        <tr><td>5</td><td>[95, 100]</td><td>6</td><td>97</td><td>lớn hơn</td></tr>
+        <tr><td>6</td><td>[98, 100]</td><td>3</td><td>99</td><td>lớn hơn</td></tr>
+        <tr class="hl"><td>7</td><td>[100, 100]</td><td>1</td><td>100</td><td>đúng rồi</td></tr>
+      </tbody>
+    </table>
+    <p>Cột “số khả năng” giảm 100 → 50 → 25 → 12 → 6 → 3 → 1: mỗi lần còn không quá một nửa. Nếu số bí mật là 37 thì chỉ cần 3 lần (50, 25, 37). Thầy cô đã thử máy cả 100 số bí mật: không số nào cần quá 7 lần.</p>
+
+    <h3>Ví dụ 3: đếm phần tử trong đoạn giá trị</h3>
+    <p>Với mảng đã sắp <span class="math">[1, 3, 3, 3, 7, 9, 9, 12, 15, 20]</span>, các số nằm trong đoạn [3, 9] đứng liền nhau từ chỉ số lower_bound(3) = 1 đến trước chỉ số upper_bound(9) = 7. Số lượng là 7 − 1 = 6.</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Đếm số phần tử trong [3, 9]</p></div>
+      <div class="viz-body">
+        <div class="arr"><span class="cell is-dim" data-i="0">1</span><span class="cell is-ok" data-i="1" data-ptr="lower_bound(3)">3</span><span class="cell is-ok" data-i="2">3</span><span class="cell is-ok" data-i="3">3</span><span class="cell is-ok" data-i="4">7</span><span class="cell is-ok" data-i="5">9</span><span class="cell is-ok" data-i="6">9</span><span class="cell is-cmp" data-i="7" data-ptr="upper_bound(9)">12</span><span class="cell is-dim" data-i="8">15</span><span class="cell is-dim" data-i="9">20</span></div>
+      </div>
+      <div class="viz-legend"><span><i class="is-ok"></i>nằm trong [3, 9]</span><span><i class="is-cmp"></i>số đầu tiên &gt; 9</span><span><i class="is-dim"></i>ngoài đoạn</span></div>
+      <div class="viz-caption"><p>Kết quả = upper_bound(9) − lower_bound(3) = 7 − 1 = 6. Cũng từ hình này: số lần xuất hiện của 3 là upper_bound(3) − lower_bound(3) = 4 − 1 = 3.</p></div>
+    </div>
+
+    <div class="playground" id="viz-binary-search">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: chạy chặt nhị phân từng bước</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="bs-input">Mảng <input type="text" id="bs-input" value="2 5 8 8 11 14 17 20 23 23 23 29 31 35 40 44"></label>
+          <label for="bs-x">x <input type="number" id="bs-x" value="23"></label>
+          <label for="bs-mode">Tìm <select id="bs-mode">
+            <option value="lower">lower_bound: đầu tiên ≥ x</option>
+            <option value="upper">upper_bound: đầu tiên &gt; x</option>
+          </select></label>
+          <button type="button" data-act="start">Bắt đầu</button>
+          <button type="button" data-act="step">Bước tiếp</button>
+          <button type="button" class="ghost" data-act="run">Chạy hết</button>
+          <button type="button" class="ghost" data-act="rand">Mảng ngẫu nhiên</button>
+        </div>
+        <div class="bs-view"></div>
+        <div class="out" aria-live="polite">Nhập mảng (tối đa 20 số nguyên, máy sẽ tự sắp xếp), chọn x rồi bấm Bắt đầu.</div>
+        <div class="bs-log"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Chương trình dưới đây giải bài mở đầu: cho dãy n số (chưa sắp) và q truy vấn, mỗi truy vấn gồm hai số l, r; in ra số phần tử có giá trị trong đoạn [l, r]. Em tự viết hai hàm <code>lowerBound</code> và <code>upperBound</code> theo đúng mẫu an toàn, để hiểu bên trong thư viện làm gì. Chỉ số mảng bắt đầu từ 0.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_doan.cpp</span> Đếm phần tử trong đoạn giá trị, tự cài chặt nhị phân</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int n;
+vector&lt;long long&gt; a;   // mảng đã sắp xếp tăng dần
+
+// Vị trí đầu tiên có a[i] &gt;= x (trả về n nếu không có)
+int lowerBound(long long x) {
+    int lo = 0, hi = n - 1, ans = n;   // ans = n nghĩa là "chưa tìm thấy"
+    while (lo &lt;= hi) {
+        int mid = lo + (hi - lo) / 2;   // tránh tràn số
+        if (a[mid] &gt;= x) {             // mid thỏa: ghi nhận, tìm tiếp bên trái
+            ans = mid;
+            hi = mid - 1;
+        } else {                       // mid không thỏa: bỏ nửa trái
+            lo = mid + 1;
+        }
+    }
+    return ans;
+}
+
+// Vị trí đầu tiên có a[i] &gt; x (trả về n nếu không có)
+int upperBound(long long x) {
+    int lo = 0, hi = n - 1, ans = n;
+    while (lo &lt;= hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (a[mid] &gt; x) { ans = mid; hi = mid - 1; }
+        else lo = mid + 1;
+    }
+    return ans;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int q;
+    cin &gt;&gt; n &gt;&gt; q;
+    a.resize(n);
+    for (auto &amp;v : a) cin &gt;&gt; v;
+    sort(a.begin(), a.end());          // BẮT BUỘC: chặt nhị phân cần mảng đã sắp
+
+    while (q--) {
+        long long l, r;
+        cin &gt;&gt; l &gt;&gt; r;
+        // số phần tử trong [l, r] = (số phần tử &lt;= r) - (số phần tử &lt; l)
+        int cnt = upperBound(r) - lowerBound(l);
+        cout &lt;&lt; max(cnt, 0) &lt;&lt; '\n';   // l &gt; r thì kết quả âm, ta in 0
+    }
+    return 0;
+}</code></pre>
+    </figure>
+
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">10 5
+7 3 9 3 15 1 12 3 20 9
+3 9
+10 14
+21 30
+1 1
+-5 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">6
+1
+0
+1
+1</code></pre></div>
+    </div>
+    <p><strong>Giải thích.</strong> Sau khi sắp, mảng là [1, 3, 3, 3, 7, 9, 9, 12, 15, 20]. Truy vấn [3, 9]: upperBound(9) = 7, lowerBound(3) = 1, kết quả 6 (ba số 3, số 7, hai số 9). Truy vấn [10, 14]: chỉ có 12. Truy vấn [21, 30]: upperBound(30) = 10, lowerBound(21) = 10, kết quả 0. Truy vấn [1, 1]: một số 1. Truy vấn [−5, 2]: chỉ có số 1.</p>
+
+    <h3>Cùng chương trình, dùng thư viện</h3>
+    <p>Trong phòng thi, em nên dùng sẵn <code>lower_bound</code> và <code>upper_bound</code> của C++ (trong <code>&lt;algorithm&gt;</code>) vì ngắn và không thể sai. Hai hàm này trả về một <em>iterator</em> (con trỏ tới phần tử); trừ đi <code>a.begin()</code> để được chỉ số. Chương trình sau cho cùng kết quả với cùng Input.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_doan_stl.cpp</span> Phiên bản dùng lower_bound, upper_bound</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, q;
+    cin &gt;&gt; n &gt;&gt; q;
+    vector&lt;long long&gt; a(n);
+    for (auto &amp;v : a) cin &gt;&gt; v;
+    sort(a.begin(), a.end());
+
+    while (q--) {
+        long long l, r;
+        cin &gt;&gt; l &gt;&gt; r;
+        // lower_bound/upper_bound trả về iterator; trừ a.begin() để ra chỉ số
+        long long cnt = (upper_bound(a.begin(), a.end(), r) - a.begin())
+                      - (lower_bound(a.begin(), a.end(), l) - a.begin());
+        cout &lt;&lt; max(cnt, 0LL) &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="callout tip">
+      <p class="callout-title">Mảng đánh số từ 1</p>
+      <p>Nếu em lưu dữ liệu ở <code>a[1..n]</code> thì gọi <code>lower_bound(a + 1, a + n + 1, x) - a</code>. Kết quả là chỉ số từ 1 đến n, hoặc n + 1 nếu không có phần tử nào ≥ x.</p>
+    </div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thao tác</th><th>Thời gian</th><th>Bộ nhớ thêm</th></tr></thead>
+      <tbody>
+        <tr><td>Sắp xếp mảng (một lần)</td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(1)</span> đến <span class="bigo">O(log n)</span></td></tr>
+        <tr><td>Một lần lower_bound / upper_bound / binary_search</td><td><span class="bigo">O(log n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>q truy vấn đếm trong [l, r]</td><td><span class="bigo">O(q log n)</span></td><td><span class="bigo">O(1)</span></td></tr>
+        <tr><td>Cả bài mở đầu</td><td><span class="bigo">O((n + q) log n)</span></td><td><span class="bigo">O(n)</span> cho mảng</td></tr>
+        <tr><td>So sánh: tìm tuần tự q lần</td><td><span class="bigo">O(n·q)</span></td><td><span class="bigo">O(1)</span></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Ví dụ số phép tính.</strong> Với n = q = 2·10<sup>5</sup>: sắp xếp khoảng 2·10<sup>5</sup> × 18 ≈ 3,6·10<sup>6</sup>; truy vấn khoảng 2·10<sup>5</sup> × 2 × 18 ≈ 7,2·10<sup>6</sup>. Tổng khoảng 10<sup>7</sup>, chạy chừng 0,05 giây. Với n = q = 10<sup>6</sup>, tổng khoảng 10<sup>6</sup> × 20 × 3 = 6·10<sup>7</sup>, vẫn dưới 1 giây (khi đó nhớ đọc nhanh bằng <code>ios::sync_with_stdio(false)</code>).</p>
+    <p><strong>Ghi nhớ:</strong> log<sub>2</sub> của 10<sup>3</sup>, 10<sup>6</sup>, 10<sup>9</sup>, 10<sup>18</sup> lần lượt xấp xỉ 10, 20, 30, 60. Vì vậy chặt nhị phân gần như “miễn phí”: kể cả với n khổng lồ, mỗi lần chỉ vài chục bước.</p>
+    <div class="callout warn">
+      <p class="callout-title">Khi nào không đáng sắp xếp</p>
+      <p>Nếu chỉ có <strong>một</strong> truy vấn trên mảng chưa sắp, cứ duyệt tuần tự <span class="bigo">O(n)</span>, vì sắp xếp tốn <span class="bigo">O(n log n)</span>, còn đắt hơn. Sắp xếp + chặt nhị phân có lợi khi số truy vấn lớn hoặc mảng đã sắp sẵn.</p>
+    </div>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Bảng tra: mọi câu hỏi đếm và tìm đều quy về hai hàm</h3>
+    <p>Gọi <span class="math">L = lower_bound(x)</span> và <span class="math">U = upper_bound(x)</span> (dạng chỉ số, mảng sắp tăng, chỉ số từ 0, n phần tử).</p>
+    <table>
+      <thead><tr><th>Câu hỏi</th><th>Công thức</th><th>Với a = [1, 3, 3, 3, 7, 9, 9, 12, 15, 20], x = 3</th></tr></thead>
+      <tbody>
+        <tr><td>Số phần tử &lt; x</td><td>L</td><td>1</td></tr>
+        <tr><td>Số phần tử ≤ x</td><td>U</td><td>4</td></tr>
+        <tr><td>Số phần tử ≥ x</td><td>n − L</td><td>9</td></tr>
+        <tr><td>Số phần tử &gt; x</td><td>n − U</td><td>6</td></tr>
+        <tr><td>Số lần xuất hiện của x</td><td>U − L</td><td>3</td></tr>
+        <tr><td>Số phần tử trong [p, q]</td><td>upper_bound(q) − lower_bound(p)</td><td>[3, 9]: 7 − 1 = 6</td></tr>
+        <tr><td>Vị trí cuối cùng có a[i] ≤ x</td><td>U − 1 (nếu U &gt; 0)</td><td>3</td></tr>
+        <tr><td>Vị trí cuối cùng có a[i] &lt; x</td><td>L − 1 (nếu L &gt; 0)</td><td>0</td></tr>
+        <tr><td>Phần tử nhỏ nhất ≥ x</td><td>a[L] (nếu L &lt; n)</td><td>3</td></tr>
+        <tr><td>Phần tử lớn nhất ≤ x</td><td>a[U − 1] (nếu U &gt; 0)</td><td>3</td></tr>
+        <tr><td>x có trong mảng?</td><td><code>binary_search</code>, hoặc L &lt; n và a[L] == x</td><td>có</td></tr>
+      </tbody>
+    </table>
+    <p>Hàm <code>equal_range(a.begin(), a.end(), x)</code> trả về cùng lúc cặp (L, U) dạng iterator.</p>
+
+    <h3>Tìm phần tử gần x nhất</h3>
+    <p>Phần tử gần x nhất chỉ có thể là a[L] (số nhỏ nhất ≥ x) hoặc a[L − 1] (số lớn nhất &lt; x). Mọi số khác đều xa x hơn một trong hai số này. Bài <a href="https://oj.vnoi.info/problem/nksgame">NKSGAME</a> (VOI 2008) dùng đúng ý này: cho hai dãy b và c, tìm giá nhỏ nhất của |b<sub>i</sub> + c<sub>j</sub>|. Với mỗi b<sub>i</sub>, ta muốn c<sub>j</sub> gần −b<sub>i</sub> nhất.</p>
+    <figure class="code">
+      <figcaption><span class="fn">gan_nhat.cpp</span> Với mỗi b[i], tìm c[j] gần −b[i] nhất</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+// NKSGAME-style: min |b_i + c_j|
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n; cin &gt;&gt; n;
+    vector&lt;long long&gt; b(n), c(n);
+    for (auto &amp;v : b) cin &gt;&gt; v;
+    for (auto &amp;v : c) cin &gt;&gt; v;
+    sort(c.begin(), c.end());
+    long long best = LLONG_MAX;
+    for (long long v : b) {
+        // muốn c_j gần -v nhất: xét số đầu tiên &gt;= -v và số đứng ngay trước nó
+        int k = lower_bound(c.begin(), c.end(), -v) - c.begin();
+        if (k &lt; n)  best = min(best, llabs(v + c[k]));
+        if (k &gt; 0)  best = min(best, llabs(v + c[k - 1]));
+    }
+    cout &lt;&lt; best &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">2
+1 -2
+2 3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">0</code></pre></div>
+    </div>
+    <p>Độ phức tạp <span class="bigo">O(n log n)</span>, thay vì <span class="bigo">O(n²)</span> nếu thử mọi cặp (10<sup>10</sup> phép tính với n = 10<sup>5</sup>).</p>
+
+    <h3>Dãy giảm dần và hàm so sánh</h3>
+    <p>Mảng sắp <em>giảm dần</em> thì điều kiện “a[i] ≤ x” có dạng S…SĐ…Đ. Em truyền thêm <code>greater&lt;int&gt;()</code> để thư viện hiểu thứ tự mới:</p>
+<pre><code class="language-cpp">vector&lt;int&gt; b = {20, 15, 12, 9, 9, 7, 3, 3, 3, 1};          // giảm dần
+int p = lower_bound(b.begin(), b.end(), 9, greater&lt;int&gt;()) - b.begin(); // đầu tiên b[i] &lt;= 9: p = 3
+int r = upper_bound(b.begin(), b.end(), 9, greater&lt;int&gt;()) - b.begin(); // đầu tiên b[i] &lt; 9:  r = 5</code></pre>
+    <p>Quy tắc chung: hàm so sánh truyền cho <code>lower_bound</code> phải <strong>đúng là</strong> hàm đã dùng để <code>sort</code> mảng. Với mảng <code>pair</code> hoặc <code>struct</code>, em có thể dùng lambda, ví dụ sắp theo điểm rồi tìm theo điểm. Xem thêm bài <a href="sorting.html">Sắp xếp và so sánh tùy biến</a>.</p>
+
+    <h3>Tìm trong set và multiset</h3>
+    <p>Khi dữ liệu vừa được thêm vừa bị xóa (như bài “Vé hòa nhạc” trong phần bài tập), em dùng <code>multiset</code> và gọi hàm <strong>thành viên</strong> <code>s.lower_bound(x)</code>, <code>s.upper_bound(x)</code>, mỗi lần <span class="bigo">O(log n)</span>. Muốn phần tử lớn nhất ≤ x: lấy <code>it = s.upper_bound(x)</code>; nếu <code>it != s.begin()</code> thì lùi một bước <code>--it</code>. Chi tiết ở bài <a href="stl.html">Thư viện STL</a>.</p>
+
+    <h3>Cầu nối: chặt nhị phân trên một điều kiện bất kỳ</h3>
+    <p>Mẫu an toàn không cần mảng thật. Nó chỉ cần một điều kiện <code>check(k)</code> có dạng S…SĐ…Đ khi k tăng, và trả về k nhỏ nhất làm check đúng. Ví dụ: tìm số nguyên dương k nhỏ nhất có k² ≥ N với N tới 10<sup>18</sup>. Điều kiện k·k ≥ N rõ ràng S…SĐ…Đ khi k tăng.</p>
+    <figure class="code">
+      <figcaption><span class="fn">canbac.cpp</span> k nhỏ nhất có k² ≥ N, khoảng 31 bước</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+int main() {
+    long long N;
+    cin &gt;&gt; N;                              // 1 &lt;= N &lt;= 10^18
+    long long lo = 1, hi = 2000000000LL, ans = hi;   // 2e9 * 2e9 = 4e18 vẫn vừa long long
+    while (lo &lt;= hi) {
+        long long mid = lo + (hi - lo) / 2;
+        if (mid * mid &gt;= N) { ans = mid; hi = mid - 1; }   // điều kiện đơn điệu: S...SĐ...Đ
+        else lo = mid + 1;
+    }
+    cout &lt;&lt; ans &lt;&lt; '\n';                   // k nhỏ nhất có k*k &gt;= N
+}</code></pre>
+    </figure>
+    <p>Với N = 17 chương trình in 5 (vì 4² = 16 &lt; 17 ≤ 25 = 5²). Với N = 10<sup>18</sup> in 10<sup>9</sup>. Ý tưởng “đi tìm chỗ đổi từ sai sang đúng” này mạnh đến mức giải được cả những bài như “đặt lưỡi cưa ở độ cao lớn nhất bao nhiêu để cắt đủ m mét gỗ”. Đó chính là nội dung bài <a href="binary-search-answer.html">Chặt nhị phân trên kết quả</a>.</p>
+
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+
+    <div class="callout danger">
+      <p class="callout-title">1. Chặt nhị phân trên mảng chưa sắp xếp</p>
+      <p>Với a = [5, 1, 9, 3, 7] và x = 3: lo = 0, hi = 4, mid = 2, a[2] = 9 ≥ 3 nên hi = 1; mid = 0, a[0] = 5 ≥ 3 nên hi = −1. Kết quả lower_bound = 0, tức “a[0] = 5 là số đầu tiên ≥ 3”, trong khi binary_search(3) báo không có 3, dù 3 nằm ở chỉ số 3. Chương trình không báo lỗi gì, chỉ cho đáp án sai. <strong>Sửa:</strong> luôn <code>sort</code> trước, hoặc chắc chắn đề nói dãy đã sắp.</p>
+    </div>
+
+    <div class="callout danger">
+      <p class="callout-title">2. Vòng lặp vô hạn vì cập nhật lo = mid</p>
+      <p>Đoạn sau muốn tìm vị trí cuối cùng có a[i] ≤ x:</p>
+<pre><code class="language-cpp">while (lo &lt; hi) {
+    int mid = (lo + hi) / 2;
+    if (a[mid] &lt;= x) lo = mid;      // SAI: có thể không tiến
+    else hi = mid - 1;
+}</code></pre>
+      <p>Với a = [1, 3], x = 3: lo = 0, hi = 1, mid = 0, a[0] ≤ 3 nên lo = 0. Không có gì thay đổi, chương trình chạy mãi. <strong>Sửa:</strong> dùng mẫu có <code>ans</code>, luôn gán <code>lo = mid + 1</code> hoặc <code>hi = mid − 1</code>. Khi đó vùng nghi ngờ chắc chắn co lại sau mỗi bước. Vị trí cuối cùng ≤ x chính là upper_bound(x) − 1.</p>
+    </div>
+
+    <div class="callout warn">
+      <p class="callout-title">3. Lệch một (off-by-one)</p>
+      <ul>
+        <li>Nhầm <code>hi = n</code> với <code>hi = n − 1</code>: với mẫu <code>while (lo &lt;= hi)</code>, nếu khởi tạo <code>hi = n</code> thì có lúc <code>mid = n</code> và truy cập <code>a[n]</code> ngoài mảng.</li>
+        <li>Nhầm lower_bound với upper_bound: đếm số phần tử ≤ x phải dùng upper_bound, đếm số &lt; x mới dùng lower_bound. Thử ngay với một mảng có giá trị lặp như [3, 3, 3] để kiểm tra.</li>
+        <li>Quên rằng kết quả có thể bằng n (không có phần tử thỏa) hoặc bằng 0 (rồi lấy chỉ số −1).</li>
+      </ul>
+    </div>
+
+    <div class="callout warn">
+      <p class="callout-title">4. Dùng iterator end() như một phần tử</p>
+      <p>Nếu x lớn hơn mọi phần tử, <code>lower_bound</code> trả về <code>a.end()</code>. Viết <code>*lower_bound(a.begin(), a.end(), x)</code> lúc đó là đọc ngoài mảng. <strong>Sửa:</strong> kiểm tra <code>it != a.end()</code> (hoặc chỉ số &lt; n) trước khi lấy giá trị.</p>
+    </div>
+
+    <div class="callout warn">
+      <p class="callout-title">5. Tràn số khi tính mid</p>
+      <p>Với <code>int lo, hi</code> gần 2·10<sup>9</sup>, <code>(lo + hi) / 2</code> bị tràn. Với miền giá trị tới 10<sup>18</sup> dùng <code>long long</code>, và vẫn viết <code>lo + (hi − lo) / 2</code>. Khi điều kiện có phép nhân như <code>mid * mid</code>, hãy chọn <code>hi</code> đủ nhỏ để tích không vượt 9,2·10<sup>18</sup>.</p>
+    </div>
+
+    <div class="callout danger">
+      <p class="callout-title">6. Gọi std::lower_bound trên set</p>
+      <p><code>lower_bound(s.begin(), s.end(), x)</code> với <code>set</code> chạy <span class="bigo">O(n)</span> vì iterator của set không nhảy thẳng tới giữa được. Với 2·10<sup>5</sup> truy vấn, bài sẽ bị quá thời gian. <strong>Sửa:</strong> dùng hàm thành viên <code>s.lower_bound(x)</code>, chạy <span class="bigo">O(log n)</span>.</p>
+    </div>
+
+    <div class="callout tip">
+      <p class="callout-title">Mẹo kiểm tra nhanh</p>
+      <p>Trước khi nộp, thử tay ba trường hợp biên: x nhỏ hơn mọi phần tử (đáp án 0), x lớn hơn mọi phần tử (đáp án n), và mảng có giá trị lặp. Nếu cả ba đúng, mã của em gần như chắc chắn đúng.</p>
+    </div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Mảng đã sắp có n = 1 000 000 phần tử. Trong trường hợp xấu nhất, tìm kiếm nhị phân cần khoảng bao nhiêu lần so sánh?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 1 000</button>
+        <button type="button" class="quiz-opt">B. 500 000</button>
+        <button type="button" class="quiz-opt" data-correct>C. 20</button>
+        <button type="button" class="quiz-opt">D. 6</button>
+      </div>
+      <p class="quiz-explain">Đúng là C. Mỗi bước loại một nửa, nên cần k bước với 2<sup>k</sup> &gt; 10<sup>6</sup>. Vì 2<sup>20</sup> = 1 048 576 nên k = 20.</p>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Cho a = [2, 4, 4, 4, 6, 8] (chỉ số từ 0). Giá trị của upper_bound(4) − lower_bound(4) là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 1</button>
+        <button type="button" class="quiz-opt" data-correct>B. 3</button>
+        <button type="button" class="quiz-opt">C. 4</button>
+        <button type="button" class="quiz-opt">D. 5</button>
+      </div>
+      <p class="quiz-explain">lower_bound(4) = 1 (a[1] = 4 là số đầu tiên ≥ 4), upper_bound(4) = 4 (a[4] = 6 là số đầu tiên &gt; 4). Hiệu là 3, đúng bằng số lần số 4 xuất hiện.</p>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Muốn đếm số phần tử <strong>nhỏ hơn hoặc bằng</strong> x trong mảng đã sắp tăng, em dùng biểu thức nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. lower_bound(a.begin(), a.end(), x) - a.begin()</button>
+        <button type="button" class="quiz-opt" data-correct>B. upper_bound(a.begin(), a.end(), x) - a.begin()</button>
+        <button type="button" class="quiz-opt">C. n - upper_bound(a.begin(), a.end(), x) + a.begin()</button>
+      </div>
+      <p class="quiz-explain">upper_bound trả về vị trí của số đầu tiên &gt; x; mọi số đứng trước vị trí đó đều ≤ x, nên số lượng chính bằng chỉ số đó. Phương án A chỉ đếm các số &lt; x.</p>
+    </div>
+
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Vì sao nên viết <code>mid = lo + (hi - lo) / 2</code> thay cho <code>(lo + hi) / 2</code>?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Vì cách đầu cho mid khác, giúp vòng lặp ít bước hơn.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Vì lo + hi có thể vượt giới hạn kiểu số và bị tràn.</button>
+        <button type="button" class="quiz-opt">C. Vì C++ không cho phép cộng hai chỉ số.</button>
+      </div>
+      <p class="quiz-explain">Với lo, hi không âm, hai cách cho cùng giá trị. Nhưng khi lo, hi lớn (gần 2·10<sup>9</sup> với int), tổng lo + hi bị tràn; còn hi − lo thì không.</p>
+    </div>
+
+    <p><strong>Câu 5.</strong> Chạy tay lower_bound(10) theo mẫu an toàn trên mảng a = [1, 4, 6, 10, 10, 13, 18, 25]. Ghi lại lo, hi, mid, ans ở mỗi bước. Có bao nhiêu bước và kết quả là gì?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>n = 8, lo = 0, hi = 7, ans = 8.</p>
+      <ul>
+        <li>Bước 1: mid = 3, a[3] = 10 ≥ 10: ans = 3, hi = 2.</li>
+        <li>Bước 2: lo = 0, hi = 2, mid = 1, a[1] = 4 &lt; 10: lo = 2.</li>
+        <li>Bước 3: lo = 2, hi = 2, mid = 2, a[2] = 6 &lt; 10: lo = 3.</li>
+      </ul>
+      <p>lo = 3 &gt; hi = 2, dừng sau 3 bước. Kết quả ans = 3. Để ý ở bước 1 ta đã gặp 10 nhưng vẫn tìm tiếp bên trái để chắc chắn đó là số 10 đầu tiên.</p>
+    </details>
+
+    <p><strong>Câu 6.</strong> Mảng b = [9, 7, 7, 4, 2] sắp giảm dần. Em muốn tìm vị trí đầu tiên có b[i] ≤ 7. Viết lời gọi thư viện và cho biết kết quả.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p><code>lower_bound(b.begin(), b.end(), 7, greater&lt;int&gt;()) - b.begin()</code> cho kết quả 1, vì b[1] = 7 là phần tử đầu tiên không “lớn hơn” 7. Nếu quên <code>greater&lt;int&gt;()</code>, thư viện tưởng mảng tăng dần và kết quả không có ý nghĩa.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Các bài có nhãn VI có đề tiếng Việt; bài tiếng Anh có tóm tắt tiếng Việt bên dưới.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cppb2p106">Thuật toán tìm kiếm nhị phân</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho mảng N số (N ≤ 10<sup>5</sup>) và số X. In 1 nếu X xuất hiện trong mảng, ngược lại in 0.</p>
+        <p class="ex-skill"><b>Luyện:</b> cài đặt tìm kiếm nhị phân cổ điển hoặc dùng <code>binary_search</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đề không hứa mảng đã sắp, nên cứ sắp xếp trước cho chắc. Sau đó tự viết vòng lặp lo, hi, mid, rồi đối chiếu với <code>binary_search</code> của thư viện.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/600/B">600B – Queries about less or equal elements</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho mảng a (n ≤ 2·10<sup>5</sup>) và mảng b (m ≤ 2·10<sup>5</sup>), giá trị trong [−10<sup>9</sup>, 10<sup>9</sup>]. Với mỗi b<sub>j</sub>, đếm số phần tử của a nhỏ hơn hoặc bằng b<sub>j</sub>.</p>
+        <p class="ex-skill"><b>Luyện:</b> sắp xếp một lần, trả lời nhiều truy vấn bằng <code>upper_bound</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đếm số ≤ x là upper_bound, không phải lower_bound. Nhớ giữ nguyên thứ tự in theo b.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/706/B">706B – Interesting drink</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Có n cửa hàng, cửa hàng i bán nước giá x<sub>i</sub>. Trong q ngày, ngày i em có m<sub>i</sub> đồng. Mỗi ngày, cho biết có bao nhiêu cửa hàng em đủ tiền mua.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra bài đếm “số phần tử ≤ x” trong vỏ bọc đời thường.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp giá tăng dần. Số cửa hàng mua được với m đồng là số giá ≤ m. m có thể tới 10<sup>9</sup>, lớn hơn mọi giá.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1640">CSES – Sum of Two Values | Tổng hai giá trị</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho n số (n ≤ 2·10<sup>5</sup>) và x. Tìm hai vị trí khác nhau có tổng giá trị bằng x, in hai vị trí đó (theo chỉ số gốc), hoặc báo không có. Bản gốc: <a href="https://cses.fi/problemset/task/1640">CSES 1640</a>.</p>
+        <p class="ex-skill"><b>Luyện:</b> sắp xếp cặp (giá trị, chỉ số gốc), tìm “bạn ghép” bằng chặt nhị phân.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp các cặp (a<sub>i</sub>, i). Với mỗi vị trí k trong mảng đã sắp, tìm x − a<sub>k</sub> trong đoạn <em>sau</em> k bằng lower_bound để không ghép một phần tử với chính nó. Có thể giải thêm bằng <a href="two-pointers.html">hai con trỏ</a> trong <span class="bigo">O(n)</span> sau khi sắp để so sánh.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nksgame">NKSGAME – Trò chơi với dãy số (VOI 2008)</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Hai dãy b và c, mỗi dãy n số (n ≤ 10<sup>5</sup>). Tìm giá trị nhỏ nhất của |b<sub>i</sub> + c<sub>j</sub>|.</p>
+        <p class="ex-skill"><b>Luyện:</b> tìm phần tử gần một giá trị nhất bằng lower_bound và phần tử đứng trước.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp c. Với mỗi b<sub>i</sub>, ứng viên tốt nhất là c[k] và c[k − 1] với k = lower_bound(−b<sub>i</sub>). Xem lại mục “Tìm phần tử gần x nhất”. Dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/1324/D">1324D – Pair of Topics</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho hai dãy a, b độ dài n (n ≤ 2·10<sup>5</sup>). Đếm số cặp i &lt; j sao cho a<sub>i</sub> + a<sub>j</sub> &gt; b<sub>i</sub> + b<sub>j</sub>.</p>
+        <p class="ex-skill"><b>Luyện:</b> biến đổi bất đẳng thức về một dãy, rồi đếm cặp bằng upper_bound.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đặt d<sub>i</sub> = a<sub>i</sub> − b<sub>i</sub>; điều kiện thành d<sub>i</sub> + d<sub>j</sub> &gt; 0. Thứ tự i &lt; j không quan trọng (chỉ cần đếm cặp không có thứ tự), nên sắp d. Với mỗi i, đếm số j &gt; i có d<sub>j</sub> &gt; −d<sub>i</sub> bằng upper_bound trên đoạn sau i. Đáp án có thể tới 2·10<sup>10</sup>: dùng <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1091">CSES – Concert Tickets | Vé hòa nhạc</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Có n vé với giá cho trước và m khách lần lượt tới (n, m ≤ 2·10<sup>5</sup>). Mỗi khách mua vé đắt nhất không vượt quá số tiền tối đa của mình; vé đã bán thì mất. In giá vé từng khách mua, hoặc −1.</p>
+        <p class="ex-skill"><b>Luyện:</b> “phần tử lớn nhất ≤ x” trên tập thay đổi, dùng <code>multiset</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mảng thường không xóa nhanh được. Bỏ các vé vào <code>multiset</code>; với mỗi khách gọi <code>it = s.upper_bound(t)</code>, nếu <code>it == s.begin()</code> thì in −1, ngược lại lùi <code>--it</code>, in <code>*it</code> rồi <code>s.erase(it)</code> (xóa đúng một vé).</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/c11cave">C11CAVE – Hang động</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Hang dài N (chẵn, N ≤ 2·10<sup>5</sup>), cao H (H ≤ 5·10<sup>5</sup>); chướng ngại vật xen kẽ măng đá (mọc từ đất) và nhũ đá (rủ từ trần). Đom đóm bay ngang ở một độ cao và phá mọi chướng ngại trên đường. Tìm số chướng ngại ít nhất phải phá và số độ cao đạt được giá trị đó.</p>
+        <p class="ex-skill"><b>Luyện:</b> tách bài thành hai câu hỏi đếm “có bao nhiêu số ≥ t” và trả lời H lần bằng chặt nhị phân.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tách hai mảng: chiều cao măng đá và chiều cao nhũ đá, sắp mỗi mảng. Ở độ cao h (1..H), măng đá bị phá nếu cao ≥ h; nhũ đá dài d bị phá nếu d ≥ H − h + 1. Mỗi số đếm bằng n − lower_bound(...). Tổng <span class="bigo">O(H log N)</span>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/binarysearch">Tìm kiếm nhị phân?</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho n và x. Đếm số dãy a độ dài n, mỗi phần tử trong [1, n], sao cho đoạn mã tìm kiếm nhị phân cổ điển (cho sẵn trong đề) tìm thấy x, lấy dư cho 10<sup>9</sup> + 7. Các subtask có n ≤ 7, n ≤ 10<sup>3</sup>, n ≤ 10<sup>6</sup>, n ≤ 10<sup>12</sup>.</p>
+        <p class="ex-skill"><b>Luyện:</b> hiểu sâu đường đi của lo, hi, mid; kết hợp đếm tổ hợp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Dãy không cần sắp! Hãy theo dõi các mid mà vòng lặp đi qua: mỗi mid buộc a[mid] phải &lt; x, &gt; x hoặc = x để vòng lặp rẽ đúng hướng; các vị trí không bao giờ là mid thì tự do. Bắt đầu bằng subtask n ≤ 7 (duyệt trâu) để kiểm tra ý tưởng. Bài này cần thêm kiến thức <a href="counting.html">quy tắc đếm</a> và <a href="modular-power.html">lũy thừa nhanh</a>.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/basic/binary-search">VNOI Wiki – Tìm kiếm nhị phân</a> (tiếng Việt; có cả phần chặt nhị phân trên kết quả và danh sách bài tập).</li>
+      <li><a href="https://en.cppreference.com/w/cpp/algorithm/lower_bound">cppreference – std::lower_bound</a> và <a href="https://en.cppreference.com/w/cpp/algorithm/upper_bound">std::upper_bound</a> (tiếng Anh; mô tả chính xác tham số và kết quả).</li>
+      <li><a href="https://cp-algorithms.com/num_methods/binary_search.html">CP-Algorithms – Binary Search</a> (tiếng Anh; giải thích bất biến lo, hi).</li>
+      <li><a href="https://usaco.guide/silver/binary-search">USACO Guide – Binary Search</a> (tiếng Anh; nhiều bài luyện theo mức).</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer's Handbook</a>, mục 3.3 “Binary search” (tiếng Anh, miễn phí).</li>
+      <li>Giáo án nội bộ “Toán &amp; Thuật toán cho học sinh THCS thi Lập trình thi đấu”, Chuyên đề 5.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Tìm kiếm nhị phân cần mảng <strong>đã sắp</strong>; tổng quát hơn, cần điều kiện có dạng S…SĐ…Đ. Đáp án là chỗ đổi từ sai sang đúng.</li>
+        <li>Mỗi bước loại một nửa vùng nghi ngờ [lo, hi]: khoảng 20 bước cho 10<sup>6</sup>, 30 bước cho 10<sup>9</sup>, 60 bước cho 10<sup>18</sup>.</li>
+        <li>Mẫu an toàn: <code>while (lo &lt;= hi) { mid = lo + (hi - lo) / 2; if (check(mid)) { ans = mid; hi = mid - 1; } else lo = mid + 1; }</code>.</li>
+        <li>lower_bound(x): đầu tiên ≥ x. upper_bound(x): đầu tiên &gt; x. Cả hai trả về n nếu không có.</li>
+        <li>Số lần xuất hiện của x = U − L; số phần tử trong [a, b] = upper_bound(b) − lower_bound(a); vị trí cuối ≤ x = U − 1.</li>
+        <li>Nhiều truy vấn: sắp một lần <span class="bigo">O(n log n)</span>, mỗi truy vấn <span class="bigo">O(log n)</span>.</li>
+        <li>Dãy giảm: thêm <code>greater&lt;int&gt;()</code>. Với set/multiset: dùng <code>s.lower_bound(x)</code>.</li>
+        <li>Lỗi hay gặp: quên sắp, lặp vô hạn do lo = mid, lệch một, tràn số ở mid, đọc *end().</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/binary-search.js"></script>
+</body>
+</html>

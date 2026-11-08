@@ -7,7 +7,7 @@
 
 | Phiên | Agent | Chủ đề | Trạng thái | Bắt đầu | Kết thúc | Tóm tắt |
 | --- | --- | --- | --- | --- | --- | --- |
-| `20261007T112830Z-orchestrator-cce9` | orchestrator | — | active | 2026-10-07T11:28:30Z | — |  |
+| `20261007T112830Z-orchestrator-cce9` | orchestrator | — | done | 2026-10-07T11:28:30Z | 2026-11-08T06:26:30Z | Kết thúc phiên điều phối ngày 7–8/10 (12 chủ đề đã commit hoặc đạt chuẩn) |
 | `20261007T114319Z-topic-sorting-3337` | topic-sorting | sorting | aborted | 2026-10-07T11:43:19Z | 2026-10-07T14:58:08Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:19Z (agent dừng do giới hạn sử dụng API (HTTP 429)) |
 | `20261007T114320Z-topic-recursion-38f6` | topic-recursion | recursion | aborted | 2026-10-07T11:43:20Z | 2026-10-07T14:58:08Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:20Z (agent dừng do giới hạn sử dụng API (HTTP 429)) |
 | `20261007T114322Z-topic-binary-search-answer-4872` | topic-binary-search-answer | binary-search-answer | aborted | 2026-10-07T11:43:22Z | 2026-10-07T14:58:08Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T11:43:22Z (agent dừng do giới hạn sử dụng API (HTTP 429)) |
@@ -46,6 +46,17 @@
 | `20261007T151710Z-topic-recursion-d323` | topic-recursion | recursion | aborted | 2026-10-07T15:17:10Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:17:10Z (agent dừng do hết hạn mức API (HTTP 429)) |
 | `20261007T151920Z-topic-backtracking-0dda` | topic-backtracking | backtracking | aborted | 2026-10-07T15:19:20Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:19:20Z (agent dừng do hết hạn mức API (HTTP 429)) |
 | `20261007T151930Z-topic-greedy-42c4` | topic-greedy | greedy | aborted | 2026-10-07T15:19:30Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:19:30Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261008T032644Z-topic-recursion-f333` | topic-recursion | recursion | active | 2026-10-08T03:26:44Z | — |  |
+| `20261008T032648Z-topic-two-pointers-6718` | topic-two-pointers | two-pointers | done | 2026-10-08T03:26:48Z | 2026-10-08T08:02:22Z | 11 bài tập (11 VI), 6711 từ, 2 stepper (16 khung) + ma trận cặp + SVG, widget có (3 chế độ) |
+| `20261008T032648Z-topic-dp-intro-36e0` | topic-dp-intro | dp-intro | active | 2026-10-08T03:26:48Z | — |  |
+| `20261008T032648Z-topic-binary-search-answer-befd` | topic-binary-search-answer | binary-search-answer | active | 2026-10-08T03:26:48Z | — |  |
+| `20261008T032648Z-topic-binary-search-2121` | topic-binary-search | binary-search | active | 2026-10-08T03:26:48Z | — |  |
+| `20261008T032649Z-topic-greedy-f8cb` | topic-greedy | greedy | active | 2026-10-08T03:26:49Z | — |  |
+| `20261008T032651Z-topic-sorting-b274` | topic-sorting | sorting | active | 2026-10-08T03:26:51Z | — |  |
+| `20261008T032652Z-topic-backtracking-daec` | topic-backtracking | backtracking | active | 2026-10-08T03:26:52Z | — |  |
+| `20261008T032653Z-topic-dp-grid-1160` | topic-dp-grid | dp-grid | active | 2026-10-08T03:26:53Z | — |  |
+| `20261008T032728Z-topic-difference-array-2095` | topic-difference-array | difference-array | active | 2026-10-08T03:27:28Z | — |  |
+| `20261108T062630Z-orchestrator-0165` | orchestrator | — | active | 2026-11-08T06:26:30Z | — |  |
 
 ## Dòng thời gian
 
@@ -207,3 +218,68 @@
 - `03:25:42` **orchestrator** · `greedy` · _ghi chú_: Thu hồi phiên 20261007T151930Z-topic-greedy-42c4 của topic-greedy: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:19:30Z (agent dừng do hết hạn mức API (HTTP 429))
 - `03:26:01` **orchestrator** · `complexity` · _hoàn thành_: complexity hoàn chỉnh trước khi agent bị ngắt (429); điều phối kiểm tra lại: validate OK, node --check OK
 - `03:26:01` **orchestrator** · _commit_: Commit complexity, cpp-contest-basics
+- `03:26:44` **topic-recursion** · `recursion` · _bắt đầu_: Mở phiên: Soạn chủ đề recursion
+- `03:26:48` **topic-binary-search** · `binary-search` · _bắt đầu_: Mở phiên: Soạn chủ đề binary-search
+- `03:26:48` **topic-two-pointers** · `two-pointers` · _bắt đầu_: Mở phiên: Soạn chủ đề two-pointers
+- `03:26:48` **topic-dp-intro** · `dp-intro` · _bắt đầu_: Mở phiên: Soạn chủ đề dp-intro
+- `03:26:48` **topic-binary-search-answer** · `binary-search-answer` · _bắt đầu_: Mở phiên: Soạn chủ đề binary-search-answer
+- `03:26:49` **topic-recursion** · `recursion` · _bắt đầu_: Bắt đầu soạn recursion
+- `03:26:49` **topic-greedy** · `greedy` · _bắt đầu_: Mở phiên: Soạn chủ đề greedy
+- `03:26:51` **topic-sorting** · `sorting` · _bắt đầu_: Mở phiên: Soạn chủ đề sorting
+- `03:26:52` **topic-sorting** · `sorting` · _tiến độ_: Tiếp tục: đã có 12 bài tập kiểm chứng từ phiên trước, bắt đầu viết trang
+- `03:26:52` **topic-backtracking** · `backtracking` · _bắt đầu_: Mở phiên: Soạn chủ đề backtracking
+- `03:26:53` **topic-dp-grid** · `dp-grid` · _bắt đầu_: Mở phiên: Soạn chủ đề dp-grid
+- `03:26:59` **topic-dp-intro** · `dp-intro` · _bắt đầu_: Mở phiên mới, đã khóa; số lời gọi fib: n=30: 2692537, n=40: 331160281, n=45: 3672623805
+- `03:27:28` **topic-difference-array** · `difference-array` · _bắt đầu_: Mở phiên: Soạn chủ đề difference-array
+- `03:28:23` **topic-dp-intro** · `dp-intro` · _tiến độ_: Đã tìm xong 9 bài tập (7 VI), lưu exercises.md
+- `03:28:29` **topic-two-pointers** · `two-pointers` · _tiến độ_: Đã tìm xong 11 bài tập (11 VI), lưu exercises.md
+- `03:28:50` **topic-binary-search-answer** · `binary-search-answer` · _tiến độ_: Đã tìm xong 9 bài tập (7 VI), lưu exercises.md
+- `03:28:54` **topic-greedy** · `greedy` · _tiến độ_: Đã kiểm chứng 9 bài tập (9 VI: LQDOJ, VNOJ)
+- `03:28:56` **topic-dp-grid** · `dp-grid` · _tiến độ_: Đã tìm xong 9 bài tập (5 VI), lưu exercises.md
+- `03:28:57` **topic-binary-search** · `binary-search` · _tiến độ_: Đã tìm xong 9 bài tập (6 VI), lưu exercises.md
+- `03:28:58` **topic-recursion** · `recursion` · _tiến độ_: Đã tìm xong 7 bài tập (6 VI)
+- `03:29:28` **topic-difference-array** · `difference-array` · _tiến độ_: Đã tìm xong 8 bài tập (4 VI), lưu exercises.md
+- `03:29:49` **topic-backtracking** · `backtracking` · _tiến độ_: Đã tìm xong 11 bài tập (7 VI), lưu exercises.md
+- `03:30:56` **topic-sorting** · `sorting` · _tiến độ_: Viết xong mục tiêu + section 1-5 (mô tả, ý nghĩa, vì sao, các bước, cách hoạt động); code C++ đã biên dịch và chạy thử
+- `03:31:48` **topic-dp-intro** · `dp-intro` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `03:31:49` **topic-two-pointers** · `two-pointers` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `03:32:11` **topic-binary-search** · `binary-search` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `03:32:14` **topic-recursion** · `recursion` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `03:32:24` **topic-difference-array** · `difference-array` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `03:32:25` **topic-binary-search-answer** · `binary-search-answer` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `03:33:01` **topic-dp-intro** · `dp-intro` · _tiến độ_: Viết xong vi-du-mau + truc-quan (2 stepper, 2 SVG, khung widget)
+- `03:33:06` **topic-greedy** · `greedy` · _tiến độ_: Viết xong mục tiêu + section 1-5 (lý thuyết, chứng minh hoán đổi)
+- `03:33:07` **topic-sorting** · `sorting` · _tiến độ_: Viết xong section 6-8: 2 stepper (chèn, trộn), SVG cây merge sort, bảng vết, 3 chương trình C++
+- `03:33:27` **topic-dp-grid** · `dp-grid` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `03:33:35` **topic-binary-search** · `binary-search` · _tiến độ_: Xong section 6 (stepper 6 khung, 2 bảng vết, widget JS)
+- `03:33:55` **topic-binary-search-answer** · `binary-search-answer` · _tiến độ_: Viết xong truc-quan (stepper 6 khung), cai-dat, do-phuc-tap
+- `03:34:00` **topic-recursion** · `recursion` · _tiến độ_: Viết xong truc-quan + cai-dat
+- `03:34:05` **topic-difference-array** · `difference-array` · _tiến độ_: Viết xong section truc-quan (2 stepper, SVG) + cai-dat
+- `03:34:14` **topic-greedy** · `greedy` · _tiến độ_: Viết xong truc-quan (2 stepper, bảng, playground), cai-dat, do-phuc-tap
+- `03:34:15` **topic-two-pointers** · `two-pointers` · _tiến độ_: Xong section truc-quan (2 stepper, ma trận cặp, SVG) + widget two-pointers.js
+- `03:34:38` **topic-dp-intro** · `dp-intro` · _tiến độ_: Viết xong cai-dat, do-phuc-tap, bien-the, loi-thuong-gap
+- `03:34:49` **topic-binary-search** · `binary-search` · _tiến độ_: Xong section 7-9 (cài đặt, độ phức tạp, biến thể); code đã biên dịch chạy thử
+- `03:34:50` **topic-dp-grid** · `dp-grid` · _tiến độ_: Viết xong truc-quan (2 stepper 9+6 khung), cai-dat, do-phuc-tap
+- `03:34:57` **topic-sorting** · `sorting` · _tiến độ_: Viết xong biến thể (stable_sort, sắp chỉ số, unique, nén tọa độ, đếm, nghịch thế) và lỗi thường gặp
+- `03:35:21` **topic-backtracking** · `backtracking` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `03:35:35` **topic-two-pointers** · `two-pointers` · _tiến độ_: Xong cai-dat, do-phuc-tap, bien-the
+- `03:35:39` **topic-difference-array** · `difference-array` · _tiến độ_: Viết xong do-phuc-tap, bien-the, loi-thuong-gap
+- `03:35:49` **topic-binary-search-answer** · `binary-search-answer` · _tiến độ_: Viết xong bien-the, loi-thuong-gap
+- `03:35:52` **topic-dp-intro** · `dp-intro` · _tiến độ_: Viết xong toàn bộ 15 section, bỏ dấu TIEP
+- `03:35:55` **topic-binary-search** · `binary-search` · _tiến độ_: Xong section lỗi thường gặp + tự kiểm tra (4 quiz, 3 tự luận)
+- `03:36:15` **topic-sorting** · `sorting` · _tiến độ_: Viết xong toàn bộ 14 section (12 bài tập, 8 câu tự kiểm tra); còn widget
+- `03:36:19` **topic-dp-grid** · `dp-grid` · _tiến độ_: Viết xong bien-the, loi-thuong-gap, kiem-tra
+- `03:36:43` **topic-recursion** · `recursion` · _tiến độ_: Viết xong toàn bộ 14 section
+- `03:36:44` **topic-backtracking** · `backtracking` · _tiến độ_: Viết xong section 6-8 (truc-quan, cai-dat, do-phuc-tap)
+- `03:37:07` **topic-dp-intro** · `dp-intro` · _tiến độ_: Widget dp-intro.js xong, validate OK (7365 từ, 13 khung hình)
+- `08:01:53` **topic-two-pointers** · `two-pointers` · _tiến độ_: Viết xong toàn bộ, validate OK (11 bài, 6711 từ)
+- `08:02:22` **topic-two-pointers** · `two-pointers` · _hoàn thành_: Đóng phiên (done): 11 bài tập (11 VI), 6711 từ, 2 stepper (16 khung) + ma trận cặp + SVG, widget có (3 chế độ)
+- `08:02:29` **topic-recursion** · `recursion` · _tiến độ_: Widget xong, validate đạt
+- `08:02:32` **topic-dp-grid** · `dp-grid` · _tiến độ_: Viết xong bai-tap (9 bài, 5 VI), tham-khao, tom-tat; còn widget
+- `08:02:50` **topic-difference-array** · `difference-array` · _tiến độ_: Viết xong toàn bộ 14 section; còn widget
+
+### 2026-11-08
+
+- `06:26:30` **orchestrator** · _hoàn thành_: Đóng phiên (done): Kết thúc phiên điều phối ngày 7–8/10 (12 chủ đề đã commit hoặc đạt chuẩn)
+- `06:26:30` **orchestrator** · _bắt đầu_: Mở phiên: Điều phối phần còn lại: hoàn thiện 4 trang dở, soạn 12 chủ đề còn lại
+- `06:26:31` **orchestrator** · _commit_: Commit 6 chủ đề đạt chuẩn: two-pointers sorting binary-search recursion greedy dp-intro. Còn dở: difference-array, backtracking, dp-grid (thiếu widget), binary-search-answer (thiếu 4 section + widget)

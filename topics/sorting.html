@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sắp xếp &amp; so sánh tùy biến · Thi đấu lớp 9</title>
+<meta name="description" content="Sắp xếp chọn, nổi bọt, chèn, trộn, nhanh, đếm; tính ổn định; std::sort với hàm so sánh, sắp theo nhiều khóa, sort + unique, nén tọa độ và đếm nghịch thế bằng merge sort.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="sorting">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được vì sao sắp xếp là bước chuẩn bị cho hai con trỏ, chặt nhị phân và tham lam.</li>
+      <li>Chạy tay và cài đặt được sắp xếp chọn, nổi bọt, chèn (O(n²)) và nêu được bất biến của từng cách.</li>
+      <li>Cài đặt được sắp xếp trộn (merge sort), giải thích được vì sao nó chỉ có khoảng log₂ n tầng và chạy trong O(n log n).</li>
+      <li>Biết khi nào dùng sắp xếp đếm (counting sort) O(n + k), hiểu sắp xếp nhanh (quick sort) và trường hợp xấu của nó.</li>
+      <li>Dùng thành thạo <code>std::sort</code>, <code>greater&lt;&gt;()</code>, hàm so sánh lambda theo nhiều khóa, <code>stable_sort</code>, và tránh lỗi dùng <code>&lt;=</code> trong hàm so sánh.</li>
+      <li>Áp dụng được sort + unique, nén tọa độ, và đếm nghịch thế bằng merge sort.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Sắp xếp (sorting) là đổi chỗ các phần tử của một dãy để chúng đứng theo một thứ tự nhất định, thường là từ nhỏ đến lớn. Nghe thì đơn giản, nhưng có rất nhiều cách làm, và cách nhanh nhất chạy nhanh hơn cách chậm hàng nghìn lần.</p>
+    <p>Trong bài này em sẽ gặp hai nhóm thuật toán. Nhóm thứ nhất dễ hiểu, dễ viết nhưng chậm: sắp xếp chọn, nổi bọt, chèn. Nhóm thứ hai nhanh hơn hẳn: sắp xếp trộn, sắp xếp nhanh, sắp xếp đếm. Cuối cùng, em sẽ học cách dùng hàm <code>sort</code> có sẵn của C++ và tự quy định “thế nào là đứng trước” bằng hàm so sánh.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> cô giáo đưa em một xấp 40 bài kiểm tra và nhờ xếp theo điểm từ cao xuống thấp. Em có thể lật tìm bài điểm cao nhất, đặt lên đầu, rồi tìm bài cao nhất trong phần còn lại (đó là sắp xếp chọn). Em cũng có thể cầm từng bài và chèn nó vào đúng chỗ trong chồng đã xếp, giống xếp bài tú lơ khơ trên tay (sắp xếp chèn). Hoặc em chia xấp bài cho hai bạn, mỗi bạn xếp một nửa, rồi em gộp hai chồng đã xếp lại (sắp xếp trộn). Ba cách đều cho cùng kết quả, nhưng tốn công rất khác nhau.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Cho dãy a[0], a[1], …, a[n−1] và một <strong>quan hệ thứ tự</strong> “đứng trước”. <strong>Sắp xếp</strong> là tìm một hoán vị của dãy sao cho với mọi i &lt; j, phần tử ở vị trí j <em>không</em> đứng trước phần tử ở vị trí i. Với thứ tự tăng dần thông thường, điều đó có nghĩa là a[0] ≤ a[1] ≤ … ≤ a[n−1].</p>
+    </div>
+    <div class="definition" data-label="Định nghĩa">
+      <p>Một cách sắp xếp gọi là <strong>ổn định</strong> (stable) nếu hai phần tử <em>bằng nhau</em> theo hàm so sánh vẫn giữ nguyên thứ tự ban đầu của chúng sau khi sắp.</p>
+    </div>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Sắp xếp hiếm khi là cả bài toán. Nó thường là <strong>bước đầu tiên</strong> làm cho dữ liệu “có trật tự”, để các kỹ thuật khác chạy được:</p>
+    <ul>
+      <li><strong>Hai con trỏ</strong> (<a href="two-pointers.html">two-pointers</a>): tìm cặp có tổng bằng x trên dãy đã sắp chỉ mất O(n), vì mỗi con trỏ chỉ đi một chiều.</li>
+      <li><strong>Chặt nhị phân</strong> (<a href="binary-search.html">binary-search</a>): chỉ tìm được trên dãy đã có thứ tự; mỗi lần hỏi mất O(log n).</li>
+      <li><strong>Tham lam</strong> (<a href="greedy.html">greedy</a>): rất nhiều bài tham lam bắt đầu bằng câu “sắp theo thời điểm kết thúc”, “sắp theo khối lượng”…</li>
+      <li><strong>Gom nhóm và đếm</strong>: sau khi sắp, các giá trị bằng nhau đứng cạnh nhau, nên đếm số giá trị khác nhau, tìm phần tử xuất hiện nhiều nhất, xóa trùng đều chỉ cần một lần duyệt.</li>
+      <li><strong>Trung vị, phần tử thứ k</strong>: sau khi sắp, phần tử nhỏ thứ k nằm ngay ở a[k−1].</li>
+      <li><strong>Xếp hạng</strong>: bảng điểm, bảng xếp hạng thi đấu theo nhiều tiêu chí (điểm giảm dần, bằng điểm thì thời gian tăng dần…).</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề có các cụm “in ra theo thứ tự tăng dần / giảm dần”, “xếp hạng”, “nếu bằng nhau thì…”, “số giá trị khác nhau”, “cặp gần nhau nhất”, “chọn nhiều nhất có thể”. Giới hạn n ≤ 10⁵ hoặc 10⁶ thì gần như chắc chắn cần sắp xếp O(n log n), không được dùng O(n²).</p></div>
+    <p>Trong thi đấu, em hầu như luôn gọi <code>sort</code> của thư viện thay vì tự viết. Vậy vì sao vẫn phải học các thuật toán bên trong? Vì ba lý do: (1) ý tưởng của chúng (chia để trị, bất biến vòng lặp, đếm) xuất hiện lại trong rất nhiều bài khác; (2) có bài đòi hỏi “sửa” thuật toán sắp xếp, điển hình là đếm nghịch thế bằng merge sort; (3) hiểu bên trong thì em biết khi nào <code>sort</code> chạy nhanh, khi nào chậm, và vì sao hàm so sánh sai lại làm chương trình bị lỗi.</p>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho n = 100 000 số nguyên. Hãy cho biết có bao nhiêu giá trị khác nhau (đây chính là bài <a href="https://cses.fi/problemset/task/1621">Distinct Numbers</a> của CSES).</p>
+    <p><strong>Cách ngây thơ.</strong> Với mỗi số a[i], kiểm tra xem nó đã xuất hiện ở các vị trí trước đó chưa. Số phép so sánh là 0 + 1 + 2 + … + (n−1) = n(n−1)/2 = 100 000 · 99 999 / 2 = 4 999 950 000, tức khoảng 5·10⁹. Máy chấm làm được cỡ 10⁸ phép mỗi giây, nên cần khoảng 50 giây. Quá giới hạn 1 giây rất xa.</p>
+    <p><strong>Cách sắp xếp.</strong> Sắp dãy tăng dần, rồi đếm số vị trí i mà a[i] ≠ a[i−1] (cộng thêm 1 cho phần tử đầu tiên). Sắp xếp tốt mất khoảng n · log₂ n ≈ 100 000 · 17 = 1,7·10⁶ phép so sánh; lần duyệt sau đó thêm 10⁵ phép. Tổng chưa tới 2·10⁶, chạy trong vài mili giây.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>So từng cặp / sắp xếp O(n²)</h4><p>Mỗi phần tử so với mọi phần tử khác. Độ phức tạp <span class="bigo">O(n²)</span>: với n = 10⁵ là khoảng 5·10⁹ phép, mất cỡ 50 giây. Sắp xếp chọn, nổi bọt, chèn cũng thuộc nhóm này.</p></div>
+      <div class="good-side"><h4>Sắp xếp O(n log n) rồi duyệt</h4><p>Dùng merge sort hoặc <code>std::sort</code>. Độ phức tạp <span class="bigo">O(n log n)</span>: với n = 10⁵ chỉ khoảng 1,7·10⁶ phép, nhanh hơn gần 3 000 lần.</p></div>
+    </div>
+    <p>Khoảng cách càng lớn khi n tăng. Với n = 10⁶: n² = 10¹² (gần 3 giờ), còn n log₂ n ≈ 10⁶ · 20 = 2·10⁷ (dưới 1 giây). Đây là lý do mọi lập trình viên thi đấu phải coi O(n log n) là “giá mặc định” của một lần sắp xếp.</p>
+    <div class="callout tip"><p class="callout-title">Khi nào O(n²) vẫn dùng được?</p><p>Khi n ≤ khoảng 5 000 (n² = 2,5·10⁷). Ngoài ra sắp xếp chèn chạy rất nhanh trên dãy <em>gần như đã sắp</em> và trên dãy rất ngắn, nên các thư viện thật vẫn dùng nó cho đoạn nhỏ.</p></div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Trong cả bài, ta sắp <strong>tăng dần</strong> mảng a[0..n−1] (đánh số từ 0 như <code>vector</code> trong C++).</p>
+
+    <h3>1. Sắp xếp chọn (selection sort)</h3>
+    <p><strong>Ý tưởng:</strong> lần lượt chọn phần tử nhỏ nhất của phần chưa sắp, đưa nó lên đầu phần đó.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Lặp i từ 0 đến n−2.</strong> Phần a[0..i−1] đã đúng vị trí cuối cùng.</div></li>
+      <li><div><strong>Tìm nhỏ nhất.</strong> Duyệt a[i..n−1], ghi lại vị trí p của phần tử nhỏ nhất.</div></li>
+      <li><div><strong>Đổi chỗ.</strong> Đổi a[i] với a[p]. Bây giờ a[0..i] đã đúng vị trí.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> SapXepChon(a, n):
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> n−2:
+        p ← i
+        <b>với</b> j <b>từ</b> i+1 <b>đến</b> n−1:
+            <b>nếu</b> a[j] &lt; a[p]: p ← j      <i>// nhớ vị trí nhỏ nhất</i>
+        đổi chỗ a[i], a[p]               <i>// tối đa n−1 lần đổi chỗ</i></pre>
+
+    <h3>2. Sắp xếp nổi bọt (bubble sort)</h3>
+    <p><strong>Ý tưởng:</strong> đi từ trái sang phải, gặp hai phần tử kề nhau sai thứ tự thì đổi chỗ. Sau mỗi lượt, phần tử lớn nhất còn lại “nổi” về cuối như bọt khí.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Lượt k = 1, 2, …</strong> Duyệt j từ 0 đến n−1−k.</div></li>
+      <li><div><strong>So sánh cặp kề.</strong> Nếu a[j] &gt; a[j+1] thì đổi chỗ.</div></li>
+      <li><div><strong>Dừng sớm.</strong> Nếu cả lượt không đổi chỗ lần nào thì dãy đã sắp, dừng luôn.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> NoiBot(a, n):
+    <b>với</b> k <b>từ</b> 1 <b>đến</b> n−1:
+        doi ← sai
+        <b>với</b> j <b>từ</b> 0 <b>đến</b> n−1−k:
+            <b>nếu</b> a[j] &gt; a[j+1]:
+                đổi chỗ a[j], a[j+1]; doi ← đúng
+        <b>nếu</b> doi = sai: <b>dừng</b>             <i>// đã sắp xong</i></pre>
+
+    <h3>3. Sắp xếp chèn (insertion sort)</h3>
+    <p><strong>Ý tưởng:</strong> giống xếp bài trên tay. Phần bên trái luôn đã sắp; rút lá tiếp theo, dịch các lá lớn hơn sang phải một ô và chèn lá mới vào chỗ trống.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Lặp i từ 1 đến n−1.</strong> Lấy key = a[i]; phần a[0..i−1] đã sắp.</div></li>
+      <li><div><strong>Dịch.</strong> Cho j đi lùi từ i−1; khi a[j] &gt; key thì chép a[j] sang a[j+1].</div></li>
+      <li><div><strong>Chèn.</strong> Gặp a[j] ≤ key (hoặc j = −1) thì đặt key vào a[j+1]. Giờ a[0..i] đã sắp.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> SapXepChen(a, n):
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> n−1:
+        key ← a[i]; j ← i−1
+        <b>trong khi</b> j ≥ 0 <b>và</b> a[j] &gt; key:
+            a[j+1] ← a[j]; j ← j−1       <i>// dịch sang phải</i>
+        a[j+1] ← key</pre>
+
+    <h3>4. Sắp xếp trộn (merge sort)</h3>
+    <p><strong>Ý tưởng chia để trị</strong> (<a href="recursion.html">đệ quy</a>): chia đôi dãy, sắp mỗi nửa (bằng chính merge sort), rồi <em>trộn</em> hai nửa đã sắp thành một dãy sắp.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Điểm dừng.</strong> Đoạn có 0 hoặc 1 phần tử thì đã sắp, trả về.</div></li>
+      <li><div><strong>Chia.</strong> m = (l + r) / 2; gọi đệ quy sắp a[l..m] và a[m+1..r].</div></li>
+      <li><div><strong>Trộn.</strong> Hai con trỏ i (đầu nửa trái), j (đầu nửa phải). Lấy phần tử nhỏ hơn trong a[i], a[j] bỏ vào mảng phụ, tiến con trỏ đó. Một nửa hết thì chép nốt nửa kia.</div></li>
+      <li><div><strong>Chép lại.</strong> Chép mảng phụ về a[l..r].</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> MergeSort(a, l, r):
+    <b>nếu</b> l ≥ r: <b>trả về</b>
+    m ← (l + r) / 2
+    MergeSort(a, l, m); MergeSort(a, m+1, r)
+    i ← l; j ← m+1
+    <b>trong khi</b> còn cả hai nửa:
+        <b>nếu</b> a[i] ≤ a[j]: lấy a[i], i ← i+1   <i>// ≤ để giữ ổn định</i>
+        <b>ngược lại</b>:      lấy a[j], j ← j+1
+    lấy nốt phần còn lại; chép về a[l..r]</pre>
+
+    <h3>5. Sắp xếp nhanh (quick sort)</h3>
+    <p><strong>Ý tưởng:</strong> chọn một phần tử làm <em>chốt</em> (pivot). Dồn mọi phần tử nhỏ hơn chốt sang trái, lớn hơn chốt sang phải (bước <em>phân hoạch</em>), rồi sắp hai bên bằng đệ quy. Không cần bước trộn.</p>
+    <pre class="pseudo"><b>hàm</b> QuickSort(a, l, r):
+    <b>nếu</b> l ≥ r: <b>trả về</b>
+    chọn chốt x (tốt nhất: một phần tử ngẫu nhiên trong a[l..r])
+    phân hoạch: a[l..p−1] ≤ x, a[p] = x, a[p+1..r] ≥ x
+    QuickSort(a, l, p−1); QuickSort(a, p+1, r)</pre>
+
+    <h3>6. Sắp xếp đếm (counting sort)</h3>
+    <p><strong>Ý tưởng:</strong> khi các giá trị là số nguyên nhỏ trong đoạn [0, k], không cần so sánh gì cả: đếm mỗi giá trị xuất hiện bao nhiêu lần, rồi in ra theo thứ tự giá trị.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Đếm.</strong> Mảng cnt[0..k] toàn 0; với mỗi x trong dãy, tăng cnt[x].</div></li>
+      <li><div><strong>Xuất.</strong> Với v từ 0 đến k, viết v ra cnt[v] lần.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> SapXepDem(a, n, k):
+    cnt[0..k] ← 0
+    <b>với</b> mỗi x <b>trong</b> a: cnt[x] ← cnt[x] + 1
+    <b>với</b> v <b>từ</b> 0 <b>đến</b> k:
+        lặp cnt[v] lần: ghi v ra</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Để biết một thuật toán sắp xếp <strong>đúng</strong>, ta tìm một <strong>bất biến</strong> (invariant): một điều luôn đúng sau mỗi bước lặp. Nếu bất biến đúng ở đầu, được giữ sau mỗi bước, và lúc kết thúc nó nói “dãy đã sắp”, thì thuật toán đúng. Để biết nó <strong>nhanh</strong> hay chậm, ta đếm số phép so sánh và số lần di chuyển.</p>
+
+    <h3>Sắp xếp chọn: bất biến và chi phí</h3>
+    <p><strong>Bất biến:</strong> sau lượt i, đoạn a[0..i] chứa đúng i+1 phần tử nhỏ nhất của cả dãy, theo thứ tự tăng dần. Lý do: lượt i chọn phần tử nhỏ nhất trong phần còn lại, mà phần còn lại chỉ gồm các số không nhỏ hơn a[0..i−1]. Khi i = n−2, phần tử cuối tự động là lớn nhất, dãy đã sắp.</p>
+    <p><strong>Chi phí:</strong> lượt i so sánh n−1−i lần, tổng (n−1) + (n−2) + … + 1 = n(n−1)/2 phép so sánh, <em>bất kể</em> dãy vào thế nào. Bù lại, chỉ có tối đa n−1 lần đổi chỗ; điều này có ích khi việc “di chuyển” phần tử đắt (ví dụ phần tử là một chuỗi dài). Sắp xếp chọn <em>không ổn định</em>: phép đổi chỗ có thể đẩy một phần tử nhảy qua phần tử bằng nó. Ví dụ dãy 5ₐ 5ᵦ 2: lượt đầu đổi 5ₐ với 2 được 2 5ᵦ 5ₐ, hai số 5 đã đảo thứ tự.</p>
+
+    <h3>Nổi bọt: vì sao số lớn nhất về cuối</h3>
+    <p><strong>Bất biến:</strong> sau lượt k, k phần tử lớn nhất đã nằm đúng ở k ô cuối. Trong lượt k, khi “bọt” đang mang phần tử lớn nhất của phần chưa sắp, mọi phép so sánh với nó đều dẫn tới đổi chỗ, nên nó bị đẩy tới tận ô n−k. Số phép so sánh tệ nhất cũng là n(n−1)/2. Mỗi lần đổi chỗ hai phần tử kề nhau sai thứ tự sẽ xóa đúng <strong>một nghịch thế</strong> (cặp i &lt; j mà a[i] &gt; a[j]), nên số lần đổi chỗ đúng bằng số nghịch thế của dãy. Nổi bọt ổn định vì chỉ đổi khi a[j] &gt; a[j+1] (nghiêm ngặt).</p>
+
+    <h3>Sắp xếp chèn: tốt trên dãy gần sắp</h3>
+    <p><strong>Bất biến:</strong> trước lượt i, đoạn a[0..i−1] đã sắp tăng (chưa chắc ở vị trí cuối cùng). Lượt i dịch các phần tử lớn hơn key sang phải và đặt key vào khe hở, nên a[0..i] cũng sắp tăng. Khi i chạy hết, cả dãy đã sắp.</p>
+    <p><strong>Chi phí:</strong> mỗi lần dịch, key “vượt qua” đúng một phần tử lớn hơn nó đứng trước nó, tức là xóa một nghịch thế. Vậy <strong>số lần dịch = số nghịch thế</strong>. Dãy đã sắp có 0 nghịch thế: sắp xếp chèn chỉ mất n−1 phép so sánh, tức O(n). Dãy giảm dần có n(n−1)/2 nghịch thế: O(n²). Dừng dịch khi gặp a[j] ≤ key (không dịch phần tử <em>bằng</em> key) nên sắp xếp chèn ổn định.</p>
+
+    <h3>Sắp xếp trộn: vì sao đúng</h3>
+    <p>Phần quan trọng là bước <strong>trộn</strong> hai dãy đã sắp L và R. Phần tử nhỏ nhất của cả hai dãy chắc chắn là L[i] hoặc R[j] (phần tử đầu tiên chưa lấy của mỗi dãy), vì mỗi dãy đã tăng dần. Lấy cái nhỏ hơn ra, phần còn lại vẫn là hai dãy đã sắp, lặp lại. Mỗi bước lấy đúng phần tử nhỏ nhất còn lại, nên dãy kết quả tăng dần. Đây chính là <a href="two-pointers.html">hai con trỏ</a>: i và j chỉ đi tiến, tổng số bước bằng |L| + |R|.</p>
+    <p>Phần <strong>đệ quy</strong> đúng theo kiểu quy nạp: đoạn 1 phần tử đã sắp; nếu merge sort sắp đúng hai nửa nhỏ hơn thì bước trộn cho ra đoạn lớn sắp đúng.</p>
+
+    <h3>Sắp xếp trộn: vì sao chỉ có log₂ n tầng</h3>
+    <p>Hãy vẽ cây các lần gọi đệ quy. Tầng 0 là cả dãy n phần tử. Tầng 1 có 2 đoạn, mỗi đoạn n/2. Tầng 2 có 4 đoạn, mỗi đoạn n/4. Cứ thế, tầng t có 2ᵗ đoạn, mỗi đoạn khoảng n/2ᵗ phần tử. Ta dừng khi đoạn chỉ còn 1 phần tử, tức n/2ᵗ = 1, hay t = log₂ n. Với n = 8 có 3 tầng trộn; với n = 10⁶ chỉ có 20 tầng (vì 2²⁰ = 1 048 576).</p>
+    <p>Ở <strong>mỗi tầng</strong>, các đoạn rời nhau và phủ kín dãy, nên tổng công trộn ở tầng đó là khoảng n bước (mỗi phần tử được lấy ra đúng một lần). Có log₂ n tầng, mỗi tầng n bước, tổng là <span class="math">n · log₂ n</span>. Đó là lý do merge sort chạy trong O(n log n) <em>ở mọi trường hợp</em>, kể cả dãy xấu nhất.</p>
+    <div class="math-block">T(n) = 2·T(n/2) + n  ⟹  T(n) ≈ n·log₂ n</div>
+    <p>Cái giá phải trả: cần mảng phụ n phần tử (bộ nhớ O(n)). Merge sort ổn định nếu khi a[i] = a[j] ta lấy bên trái trước (dùng <code>&lt;=</code> ở bước trộn).</p>
+
+    <h3>Sắp xếp nhanh: trường hợp tốt và trường hợp xấu</h3>
+    <p>Nếu chốt chia đoạn thành hai nửa xấp xỉ bằng nhau, cây đệ quy giống merge sort: log₂ n tầng, mỗi tầng n phép, tổng O(n log n). Nhưng nếu lần nào chốt cũng là phần tử nhỏ nhất (hoặc lớn nhất), một bên rỗng còn bên kia chỉ bớt 1 phần tử. Khi đó số phép so sánh là (n−1) + (n−2) + … + 1 = n(n−1)/2, tức <strong>O(n²)</strong>. Điều này xảy ra đúng với cách chọn chốt “ngây thơ” là phần tử đầu tiên trên một dãy <em>đã sắp sẵn</em>, rất hay gặp trong test. Cách chữa: chọn chốt ngẫu nhiên, khi đó kỳ vọng vẫn là O(n log n).</p>
+    <p><code>std::sort</code> của C++ dùng <strong>introsort</strong>: chạy quick sort, nhưng nếu đệ quy sâu bất thường thì chuyển sang heap sort, còn các đoạn nhỏ (khoảng 16 phần tử) thì dùng sắp xếp chèn. Nhờ vậy chuẩn C++11 bảo đảm <code>sort</code> luôn O(n log n). <code>std::sort</code> <strong>không ổn định</strong>.</p>
+
+    <h3>Sắp xếp đếm: vì sao vượt được n log n</h3>
+    <p>Mọi thuật toán chỉ dựa vào phép so sánh “a &lt; b?” đều cần ít nhất khoảng n log₂ n phép so sánh trong trường hợp xấu (có n! cách xếp có thể, mỗi câu hỏi có/không chỉ loại được một nửa số khả năng). Sắp xếp đếm “lách luật” vì nó không so sánh: nó dùng chính giá trị x làm <em>chỉ số mảng</em>. Bước đếm tốn n phép, bước xuất tốn k + n phép, tổng <strong>O(n + k)</strong>. Đổi lại, nó chỉ dùng được khi k không quá lớn (cỡ 10⁷ trở xuống) vì cần mảng cnt có k + 1 ô.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Em không cần thuộc lòng code của cả sáu thuật toán. Em cần nhớ: chèn cho dãy gần sắp, trộn cho O(n log n) chắc chắn và ổn định, đếm cho giá trị nhỏ, còn đi thi thì gọi <code>sort</code> với một hàm so sánh viết đúng.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Ta dùng cùng một dãy 8 số <strong>6 3 8 2 7 1 5 4</strong> cho mọi minh họa, để em so sánh được các thuật toán với nhau. Dãy này có 17 nghịch thế (em thử tự đếm: 6 lớn hơn 5 số đứng sau nó, 3 lớn hơn 2 số, 8 lớn hơn 5 số, 2 lớn hơn 1 số, 7 lớn hơn 3 số, 5 lớn hơn 1 số: 5 + 2 + 5 + 1 + 3 + 1 = 17).</p>
+
+    <h3>Sắp xếp chèn từng bước</h3>
+    <p>Cột xanh là đoạn bên trái đã sắp, cột tô cam là key vừa được chèn. Hãy để ý tổng số lần dịch: cuối cùng nó đúng bằng 17, số nghịch thế.</p>
+    <div class="stepper" data-title="Sắp xếp chèn trên dãy 6 3 8 2 7 1 5 4">
+      <div class="frame" data-caption="&lt;b&gt;Bắt đầu.&lt;/b&gt; Dãy 6 3 8 2 7 1 5 4. Đoạn bên trái chỉ có một số 6, coi như đã sắp (màu xanh).">
+        <div class="bars" style="--max:8">
+          <span class="bar is-ok" style="--v:6" data-v="6"></span>
+          <span class="bar" style="--v:3" data-v="3"></span>
+          <span class="bar" style="--v:8" data-v="8"></span>
+          <span class="bar" style="--v:2" data-v="2"></span>
+          <span class="bar" style="--v:7" data-v="7"></span>
+          <span class="bar" style="--v:1" data-v="1"></span>
+          <span class="bar" style="--v:5" data-v="5"></span>
+          <span class="bar" style="--v:4" data-v="4"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt i = 1, key = 3.&lt;/b&gt; 6 lớn hơn 3 nên dịch 6 sang phải; j về −1, đặt 3 vào ô 0. Dịch 1 lần, tổng 1.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-active" style="--v:3" data-v="3"></span>
+          <span class="bar is-ok" style="--v:6" data-v="6"></span>
+          <span class="bar" style="--v:8" data-v="8"></span>
+          <span class="bar" style="--v:2" data-v="2"></span>
+          <span class="bar" style="--v:7" data-v="7"></span>
+          <span class="bar" style="--v:1" data-v="1"></span>
+          <span class="bar" style="--v:5" data-v="5"></span>
+          <span class="bar" style="--v:4" data-v="4"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt i = 2, key = 8.&lt;/b&gt; 6 ≤ 8 nên dừng ngay, 8 ở nguyên chỗ. Dịch 0 lần, tổng 1.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-ok" style="--v:3" data-v="3"></span>
+          <span class="bar is-ok" style="--v:6" data-v="6"></span>
+          <span class="bar is-active" style="--v:8" data-v="8"></span>
+          <span class="bar" style="--v:2" data-v="2"></span>
+          <span class="bar" style="--v:7" data-v="7"></span>
+          <span class="bar" style="--v:1" data-v="1"></span>
+          <span class="bar" style="--v:5" data-v="5"></span>
+          <span class="bar" style="--v:4" data-v="4"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt i = 3, key = 2.&lt;/b&gt; 8, 6, 3 đều lớn hơn 2, cả ba bị dịch sang phải; đặt 2 vào ô 0. Dịch 3 lần, tổng 4.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-active" style="--v:2" data-v="2"></span>
+          <span class="bar is-ok" style="--v:3" data-v="3"></span>
+          <span class="bar is-ok" style="--v:6" data-v="6"></span>
+          <span class="bar is-ok" style="--v:8" data-v="8"></span>
+          <span class="bar" style="--v:7" data-v="7"></span>
+          <span class="bar" style="--v:1" data-v="1"></span>
+          <span class="bar" style="--v:5" data-v="5"></span>
+          <span class="bar" style="--v:4" data-v="4"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt i = 4, key = 7.&lt;/b&gt; Chỉ 8 lớn hơn 7; gặp 6 ≤ 7 thì dừng, đặt 7 vào ô 3. Dịch 1 lần, tổng 5.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-ok" style="--v:2" data-v="2"></span>
+          <span class="bar is-ok" style="--v:3" data-v="3"></span>
+          <span class="bar is-ok" style="--v:6" data-v="6"></span>
+          <span class="bar is-active" style="--v:7" data-v="7"></span>
+          <span class="bar is-ok" style="--v:8" data-v="8"></span>
+          <span class="bar" style="--v:1" data-v="1"></span>
+          <span class="bar" style="--v:5" data-v="5"></span>
+          <span class="bar" style="--v:4" data-v="4"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt i = 5, key = 1.&lt;/b&gt; Cả năm số 8, 7, 6, 3, 2 đều lớn hơn 1, dịch hết; 1 về ô 0. Dịch 5 lần, tổng 10.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-active" style="--v:1" data-v="1"></span>
+          <span class="bar is-ok" style="--v:2" data-v="2"></span>
+          <span class="bar is-ok" style="--v:3" data-v="3"></span>
+          <span class="bar is-ok" style="--v:6" data-v="6"></span>
+          <span class="bar is-ok" style="--v:7" data-v="7"></span>
+          <span class="bar is-ok" style="--v:8" data-v="8"></span>
+          <span class="bar" style="--v:5" data-v="5"></span>
+          <span class="bar" style="--v:4" data-v="4"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt i = 6, key = 5.&lt;/b&gt; Dịch 8, 7, 6; gặp 3 ≤ 5 thì dừng, đặt 5 vào ô 3. Dịch 3 lần, tổng 13.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-ok" style="--v:1" data-v="1"></span>
+          <span class="bar is-ok" style="--v:2" data-v="2"></span>
+          <span class="bar is-ok" style="--v:3" data-v="3"></span>
+          <span class="bar is-active" style="--v:5" data-v="5"></span>
+          <span class="bar is-ok" style="--v:6" data-v="6"></span>
+          <span class="bar is-ok" style="--v:7" data-v="7"></span>
+          <span class="bar is-ok" style="--v:8" data-v="8"></span>
+          <span class="bar" style="--v:4" data-v="4"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lượt i = 7, key = 4.&lt;/b&gt; Dịch 8, 7, 6, 5; gặp 3 ≤ 4 thì dừng, đặt 4 vào ô 3. Dịch 4 lần, tổng 17. Xong!">
+        <div class="bars" style="--max:8">
+          <span class="bar is-ok" style="--v:1" data-v="1"></span>
+          <span class="bar is-ok" style="--v:2" data-v="2"></span>
+          <span class="bar is-ok" style="--v:3" data-v="3"></span>
+          <span class="bar is-active" style="--v:4" data-v="4"></span>
+          <span class="bar is-ok" style="--v:5" data-v="5"></span>
+          <span class="bar is-ok" style="--v:6" data-v="6"></span>
+          <span class="bar is-ok" style="--v:7" data-v="7"></span>
+          <span class="bar is-ok" style="--v:8" data-v="8"></span>
+        </div>
+      </div>
+    </div>
+    <p>Trên dãy này sắp xếp chèn dùng 21 phép so sánh: mỗi lượt so sánh một lần cho mỗi lần dịch, cộng thêm một lần “dừng” khi gặp số nhỏ hơn hoặc bằng key (lượt i = 1, 3, 5 không có lần dừng vì key đi về tận ô 0).</p>
+
+    <h3>Sắp xếp trộn từng bước</h3>
+    <p>Khoảng trống giữa các cột cho biết ranh giới các đoạn. Ở tầng trộn cuối cùng, ta xem kỹ hai con trỏ i, j chạy trên hai nửa đã sắp.</p>
+    <div class="stepper" data-title="Sắp xếp trộn trên dãy 6 3 8 2 7 1 5 4">
+      <div class="frame" data-caption="&lt;b&gt;Chia.&lt;/b&gt; Chia đôi liên tục: [6 3 8 2 | 7 1 5 4] rồi [6 3 | 8 2 | 7 1 | 5 4] rồi tám đoạn một phần tử. Đoạn một phần tử đã sắp sẵn. Phép chia không tốn so sánh nào.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-active" style="--v:6" data-v="6"></span>
+          <span class="bar is-active" style="--v:3;margin-left:1.1rem" data-v="3"></span>
+          <span class="bar is-active" style="--v:8;margin-left:1.1rem" data-v="8"></span>
+          <span class="bar is-active" style="--v:2;margin-left:1.1rem" data-v="2"></span>
+          <span class="bar is-active" style="--v:7;margin-left:1.1rem" data-v="7"></span>
+          <span class="bar is-active" style="--v:1;margin-left:1.1rem" data-v="1"></span>
+          <span class="bar is-active" style="--v:5;margin-left:1.1rem" data-v="5"></span>
+          <span class="bar is-active" style="--v:4;margin-left:1.1rem" data-v="4"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Tầng trộn 1.&lt;/b&gt; Trộn từng cặp: (6,3)→3 6, (8,2)→2 8, (7,1)→1 7, (5,4)→4 5. Mỗi cặp 1 so sánh, cả tầng 4 so sánh.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-cmp" style="--v:3" data-v="3"></span>
+          <span class="bar is-cmp" style="--v:6" data-v="6"></span>
+          <span class="bar is-cmp" style="--v:2;margin-left:1.1rem" data-v="2"></span>
+          <span class="bar is-cmp" style="--v:8" data-v="8"></span>
+          <span class="bar is-cmp" style="--v:1;margin-left:1.1rem" data-v="1"></span>
+          <span class="bar is-cmp" style="--v:7" data-v="7"></span>
+          <span class="bar is-cmp" style="--v:4;margin-left:1.1rem" data-v="4"></span>
+          <span class="bar is-cmp" style="--v:5" data-v="5"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Tầng trộn 2, nửa trái.&lt;/b&gt; Trộn [3 6] với [2 8]: 3 với 2 → lấy 2; 3 với 8 → lấy 3; 6 với 8 → lấy 6; nửa trái hết, chép nốt 8. Được 2 3 6 8 sau 3 so sánh.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-cmp" style="--v:2" data-v="2"></span>
+          <span class="bar is-cmp" style="--v:3" data-v="3"></span>
+          <span class="bar is-cmp" style="--v:6" data-v="6"></span>
+          <span class="bar is-cmp" style="--v:8" data-v="8"></span>
+          <span class="bar" style="--v:1;margin-left:1.1rem" data-v="1"></span>
+          <span class="bar" style="--v:7" data-v="7"></span>
+          <span class="bar" style="--v:4;margin-left:1.1rem" data-v="4"></span>
+          <span class="bar" style="--v:5" data-v="5"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Tầng trộn 2, nửa phải.&lt;/b&gt; Trộn [1 7] với [4 5]: lấy 1, rồi 4, rồi 5 (3 so sánh), chép nốt 7. Được 1 4 5 7. Cả tầng 6 so sánh.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-cmp" style="--v:2" data-v="2"></span>
+          <span class="bar is-cmp" style="--v:3" data-v="3"></span>
+          <span class="bar is-cmp" style="--v:6" data-v="6"></span>
+          <span class="bar is-cmp" style="--v:8" data-v="8"></span>
+          <span class="bar is-cmp" style="--v:1;margin-left:1.1rem" data-v="1"></span>
+          <span class="bar is-cmp" style="--v:4" data-v="4"></span>
+          <span class="bar is-cmp" style="--v:5" data-v="5"></span>
+          <span class="bar is-cmp" style="--v:7" data-v="7"></span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Tầng trộn 3, so sánh đầu tiên.&lt;/b&gt; i chỉ 2, j chỉ 1. 2 &amp;gt; 1 nên lấy 1 từ nửa phải, j tiến sang 4.">
+        <div class="arr"><span class="arr-label">L</span><span class="cell is-cmp" data-ptr="i">2</span><span class="cell">3</span><span class="cell">6</span><span class="cell">8</span></div>
+        <div class="arr"><span class="arr-label">R</span><span class="cell is-active" data-ptr="j">1</span><span class="cell">4</span><span class="cell">5</span><span class="cell">7</span></div>
+        <div class="arr"><span class="arr-label">kq</span><span class="cell is-ok">1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Tiếp tục.&lt;/b&gt; 2 &amp;lt; 4 lấy 2; 3 &amp;lt; 4 lấy 3; 6 &amp;gt; 4 lấy 4. Giờ i chỉ 6, j chỉ 5. Đã dùng 4 so sánh.">
+        <div class="arr"><span class="arr-label">L</span><span class="cell is-dim">2</span><span class="cell is-dim">3</span><span class="cell is-cmp" data-ptr="i">6</span><span class="cell">8</span></div>
+        <div class="arr"><span class="arr-label">R</span><span class="cell is-dim">1</span><span class="cell is-dim">4</span><span class="cell is-cmp" data-ptr="j">5</span><span class="cell">7</span></div>
+        <div class="arr"><span class="arr-label">kq</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Gần xong.&lt;/b&gt; 6 &amp;gt; 5 lấy 5; 6 &amp;lt; 7 lấy 6; 8 &amp;gt; 7 lấy 7. Nửa phải hết sau 7 so sánh, chép nốt 8.">
+        <div class="arr"><span class="arr-label">L</span><span class="cell is-dim">2</span><span class="cell is-dim">3</span><span class="cell is-dim">6</span><span class="cell is-active" data-ptr="i">8</span></div>
+        <div class="arr"><span class="arr-label">R</span><span class="cell is-dim">1</span><span class="cell is-dim">4</span><span class="cell is-dim">5</span><span class="cell is-dim">7</span></div>
+        <div class="arr"><span class="arr-label">kq</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span><span class="cell is-ok">5</span><span class="cell is-ok">6</span><span class="cell is-ok">7</span><span class="cell is-active">8</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kết quả.&lt;/b&gt; Dãy đã sắp: 1 2 3 4 5 6 7 8. Tổng số so sánh 4 + 6 + 7 = 17, ít hơn 21 so sánh của sắp xếp chèn và 28 của sắp xếp chọn trên cùng dãy. Với n lớn, khoảng cách còn lớn hơn rất nhiều.">
+        <div class="bars" style="--max:8">
+          <span class="bar is-ok" style="--v:1" data-v="1"></span>
+          <span class="bar is-ok" style="--v:2" data-v="2"></span>
+          <span class="bar is-ok" style="--v:3" data-v="3"></span>
+          <span class="bar is-ok" style="--v:4" data-v="4"></span>
+          <span class="bar is-ok" style="--v:5" data-v="5"></span>
+          <span class="bar is-ok" style="--v:6" data-v="6"></span>
+          <span class="bar is-ok" style="--v:7" data-v="7"></span>
+          <span class="bar is-ok" style="--v:8" data-v="8"></span>
+        </div>
+      </div>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 516 406" width="516" role="img" aria-label="Cây chia để trị của merge sort trên dãy 6 3 8 2 7 1 5 4: ba tầng chia đôi xuống tám đoạn một phần tử, rồi ba tầng trộn lên thành 1 2 3 4 5 6 7 8">
+      <line class="edge" x1="173" y1="60" x2="93" y2="90"/>
+      <line class="edge" x1="173" y1="60" x2="253" y2="90"/>
+      <line class="edge" x1="93" y1="116" x2="53" y2="146"/>
+      <line class="edge" x1="93" y1="116" x2="133" y2="146"/>
+      <line class="edge" x1="253" y1="116" x2="213" y2="146"/>
+      <line class="edge" x1="253" y1="116" x2="293" y2="146"/>
+      <line class="edge" x1="53" y1="172" x2="33" y2="202"/>
+      <line class="edge" x1="53" y1="172" x2="73" y2="202"/>
+      <line class="edge" x1="133" y1="172" x2="113" y2="202"/>
+      <line class="edge" x1="133" y1="172" x2="153" y2="202"/>
+      <line class="edge" x1="213" y1="172" x2="193" y2="202"/>
+      <line class="edge" x1="213" y1="172" x2="233" y2="202"/>
+      <line class="edge" x1="293" y1="172" x2="273" y2="202"/>
+      <line class="edge" x1="293" y1="172" x2="313" y2="202"/>
+      <line class="edge" x1="33" y1="228" x2="53" y2="258"/>
+      <line class="edge" x1="73" y1="228" x2="53" y2="258"/>
+      <line class="edge" x1="113" y1="228" x2="133" y2="258"/>
+      <line class="edge" x1="153" y1="228" x2="133" y2="258"/>
+      <line class="edge" x1="193" y1="228" x2="213" y2="258"/>
+      <line class="edge" x1="233" y1="228" x2="213" y2="258"/>
+      <line class="edge" x1="273" y1="228" x2="293" y2="258"/>
+      <line class="edge" x1="313" y1="228" x2="293" y2="258"/>
+      <line class="edge" x1="53" y1="284" x2="93" y2="314"/>
+      <line class="edge" x1="133" y1="284" x2="93" y2="314"/>
+      <line class="edge" x1="213" y1="284" x2="253" y2="314"/>
+      <line class="edge" x1="293" y1="284" x2="253" y2="314"/>
+      <line class="edge" x1="93" y1="340" x2="173" y2="370"/>
+      <line class="edge" x1="253" y1="340" x2="173" y2="370"/>
+      <rect class="node" x="69" y="34" width="26" height="26" rx="3"/>
+      <text x="82" y="52" text-anchor="middle">6</text>
+      <rect class="node" x="95" y="34" width="26" height="26" rx="3"/>
+      <text x="108" y="52" text-anchor="middle">3</text>
+      <rect class="node" x="121" y="34" width="26" height="26" rx="3"/>
+      <text x="134" y="52" text-anchor="middle">8</text>
+      <rect class="node" x="147" y="34" width="26" height="26" rx="3"/>
+      <text x="160" y="52" text-anchor="middle">2</text>
+      <rect class="node" x="173" y="34" width="26" height="26" rx="3"/>
+      <text x="186" y="52" text-anchor="middle">7</text>
+      <rect class="node" x="199" y="34" width="26" height="26" rx="3"/>
+      <text x="212" y="52" text-anchor="middle">1</text>
+      <rect class="node" x="225" y="34" width="26" height="26" rx="3"/>
+      <text x="238" y="52" text-anchor="middle">5</text>
+      <rect class="node" x="251" y="34" width="26" height="26" rx="3"/>
+      <text x="264" y="52" text-anchor="middle">4</text>
+      <rect class="node" x="41" y="90" width="26" height="26" rx="3"/>
+      <text x="54" y="108" text-anchor="middle">6</text>
+      <rect class="node" x="67" y="90" width="26" height="26" rx="3"/>
+      <text x="80" y="108" text-anchor="middle">3</text>
+      <rect class="node" x="93" y="90" width="26" height="26" rx="3"/>
+      <text x="106" y="108" text-anchor="middle">8</text>
+      <rect class="node" x="119" y="90" width="26" height="26" rx="3"/>
+      <text x="132" y="108" text-anchor="middle">2</text>
+      <rect class="node" x="201" y="90" width="26" height="26" rx="3"/>
+      <text x="214" y="108" text-anchor="middle">7</text>
+      <rect class="node" x="227" y="90" width="26" height="26" rx="3"/>
+      <text x="240" y="108" text-anchor="middle">1</text>
+      <rect class="node" x="253" y="90" width="26" height="26" rx="3"/>
+      <text x="266" y="108" text-anchor="middle">5</text>
+      <rect class="node" x="279" y="90" width="26" height="26" rx="3"/>
+      <text x="292" y="108" text-anchor="middle">4</text>
+      <rect class="node" x="27" y="146" width="26" height="26" rx="3"/>
+      <text x="40" y="164" text-anchor="middle">6</text>
+      <rect class="node" x="53" y="146" width="26" height="26" rx="3"/>
+      <text x="66" y="164" text-anchor="middle">3</text>
+      <rect class="node" x="107" y="146" width="26" height="26" rx="3"/>
+      <text x="120" y="164" text-anchor="middle">8</text>
+      <rect class="node" x="133" y="146" width="26" height="26" rx="3"/>
+      <text x="146" y="164" text-anchor="middle">2</text>
+      <rect class="node" x="187" y="146" width="26" height="26" rx="3"/>
+      <text x="200" y="164" text-anchor="middle">7</text>
+      <rect class="node" x="213" y="146" width="26" height="26" rx="3"/>
+      <text x="226" y="164" text-anchor="middle">1</text>
+      <rect class="node" x="267" y="146" width="26" height="26" rx="3"/>
+      <text x="280" y="164" text-anchor="middle">5</text>
+      <rect class="node" x="293" y="146" width="26" height="26" rx="3"/>
+      <text x="306" y="164" text-anchor="middle">4</text>
+      <rect class="node is-active" x="20" y="202" width="26" height="26" rx="3"/>
+      <text x="33" y="220" text-anchor="middle">6</text>
+      <rect class="node is-active" x="60" y="202" width="26" height="26" rx="3"/>
+      <text x="73" y="220" text-anchor="middle">3</text>
+      <rect class="node is-active" x="100" y="202" width="26" height="26" rx="3"/>
+      <text x="113" y="220" text-anchor="middle">8</text>
+      <rect class="node is-active" x="140" y="202" width="26" height="26" rx="3"/>
+      <text x="153" y="220" text-anchor="middle">2</text>
+      <rect class="node is-active" x="180" y="202" width="26" height="26" rx="3"/>
+      <text x="193" y="220" text-anchor="middle">7</text>
+      <rect class="node is-active" x="220" y="202" width="26" height="26" rx="3"/>
+      <text x="233" y="220" text-anchor="middle">1</text>
+      <rect class="node is-active" x="260" y="202" width="26" height="26" rx="3"/>
+      <text x="273" y="220" text-anchor="middle">5</text>
+      <rect class="node is-active" x="300" y="202" width="26" height="26" rx="3"/>
+      <text x="313" y="220" text-anchor="middle">4</text>
+      <rect class="node is-cmp" x="27" y="258" width="26" height="26" rx="3"/>
+      <text x="40" y="276" text-anchor="middle">3</text>
+      <rect class="node is-cmp" x="53" y="258" width="26" height="26" rx="3"/>
+      <text x="66" y="276" text-anchor="middle">6</text>
+      <rect class="node is-cmp" x="107" y="258" width="26" height="26" rx="3"/>
+      <text x="120" y="276" text-anchor="middle">2</text>
+      <rect class="node is-cmp" x="133" y="258" width="26" height="26" rx="3"/>
+      <text x="146" y="276" text-anchor="middle">8</text>
+      <rect class="node is-cmp" x="187" y="258" width="26" height="26" rx="3"/>
+      <text x="200" y="276" text-anchor="middle">1</text>
+      <rect class="node is-cmp" x="213" y="258" width="26" height="26" rx="3"/>
+      <text x="226" y="276" text-anchor="middle">7</text>
+      <rect class="node is-cmp" x="267" y="258" width="26" height="26" rx="3"/>
+      <text x="280" y="276" text-anchor="middle">4</text>
+      <rect class="node is-cmp" x="293" y="258" width="26" height="26" rx="3"/>
+      <text x="306" y="276" text-anchor="middle">5</text>
+      <rect class="node is-cmp" x="41" y="314" width="26" height="26" rx="3"/>
+      <text x="54" y="332" text-anchor="middle">2</text>
+      <rect class="node is-cmp" x="67" y="314" width="26" height="26" rx="3"/>
+      <text x="80" y="332" text-anchor="middle">3</text>
+      <rect class="node is-cmp" x="93" y="314" width="26" height="26" rx="3"/>
+      <text x="106" y="332" text-anchor="middle">6</text>
+      <rect class="node is-cmp" x="119" y="314" width="26" height="26" rx="3"/>
+      <text x="132" y="332" text-anchor="middle">8</text>
+      <rect class="node is-cmp" x="201" y="314" width="26" height="26" rx="3"/>
+      <text x="214" y="332" text-anchor="middle">1</text>
+      <rect class="node is-cmp" x="227" y="314" width="26" height="26" rx="3"/>
+      <text x="240" y="332" text-anchor="middle">4</text>
+      <rect class="node is-cmp" x="253" y="314" width="26" height="26" rx="3"/>
+      <text x="266" y="332" text-anchor="middle">5</text>
+      <rect class="node is-cmp" x="279" y="314" width="26" height="26" rx="3"/>
+      <text x="292" y="332" text-anchor="middle">7</text>
+      <rect class="node is-ok" x="69" y="370" width="26" height="26" rx="3"/>
+      <text x="82" y="388" text-anchor="middle">1</text>
+      <rect class="node is-ok" x="95" y="370" width="26" height="26" rx="3"/>
+      <text x="108" y="388" text-anchor="middle">2</text>
+      <rect class="node is-ok" x="121" y="370" width="26" height="26" rx="3"/>
+      <text x="134" y="388" text-anchor="middle">3</text>
+      <rect class="node is-ok" x="147" y="370" width="26" height="26" rx="3"/>
+      <text x="160" y="388" text-anchor="middle">4</text>
+      <rect class="node is-ok" x="173" y="370" width="26" height="26" rx="3"/>
+      <text x="186" y="388" text-anchor="middle">5</text>
+      <rect class="node is-ok" x="199" y="370" width="26" height="26" rx="3"/>
+      <text x="212" y="388" text-anchor="middle">6</text>
+      <rect class="node is-ok" x="225" y="370" width="26" height="26" rx="3"/>
+      <text x="238" y="388" text-anchor="middle">7</text>
+      <rect class="node is-ok" x="251" y="370" width="26" height="26" rx="3"/>
+      <text x="264" y="388" text-anchor="middle">8</text>
+      <text class="label-pen" x="352" y="108">chia đôi</text>
+      <text class="label-pen" x="352" y="220">đoạn 1 phần tử</text>
+      <text class="label-sm" x="352" y="276">tầng trộn 1: 4 so sánh</text>
+      <text class="label-sm" x="352" y="332">tầng trộn 2: 6 so sánh</text>
+      <text class="label-sm" x="352" y="388">tầng trộn 3: 7 so sánh</text>
+      </svg>
+      <figcaption>Hình 1. Cây chia để trị của merge sort với n = 8: 3 tầng chia đôi xuống 8 đoạn một phần tử, rồi 3 = log₂ 8 tầng trộn đi lên. Mỗi tầng trộn xử lý đủ 8 phần tử.</figcaption>
+    </figure>
+
+    <h3>Sắp xếp chọn và nổi bọt trên cùng dãy</h3>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Bảng vết: sắp xếp chọn</p></div>
+      <div class="viz-body">
+        <table class="trace">
+          <thead><tr><th>Lượt i</th><th>Nhỏ nhất ở ô p</th><th>Dãy sau khi đổi a[i] với a[p]</th><th>So sánh</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>5 (số 1)</td><td>1 | 3 8 2 7 6 5 4</td><td>7</td></tr>
+            <tr><td>1</td><td>3 (số 2)</td><td>1 2 | 8 3 7 6 5 4</td><td>6</td></tr>
+            <tr><td>2</td><td>3 (số 3)</td><td>1 2 3 | 8 7 6 5 4</td><td>5</td></tr>
+            <tr><td>3</td><td>7 (số 4)</td><td>1 2 3 4 | 7 6 5 8</td><td>4</td></tr>
+            <tr><td>4</td><td>6 (số 5)</td><td>1 2 3 4 5 | 6 7 8</td><td>3</td></tr>
+            <tr><td>5</td><td>5 (không đổi)</td><td>1 2 3 4 5 6 | 7 8</td><td>2</td></tr>
+            <tr class="hl"><td>6</td><td>6 (không đổi)</td><td>1 2 3 4 5 6 7 8</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="viz-caption"><p>Tổng 7 + 6 + 5 + 4 + 3 + 2 + 1 = 28 = 8·7/2 so sánh, chỉ 5 lần đổi chỗ thật sự. Dù dãy vào đã sắp sẵn, sắp xếp chọn vẫn phải so sánh đủ 28 lần.</p></div>
+    </div>
+
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Bảng vết: nổi bọt (có dừng sớm)</p></div>
+      <div class="viz-body">
+        <table class="trace">
+          <thead><tr><th>Lượt k</th><th>Dãy sau lượt</th><th>So sánh trong lượt</th><th>Đổi chỗ trong lượt</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>3 6 2 7 1 5 4 | 8</td><td>7</td><td>6</td></tr>
+            <tr><td>2</td><td>3 2 6 1 5 4 | 7 8</td><td>6</td><td>4</td></tr>
+            <tr><td>3</td><td>2 3 1 5 4 | 6 7 8</td><td>5</td><td>4</td></tr>
+            <tr><td>4</td><td>2 1 3 4 | 5 6 7 8</td><td>4</td><td>2</td></tr>
+            <tr><td>5</td><td>1 2 3 | 4 5 6 7 8</td><td>3</td><td>1</td></tr>
+            <tr class="hl"><td>6</td><td>1 2 | 3 4 5 6 7 8</td><td>2</td><td>0 → dừng</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="viz-caption"><p>Tổng 27 so sánh và 6 + 4 + 4 + 2 + 1 = 17 lần đổi chỗ, đúng bằng số nghịch thế. Lượt 6 không đổi chỗ lần nào nên thuật toán dừng sớm, bỏ qua lượt 7.</p></div>
+    </div>
+
+    <h3>Sắp xếp đếm</h3>
+    <p>Dãy 3 1 4 1 5 2 3 1 có giá trị trong đoạn [1, 5]. Đếm xong, ta đọc mảng cnt từ trái sang phải.</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Mảng đếm cnt</p></div>
+      <div class="viz-body">
+        <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">3</span><span class="cell" data-i="1">1</span><span class="cell" data-i="2">4</span><span class="cell" data-i="3">1</span><span class="cell" data-i="4">5</span><span class="cell" data-i="5">2</span><span class="cell" data-i="6">3</span><span class="cell" data-i="7">1</span></div>
+        <div class="arr"><span class="arr-label">cnt</span><span class="cell is-cmp" data-i="1">3</span><span class="cell is-cmp" data-i="2">1</span><span class="cell is-cmp" data-i="3">2</span><span class="cell is-cmp" data-i="4">1</span><span class="cell is-cmp" data-i="5">1</span></div>
+        <div class="arr"><span class="arr-label">kết quả</span><span class="cell is-ok">1</span><span class="cell is-ok">1</span><span class="cell is-ok">1</span><span class="cell is-ok">2</span><span class="cell is-ok">3</span><span class="cell is-ok">3</span><span class="cell is-ok">4</span><span class="cell is-ok">5</span></div>
+      </div>
+      <div class="viz-caption"><p>Số nhỏ phía trên ô cnt là giá trị v, số trong ô là cnt[v]. Ba số 1, một số 2, hai số 3, một số 4, một số 5. Không có phép so sánh nào giữa các phần tử.</p></div>
+    </div>
+
+    <h3>Tự tay thử</h3>
+    <p>Chọn thuật toán, nhập dãy (tối đa 16 số nguyên từ 1 đến 99) hoặc bấm “Sinh ngẫu nhiên”, rồi chạy từng bước. Bộ đếm cho biết số phép so sánh và số lần ghi/đổi chỗ. Em thử cùng một dãy với cả năm thuật toán, và thử cả dãy đã sắp sẵn hoặc sắp ngược.</p>
+    <div class="playground" id="viz-sorting">
+      <div class="viz-head"><p class="viz-title">Máy sắp xếp</p></div>
+      <div class="playground-body">
+        <div class="out">Trình duyệt cần bật JavaScript để dùng công cụ này.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Sắp xếp chèn có in từng bước</h3>
+    <p>Chương trình đọc n và dãy số, sắp xếp chèn và in dãy sau mỗi lượt. Biến <code>soDich</code> đếm số lần dịch, đúng bằng số nghịch thế.</p>
+    <figure class="code">
+      <figcaption><span class="fn">sap_xep_chen.cpp</span> Sắp xếp chèn, in dãy sau mỗi lượt</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Sắp xếp chèn: in dãy sau mỗi lượt chèn để em thấy từng bước
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;int&gt; a(n);
+    for (int &amp;x : a) cin &gt;&gt; x;
+
+    long long soDich = 0;                 // đếm số lần dịch phần tử sang phải
+    for (int i = 1; i &lt; n; i++) {
+        int key = a[i];                   // lá bài vừa rút
+        int j = i - 1;
+        while (j &gt;= 0 &amp;&amp; a[j] &gt; key) {    // dùng &gt; (không phải &gt;=) để giữ ổn định
+            a[j + 1] = a[j];              // dịch phần tử lớn hơn sang phải
+            j--;
+            soDich++;
+        }
+        a[j + 1] = key;                   // đặt key vào chỗ trống
+        cout &lt;&lt; "i = " &lt;&lt; i &lt;&lt; ":";
+        for (int x : a) cout &lt;&lt; ' ' &lt;&lt; x;
+        cout &lt;&lt; '\n';
+    }
+    cout &lt;&lt; "Số lần dịch: " &lt;&lt; soDich &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8
+6 3 8 2 7 1 5 4</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">i = 1: 3 6 8 2 7 1 5 4
+i = 2: 3 6 8 2 7 1 5 4
+i = 3: 2 3 6 8 7 1 5 4
+i = 4: 2 3 6 7 8 1 5 4
+i = 5: 1 2 3 6 7 8 5 4
+i = 6: 1 2 3 5 6 7 8 4
+i = 7: 1 2 3 4 5 6 7 8
+Số lần dịch: 17</code></pre></div>
+    </div>
+
+    <h3>Sắp xếp trộn</h3>
+    <p>Mảng phụ <code>tmp</code> khai báo một lần ở ngoài, tránh cấp phát lại trong mỗi lần gọi đệ quy. Độ sâu đệ quy chỉ khoảng log₂ n (20 với n = 10⁶) nên không lo tràn ngăn xếp.</p>
+    <figure class="code">
+      <figcaption><span class="fn">merge_sort.cpp</span> Sắp xếp trộn O(n log n), ổn định</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+vector&lt;int&gt; a, tmp;                       // tmp: mảng phụ dùng khi trộn
+
+// Sắp xếp đoạn a[l..r] (tính cả hai đầu)
+void mergeSort(int l, int r) {
+    if (l &gt;= r) return;                   // đoạn 0 hoặc 1 phần tử: đã có thứ tự
+    int m = (l + r) / 2;
+    mergeSort(l, m);                      // Chia: sắp nửa trái
+    mergeSort(m + 1, r);                  //       sắp nửa phải
+    // Trộn: hai con trỏ i (nửa trái) và j (nửa phải)
+    int i = l, j = m + 1, k = l;
+    while (i &lt;= m &amp;&amp; j &lt;= r) {
+        if (a[i] &lt;= a[j]) tmp[k++] = a[i++];   // &lt;= : bằng nhau lấy bên trái trước -&gt; ổn định
+        else              tmp[k++] = a[j++];
+    }
+    while (i &lt;= m) tmp[k++] = a[i++];     // chép phần còn lại của nửa trái
+    while (j &lt;= r) tmp[k++] = a[j++];     // chép phần còn lại của nửa phải
+    for (int t = l; t &lt;= r; t++) a[t] = tmp[t];
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    a.resize(n);
+    tmp.resize(n);
+    for (int &amp;x : a) cin &gt;&gt; x;
+    mergeSort(0, n - 1);
+    for (int i = 0; i &lt; n; i++) cout &lt;&lt; a[i] &lt;&lt; (i + 1 &lt; n ? ' ' : '\n');
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8
+6 3 8 2 7 1 5 4</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1 2 3 4 5 6 7 8</code></pre></div>
+    </div>
+
+    <h3>std::sort và hàm so sánh tùy biến</h3>
+    <p>Trong thi đấu, em dùng <code>sort</code> trong thư viện <code>&lt;algorithm&gt;</code> (đã có trong <code>bits/stdc++.h</code>, xem thêm <a href="stl.html">STL</a>):</p>
+    <ul>
+      <li><code>sort(a.begin(), a.end());</code> sắp tăng dần; với mảng thường <code>int a[N]</code> thì <code>sort(a, a + n);</code> hoặc <code>sort(a + 1, a + n + 1);</code> nếu đánh số từ 1.</li>
+      <li><code>sort(a.begin(), a.end(), greater&lt;&gt;());</code> sắp giảm dần (hoặc sắp tăng rồi <code>reverse</code>).</li>
+      <li><code>vector&lt;pair&lt;int,int&gt;&gt;</code> được sắp theo <code>first</code> trước, bằng nhau thì theo <code>second</code>. Đây là cách nhanh nhất để sắp theo hai khóa cùng chiều tăng.</li>
+      <li>Muốn tiêu chí riêng, truyền thêm <strong>hàm so sánh</strong> <code>cmp(x, y)</code>: trả về <code>true</code> khi và chỉ khi x phải đứng <strong>trước</strong> y. Cách gọn nhất là viết lambda ngay trong lời gọi.</li>
+    </ul>
+    <p><strong>Bài toán.</strong> Cho n học sinh, mỗi bạn có tên (không chứa dấu cách) và điểm. In bảng xếp hạng: điểm <strong>giảm dần</strong>; bằng điểm thì tên <strong>tăng dần</strong> theo thứ tự từ điển.</p>
+    <figure class="code">
+      <figcaption><span class="fn">xep_hang.cpp</span> Sắp theo khóa chính rồi khóa phụ bằng lambda</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+struct HocSinh {
+    string ten;
+    int diem;
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;HocSinh&gt; hs(n);
+    for (auto &amp;h : hs) cin &gt;&gt; h.ten &gt;&gt; h.diem;
+
+    // Khóa chính: điểm GIẢM dần. Khóa phụ: bằng điểm thì tên TĂNG dần.
+    // Hàm so sánh trả về true khi x phải đứng TRƯỚC y.
+    sort(hs.begin(), hs.end(), [](const HocSinh &amp;x, const HocSinh &amp;y) {
+        if (x.diem != y.diem) return x.diem &gt; y.diem;
+        return x.ten &lt; y.ten;             // luôn dùng &lt; hoặc &gt;, KHÔNG dùng &lt;=
+    });
+
+    for (int i = 0; i &lt; n; i++)
+        cout &lt;&lt; i + 1 &lt;&lt; ". " &lt;&lt; hs[i].ten &lt;&lt; ' ' &lt;&lt; hs[i].diem &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5
+Lan 8
+Binh 9
+An 8
+Minh 10
+Chi 9</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1. Minh 10
+2. Binh 9
+3. Chi 9
+4. An 8
+5. Lan 8</code></pre></div>
+    </div>
+    <p>Đọc hàm so sánh như một câu: “nếu điểm khác nhau thì ai điểm cao hơn đứng trước; nếu điểm bằng nhau thì ai có tên nhỏ hơn đứng trước”. Muốn thêm khóa thứ ba, em chỉ cần chèn thêm một dòng <code>if (… != …) return …;</code> trước dòng cuối.</p>
+    <div class="callout tip"><p class="callout-title">Mẹo dùng pair hoặc tuple</p><p>Có thể lưu <code>pair&lt;int,string&gt;</code> với first = <strong>−điểm</strong>, second = tên, rồi gọi <code>sort</code> không cần hàm so sánh: đổi dấu điểm biến “giảm dần” thành “tăng dần”. Cách này ngắn nhưng dễ nhầm khi in ra; mới học thì nên viết lambda cho rõ.</p></div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thuật toán</th><th>Tốt nhất</th><th>Trung bình</th><th>Xấu nhất</th><th>Bộ nhớ thêm</th><th>Ổn định</th></tr></thead>
+      <tbody>
+        <tr><td>Chọn</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(1)</span></td><td>Không</td></tr>
+        <tr><td>Nổi bọt (dừng sớm)</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(1)</span></td><td>Có</td></tr>
+        <tr><td>Chèn</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(1)</span></td><td>Có</td></tr>
+        <tr><td>Trộn (merge sort)</td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n)</span></td><td>Có</td></tr>
+        <tr><td>Nhanh (quick sort)</td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(log n)</span></td><td>Không</td></tr>
+        <tr><td>Đếm (giá trị trong [0, k])</td><td><span class="bigo">O(n + k)</span></td><td><span class="bigo">O(n + k)</span></td><td><span class="bigo">O(n + k)</span></td><td><span class="bigo">O(k)</span></td><td>Có*</td></tr>
+        <tr><td><code>std::sort</code> (introsort)</td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(log n)</span></td><td>Không</td></tr>
+        <tr><td><code>std::stable_sort</code></td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n)</span></td><td>Có</td></tr>
+      </tbody>
+    </table>
+    <p>* Bản đếm đơn giản ở trên chỉ in lại các số nên chuyện ổn định không đặt ra. Khi cần sắp các bản ghi theo một khóa nhỏ, người ta dùng bản có cộng dồn cnt và đặt phần tử từ cuối về đầu, bản đó ổn định.</p>
+    <p><strong>Số phép tính cụ thể</strong> (lấy log₂ n làm tròn lên):</p>
+    <table>
+      <thead><tr><th>n</th><th>n(n−1)/2 (chọn, chèn xấu nhất)</th><th>n · log₂ n (trộn)</th><th>Kết luận với 1 giây</th></tr></thead>
+      <tbody>
+        <tr><td>1 000</td><td>499 500</td><td>≈ 10 000</td><td>Cả hai đều kịp</td></tr>
+        <tr><td>5 000</td><td>12 497 500</td><td>≈ 65 000</td><td>O(n²) vẫn kịp</td></tr>
+        <tr><td>10⁵</td><td>4 999 950 000</td><td>≈ 1,7·10⁶</td><td>Chỉ O(n log n) kịp</td></tr>
+        <tr><td>10⁶</td><td>≈ 5·10¹¹</td><td>≈ 2·10⁷</td><td>Chỉ O(n log n) kịp</td></tr>
+      </tbody>
+    </table>
+    <p>Hàm so sánh tùy biến không làm đổi độ phức tạp, nhưng mỗi lần so sánh tốn thêm thời gian bằng chi phí của hàm. So sánh hai chuỗi dài L ký tự tốn tới O(L), nên sắp n chuỗi là O(L · n log n). Với n = 10⁵ chuỗi dài 100, cỡ 1,7·10⁸ thao tác ký tự trong trường hợp xấu, vẫn chạy được nhưng nên nhớ điều này.</p>
+    <div class="callout note"><p class="callout-title">Truyền tham chiếu trong hàm so sánh</p><p>Viết <code>const HocSinh &amp;x</code> chứ không viết <code>HocSinh x</code>. Nếu không, mỗi lần so sánh sẽ sao chép cả struct (kèm chuỗi tên), chậm đi nhiều lần vì hàm được gọi khoảng 1,7·10⁶ lần khi n = 10⁵.</p></div>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Các cách sắp giảm dần</h3>
+    <p>Ba cách sau cho cùng kết quả với <code>vector&lt;int&gt; a</code>:</p>
+<pre><code class="language-cpp">sort(a.begin(), a.end(), greater&lt;&gt;());                       // cách 1: dùng greater
+sort(a.rbegin(), a.rend());                                    // cách 2: sắp tăng trên dãy đọc ngược
+sort(a.begin(), a.end(), [](int x, int y) { return x &gt; y; }); // cách 3: lambda</code></pre>
+    <p>Sắp xếp “lẻ trước, tăng dần; chẵn sau, giảm dần” (bài Sắp xếp 2 ở phần bài tập) cũng chỉ là một lambda nhiều khóa: khóa chính là “lẻ hay chẵn”, khóa phụ phụ thuộc nhóm.</p>
+<pre><code class="language-cpp">sort(a.begin(), a.end(), [](int x, int y) {
+    bool lx = x % 2 != 0, ly = y % 2 != 0;
+    if (lx != ly) return lx;          // số lẻ đứng trước số chẵn
+    if (lx) return x &lt; y;             // cùng lẻ: tăng dần
+    return x &gt; y;                     // cùng chẵn: giảm dần
+});</code></pre>
+
+    <h3>2. Sắp ổn định với stable_sort</h3>
+    <p><code>stable_sort</code> có cách gọi giống hệt <code>sort</code>, chạy O(n log n) (bên trong là merge sort) và giữ thứ tự ban đầu của các phần tử bằng nhau. Một mẹo hay: muốn sắp theo điểm giảm dần, bằng điểm thì tên tăng dần, em có thể sắp <strong>theo khóa phụ trước</strong> rồi <code>stable_sort</code> <strong>theo khóa chính sau</strong>:</p>
+<pre><code class="language-cpp">sort(hs.begin(), hs.end(), [](const HocSinh &amp;x, const HocSinh &amp;y) { return x.ten &lt; y.ten; });
+stable_sort(hs.begin(), hs.end(), [](const HocSinh &amp;x, const HocSinh &amp;y) { return x.diem &gt; y.diem; });</code></pre>
+    <p>Lần sắp thứ hai chỉ nhìn điểm; các bạn bằng điểm giữ nguyên thứ tự tên đã có từ lần một. Khi đề nói “bằng nhau thì giữ thứ tự như trong dữ liệu vào”, em bắt buộc phải dùng <code>stable_sort</code> (hoặc thêm chỉ số ban đầu làm khóa phụ cuối cùng).</p>
+
+    <h3>3. Sắp xếp chỉ số</h3>
+    <p>Nhiều bài cần biết sau khi sắp, phần tử nào vốn ở vị trí nào. Thay vì sắp chính dãy, ta sắp mảng chỉ số <code>id = 0, 1, …, n−1</code> theo giá trị a[id]:</p>
+<pre><code class="language-cpp">vector&lt;int&gt; id(n);
+iota(id.begin(), id.end(), 0);                 // id = 0, 1, 2, ..., n-1
+sort(id.begin(), id.end(), [&amp;](int i, int j) {
+    if (a[i] != a[j]) return a[i] &lt; a[j];
+    return i &lt; j;                               // bằng nhau: chỉ số nhỏ trước
+});
+// id[0] là vị trí ban đầu của phần tử nhỏ nhất</code></pre>
+    <p>Chú ý <code>[&amp;]</code>: lambda “mượn” mảng a ở bên ngoài theo tham chiếu.</p>
+
+    <h3>4. sort + unique và nén tọa độ</h3>
+    <p>Sau khi sắp, các giá trị bằng nhau nằm cạnh nhau. Hàm <code>unique</code> dồn các phần tử “khác phần tử ngay trước nó” lên đầu và trả về vị trí kết thúc mới; ta <code>erase</code> phần đuôi thừa. Kết quả là dãy các giá trị phân biệt, đã sắp.</p>
+    <p><strong>Nén tọa độ</strong> (coordinate compression): khi giá trị rất lớn (tới 10⁹) nhưng chỉ có n ≤ 10⁵ giá trị, ta thay mỗi giá trị bằng <em>thứ hạng</em> của nó trong dãy phân biệt (tìm bằng <code>lower_bound</code>, xem <a href="binary-search.html">chặt nhị phân</a>). Thứ tự giữa các số được giữ nguyên, nhưng giờ chúng nằm trong [0, n−1] và dùng làm chỉ số mảng được.</p>
+    <figure class="code">
+      <figcaption><span class="fn">nen_toa_do.cpp</span> Đếm số giá trị khác nhau và nén tọa độ</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;long long&gt; a(n);
+    for (auto &amp;x : a) cin &gt;&gt; x;
+
+    vector&lt;long long&gt; b = a;
+    sort(b.begin(), b.end());
+    b.erase(unique(b.begin(), b.end()), b.end());   // xóa phần tử trùng (đứng cạnh nhau)
+    cout &lt;&lt; "Số giá trị khác nhau: " &lt;&lt; b.size() &lt;&lt; '\n';
+
+    // Nén tọa độ: thay mỗi a[i] bằng thứ hạng của nó trong b (bắt đầu từ 0)
+    for (int i = 0; i &lt; n; i++) {
+        int r = lower_bound(b.begin(), b.end(), a[i]) - b.begin();
+        cout &lt;&lt; r &lt;&lt; (i + 1 &lt; n ? ' ' : '\n');
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">6
+1000000000 -5 70 70 1000000000 3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">Số giá trị khác nhau: 4
+3 0 2 2 3 1</code></pre></div>
+    </div>
+
+    <h3>5. Sắp xếp đếm đầy đủ</h3>
+    <p>Khi đề cho giá trị nhỏ (ví dụ 1 ≤ a[i] ≤ 10⁵), sắp xếp đếm vừa ngắn vừa nhanh. Nếu giá trị có thể âm, ví dụ trong [−10⁵, 10⁵], em cộng thêm 10⁵ trước khi đếm và trừ đi khi in (dịch gốc).</p>
+    <figure class="code">
+      <figcaption><span class="fn">sap_xep_dem.cpp</span> Sắp xếp đếm O(n + k)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const int K = 100000;                     // giá trị lớn nhất có thể gặp
+int cnt[K + 1];                           // cnt[v] = số lần v xuất hiện
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    for (int i = 0; i &lt; n; i++) {
+        int x; cin &gt;&gt; x;
+        cnt[x]++;                         // bước 1: đếm
+    }
+    bool dau = true;
+    for (int v = 0; v &lt;= K; v++)          // bước 2: đi từ nhỏ đến lớn
+        for (int t = 0; t &lt; cnt[v]; t++) {
+            if (!dau) cout &lt;&lt; ' ';
+            cout &lt;&lt; v;
+            dau = false;
+        }
+    cout &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8
+3 1 4 1 5 2 3 1</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1 1 1 2 3 3 4 5</code></pre></div>
+    </div>
+
+    <h3>6. Đếm nghịch thế bằng merge sort (nâng cao)</h3>
+    <p><strong>Bài toán</strong> (<a href="https://oj.vnoi.info/problem/nkinv">NKINV</a>): đếm số cặp i &lt; j mà a[i] &gt; a[j], với n ≤ 60 000. Duyệt mọi cặp tốn khoảng 1,8·10⁹ phép, quá chậm.</p>
+    <p><strong>Ý tưởng:</strong> mỗi nghịch thế (i, j) hoặc nằm gọn trong nửa trái, hoặc gọn trong nửa phải, hoặc “vắt qua” với i ở nửa trái, j ở nửa phải. Hai loại đầu do đệ quy đếm. Loại thứ ba đếm ngay trong bước trộn: khi lấy a[j] từ nửa phải vì a[j] &lt; a[i], thì a[j] nhỏ hơn <em>mọi</em> phần tử còn lại a[i..m] của nửa trái (vì nửa trái đã tăng dần). Vậy cộng thêm m − i + 1 nghịch thế một lúc. Việc sắp xếp hai nửa không làm thay đổi số cặp vắt qua, vì mỗi phần tử vẫn ở nguyên nửa của nó.</p>
+    <p>Trên dãy 6 3 8 2 7 1 5 4: tầng trộn 1 đếm được 1 + 1 + 1 + 1 = 4; tầng 2 đếm được 2 (khi lấy 2 ra trước [3 6]) + 2 (khi lấy 4 rồi 5 ra trước [7]) = 4; tầng 3 đếm được 4 (lấy 1) + 2 (lấy 4) + 2 (lấy 5) + 1 (lấy 7) = 9. Tổng 4 + 4 + 9 = 17, khớp với cách đếm tay.</p>
+    <figure class="code">
+      <figcaption><span class="fn">nkinv.cpp</span> Đếm nghịch thế O(n log n)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+vector&lt;int&gt; a, tmp;
+
+// Sắp a[l..r] và trả về số nghịch thế bên trong đoạn đó
+long long demNghichThe(int l, int r) {
+    if (l &gt;= r) return 0;
+    int m = (l + r) / 2;
+    long long kq = demNghichThe(l, m) + demNghichThe(m + 1, r);
+    int i = l, j = m + 1, k = l;
+    while (i &lt;= m &amp;&amp; j &lt;= r) {
+        if (a[i] &lt;= a[j]) tmp[k++] = a[i++];
+        else {
+            kq += m - i + 1;              // a[j] nhỏ hơn mọi phần tử a[i..m] còn lại
+            tmp[k++] = a[j++];
+        }
+    }
+    while (i &lt;= m) tmp[k++] = a[i++];
+    while (j &lt;= r) tmp[k++] = a[j++];
+    for (int t = l; t &lt;= r; t++) a[t] = tmp[t];
+    return kq;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    a.resize(n);
+    tmp.resize(n);
+    for (int &amp;x : a) cin &gt;&gt; x;
+    cout &lt;&lt; demNghichThe(0, n - 1) &lt;&lt; '\n';   // tối đa n(n-1)/2 ~ 1,8 tỉ: cần long long
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+3
+1
+2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2</code></pre></div>
+    </div>
+    <p>Chú ý dấu <code>&lt;=</code> ở bước trộn: khi a[i] = a[j] ta lấy bên trái trước và <em>không</em> cộng, vì hai số bằng nhau không tạo nghịch thế. Cách khác cũng đếm được nghịch thế là dùng cây Fenwick (BIT) kết hợp nén tọa độ, em sẽ gặp ở các chủ đề sau.</p>
+
+    <h3>7. So sánh phân số và phần tử thứ k</h3>
+    <ul>
+      <li><strong>Phân số</strong> x₁/y₁ và x₂/y₂ (mẫu dương): so sánh <code>(long long)x1 * y2</code> với <code>(long long)x2 * y1</code>, không dùng <code>double</code> vì sai số làm hai phân số bằng nhau trông như khác nhau. Với x, y ≤ 10⁹, tích tới 10¹⁸ vẫn vừa <code>long long</code> (giới hạn khoảng 9,2·10¹⁸).</li>
+      <li><strong>Phần tử nhỏ thứ k</strong>: không cần sắp cả dãy. <code>nth_element(a.begin(), a.begin() + k, a.end());</code> đưa đúng phần tử nhỏ thứ k+1 (đếm từ 0 là a[k]) về ô k, bên trái toàn số không lớn hơn, bên phải toàn số không nhỏ hơn, trung bình O(n). Đó là ý tưởng phân hoạch của quick sort nhưng chỉ đệ quy một bên.</li>
+    </ul>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Dùng &lt;= hoặc &gt;= trong hàm so sánh</p><p>Hàm so sánh của <code>sort</code> phải là một <strong>thứ tự yếu nghiêm ngặt</strong> (strict weak ordering). Điều kiện dễ hiểu nhất: <code>cmp(x, x)</code> phải trả về <code>false</code> (không ai đứng trước chính mình), và nếu <code>cmp(x, y)</code> đúng thì <code>cmp(y, x)</code> phải sai. Viết <code>return x.diem &gt;= y.diem;</code> vi phạm cả hai. Kết quả là <em>hành vi không xác định</em>: với dãy có nhiều phần tử bằng nhau, <code>std::sort</code> có thể đọc ra ngoài mảng và chương trình bị lỗi Runtime Error, hoặc cho thứ tự sai. Sửa: luôn dùng <code>&lt;</code> hoặc <code>&gt;</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Sai vị trí đầu cuối khi mảng đánh số từ 1</p><p>Mảng lưu ở a[1..n] thì phải gọi <code>sort(a + 1, a + n + 1)</code>. Viết <code>sort(a, a + n)</code> sẽ kéo ô a[0] (thường bằng 0) vào và bỏ sót a[n].</p></div>
+    <div class="callout warn"><p class="callout-title">Quên erase sau unique, hoặc chưa sort đã unique</p><p><code>unique</code> chỉ gộp các phần tử trùng <em>đứng cạnh nhau</em> và không làm ngắn vector. Phải <code>sort</code> trước, rồi <code>a.erase(unique(a.begin(), a.end()), a.end());</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Tràn số</p><p>Số nghịch thế tối đa là n(n−1)/2, với n = 60 000 là 1 799 970 000, vượt <code>int</code> (khoảng 2,1·10⁹ thì vừa, nhưng với n = 10⁵ là gần 5·10⁹ thì tràn). Luôn dùng <code>long long</code> cho biến đếm. Tương tự khi nhân chéo phân số.</p></div>
+    <div class="callout warn"><p class="callout-title">Hàm so sánh không nhất quán</p><p>Không dùng số ngẫu nhiên hay biến thay đổi trong hàm so sánh; với cùng một cặp, hàm phải luôn trả lời giống nhau. Cũng đừng so sánh số thực tính ra từ phép chia (ví dụ x / y) nếu có thể so sánh bằng phép nhân số nguyên.</p></div>
+    <div class="callout warn"><p class="callout-title">Viết O(n²) khi n lớn</p><p>Sắp xếp nổi bọt tự viết với n = 10⁵ chắc chắn quá thời gian. Chỉ tự viết thuật toán O(n²) khi n ≤ vài nghìn, hoặc khi đề yêu cầu in ra các bước của chính thuật toán đó.</p></div>
+    <div class="callout warn"><p class="callout-title">Sắp xếp đếm với giá trị lớn hoặc âm</p><p>Khai báo <code>cnt[1000000001]</code> tốn 4 GB bộ nhớ, chắc chắn lỗi. Giá trị lớn thì dùng <code>sort</code> hoặc nén tọa độ trước; giá trị âm thì dịch gốc.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo kiểm tra hàm so sánh</p><p>Viết xong lambda, em đọc to: “trả về true nghĩa là x đứng trước y”. Rồi thử với hai phần tử bằng nhau hoàn toàn: hàm phải trả về <code>false</code>. Nếu ra <code>true</code>, em đang dùng <code>&lt;=</code> hoặc <code>&gt;=</code> ở đâu đó.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Muốn sắp điểm giảm dần, hàm so sánh nào đúng?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. <code>return x.diem &gt;= y.diem;</code></button>
+        <button type="button" class="quiz-opt" data-correct>B. <code>return x.diem &gt; y.diem;</code></button>
+        <button type="button" class="quiz-opt">C. <code>return x.diem &lt; y.diem;</code></button>
+        <button type="button" class="quiz-opt">D. Cả A và B đều đúng.</button>
+      </div>
+      <p class="quiz-explain">B đúng. A vi phạm thứ tự yếu nghiêm ngặt (với x = y, A trả về true), có thể gây lỗi Runtime Error. C sắp tăng dần.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Merge sort trên dãy n = 1024 phần tử có bao nhiêu tầng trộn?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 512</button>
+        <button type="button" class="quiz-opt">B. 32</button>
+        <button type="button" class="quiz-opt" data-correct>C. 10</button>
+        <button type="button" class="quiz-opt">D. 1024</button>
+      </div>
+      <p class="quiz-explain">Mỗi tầng độ dài đoạn tăng gấp đôi: 1 → 2 → 4 → … → 1024, cần log₂ 1024 = 10 tầng. Mỗi tầng xử lý 1024 phần tử.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Sắp xếp chèn chạy trên một dãy n phần tử <em>đã sắp tăng</em>. Độ phức tạp là?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt" data-correct>A. O(n)</button>
+        <button type="button" class="quiz-opt">B. O(n log n)</button>
+        <button type="button" class="quiz-opt">C. O(n²)</button>
+      </div>
+      <p class="quiz-explain">Dãy đã sắp có 0 nghịch thế nên không có lần dịch nào; mỗi lượt chỉ 1 phép so sánh rồi dừng, tổng n − 1 phép.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Dãy 2 4 1 3 có bao nhiêu nghịch thế?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 2</button>
+        <button type="button" class="quiz-opt" data-correct>B. 3</button>
+        <button type="button" class="quiz-opt">C. 4</button>
+        <button type="button" class="quiz-opt">D. 6</button>
+      </div>
+      <p class="quiz-explain">Các cặp (2, 1), (4, 1), (4, 3). Nổi bọt sẽ đổi chỗ đúng 3 lần, sắp xếp chèn dịch đúng 3 lần.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Đề yêu cầu: sắp theo điểm giảm dần, bằng điểm thì giữ nguyên thứ tự như trong dữ liệu vào. Em dùng gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. <code>sort</code> với hàm so sánh theo điểm</button>
+        <button type="button" class="quiz-opt" data-correct>B. <code>stable_sort</code> với hàm so sánh theo điểm</button>
+        <button type="button" class="quiz-opt">C. Sắp xếp chọn</button>
+      </div>
+      <p class="quiz-explain"><code>sort</code> và sắp xếp chọn đều không ổn định, có thể đảo thứ tự các bạn bằng điểm. <code>stable_sort</code> giữ nguyên thứ tự đó. (Cũng có thể dùng <code>sort</code> nếu thêm chỉ số ban đầu làm khóa phụ.)</p>
+    </div>
+    <p><strong>Câu 6.</strong> Chạy tay bước trộn hai dãy đã sắp [1 4 9] và [2 3 10]. Kết quả là gì và cần bao nhiêu phép so sánh?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>1 với 2 → lấy 1; 4 với 2 → lấy 2; 4 với 3 → lấy 3; 4 với 10 → lấy 4; 9 với 10 → lấy 9; nửa trái hết, chép 10. Kết quả 1 2 3 4 9 10 sau <strong>5</strong> phép so sánh. Tổng quát, trộn hai dãy độ dài p và q cần nhiều nhất p + q − 1 phép so sánh.</p></details>
+    <p><strong>Câu 7.</strong> Quick sort chọn chốt là phần tử <em>đầu tiên</em>, chạy trên dãy 1000, 999, …, 1 (giảm dần). Mỗi lần phân hoạch đoạn m phần tử tốn m − 1 so sánh. Tổng số so sánh là bao nhiêu?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Chốt luôn là số lớn nhất của đoạn, nên một bên rỗng, bên kia còn m − 1 phần tử. Tổng 999 + 998 + … + 1 = 1000 · 999 / 2 = <strong>499 500</strong>, đúng kiểu O(n²). Chọn chốt ngẫu nhiên sẽ tránh được trường hợp này.</p></details>
+    <p><strong>Câu 8.</strong> Cho n = 10⁵ số nguyên, |a[i]| ≤ 10⁹. Có dùng sắp xếp đếm trực tiếp được không? Nếu không, em làm thế nào?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Không: mảng cnt cần khoảng 2·10⁹ ô, quá bộ nhớ. Dùng <code>sort</code> O(n log n). Nếu thật sự cần mảng đếm theo giá trị (ví dụ để đếm tần suất), hãy nén tọa độ trước: các giá trị trở thành số trong [0, n − 1].</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Các bài LQDOJ và VNOJ có đề tiếng Việt; bài CSES và Codeforces có tóm tắt tiếng Việt bên dưới.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/countingsort">Sắp xếp đếm</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 10⁵ số nguyên dương không quá 10⁵, in dãy theo thứ tự không giảm.</p>
+        <p class="ex-skill"><b>Luyện:</b> sắp xếp đếm O(n + k).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mảng cnt kích thước 10⁵ + 1, đếm rồi duyệt v từ nhỏ đến lớn, in v ra cnt[v] lần. Đây chính là chương trình sap_xep_dem.cpp ở trên.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cppb2p118">Sắp xếp chèn</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Thực hiện sắp xếp chèn và in trạng thái dãy sau mỗi bước i = 1, 2, …, n − 1.</p>
+        <p class="ex-skill"><b>Luyện:</b> cài đặt đúng sắp xếp chèn, hiểu bất biến “đoạn đầu đã sắp”.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giống chương trình sap_xep_chen.cpp; chú ý định dạng in theo đúng đề (dòng “Sau bước …”).</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1621">Distinct Numbers</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 2·10⁵ số (tới 10⁹), đếm số giá trị khác nhau.</p>
+        <p class="ex-skill"><b>Luyện:</b> sort rồi đếm chỗ đổi giá trị, hoặc sort + unique.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sau khi sắp, đáp án là 1 cộng số vị trí i ≥ 1 có a[i] ≠ a[i−1]. Không dùng mảng đếm theo giá trị vì giá trị tới 10⁹.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/ca0302">Sắp xếp 2</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Sắp dãy n ≤ 10⁵ số sao cho các số lẻ đứng trước và tăng dần, các số chẵn đứng sau và giảm dần.</p>
+        <p class="ex-skill"><b>Luyện:</b> hàm so sánh lambda với khóa chính và khóa phụ phụ thuộc nhóm.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xem lambda “lẻ trước, chẵn sau” ở mục Biến thể. Cách khác: tách hai vector, sắp riêng rồi nối lại.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/ca0301">Sắp xếp 1</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Sắp n ≤ 10⁵ phân số x/y (x, y ≤ 10⁹) giảm dần theo giá trị; bằng nhau thì phân số có x + y lớn hơn đứng trước.</p>
+        <p class="ex-skill"><b>Luyện:</b> so sánh phân số bằng nhân chéo <code>long long</code>, hàm so sánh hai khóa.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>x₁/y₁ &gt; x₂/y₂ khi và chỉ khi x₁·y₂ &gt; x₂·y₁ (mẫu dương). Tích tới 10¹⁸ vừa <code>long long</code>. Không dùng <code>double</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/ca0303">Sắp xếp 3</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 10⁵ mã số (|a| ≤ 10⁹). Sắp lại: mã xuất hiện nhiều lần hơn đứng trước; cùng số lần thì mã lớn hơn đứng trước.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm tần suất (sort hoặc map) rồi sắp theo hai khóa.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp dãy để gom các giá trị bằng nhau, tạo danh sách cặp (tần suất, giá trị), sắp cặp giảm dần theo cả hai khóa, rồi in mỗi giá trị đúng số lần của nó.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/26ts10csptta">Xếp hạng (TS10 Chuyên Sư Phạm thi thử 2026)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Mỗi học sinh có số bài p và tổng thời gian t. Xếp hạng theo p giảm dần, bằng p thì t tăng dần; hỏi có bao nhiêu bạn cùng hạng với bạn đứng thứ k.</p>
+        <p class="ex-skill"><b>Luyện:</b> sắp theo khóa chính giảm, khóa phụ tăng; đếm phần tử bằng nhau.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp xong, lấy cặp (p, t) của người thứ k rồi đếm số người có đúng cặp đó (họ đứng liền nhau quanh vị trí k).</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/166/A">166A – Rank List</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cùng ý tưởng với bài Xếp hạng ở trên (n ≤ 50): đội giải nhiều bài hơn xếp trên, bằng thì phạt ít hơn xếp trên; đếm số đội cùng hạng với đội ở vị trí k.</p>
+        <p class="ex-skill"><b>Luyện:</b> sắp <code>pair</code> với hàm so sánh hai khóa ngược chiều.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lưu (−số bài, phạt) rồi sắp tăng mặc định là đủ, hoặc viết lambda.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1074">Stick Lengths</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có n que dài p[i]. Mỗi lần tăng hoặc giảm một que 1 đơn vị tốn 1. Tìm chi phí nhỏ nhất để mọi que dài bằng nhau.</p>
+        <p class="ex-skill"><b>Luyện:</b> sắp xếp để lấy trung vị.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Độ dài chung tốt nhất là trung vị (phần tử ở giữa sau khi sắp). Đáp án là tổng |p[i] − trung vị|, cần <code>long long</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1619">Restaurant Customers</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Biết giờ đến và giờ đi của n khách, tìm số khách đông nhất có mặt cùng lúc.</p>
+        <p class="ex-skill"><b>Luyện:</b> sắp các “sự kiện” theo thời gian rồi quét.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tạo 2n cặp (thời điểm, +1 khi đến / −1 khi đi), sắp theo thời điểm, cộng dồn và lấy giá trị lớn nhất. Đề bảo đảm các thời điểm đều khác nhau.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nksgame">NKSGAME – VOI 08 Trò chơi với dãy số</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho hai dãy b và c, mỗi dãy n ≤ 10⁵ số. Chọn b[i], c[j] để |b[i] + c[j]| nhỏ nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> sắp xếp làm nền cho hai con trỏ (hoặc chặt nhị phân).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp b tăng, c tăng. Đặt i ở đầu b, j ở cuối c: tổng dương thì giảm j, âm thì tăng i, luôn cập nhật |tổng| nhỏ nhất. Xem <a href="two-pointers.html">hai con trỏ</a>.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nkinv">NKINV – Dãy nghịch thế</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Đếm số cặp u &lt; v mà a[u] &gt; a[v], với N ≤ 60 000.</p>
+        <p class="ex-skill"><b>Luyện:</b> sửa merge sort để đếm trong bước trộn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Khi lấy phần tử từ nửa phải, cộng số phần tử còn lại ở nửa trái (m − i + 1). Kết quả cần <code>long long</code>. Xem mục Biến thể 6.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/basic/sorting">VNOI Wiki – Thuật toán sắp xếp</a> (tiếng Việt): nổi bọt, chèn, trộn, vun đống, nhanh, cơ số, có hình minh họa.</li>
+      <li><a href="https://wiki.vnoi.info/algo/basic/two-pointers">VNOI Wiki – Kĩ thuật hai con trỏ</a> (tiếng Việt): ứng dụng ngay sau khi sắp xếp, có phần trộn hai dãy.</li>
+      <li><a href="https://en.cppreference.com/w/cpp/algorithm/sort">cppreference – std::sort</a> và <a href="https://en.cppreference.com/w/cpp/algorithm/stable_sort">std::stable_sort</a> (tiếng Anh).</li>
+      <li><a href="https://en.cppreference.com/w/cpp/named_req/Compare">cppreference – yêu cầu Compare (strict weak ordering)</a> (tiếng Anh).</li>
+      <li><a href="https://usaco.guide/bronze/intro-sorting">USACO Guide – Introduction to Sorting</a> và <a href="https://usaco.guide/silver/sorting-custom">Custom Comparators and Coordinate Compression</a> (tiếng Anh).</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer’s Handbook</a>, chương 3 “Sorting” (tiếng Anh, PDF).</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Sắp xếp là bước nền cho hai con trỏ, chặt nhị phân, tham lam, gom nhóm. Với n ≥ 10⁵ phải dùng O(n log n).</li>
+        <li>Chọn, nổi bọt, chèn: O(n²). Số lần đổi chỗ (nổi bọt) và số lần dịch (chèn) đúng bằng số nghịch thế; chèn chạy O(n) trên dãy đã gần sắp.</li>
+        <li>Merge sort: chia đôi, sắp hai nửa, trộn bằng hai con trỏ. log₂ n tầng × n mỗi tầng = O(n log n), ổn định, tốn O(n) bộ nhớ phụ.</li>
+        <li>Quick sort: phân hoạch quanh chốt, trung bình O(n log n), xấu nhất O(n²) khi chốt tệ. Sắp xếp đếm: O(n + k) khi giá trị nhỏ.</li>
+        <li><code>sort(a.begin(), a.end(), cmp)</code>: cmp(x, y) trả về true khi x phải đứng trước y. Chỉ dùng <code>&lt;</code> hoặc <code>&gt;</code>, không bao giờ <code>&lt;=</code>.</li>
+        <li>Nhiều khóa: <code>if (x.k1 != y.k1) return x.k1 &gt; y.k1; return x.k2 &lt; y.k2;</code>. Cần giữ thứ tự gốc thì <code>stable_sort</code>.</li>
+        <li>Đếm số giá trị khác nhau / nén tọa độ: sort + <code>erase(unique(…))</code> + <code>lower_bound</code>.</li>
+        <li>Đếm nghịch thế: merge sort, cộng m − i + 1 mỗi khi lấy phần tử từ nửa phải; dùng <code>long long</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/sorting.js"></script>
+</body>
+</html>
