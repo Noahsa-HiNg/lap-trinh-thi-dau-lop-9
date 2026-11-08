@@ -3,10 +3,10 @@
   "agent": "topic-difference-array",
   "task": "Soạn chủ đề difference-array",
   "topic": "difference-array",
-  "status": "active",
+  "status": "aborted",
   "host": "MyPC",
   "started_at": "2026-10-08T03:27:28Z",
   "heartbeat_at": "2026-10-08T08:02:50Z",
-  "ended_at": null,
-  "summary": null
+  "ended_at": "2026-11-08T06:26:36Z",
+  "summary": "Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T08:02:50Z (agent dừng do hết hạn mức API (HTTP 429))"
 }

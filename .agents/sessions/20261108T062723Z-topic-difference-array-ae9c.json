@@ -1,0 +1,12 @@
+{
+  "id": "20261108T062723Z-topic-difference-array-ae9c",
+  "agent": "topic-difference-array",
+  "task": "Viết widget difference-array",
+  "topic": "difference-array",
+  "status": "done",
+  "host": "MyPC",
+  "started_at": "2026-11-08T06:27:23Z",
+  "heartbeat_at": "2026-11-08T06:27:23Z",
+  "ended_at": "2026-11-08T06:28:55Z",
+  "summary": "Bổ sung widget assets/js/viz/difference-array.js (thêm thao tác l,r,x; tô D[l], D[r+1]; cộng dồn ra mảng cuối); validate đạt"
+}

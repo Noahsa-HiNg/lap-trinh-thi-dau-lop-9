@@ -46,17 +46,29 @@
 | `20261007T151710Z-topic-recursion-d323` | topic-recursion | recursion | aborted | 2026-10-07T15:17:10Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:17:10Z (agent dừng do hết hạn mức API (HTTP 429)) |
 | `20261007T151920Z-topic-backtracking-0dda` | topic-backtracking | backtracking | aborted | 2026-10-07T15:19:20Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:19:20Z (agent dừng do hết hạn mức API (HTTP 429)) |
 | `20261007T151930Z-topic-greedy-42c4` | topic-greedy | greedy | aborted | 2026-10-07T15:19:30Z | 2026-10-08T03:25:42Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-07T15:19:30Z (agent dừng do hết hạn mức API (HTTP 429)) |
-| `20261008T032644Z-topic-recursion-f333` | topic-recursion | recursion | active | 2026-10-08T03:26:44Z | — |  |
+| `20261008T032644Z-topic-recursion-f333` | topic-recursion | recursion | aborted | 2026-10-08T03:26:44Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T08:02:29Z (agent dừng do hết hạn mức API (HTTP 429)) |
 | `20261008T032648Z-topic-two-pointers-6718` | topic-two-pointers | two-pointers | done | 2026-10-08T03:26:48Z | 2026-10-08T08:02:22Z | 11 bài tập (11 VI), 6711 từ, 2 stepper (16 khung) + ma trận cặp + SVG, widget có (3 chế độ) |
-| `20261008T032648Z-topic-dp-intro-36e0` | topic-dp-intro | dp-intro | active | 2026-10-08T03:26:48Z | — |  |
-| `20261008T032648Z-topic-binary-search-answer-befd` | topic-binary-search-answer | binary-search-answer | active | 2026-10-08T03:26:48Z | — |  |
-| `20261008T032648Z-topic-binary-search-2121` | topic-binary-search | binary-search | active | 2026-10-08T03:26:48Z | — |  |
-| `20261008T032649Z-topic-greedy-f8cb` | topic-greedy | greedy | active | 2026-10-08T03:26:49Z | — |  |
-| `20261008T032651Z-topic-sorting-b274` | topic-sorting | sorting | active | 2026-10-08T03:26:51Z | — |  |
-| `20261008T032652Z-topic-backtracking-daec` | topic-backtracking | backtracking | active | 2026-10-08T03:26:52Z | — |  |
-| `20261008T032653Z-topic-dp-grid-1160` | topic-dp-grid | dp-grid | active | 2026-10-08T03:26:53Z | — |  |
-| `20261008T032728Z-topic-difference-array-2095` | topic-difference-array | difference-array | active | 2026-10-08T03:27:28Z | — |  |
+| `20261008T032648Z-topic-dp-intro-36e0` | topic-dp-intro | dp-intro | aborted | 2026-10-08T03:26:48Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:37:07Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261008T032648Z-topic-binary-search-answer-befd` | topic-binary-search-answer | binary-search-answer | aborted | 2026-10-08T03:26:48Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:35:49Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261008T032648Z-topic-binary-search-2121` | topic-binary-search | binary-search | aborted | 2026-10-08T03:26:48Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:35:55Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261008T032649Z-topic-greedy-f8cb` | topic-greedy | greedy | aborted | 2026-10-08T03:26:49Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:34:14Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261008T032651Z-topic-sorting-b274` | topic-sorting | sorting | aborted | 2026-10-08T03:26:51Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:36:15Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261008T032652Z-topic-backtracking-daec` | topic-backtracking | backtracking | aborted | 2026-10-08T03:26:52Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:36:44Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261008T032653Z-topic-dp-grid-1160` | topic-dp-grid | dp-grid | aborted | 2026-10-08T03:26:53Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T08:02:32Z (agent dừng do hết hạn mức API (HTTP 429)) |
+| `20261008T032728Z-topic-difference-array-2095` | topic-difference-array | difference-array | aborted | 2026-10-08T03:27:28Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T08:02:50Z (agent dừng do hết hạn mức API (HTTP 429)) |
 | `20261108T062630Z-orchestrator-0165` | orchestrator | — | active | 2026-11-08T06:26:30Z | — |  |
+| `20261108T062723Z-topic-difference-array-ae9c` | topic-difference-array | difference-array | done | 2026-11-08T06:27:23Z | 2026-11-08T06:28:55Z | Bổ sung widget assets/js/viz/difference-array.js (thêm thao tác l,r,x; tô D[l], D[r+1]; cộng dồn ra mảng cuối); validate đạt |
+| `20261108T062723Z-topic-dp-grid-6035` | topic-dp-grid | dp-grid | done | 2026-11-08T06:27:23Z | 2026-11-08T06:29:06Z | Widget dp-grid.js xong; trang 9 bài tập (5 VI), 7555 từ, widget có; validate đạt |
+| `20261108T062724Z-topic-backtracking-16b3` | topic-backtracking | backtracking | done | 2026-11-08T06:27:24Z | 2026-11-08T06:29:46Z | Widget N hậu (4–8) assets/js/viz/backtracking.js; validate OK; 11 bài tập (7 VI), 7711 từ |
+| `20261108T062724Z-topic-binary-search-answer-4817` | topic-binary-search-answer | binary-search-answer | active | 2026-11-08T06:27:24Z | — |  |
+| `20261108T062727Z-topic-lis-af33` | topic-lis | lis | active | 2026-11-08T06:27:27Z | — |  |
+| `20261108T062729Z-topic-knapsack-cf1f` | topic-knapsack | knapsack | active | 2026-11-08T06:27:29Z | — |  |
+| `20261108T062729Z-topic-bfs-955c` | topic-bfs | bfs | active | 2026-11-08T06:27:29Z | — |  |
+| `20261108T062735Z-topic-flood-fill-2aed` | topic-flood-fill | flood-fill | active | 2026-11-08T06:27:35Z | — |  |
+| `20261108T062736Z-topic-stl-0fa2` | topic-stl | stl | active | 2026-11-08T06:27:36Z | — |  |
+| `20261108T062740Z-topic-graph-dfs-4680` | topic-graph-dfs | graph-dfs | active | 2026-11-08T06:27:40Z | — |  |
+| `20261108T062927Z-topic-stack-queue-3731` | topic-stack-queue | stack-queue | active | 2026-11-08T06:29:27Z | — |  |
+| `20261108T062935Z-topic-strings-d55b` | topic-strings | strings | active | 2026-11-08T06:29:35Z | — |  |
 
 ## Dòng thời gian
 
@@ -283,3 +295,33 @@
 - `06:26:30` **orchestrator** · _hoàn thành_: Đóng phiên (done): Kết thúc phiên điều phối ngày 7–8/10 (12 chủ đề đã commit hoặc đạt chuẩn)
 - `06:26:30` **orchestrator** · _bắt đầu_: Mở phiên: Điều phối phần còn lại: hoàn thiện 4 trang dở, soạn 12 chủ đề còn lại
 - `06:26:31` **orchestrator** · _commit_: Commit 6 chủ đề đạt chuẩn: two-pointers sorting binary-search recursion greedy dp-intro. Còn dở: difference-array, backtracking, dp-grid (thiếu widget), binary-search-answer (thiếu 4 section + widget)
+- `06:26:36` **orchestrator** · `recursion` · _ghi chú_: Thu hồi phiên 20261008T032644Z-topic-recursion-f333 của topic-recursion: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T08:02:29Z (agent dừng do hết hạn mức API (HTTP 429))
+- `06:26:36` **orchestrator** · `binary-search` · _ghi chú_: Thu hồi phiên 20261008T032648Z-topic-binary-search-2121 của topic-binary-search: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:35:55Z (agent dừng do hết hạn mức API (HTTP 429))
+- `06:26:36` **orchestrator** · `binary-search-answer` · _ghi chú_: Thu hồi phiên 20261008T032648Z-topic-binary-search-answer-befd của topic-binary-search-answer: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:35:49Z (agent dừng do hết hạn mức API (HTTP 429))
+- `06:26:36` **orchestrator** · `dp-intro` · _ghi chú_: Thu hồi phiên 20261008T032648Z-topic-dp-intro-36e0 của topic-dp-intro: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:37:07Z (agent dừng do hết hạn mức API (HTTP 429))
+- `06:26:36` **orchestrator** · `greedy` · _ghi chú_: Thu hồi phiên 20261008T032649Z-topic-greedy-f8cb của topic-greedy: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:34:14Z (agent dừng do hết hạn mức API (HTTP 429))
+- `06:26:36` **orchestrator** · `sorting` · _ghi chú_: Thu hồi phiên 20261008T032651Z-topic-sorting-b274 của topic-sorting: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:36:15Z (agent dừng do hết hạn mức API (HTTP 429))
+- `06:26:36` **orchestrator** · `backtracking` · _ghi chú_: Thu hồi phiên 20261008T032652Z-topic-backtracking-daec của topic-backtracking: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:36:44Z (agent dừng do hết hạn mức API (HTTP 429))
+- `06:26:36` **orchestrator** · `dp-grid` · _ghi chú_: Thu hồi phiên 20261008T032653Z-topic-dp-grid-1160 của topic-dp-grid: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T08:02:32Z (agent dừng do hết hạn mức API (HTTP 429))
+- `06:26:36` **orchestrator** · `difference-array` · _ghi chú_: Thu hồi phiên 20261008T032728Z-topic-difference-array-2095 của topic-difference-array: Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T08:02:50Z (agent dừng do hết hạn mức API (HTTP 429))
+- `06:27:23` **topic-difference-array** · `difference-array` · _bắt đầu_: Mở phiên: Viết widget difference-array
+- `06:27:23` **topic-dp-grid** · `dp-grid` · _bắt đầu_: Mở phiên: Viết widget dp-grid
+- `06:27:24` **topic-binary-search-answer** · `binary-search-answer` · _bắt đầu_: Mở phiên: Soạn chủ đề binary-search-answer (viết tiếp)
+- `06:27:24` **topic-backtracking** · `backtracking` · _bắt đầu_: Mở phiên: Viết widget N hậu backtracking
+- `06:27:27` **topic-lis** · `lis` · _bắt đầu_: Mở phiên: Soạn chủ đề lis
+- `06:27:29` **topic-bfs** · `bfs` · _bắt đầu_: Mở phiên: Soạn chủ đề bfs
+- `06:27:29` **topic-knapsack** · `knapsack` · _bắt đầu_: Mở phiên: Soạn chủ đề knapsack
+- `06:27:35` **topic-flood-fill** · `flood-fill` · _bắt đầu_: Mở phiên: Soạn chủ đề flood-fill
+- `06:27:36` **topic-stl** · `stl` · _bắt đầu_: Mở phiên: Soạn chủ đề stl
+- `06:27:40` **topic-graph-dfs** · `graph-dfs` · _bắt đầu_: Mở phiên: Soạn chủ đề graph-dfs
+- `06:28:02` **topic-binary-search-answer** · `binary-search-answer` · _bắt đầu_: Viết tiếp: đã có tới loi-thuong-gap; còn kiem-tra, bai-tap, tham-khao, tom-tat và widget
+- `06:28:43` **topic-dp-grid** · `dp-grid` · _tiến độ_: Đã viết widget dp-grid.js, validate đạt
+- `06:28:49` **topic-backtracking** · `backtracking` · _tiến độ_: Viết xong widget N hậu assets/js/viz/backtracking.js, node --check OK, đếm n=8: 92 nghiệm, 2056 lần đặt
+- `06:28:55` **topic-difference-array** · `difference-array` · _hoàn thành_: Đóng phiên (done): Bổ sung widget assets/js/viz/difference-array.js (thêm thao tác l,r,x; tô D[l], D[r+1]; cộng dồn ra mảng cuối); validate đạt
+- `06:29:06` **topic-dp-grid** · `dp-grid` · _hoàn thành_: Đóng phiên (done): Widget dp-grid.js xong; trang 9 bài tập (5 VI), 7555 từ, widget có; validate đạt
+- `06:29:27` **topic-stack-queue** · `stack-queue` · _bắt đầu_: Mở phiên: Soạn chủ đề stack-queue
+- `06:29:35` **topic-strings** · `strings` · _bắt đầu_: Mở phiên: Soạn chủ đề strings
+- `06:29:45` **topic-lis** · `lis` · _tiến độ_: Đã tìm xong 7 bài tập (4 VI)
+- `06:29:46` **topic-backtracking** · `backtracking` · _hoàn thành_: Đóng phiên (done): Widget N hậu (4–8) assets/js/viz/backtracking.js; validate OK; 11 bài tập (7 VI), 7711 từ
+- `06:29:58` **topic-bfs** · `bfs` · _tiến độ_: Đã tìm xong 10 bài tập (6 VI)
+- `06:30:04` **orchestrator** · _commit_: Commit difference-array, backtracking, dp-grid (đã bổ sung widget)

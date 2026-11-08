@@ -1,0 +1,12 @@
+{
+  "id": "20261108T062736Z-topic-stl-0fa2",
+  "agent": "topic-stl",
+  "task": "Soạn chủ đề stl",
+  "topic": "stl",
+  "status": "active",
+  "host": "MyPC",
+  "started_at": "2026-11-08T06:27:36Z",
+  "heartbeat_at": "2026-11-08T06:27:36Z",
+  "ended_at": null,
+  "summary": null
+}

@@ -1,0 +1,12 @@
+{
+  "id": "20261108T062927Z-topic-stack-queue-3731",
+  "agent": "topic-stack-queue",
+  "task": "Soạn chủ đề stack-queue",
+  "topic": "stack-queue",
+  "status": "active",
+  "host": "MyPC",
+  "started_at": "2026-11-08T06:29:27Z",
+  "heartbeat_at": "2026-11-08T06:29:27Z",
+  "ended_at": null,
+  "summary": null
+}

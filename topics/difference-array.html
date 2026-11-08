@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mảng hiệu · Thi đấu lớp 9</title>
+<meta name="description" content="Mảng hiệu (difference array): cộng x vào cả đoạn [l, r] chỉ bằng hai phép tính, khôi phục bằng cộng dồn, đếm số đoạn phủ mỗi điểm, quét sự kiện với tọa độ lớn, mảng hiệu 2 chiều.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+.da-pair { display: flex; flex-wrap: wrap; gap: 1.2rem; justify-content: center; align-items: flex-start; }
+.da-pair > div { text-align: center; }
+.da-view { overflow-x: auto; }
+</style>
+</head>
+<body data-page="topic" data-topic="difference-array">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Định nghĩa được mảng hiệu <span class="math">D[i] = a[i] − a[i−1]</span> và giải thích được vì sao cộng dồn <span class="math">D</span> lại ra đúng mảng <span class="math">a</span>.</li>
+      <li>Cài đặt được phép “cộng <span class="math">x</span> vào cả đoạn <span class="math">[l, r]</span>” chỉ bằng hai phép tính <span class="math">D[l] += x</span>, <span class="math">D[r+1] −= x</span>.</li>
+      <li>Dùng được mảng hiệu để đếm số đoạn phủ mỗi điểm, tìm điểm bị phủ nhiều nhất, đếm số điểm bị phủ ít nhất <span class="math">k</span> lần.</li>
+      <li>Biết cách xử lý khi tọa độ lớn tới <span class="math">10⁹</span> bằng quét sự kiện, và mở rộng sang mảng hiệu 2 chiều với bốn góc.</li>
+      <li>Nhận ra khi nào mảng hiệu không đủ (cập nhật và hỏi xen kẽ) để chuyển sang cấu trúc dữ liệu khác.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Mảng hiệu (difference array) là một mảng phụ ghi lại <em>độ chênh lệch</em> giữa hai phần tử liền kề của mảng gốc. Nhờ nó, việc “cộng thêm <span class="math">x</span> vào mọi phần tử từ vị trí <span class="math">l</span> đến vị trí <span class="math">r</span>” chỉ tốn đúng hai phép tính, dù đoạn đó dài một triệu phần tử.</p>
+    <p>Ở bài <a href="prefix-sum.html">mảng cộng dồn</a>, em đã học cách trả lời nhanh câu hỏi “tổng đoạn <span class="math">[l, r]</span> bằng bao nhiêu?”. Bài này làm điều ngược lại: em không hỏi mà <em>sửa</em> cả một đoạn. Hai kỹ thuật là hai mặt của cùng một đồng xu. Cộng dồn biến “từng phần tử” thành “tổng”. Mảng hiệu biến “từng phần tử” thành “độ chênh”. Và cộng dồn mảng hiệu thì ra lại mảng gốc.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div>
+        <p><strong>Hình dung:</strong> một chiếc xe buýt chạy qua các trạm 1, 2, 3, … Bác phụ xe không đếm lại số khách trên xe ở mỗi trạm. Bác chỉ ghi vào sổ: “trạm 2 lên 3 người”, “trạm 6 xuống 3 người”. Muốn biết lúc rời trạm 5 trên xe có bao nhiêu người, bác cộng dồn các con số trong sổ từ trạm 1 đến trạm 5.</p>
+        <p>Một nhóm khách đi từ trạm <span class="math">l</span> đến hết trạm <span class="math">r</span> chỉ làm thay đổi <em>hai</em> dòng trong sổ: dòng trạm <span class="math">l</span> (lên) và dòng trạm <span class="math">r+1</span> (xuống). Cuốn sổ đó chính là mảng hiệu. Số khách trên xe ở mỗi trạm chính là mảng gốc.</p>
+      </div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Cho mảng <span class="math">a[1..n]</span>, quy ước <span class="math">a[0] = 0</span>. <strong>Mảng hiệu</strong> của <span class="math">a</span> là mảng <span class="math">D[1..n]</span> với</p>
+      <div class="math-block">D[i] = a[i] − a[i−1]&nbsp;&nbsp;&nbsp;(1 ≤ i ≤ n),&nbsp;&nbsp;&nbsp;nghĩa là D[1] = a[1].</div>
+      <p>Khi đó với mọi <span class="math">i</span>: <span class="math">a[i] = D[1] + D[2] + … + D[i]</span>. Nói cách khác, <span class="math">a</span> là mảng cộng dồn của <span class="math">D</span>.</p>
+    </div>
+
+    <p>Ví dụ: <span class="math">a = (5, 7, 7, 4, 9)</span> thì <span class="math">D = (5, 2, 0, −3, 5)</span>. Em đọc <span class="math">D</span> như lời kể: “bắt đầu ở 5, tăng 2, đứng yên, giảm 3, tăng 5”. Cộng dồn lại: 5, 5 + 2 = 7, 7 + 0 = 7, 7 − 3 = 4, 4 + 5 = 9. Đúng mảng <span class="math">a</span>.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Mảng hiệu giải quyết lớp bài “<strong>cập nhật nhiều đoạn trước, hỏi sau</strong>” (cập nhật ngoại tuyến, offline). Cụ thể:</p>
+    <ul>
+      <li><strong>Cộng đoạn rồi in mảng cuối.</strong> Có <span class="math">q</span> thao tác “cộng <span class="math">x</span> vào <span class="math">[l, r]</span>”, cuối cùng in ra mảng. Đây là dạng gốc.</li>
+      <li><strong>Đếm số đoạn phủ mỗi điểm.</strong> Mỗi đoạn <span class="math">[l, r]</span> là một thao tác “cộng 1”. Sau khi cộng dồn, ô <span class="math">i</span> cho biết có bao nhiêu đoạn chứa điểm <span class="math">i</span>. Từ đó tìm điểm bị phủ nhiều nhất, đếm số điểm bị phủ ít nhất <span class="math">k</span> lần, tìm thời điểm đông người nhất trong ngày…</li>
+      <li><strong>Lịch và thời gian biểu.</strong> Mỗi khách thuê phòng từ ngày <span class="math">l</span> đến ngày <span class="math">r</span>. Ngày nào khách sạn cần nhiều phòng nhất? Đó là “điểm bị phủ nhiều nhất”.</li>
+      <li><strong>Bảng 2 chiều.</strong> Nhiều lần “cộng <span class="math">x</span> vào một hình chữ nhật” trên lưới, ví dụ sơn nhiều lớp lên bức tường, rồi hỏi mỗi ô bị sơn mấy lớp.</li>
+      <li><strong>Kết hợp với cộng dồn.</strong> Cập nhật xong, dựng tiếp mảng cộng dồn để trả lời “tổng đoạn” hoặc “có bao nhiêu vị trí thỏa điều kiện trong đoạn” trong <span class="math">O(1)</span>.</li>
+    </ul>
+    <div class="callout note">
+      <p class="callout-title">Dấu hiệu nhận biết</p>
+      <p>Đề có cụm từ “<em>tăng mỗi phần tử từ vị trí l đến r thêm x</em>”, “<em>mỗi đoạn [l, r] phủ</em>”, “<em>có bao nhiêu khoảng chứa điểm</em>”, “<em>sau tất cả các thao tác, in ra</em>”. Giới hạn kiểu <span class="math">n, q ≤ 2·10⁵</span>, và <strong>mọi thao tác cập nhật đều xảy ra trước mọi câu hỏi</strong>. Nếu đề trộn lẫn “cập nhật” và “hỏi” thì mảng hiệu đơn thuần không đủ (xem mục Biến thể).</p>
+    </div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho mảng <span class="math">a</span> gồm <span class="math">n</span> số nguyên và <span class="math">q</span> thao tác, mỗi thao tác cho ba số <span class="math">l, r, x</span>: cộng <span class="math">x</span> vào mọi <span class="math">a[i]</span> với <span class="math">l ≤ i ≤ r</span>. In ra mảng sau tất cả các thao tác. Giới hạn <span class="math">n, q ≤ 2·10⁵</span>.</p>
+    <p><strong>Cách ngây thơ</strong> làm đúng như đề nói: với mỗi thao tác, chạy vòng lặp từ <span class="math">l</span> đến <span class="math">r</span> và cộng <span class="math">x</span> vào từng ô.</p>
+    <pre class="pseudo"><b>với</b> mỗi thao tác (l, r, x):
+    <b>với</b> i <b>từ</b> l <b>đến</b> r:
+        a[i] = a[i] + x        <i>// r − l + 1 phép cộng</i></pre>
+    <p>Mỗi thao tác tốn <span class="math">r − l + 1</span> phép cộng. Trường hợp xấu nhất, mọi thao tác đều là cả mảng <span class="math">[1, n]</span>: tổng cộng <span class="math">n · q = 2·10⁵ · 2·10⁵ = 4·10¹⁰</span> phép cộng. Máy chấm làm được khoảng <span class="math">10⁸</span> phép tính đơn giản mỗi giây, nên cách này cần chừng 400 giây. Quá xa giới hạn 1 giây.</p>
+    <p><strong>Ý tưởng mới.</strong> Thay vì sửa từng ô của <span class="math">a</span>, em sửa “cuốn sổ chênh lệch” <span class="math">D</span>. Cộng <span class="math">x</span> vào cả đoạn chỉ làm thay đổi đúng hai độ chênh: ở đầu đoạn (tăng vọt lên <span class="math">x</span>) và ngay sau cuối đoạn (tụt xuống lại <span class="math">x</span>). Cuối cùng em cộng dồn <span class="math">D</span> một lần để ra mảng kết quả.</p>
+    <div class="versus">
+      <div class="bad-side">
+        <h4>Cách ngây thơ</h4>
+        <p>Mỗi thao tác chạy cả đoạn. Độ phức tạp <span class="bigo">O(n · q)</span>. Với <span class="math">n = q = 2·10⁵</span> là <span class="math">4·10¹⁰</span> phép tính, mất vài trăm giây.</p>
+      </div>
+      <div class="good-side">
+        <h4>Dùng mảng hiệu</h4>
+        <p>Mỗi thao tác 2 phép tính, cộng dồn cuối cùng <span class="math">n</span> phép. Độ phức tạp <span class="bigo">O(n + q)</span>. Với cùng giới hạn chỉ khoảng <span class="math">2·2·10⁵ + 2·10⁵ = 6·10⁵</span> phép tính, chạy dưới 0,01 giây.</p>
+      </div>
+    </div>
+    <p>Từ <span class="math">4·10¹⁰</span> xuống <span class="math">6·10⁵</span>: nhanh hơn khoảng 67 nghìn lần. Đó là sức mạnh của việc “ghi lại chỗ thay đổi” thay vì “sửa từng thứ”.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Thuật toán có ba pha: dựng mảng hiệu, xử lý các thao tác, khôi phục mảng bằng cộng dồn.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Dựng D.</strong> Tạo mảng <span class="math">D</span> có <span class="math">n + 2</span> ô (chỉ số 0 đến <span class="math">n+1</span>), toàn số 0. Với <span class="math">i</span> từ 1 đến <span class="math">n</span>: <span class="math">D[i] = a[i] − a[i−1]</span> (với <span class="math">a[0] = 0</span>). Nếu mảng ban đầu toàn 0 thì <span class="math">D</span> cũng toàn 0, bỏ qua bước này.</div></li>
+      <li><div><strong>Mỗi thao tác (l, r, x).</strong> Làm đúng hai phép: <span class="math">D[l] += x</span> và <span class="math">D[r+1] −= x</span>. Không đụng tới ô nào khác.</div></li>
+      <li><div><strong>Khôi phục.</strong> Sau khi xử lý hết thao tác, tính lại <span class="math">a[i] = a[i−1] + D[i]</span> lần lượt với <span class="math">i = 1, 2, …, n</span>.</div></li>
+      <li><div><strong>Dùng kết quả.</strong> In mảng <span class="math">a</span>, hoặc tìm giá trị lớn nhất, hoặc dựng tiếp mảng cộng dồn để hỏi tổng đoạn.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> CapNhatDoan(a, n, các thao tác):
+    D = mảng n + 2 số 0
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> n:
+        D[i] = a[i] − a[i−1]           <i>// a[0] = 0</i>
+    <b>với</b> mỗi thao tác (l, r, x):
+        D[l]   = D[l]   + x            <i>// từ l trở đi: tăng x</i>
+        D[r+1] = D[r+1] − x            <i>// từ r+1 trở đi: hết tăng</i>
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> n:
+        a[i] = a[i−1] + D[i]           <i>// cộng dồn</i>
+    <b>trả về</b> a</pre>
+    <div class="callout tip">
+      <p class="callout-title">Vì sao D cần n + 2 ô</p>
+      <p>Khi <span class="math">r = n</span>, lệnh <span class="math">D[r+1] −= x</span> ghi vào ô <span class="math">D[n+1]</span>. Ô này nằm ngoài mảng gốc nên khi cộng dồn em không bao giờ đọc tới, nhưng nó phải <em>tồn tại</em> để chương trình không ghi tràn bộ nhớ.</p>
+    </div>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <h3>Cộng dồn D ra lại a</h3>
+    <p>Viết tổng <span class="math">D[1] + D[2] + … + D[i]</span> ra theo định nghĩa:</p>
+    <div class="math-block">(a[1] − a[0]) + (a[2] − a[1]) + (a[3] − a[2]) + … + (a[i] − a[i−1])</div>
+    <p>Mỗi <span class="math">a[k]</span> ở giữa xuất hiện một lần với dấu cộng và một lần với dấu trừ, nên triệt tiêu nhau (người ta gọi là tổng “rút gọn dây chuyền”, telescoping). Chỉ còn lại <span class="math">a[i] − a[0] = a[i]</span>. Vậy cộng dồn <span class="math">D</span> luôn ra đúng <span class="math">a</span>.</p>
+    <p>Ngược lại, nếu <span class="math">S</span> là mảng cộng dồn của <span class="math">a</span> thì <span class="math">S[i] − S[i−1] = a[i]</span>: lấy hiệu của mảng cộng dồn thì ra lại mảng gốc. Hai phép “cộng dồn” và “lấy hiệu” là <strong>phép ngược</strong> của nhau, giống như phép nhân và phép chia.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 520 120" width="520" role="img" aria-label="Ba mảng D, a, S nối với nhau bằng hai phép cộng dồn và lấy hiệu">
+        <rect class="node" x="20" y="35" width="110" height="50" rx="10"/>
+        <text x="75" y="58" text-anchor="middle">D</text>
+        <text class="label-sm" x="75" y="76" text-anchor="middle">mảng hiệu</text>
+        <rect class="node is-active" x="205" y="35" width="110" height="50" rx="10"/>
+        <text x="260" y="58" text-anchor="middle">a</text>
+        <text class="label-sm" x="260" y="76" text-anchor="middle">mảng gốc</text>
+        <rect class="node" x="390" y="35" width="110" height="50" rx="10"/>
+        <text x="445" y="58" text-anchor="middle">S</text>
+        <text class="label-sm" x="445" y="76" text-anchor="middle">mảng cộng dồn</text>
+        <line class="edge is-ok" x1="132" y1="48" x2="200" y2="48"/>
+        <line class="edge is-ok" x1="317" y1="48" x2="385" y2="48"/>
+        <line class="edge is-bad" x1="200" y1="72" x2="132" y2="72"/>
+        <line class="edge is-bad" x1="385" y1="72" x2="317" y2="72"/>
+        <text class="label-pen" x="166" y="28" text-anchor="middle">cộng dồn</text>
+        <text class="label-pen" x="351" y="28" text-anchor="middle">cộng dồn</text>
+        <text class="label-pen" x="166" y="104" text-anchor="middle">lấy hiệu</text>
+        <text class="label-pen" x="351" y="104" text-anchor="middle">lấy hiệu</text>
+      </svg>
+      <figcaption>Hình 1. Cộng dồn đi sang phải, lấy hiệu đi sang trái. Mảng hiệu nằm “bên trái” mảng gốc, mảng cộng dồn nằm “bên phải”.</figcaption>
+    </figure>
+
+    <h3>Vì sao chỉ cần sửa hai ô</h3>
+    <p>Giả sử em cộng <span class="math">x</span> vào mọi <span class="math">a[i]</span> với <span class="math">l ≤ i ≤ r</span>. Xét độ chênh <span class="math">D[i] = a[i] − a[i−1]</span> ở từng vị trí <span class="math">i</span>. Có bốn trường hợp:</p>
+    <table>
+      <thead><tr><th>Vị trí i</th><th>a[i−1]</th><th>a[i]</th><th>D[i] thay đổi</th></tr></thead>
+      <tbody>
+        <tr><td><span class="math">i &lt; l</span></td><td>giữ nguyên</td><td>giữ nguyên</td><td>không đổi</td></tr>
+        <tr class="hl"><td><span class="math">i = l</span></td><td>giữ nguyên</td><td>tăng x</td><td>tăng x</td></tr>
+        <tr><td><span class="math">l &lt; i ≤ r</span></td><td>tăng x</td><td>tăng x</td><td>không đổi (cả hai cùng tăng)</td></tr>
+        <tr class="hl"><td><span class="math">i = r + 1</span></td><td>tăng x</td><td>giữ nguyên</td><td>giảm x</td></tr>
+        <tr><td><span class="math">i &gt; r + 1</span></td><td>giữ nguyên</td><td>giữ nguyên</td><td>không đổi</td></tr>
+      </tbody>
+    </table>
+    <p>Chỉ hai ô <span class="math">D[l]</span> và <span class="math">D[r+1]</span> thay đổi. Mọi ô ở giữa đoạn có <em>cả hai</em> phần tử liền kề cùng tăng <span class="math">x</span>, nên hiệu của chúng giữ nguyên. Đây là điểm mấu chốt: <strong>một đoạn dài bao nhiêu cũng chỉ có hai “mép”</strong>.</p>
+
+    <h3>Vì sao đúng khi có nhiều thao tác</h3>
+    <p>Mỗi thao tác biến mảng hiệu của mảng hiện tại thành mảng hiệu của mảng mới (theo bảng trên). Vì vậy sau mọi thao tác, <span class="math">D</span> đúng là mảng hiệu của mảng cuối cùng. Cộng dồn <span class="math">D</span> thì ra mảng cuối cùng. Em cũng có thể nhìn theo cách khác: phép cộng có tính giao hoán, nên thứ tự các thao tác không quan trọng. Tại vị trí <span class="math">i</span>, tổng <span class="math">D[1] + … + D[i]</span> nhận <span class="math">+x</span> từ mọi thao tác có <span class="math">l ≤ i</span>, và nhận <span class="math">−x</span> từ mọi thao tác có <span class="math">r + 1 ≤ i</span>. Hai phần này bù trừ nhau với những thao tác đã kết thúc trước <span class="math">i</span>, chỉ còn lại đúng các thao tác có <span class="math">l ≤ i ≤ r</span>, tức là các thao tác phủ vị trí <span class="math">i</span>.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Mỗi thao tác là 2 phép tính, bất kể đoạn dài hay ngắn: <span class="math">q</span> thao tác tốn <span class="math">2q</span> phép. Dựng <span class="math">D</span> và cộng dồn cuối cùng mỗi việc <span class="math">n</span> phép. Tổng cộng <span class="math">O(n + q)</span>. Bí quyết là em <em>hoãn</em> công việc: thay vì cộng ngay vào từng ô, em chỉ ghi “từ đây bắt đầu cộng, từ đây thôi cộng”, rồi để một lần cộng dồn duy nhất làm hộ tất cả.</p>
+    <div class="callout teacher">
+      <p class="callout-title">Lời thầy cô</p>
+      <p>Mỗi lần thấy “cộng cả đoạn”, em hãy tự hỏi: <em>giá trị thay đổi ở đâu?</em> Chỉ ở hai mép. Ghi hai mép, cộng dồn một lần, xong.</p>
+    </div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <h3>Ví dụ 1: ba thao tác trên mảng 7 ô</h3>
+    <p>Mảng <span class="math">a</span> có <span class="math">n = 7</span> ô, ban đầu toàn 0. Có ba thao tác: <span class="math">(2, 5, +3)</span>, <span class="math">(4, 7, +2)</span>, <span class="math">(1, 3, −1)</span>. Em theo dõi xem mỗi thao tác chỉ đổi màu đúng hai ô của <span class="math">D</span> (xanh là cộng, đỏ là trừ), rồi một lần cộng dồn cho ra mảng cuối.</p>
+
+    <div class="stepper" data-title="Mảng hiệu: ba thao tác cộng đoạn rồi cộng dồn">
+      <div class="frame" data-caption="&lt;b&gt;Bước 0.&lt;/b&gt; Mảng a có 7 ô, ban đầu toàn 0, nên D cũng toàn 0. D có thêm ô số 8 (= n + 1) để chứa các phép trừ ở mép phải.">
+        <div class="arr"><span class="arr-label">D</span><span class="cell" data-i="1">0</span><span class="cell" data-i="2">0</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">0</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">a</span><span class="cell" data-i="1">0</span><span class="cell" data-i="2">0</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">0</span><span class="cell" data-i="7">0</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Thao tác 1: (2, 5, +3).&lt;/b&gt; Chỉ sửa hai ô: D[2] += 3 (bắt đầu tăng), D[6] −= 3 (hết tăng). Mảng a chưa được tính, ta để dấu ?.">
+        <div class="arr"><span class="arr-label">D</span><span class="cell" data-i="1">0</span><span class="cell is-ok" data-i="2" data-ptr="l">3</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">0</span><span class="cell" data-i="5">0</span><span class="cell is-bad" data-i="6" data-ptr="r+1">−3</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">0</span></div><div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Thao tác 2: (4, 7, +2).&lt;/b&gt; D[4] += 2, D[8] −= 2. Ô 8 nằm ngoài mảng a, nhưng vẫn phải ghi để chương trình đúng khi r = n.">
+        <div class="arr"><span class="arr-label">D</span><span class="cell" data-i="1">0</span><span class="cell" data-i="2">3</span><span class="cell" data-i="3">0</span><span class="cell is-ok" data-i="4" data-ptr="l">2</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">−3</span><span class="cell" data-i="7">0</span><span class="cell is-bad" data-i="8" data-ptr="r+1">−2</span></div><div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Thao tác 3: (1, 3, −1).&lt;/b&gt; D[1] += (−1) thành −1; D[4] −= (−1) nghĩa là cộng thêm 1, từ 2 thành 3. Ba thao tác chỉ tốn 6 phép tính.">
+        <div class="arr"><span class="arr-label">D</span><span class="cell is-ok" data-i="1" data-ptr="l">−1</span><span class="cell" data-i="2">3</span><span class="cell" data-i="3">0</span><span class="cell is-bad" data-i="4" data-ptr="r+1">3</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">−3</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">−2</span></div><div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cộng dồn, nửa đầu.&lt;/b&gt; a[1] = −1; a[2] = −1 + 3 = 2; a[3] = 2 + 0 = 2; a[4] = 2 + 3 = 5. Mỗi ô a chỉ cần ô a liền trước cộng với D cùng chỉ số.">
+        <div class="arr"><span class="arr-label">D</span><span class="cell is-cmp" data-i="1">−1</span><span class="cell is-cmp" data-i="2">3</span><span class="cell is-cmp" data-i="3">0</span><span class="cell is-cmp" data-i="4">3</span><span class="cell" data-i="5">0</span><span class="cell" data-i="6">−3</span><span class="cell" data-i="7">0</span><span class="cell" data-i="8">−2</span></div><div class="arr"><span class="arr-label">a</span><span class="cell" data-i="1">−1</span><span class="cell" data-i="2">2</span><span class="cell" data-i="3">2</span><span class="cell is-active" data-i="4" data-ptr="i">5</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cộng dồn, nửa sau.&lt;/b&gt; a[5] = 5 + 0 = 5; a[6] = 5 − 3 = 2; a[7] = 2 + 0 = 2. Nếu cộng tiếp D[8] = −2 thì được 0: sau mép phải của mọi đoạn, mức tăng trở về 0, đúng như mong đợi.">
+        <div class="arr"><span class="arr-label">D</span><span class="cell" data-i="1">−1</span><span class="cell" data-i="2">3</span><span class="cell" data-i="3">0</span><span class="cell" data-i="4">3</span><span class="cell is-cmp" data-i="5">0</span><span class="cell is-cmp" data-i="6">−3</span><span class="cell is-cmp" data-i="7">0</span><span class="cell" data-i="8">−2</span></div><div class="arr"><span class="arr-label">a</span><span class="cell is-ok" data-i="1">−1</span><span class="cell is-ok" data-i="2">2</span><span class="cell is-ok" data-i="3">2</span><span class="cell is-ok" data-i="4">5</span><span class="cell is-ok" data-i="5">5</span><span class="cell is-ok" data-i="6">2</span><span class="cell is-ok" data-i="7">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Kiểm tra.&lt;/b&gt; Cộng tay từng thao tác vào từng ô (cách ngây thơ, 4 + 4 + 3 = 11 phép cộng) cho đúng kết quả −1, 2, 2, 5, 5, 2, 2. Với mảng dài, cách tay tốn n · q phép, còn mảng hiệu vẫn chỉ 2q + n.">
+        <table class="trace"><thead><tr><th>Vị trí</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead><tbody><tr><td>(2, 5, +3)</td><td></td><td>3</td><td>3</td><td>3</td><td>3</td><td></td><td></td></tr><tr><td>(4, 7, +2)</td><td></td><td></td><td></td><td>2</td><td>2</td><td>2</td><td>2</td></tr><tr><td>(1, 3, −1)</td><td>−1</td><td>−1</td><td>−1</td><td></td><td></td><td></td><td></td></tr><tr class="hl"><td>Tổng</td><td>−1</td><td>2</td><td>2</td><td>5</td><td>5</td><td>2</td><td>2</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <h3>Ví dụ 2: đếm số đoạn phủ mỗi điểm</h3>
+    <p>Trên trục số có bốn đoạn <span class="math">[1, 4]</span>, <span class="math">[2, 6]</span>, <span class="math">[3, 5]</span>, <span class="math">[5, 8]</span>. Mỗi đoạn là một thao tác “cộng 1”. Mảng hiệu sau bốn thao tác:</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Đoạn [l, r]: D[l] += 1, D[r+1] −= 1</p></div>
+      <div class="viz-body">
+        <div class="arr"><span class="arr-label">D</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell" data-i="4">0</span><span class="cell" data-i="5">0</span><span class="cell is-bad" data-i="6">−1</span><span class="cell is-bad" data-i="7">−1</span><span class="cell" data-i="8">0</span><span class="cell is-bad" data-i="9">−1</span></div>
+        <div class="arr"><span class="arr-label">phủ</span><span class="cell" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell is-active" data-i="3">3</span><span class="cell is-active" data-i="4">3</span><span class="cell is-active" data-i="5">3</span><span class="cell" data-i="6">2</span><span class="cell" data-i="7">1</span><span class="cell" data-i="8">1</span></div>
+      </div>
+      <div class="viz-legend"><span><i class="is-ok"></i>có đoạn bắt đầu</span><span><i class="is-bad"></i>có đoạn vừa kết thúc</span><span><i class="is-active"></i>bị phủ nhiều nhất</span></div>
+      <div class="viz-caption"><p>Ô 5 bằng 0 vì có một đoạn bắt đầu (<span class="math">[5, 8]</span>) và một đoạn vừa hết (<span class="math">[1, 4]</span>) cùng lúc: <span class="math">+1 − 1 = 0</span>. Ô 9 nằm ngoài trục, chỉ để chứa mép phải của đoạn <span class="math">[5, 8]</span>.</p></div>
+    </div>
+    <figure class="diagram">
+      <svg viewBox="0 0 540 205" width="540" role="img" aria-label="Bốn đoạn chồng lên trục số từ 1 đến 8 và số lớp phủ tại mỗi điểm">
+          <line class="edge is-active" x1="90" y1="22" x2="255" y2="22"/>
+          <circle class="node is-active" cx="90" cy="22" r="4"/><circle class="node is-active" cx="255" cy="22" r="4"/>
+          <text class="label-sm" x="264" y="26">[1, 4]</text>
+          <line class="edge is-active" x1="145" y1="42" x2="365" y2="42"/>
+          <circle class="node is-active" cx="145" cy="42" r="4"/><circle class="node is-active" cx="365" cy="42" r="4"/>
+          <text class="label-sm" x="374" y="46">[2, 6]</text>
+          <line class="edge is-active" x1="200" y1="62" x2="310" y2="62"/>
+          <circle class="node is-active" cx="200" cy="62" r="4"/><circle class="node is-active" cx="310" cy="62" r="4"/>
+          <text class="label-sm" x="319" y="66">[3, 5]</text>
+          <line class="edge is-active" x1="310" y1="82" x2="475" y2="82"/>
+          <circle class="node is-active" cx="310" cy="82" r="4"/><circle class="node is-active" cx="475" cy="82" r="4"/>
+          <text class="label-sm" x="484" y="86">[5, 8]</text>
+          <line class="edge" x1="70" y1="104" x2="500" y2="104"/>
+          <text class="label-sm" x="10" y="127">điểm</text><text class="label-sm" x="10" y="160">số lớp</text>
+          <line class="edge" x1="90" y1="99" x2="90" y2="109"/><text x="90" y="127" text-anchor="middle">1</text>
+          <circle class="node" cx="90" cy="155" r="14"/><text x="90" y="160" text-anchor="middle">1</text>
+          <line class="edge" x1="145" y1="99" x2="145" y2="109"/><text x="145" y="127" text-anchor="middle">2</text>
+          <circle class="node" cx="145" cy="155" r="14"/><text x="145" y="160" text-anchor="middle">2</text>
+          <line class="edge" x1="200" y1="99" x2="200" y2="109"/><text x="200" y="127" text-anchor="middle">3</text>
+          <circle class="node is-ok" cx="200" cy="155" r="14"/><text x="200" y="160" text-anchor="middle">3</text>
+          <line class="edge" x1="255" y1="99" x2="255" y2="109"/><text x="255" y="127" text-anchor="middle">4</text>
+          <circle class="node is-ok" cx="255" cy="155" r="14"/><text x="255" y="160" text-anchor="middle">3</text>
+          <line class="edge" x1="310" y1="99" x2="310" y2="109"/><text x="310" y="127" text-anchor="middle">5</text>
+          <circle class="node is-ok" cx="310" cy="155" r="14"/><text x="310" y="160" text-anchor="middle">3</text>
+          <line class="edge" x1="365" y1="99" x2="365" y2="109"/><text x="365" y="127" text-anchor="middle">6</text>
+          <circle class="node" cx="365" cy="155" r="14"/><text x="365" y="160" text-anchor="middle">2</text>
+          <line class="edge" x1="420" y1="99" x2="420" y2="109"/><text x="420" y="127" text-anchor="middle">7</text>
+          <circle class="node" cx="420" cy="155" r="14"/><text x="420" y="160" text-anchor="middle">1</text>
+          <line class="edge" x1="475" y1="99" x2="475" y2="109"/><text x="475" y="127" text-anchor="middle">8</text>
+          <circle class="node" cx="475" cy="155" r="14"/><text x="475" y="160" text-anchor="middle">1</text>
+          <text class="label-pen" x="255" y="192" text-anchor="middle">phủ nhiều nhất: 3 lớp tại điểm 3, 4, 5</text>
+        </svg>
+      <figcaption>Hình 2. Bốn đoạn xếp chồng trên trục số. Đếm số đoạn đi qua mỗi điểm chính là cộng dồn mảng hiệu ở trên. Có 5 điểm (từ 2 đến 6) bị phủ ít nhất 2 lần.</figcaption>
+    </figure>
+
+    <h3>Ví dụ 3: mảng hiệu 2 chiều trên bảng 4 × 5</h3>
+    <p>Hai thao tác trên bảng 4 hàng, 5 cột (ban đầu toàn 0): cộng 1 vào hình chữ nhật từ ô (1,1) đến ô (3,3), rồi cộng 2 vào hình chữ nhật từ ô (2,2) đến ô (4,5). Mỗi thao tác chỉ sửa bốn góc của mảng <span class="math">D</span>. Cuối cùng cộng dồn theo hàng, rồi theo cột. Cách làm chi tiết ở mục <a href="#bien-the">Biến thể</a>.</p>
+    <div class="stepper" data-title="Mảng hiệu 2 chiều: bốn góc rồi cộng dồn">
+      <div class="frame" data-caption="&lt;b&gt;Hình 1: cộng 1 vào hình chữ nhật (1,1)–(3,3).&lt;/b&gt; Sửa bốn góc: D[1][1] += 1, D[1][4] −= 1, D[4][1] −= 1, D[4][4] += 1. Hàng 5 và cột 6 (mờ) là phần dư ra ngoài bảng 4 × 5.">
+        <div class="grid-viz" style="--cols:6"><span class="g is-ok">1</span><span class="g">0</span><span class="g">0</span><span class="g is-bad">−1</span><span class="g">0</span><span class="g is-dim">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g is-dim">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g is-dim">0</span><span class="g is-bad">−1</span><span class="g">0</span><span class="g">0</span><span class="g is-ok">1</span><span class="g">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Hình 2: cộng 2 vào hình chữ nhật (2,2)–(4,5).&lt;/b&gt; Bốn góc: D[2][2] += 2, D[2][6] −= 2, D[5][2] −= 2, D[5][6] += 2. Ba góc rơi vào phần dư, vì thế mảng D cần thêm một hàng và một cột.">
+        <div class="grid-viz" style="--cols:6"><span class="g">1</span><span class="g">0</span><span class="g">0</span><span class="g">−1</span><span class="g">0</span><span class="g is-dim">0</span><span class="g">0</span><span class="g is-ok">2</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g is-bad">−2</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g is-dim">0</span><span class="g">−1</span><span class="g">0</span><span class="g">0</span><span class="g">1</span><span class="g">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-bad">−2</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-ok">2</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cộng dồn theo hàng.&lt;/b&gt; Mỗi hàng cộng dồn từ trái sang phải. Lúc này mỗi hàng giống một mảng hiệu 1 chiều theo cột: hàng 2 có “bắt đầu cộng 2 từ đây”.">
+        <div class="grid-viz" style="--cols:6"><span class="g is-cmp">1</span><span class="g is-cmp">1</span><span class="g is-cmp">1</span><span class="g">0</span><span class="g">0</span><span class="g is-dim">0</span><span class="g">0</span><span class="g is-cmp">2</span><span class="g is-cmp">2</span><span class="g is-cmp">2</span><span class="g is-cmp">2</span><span class="g is-dim">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g">0</span><span class="g is-dim">0</span><span class="g is-cmp">−1</span><span class="g is-cmp">−1</span><span class="g is-cmp">−1</span><span class="g">0</span><span class="g">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">−2</span><span class="g is-dim">−2</span><span class="g is-dim">−2</span><span class="g is-dim">−2</span><span class="g is-dim">0</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cộng dồn theo cột.&lt;/b&gt; Cộng dồn từ trên xuống ra bảng cuối cùng. Ô (2,2) có 3 = 1 + 2 vì nằm trong cả hai hình. Hàng 5 và cột 6 trở về toàn 0: các góc trừ đã “tắt” đúng chỗ.">
+        <div class="grid-viz" style="--cols:6"><span class="g is-active">1</span><span class="g is-active">1</span><span class="g is-active">1</span><span class="g">0</span><span class="g">0</span><span class="g is-dim">0</span><span class="g is-active">1</span><span class="g is-ok">3</span><span class="g is-ok">3</span><span class="g is-active">2</span><span class="g is-active">2</span><span class="g is-dim">0</span><span class="g is-active">1</span><span class="g is-ok">3</span><span class="g is-ok">3</span><span class="g is-active">2</span><span class="g is-active">2</span><span class="g is-dim">0</span><span class="g">0</span><span class="g is-active">2</span><span class="g is-active">2</span><span class="g is-active">2</span><span class="g is-active">2</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span><span class="g is-dim">0</span></div>
+      </div>
+    </div>
+
+    <h3>Tự tay thử</h3>
+    <p>Em nhập mảng ban đầu, rồi thêm từng thao tác <span class="math">(l, r, x)</span>. Hàng <span class="math">D</span> tô hai ô vừa bị sửa, hàng <span class="math">a</span> là kết quả cộng dồn. Thử thêm một thao tác có <span class="math">r = n</span> để thấy ô <span class="math">D[n+1]</span> được dùng.</p>
+    <div class="playground" id="viz-difference-array">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: cộng đoạn bằng mảng hiệu</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="da-init">Mảng ban đầu <input type="text" id="da-init" value="1 2 3 4 5 6 7"></label>
+          <button type="button" class="ghost" data-act="reset">Đặt lại</button>
+        </div>
+        <div class="controls">
+          <label for="da-l">l <input type="number" id="da-l" value="2" min="1"></label>
+          <label for="da-r">r <input type="number" id="da-r" value="5" min="1"></label>
+          <label for="da-x">x <input type="number" id="da-x" value="3"></label>
+          <button type="button" data-act="add">Thêm thao tác</button>
+          <button type="button" class="ghost" data-act="rand">Thao tác ngẫu nhiên</button>
+        </div>
+        <div class="da-view"></div>
+        <div class="out" aria-live="polite">Nhập mảng (tối đa 12 số nguyên), rồi thêm thao tác (l, r, x).</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Chương trình chính: cộng đoạn rồi in mảng cuối</h3>
+    <p>Dòng đầu là <span class="math">n</span> và <span class="math">q</span>. Dòng hai là mảng ban đầu. Sau đó là <span class="math">q</span> dòng, mỗi dòng ba số <span class="math">l, r, x</span>. Chương trình in mảng sau mọi thao tác. Em chú ý ba chi tiết: <span class="math">D</span> có <span class="math">n + 2</span> ô, dùng <code>long long</code> vì tổng có thể tới <span class="math">2·10⁵ · 10⁹ = 2·10¹⁴</span>, và chỉ cộng dồn <em>một lần</em> ở cuối.</p>
+    <figure class="code">
+      <figcaption><span class="fn">cap_nhat_doan.cpp</span> Cộng x vào đoạn [l, r] bằng mảng hiệu</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, q;
+    cin &gt;&gt; n &gt;&gt; q;
+    // a[0] = 0 để công thức D[1] = a[1] - a[0] vẫn đúng
+    vector&lt;long long&gt; a(n + 1, 0);
+    for (int i = 1; i &lt;= n; i++) cin &gt;&gt; a[i];
+
+    // D có n + 2 ô: chỉ số từ 0 đến n + 1, vì có lúc phải sửa D[r + 1] với r = n
+    vector&lt;long long&gt; D(n + 2, 0);
+    for (int i = 1; i &lt;= n; i++) D[i] = a[i] - a[i - 1];
+
+    // Mỗi thao tác chỉ sửa đúng hai ô: O(1)
+    for (int k = 0; k &lt; q; k++) {
+        int l, r;
+        long long x;
+        cin &gt;&gt; l &gt;&gt; r &gt;&gt; x;
+        D[l] += x;
+        D[r + 1] -= x;
+    }
+
+    // Khôi phục mảng cuối bằng cộng dồn: a[i] = a[i - 1] + D[i]
+    for (int i = 1; i &lt;= n; i++) {
+        a[i] = a[i - 1] + D[i];
+        cout &lt;&lt; a[i] &lt;&lt; (i == n ? '\n' : ' ');
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <p>Với dữ liệu là ba thao tác của Ví dụ 1 nhưng mảng ban đầu là <span class="math">1, 2, …, 7</span>, kết quả bằng mảng ban đầu cộng thêm <span class="math">(−1, 2, 2, 5, 5, 2, 2)</span>:</p>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">7 3
+1 2 3 4 5 6 7
+2 5 3
+4 7 2
+1 3 -1</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">0 4 5 9 10 8 9</code></pre></div>
+    </div>
+
+    <h3>Chương trình thứ hai: đếm số đoạn phủ</h3>
+    <p>Cho <span class="math">n</span> đoạn <span class="math">[l, r]</span> với <span class="math">1 ≤ l ≤ r ≤ 10⁶</span> và số <span class="math">k</span>. In ra số lớp phủ lớn nhất cùng điểm đầu tiên đạt được nó, và số điểm nguyên bị phủ ít nhất <span class="math">k</span> lần. Ở đây em không cần lưu cả mảng kết quả: chỉ cần một biến <code>cur</code> chạy theo cộng dồn.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_lop_phu.cpp</span> Số đoạn phủ mỗi điểm</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Đếm số đoạn phủ mỗi điểm 1..M, in điểm phủ nhiều nhất và số điểm bị phủ &gt;= k lần
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, k;
+    cin &gt;&gt; n &gt;&gt; k;
+    const int M = 1000000;              // tọa độ nằm trong [1, M]
+    vector&lt;int&gt; D(M + 2, 0);
+    for (int i = 0; i &lt; n; i++) {
+        int l, r;
+        cin &gt;&gt; l &gt;&gt; r;
+        D[l]++;                         // từ l trở đi có thêm một đoạn
+        D[r + 1]--;                     // từ r + 1 trở đi đoạn đó hết
+    }
+    int cur = 0, best = 0, bestPos = 1, atLeastK = 0;
+    for (int x = 1; x &lt;= M; x++) {
+        cur += D[x];                    // cur = số đoạn phủ điểm x
+        if (cur &gt; best) { best = cur; bestPos = x; }
+        if (cur &gt;= k) atLeastK++;
+    }
+    cout &lt;&lt; best &lt;&lt; ' ' &lt;&lt; bestPos &lt;&lt; '\n' &lt;&lt; atLeastK &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4 2
+1 4
+2 6
+3 5
+5 8</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">3 3
+5</code></pre></div>
+    </div>
+    <p>Kết quả khớp với Hình 2: phủ nhiều nhất 3 lớp, lần đầu tại điểm 3; có 5 điểm (2, 3, 4, 5, 6) bị phủ ít nhất 2 lần.</p>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thao tác</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Dựng mảng hiệu từ mảng ban đầu</td><td><span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Một thao tác cộng đoạn</td><td><span class="bigo">O(1)</span></td><td>—</td></tr>
+        <tr><td>Khôi phục mảng cuối (cộng dồn)</td><td><span class="bigo">O(n)</span></td><td>—</td></tr>
+        <tr class="hl"><td>Cả bài: q thao tác rồi in mảng</td><td><span class="bigo">O(n + q)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Cách ngây thơ (cộng từng ô)</td><td><span class="bigo">O(n · q)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>Quét sự kiện khi tọa độ tới 10⁹</td><td><span class="bigo">O(q log q)</span></td><td><span class="bigo">O(q)</span></td></tr>
+        <tr><td>Mảng hiệu 2 chiều: q hình chữ nhật trên bảng n × m</td><td><span class="bigo">O(n · m + q)</span></td><td><span class="bigo">O(n · m)</span></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Ví dụ số phép tính.</strong> Với <span class="math">n = q = 2·10⁵</span>: mảng hiệu cần khoảng <span class="math">2·10⁵</span> (dựng) <span class="math">+ 4·10⁵</span> (thao tác) <span class="math">+ 2·10⁵</span> (cộng dồn) <span class="math">= 8·10⁵</span> phép tính. Cách ngây thơ cần tới <span class="math">4·10¹⁰</span>.</p>
+    <p><strong>Giới hạn phù hợp.</strong> Thời gian gần như không bao giờ là vấn đề; giới hạn thật nằm ở <em>bộ nhớ</em>. Mảng <code>long long</code> <span class="math">10⁷</span> phần tử chiếm khoảng 80 MB, nên mảng hiệu 1 chiều dùng thoải mái tới <span class="math">n ≈ 10⁷</span>. Với bảng 2 chiều, tổng số ô <span class="math">n · m</span> nên dưới khoảng <span class="math">10⁷</span> (ví dụ bảng 3000 × 3000). Khi tọa độ lớn hơn nữa (tới <span class="math">10⁹</span>), em không thể mở mảng dài như vậy và phải dùng quét sự kiện ở mục sau.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Cập nhật xong rồi hỏi tổng đoạn: cộng dồn hai lần</h3>
+    <p>Đề cho <span class="math">q</span> thao tác cộng đoạn, <em>sau đó</em> mới có nhiều câu hỏi “tổng đoạn <span class="math">[u, v]</span>”. Em cộng dồn <span class="math">D</span> lần thứ nhất để ra mảng <span class="math">a</span>, rồi cộng dồn <span class="math">a</span> lần thứ hai để ra mảng <span class="math">S</span>. Mỗi câu hỏi trả lời bằng <span class="math">S[v] − S[u−1]</span> như bài <a href="prefix-sum.html">mảng cộng dồn</a>.</p>
+    <p>Với mảng cuối <span class="math">a = (−1, 2, 2, 5, 5, 2, 2)</span> của Ví dụ 1: <span class="math">S = (0, −1, 1, 3, 8, 13, 15, 17)</span> (bắt đầu từ <span class="math">S[0] = 0</span>). Tổng đoạn <span class="math">[3, 6]</span> là <span class="math">S[6] − S[2] = 15 − 1 = 14</span>; cộng tay: <span class="math">2 + 5 + 5 + 2 = 14</span>. Đúng.</p>
+    <p>Cùng ý đó, nếu câu hỏi là “trong đoạn <span class="math">[u, v]</span> có bao nhiêu vị trí có giá trị ít nhất <span class="math">k</span>?”, em dựng mảng đánh dấu <span class="math">b[i] = 1</span> nếu <span class="math">a[i] ≥ k</span>, ngược lại 0, rồi cộng dồn <span class="math">b</span>. Đây chính là lời giải bài Karen and Coffee trong phần bài tập.</p>
+
+    <h3>2. Đếm phủ: điểm phủ nhiều nhất, độ dài phủ ít nhất k lần</h3>
+    <p>Như Ví dụ 2, mỗi đoạn là một thao tác “cộng 1”. Sau khi cộng dồn, <span class="math">c[i]</span> là số đoạn chứa điểm <span class="math">i</span>. Từ đây:</p>
+    <ul>
+      <li><strong>Điểm phủ nhiều nhất:</strong> tìm max của <span class="math">c</span>. Ví dụ: số người có mặt cùng lúc nhiều nhất, số phòng khách sạn cần thuê.</li>
+      <li><strong>Số điểm nguyên phủ ít nhất k lần:</strong> đếm số <span class="math">i</span> có <span class="math">c[i] ≥ k</span>.</li>
+      <li><strong>Đoạn liên tục (đo độ dài):</strong> nếu đề nói đoạn thực <span class="math">[l, r]</span> có độ dài <span class="math">r − l</span> (ví dụ sơn từ mét 2 đến mét 5 là 3 mét), em chia trục thành các ô đơn vị <span class="math">[i, i+1)</span>. Đoạn <span class="math">[l, r]</span> phủ các ô <span class="math">l, l+1, …, r−1</span>, nên làm <span class="math">D[l] += 1</span>, <span class="math">D[r] −= 1</span> (không phải <span class="math">r + 1</span>). Độ dài phủ ít nhất <span class="math">k</span> lần là số ô có <span class="math">c[i] ≥ k</span>.</li>
+    </ul>
+
+    <h3>3. Tọa độ lớn: quét sự kiện và nén tọa độ</h3>
+    <p>Nếu <span class="math">l, r</span> lên tới <span class="math">10⁹</span>, không thể mở mảng <span class="math">D</span> dài <span class="math">10⁹</span> (8 GB). Nhưng em để ý: mảng <span class="math">D</span> gần như toàn số 0, chỉ có tối đa <span class="math">2q</span> ô khác 0. Vậy chỉ cần lưu các <strong>sự kiện</strong> (event): “tại <span class="math">l</span> có <span class="math">+1</span>”, “tại <span class="math">r+1</span> có <span class="math">−1</span>”. Sắp xếp các sự kiện theo vị trí (xem bài <a href="sorting.html">sắp xếp</a>), rồi đi từ trái sang phải, cộng dồn. Giữa hai vị trí sự kiện liên tiếp, số lớp phủ không đổi, nên em cộng cả khúc đó trong một phép tính. Kỹ thuật này gọi là <strong>quét sự kiện</strong> (sweep line).</p>
+    <figure class="code">
+      <figcaption><span class="fn">quet_su_kien.cpp</span> Số lớp phủ lớn nhất và số điểm phủ ≥ k lần, tọa độ tới 10⁹</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Tọa độ tới 1e9: chỉ lưu các "sự kiện" rồi sắp xếp
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, k;
+    cin &gt;&gt; n &gt;&gt; k;
+    vector&lt;pair&lt;long long, int&gt;&gt; ev;    // (vị trí, +1 hoặc -1)
+    for (int i = 0; i &lt; n; i++) {
+        long long l, r;
+        cin &gt;&gt; l &gt;&gt; r;
+        ev.push_back({l, +1});
+        ev.push_back({r + 1, -1});
+    }
+    sort(ev.begin(), ev.end());
+    long long cnt = 0;                  // số điểm nguyên bị phủ &gt;= k lần
+    int cur = 0, best = 0;
+    for (size_t i = 0; i &lt; ev.size(); ) {
+        long long x = ev[i].first;
+        // xử lý hết các sự kiện cùng vị trí x rồi mới đọc cur
+        while (i &lt; ev.size() &amp;&amp; ev[i].first == x) { cur += ev[i].second; i++; }
+        best = max(best, cur);
+        // trên nửa khoảng [x, vị trí sự kiện kế tiếp) số lớp phủ không đổi
+        if (i &lt; ev.size() &amp;&amp; cur &gt;= k) cnt += ev[i].first - x;
+    }
+    cout &lt;&lt; best &lt;&lt; '\n' &lt;&lt; cnt &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3 2
+1 1000000000
+5 20
+15 1000000000</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">3
+999999996</code></pre></div>
+    </div>
+    <p>Kiểm tra: điểm bị phủ ít nhất 2 lần là mọi điểm từ 5 đến <span class="math">10⁹</span>, gồm <span class="math">10⁹ − 5 + 1 = 999 999 996</span> điểm; phủ 3 lớp tại các điểm từ 15 đến 20. Chương trình chỉ tốn <span class="math">O(n log n)</span> cho việc sắp xếp, không phụ thuộc độ lớn tọa độ.</p>
+    <p><strong>Nén tọa độ</strong> (coordinate compression) là cách thứ hai: gom mọi giá trị <span class="math">l</span> và <span class="math">r+1</span> lại, sắp xếp, xóa trùng, rồi thay mỗi tọa độ bằng <em>thứ hạng</em> của nó (0, 1, 2, …). Khi đó em dùng mảng hiệu bình thường dài <span class="math">2q</span>. Muốn biết độ dài thật của khúc thứ <span class="math">j</span>, lấy hiệu hai tọa độ gốc liền kề. Cách này tiện khi sau đó còn phải trả lời thêm câu hỏi theo tọa độ.</p>
+
+    <h3>4. Mảng hiệu 2 chiều: bốn góc</h3>
+    <p>Bài toán: bảng <span class="math">n × m</span>, mỗi thao tác cộng <span class="math">x</span> vào mọi ô trong hình chữ nhật từ góc trên trái <span class="math">(r₁, c₁)</span> tới góc dưới phải <span class="math">(r₂, c₂)</span>. Em cần mảng <span class="math">D</span> sao cho cộng dồn 2 chiều của <span class="math">D</span> ra đúng bảng kết quả. Cộng dồn 2 chiều nghĩa là <span class="math">A[i][j]</span> bằng tổng mọi <span class="math">D[u][v]</span> với <span class="math">u ≤ i</span>, <span class="math">v ≤ j</span> (hình chữ nhật từ góc (1,1) đến <span class="math">(i, j)</span>).</p>
+    <ol class="algo-steps">
+      <li><div><strong>Bật ở góc trên trái.</strong> <span class="math">D[r₁][c₁] += x</span>: mọi ô ở phía dưới bên phải của <span class="math">(r₁, c₁)</span> đều được cộng <span class="math">x</span>.</div></li>
+      <li><div><strong>Tắt bên phải.</strong> <span class="math">D[r₁][c₂+1] −= x</span>: các ô từ cột <span class="math">c₂ + 1</span> trở đi không được cộng nữa.</div></li>
+      <li><div><strong>Tắt bên dưới.</strong> <span class="math">D[r₂+1][c₁] −= x</span>: các ô từ hàng <span class="math">r₂ + 1</span> trở đi không được cộng nữa.</div></li>
+      <li><div><strong>Bù góc dưới phải.</strong> <span class="math">D[r₂+1][c₂+1] += x</span>: vùng vừa ở bên phải vừa ở bên dưới bị trừ <em>hai lần</em> ở bước 2 và 3, nên cộng lại một lần.</div></li>
+      <li><div><strong>Khôi phục.</strong> <span class="math">A[i][j] = D[i][j] + A[i−1][j] + A[i][j−1] − A[i−1][j−1]</span>, hoặc như Ví dụ 3: cộng dồn từng hàng, rồi cộng dồn từng cột.</div></li>
+    </ol>
+    <p>Bốn góc mang dấu <span class="math">+, −, −, +</span> giống quy tắc bao hàm loại trừ khi tính tổng hình chữ nhật bằng cộng dồn 2 chiều. Mảng <span class="math">D</span> cần <span class="math">(n + 2) × (m + 2)</span> ô vì có lúc phải ghi vào hàng <span class="math">n+1</span>, cột <span class="math">m+1</span>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">mang_hieu_2d.cpp</span> Cộng x vào q hình chữ nhật rồi in bảng</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m, q;
+    cin &gt;&gt; n &gt;&gt; m &gt;&gt; q;
+    // dư một hàng, một cột để sửa ô (r2 + 1, c2 + 1)
+    vector&lt;vector&lt;long long&gt;&gt; D(n + 2, vector&lt;long long&gt;(m + 2, 0));
+    while (q--) {
+        int r1, c1, r2, c2;
+        long long x;
+        cin &gt;&gt; r1 &gt;&gt; c1 &gt;&gt; r2 &gt;&gt; c2 &gt;&gt; x;
+        D[r1][c1] += x;                 // góc trên trái: bật
+        D[r1][c2 + 1] -= x;             // bên phải: tắt
+        D[r2 + 1][c1] -= x;             // bên dưới: tắt
+        D[r2 + 1][c2 + 1] += x;         // góc dưới phải: bù lại phần trừ hai lần
+    }
+    // cộng dồn 2 chiều: A[i][j] = D[i][j] + A[i-1][j] + A[i][j-1] - A[i-1][j-1]
+    vector&lt;vector&lt;long long&gt;&gt; A(n + 1, vector&lt;long long&gt;(m + 1, 0));
+    for (int i = 1; i &lt;= n; i++) {
+        for (int j = 1; j &lt;= m; j++) {
+            A[i][j] = D[i][j] + A[i - 1][j] + A[i][j - 1] - A[i - 1][j - 1];
+            cout &lt;&lt; A[i][j] &lt;&lt; (j == m ? '\n' : ' ');
+        }
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4 5 2
+1 1 3 3 1
+2 2 4 5 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1 1 1 0 0
+1 3 3 2 2
+1 3 3 2 2
+0 2 2 2 2</code></pre></div>
+    </div>
+
+    <h3>5. Cộng “bậc thang” 1, 2, 3, … vào một đoạn (nâng cao)</h3>
+    <p>Có đề yêu cầu cộng <span class="math">1</span> vào ô <span class="math">l</span>, <span class="math">2</span> vào ô <span class="math">l+1</span>, …, <span class="math">r−l+1</span> vào ô <span class="math">r</span>. Lượng cộng vào ô <span class="math">i</span> là <span class="math">i − l + 1 = 1 · i + (1 − l)</span>: một phần tỉ lệ với <span class="math">i</span>, một phần là hằng số. Em dùng <em>hai</em> mảng hiệu: <span class="math">C</span> đếm “hệ số của <span class="math">i</span>” (cộng 1 vào đoạn), <span class="math">K</span> giữ “phần hằng số” (cộng <span class="math">1 − l</span> vào đoạn). Cuối cùng ô <span class="math">i</span> được cộng <span class="math">c[i] · i + k[i]</span>, với <span class="math">c, k</span> là cộng dồn của <span class="math">C, K</span>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">bac_thang.cpp</span> Đoạn mã chính (phần đọc dữ liệu như các bài trên)</figcaption>
+<pre><code class="language-cpp">// giá trị cộng vào ô i là i - l + 1 = 1 * i + (1 - l)
+C[l] += 1;       C[r + 1] -= 1;          // hệ số của i
+K[l] += 1 - l;   K[r + 1] -= 1 - l;      // hằng số
+// ... sau mọi thao tác:
+long long c = 0, k = 0;
+for (int i = 1; i &lt;= n; i++) {
+    c += C[i]; k += K[i];
+    long long value = c * i + k;         // giá trị cuối của ô i
+}</code></pre>
+    </figure>
+    <p>Ví dụ <span class="math">n = 6</span>, hai thao tác <span class="math">(2, 5)</span> và <span class="math">(1, 3)</span>: mảng cuối là <span class="math">(1, 3, 5, 3, 4, 0)</span>. Em tự kiểm tra: ô 3 nhận 2 từ thao tác thứ nhất và 3 từ thao tác thứ hai.</p>
+
+    <h3>6. Mảng hiệu hai tầng</h3>
+    <p>Trong bài Greg and Array, có <span class="math">m</span> thao tác cộng đoạn, và <span class="math">k</span> “lệnh lớn”, mỗi lệnh lớn bảo “thực hiện các thao tác từ số <span class="math">x</span> đến số <span class="math">y</span>”. Tầng một: dùng mảng hiệu <em>trên dãy thao tác</em> để đếm thao tác <span class="math">j</span> được thực hiện bao nhiêu lần, gọi là <span class="math">t[j]</span>. Tầng hai: mỗi thao tác <span class="math">(l, r, d)</span> giờ là “cộng <span class="math">d · t[j]</span> vào <span class="math">[l, r]</span>”, lại dùng mảng hiệu trên mảng gốc. Tổng thời gian <span class="math">O(n + m + k)</span>.</p>
+
+    <h3>7. Khi cập nhật và câu hỏi xen kẽ nhau</h3>
+    <p>Mảng hiệu chỉ mạnh khi <strong>mọi cập nhật xảy ra trước mọi câu hỏi</strong>. Nếu đề trộn lẫn “cộng <span class="math">x</span> vào <span class="math">[l, r]</span>” và “<span class="math">a[k]</span> bây giờ bằng bao nhiêu?”, mỗi câu hỏi cần tổng <span class="math">D[1] + … + D[k]</span>, tốn <span class="math">O(n)</span>. Với <span class="math">2·10⁵</span> câu hỏi lại thành <span class="math">4·10¹⁰</span> phép tính. Khi đó em cần một cấu trúc dữ liệu vừa sửa một ô, vừa tính tổng tiền tố trong <span class="math">O(log n)</span>: <strong>cây Fenwick</strong> (Binary Indexed Tree) dựng trên chính mảng hiệu. Nếu còn phải hỏi tổng cả đoạn sau khi cập nhật đoạn thì dùng cây phân đoạn (segment tree) với cập nhật lười. Đây là các chủ đề nâng cao sau lộ trình này; điều quan trọng bây giờ là em <em>nhận ra</em> lúc nào mảng hiệu không còn đủ.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger">
+      <p class="callout-title">Lỗi 1: mảng D thiếu ô</p>
+      <p>Khai báo <code>D[n + 1]</code> rồi ghi <code>D[r + 1]</code> với <span class="math">r = n</span> là ghi ra ngoài mảng: chương trình có thể chạy sai mà không báo lỗi. <strong>Sửa:</strong> luôn khai báo <span class="math">D</span> có <span class="math">n + 2</span> ô (và <span class="math">(n + 2) × (m + 2)</span> với 2 chiều).</p>
+    </div>
+    <div class="callout danger">
+      <p class="callout-title">Lỗi 2: tràn số int</p>
+      <p>Với <span class="math">q = 2·10⁵</span> thao tác, mỗi thao tác cộng tới <span class="math">10⁹</span>, một ô có thể đạt <span class="math">2·10¹⁴</span>, vượt xa giới hạn <span class="math">int</span> (khoảng <span class="math">2,1·10⁹</span>). <strong>Sửa:</strong> dùng <code>long long</code> cho cả <span class="math">D</span> và <span class="math">a</span>, kể cả biến chạy <code>cur</code>.</p>
+    </div>
+    <div class="callout warn">
+      <p class="callout-title">Lỗi 3: quên D[1] = a[1] hoặc lệch chỉ số</p>
+      <p>Khi mảng ban đầu khác 0, nhiều bạn chỉ tính <span class="math">D[i] = a[i] − a[i−1]</span> từ <span class="math">i = 2</span> và để <span class="math">D[1] = 0</span>, làm cả mảng lệch đi <span class="math">a[1]</span>. Lỗi tương tự khi đọc đề đánh số từ 0 mà cài đặt theo kiểu đánh số từ 1. <strong>Sửa:</strong> dùng chỉ số từ 1 và đặt <span class="math">a[0] = 0</span>; nếu đề cho chỉ số từ 0 thì cộng 1 vào <span class="math">l, r</span> ngay khi đọc.</p>
+    </div>
+    <div class="callout warn">
+      <p class="callout-title">Lỗi 4: đọc a trước khi cộng dồn, hoặc cộng dồn sau mỗi thao tác</p>
+      <p>Mảng <span class="math">D</span> không phải là kết quả; phải cộng dồn xong mới có <span class="math">a</span>. Ngược lại, cộng dồn lại toàn bộ sau <em>mỗi</em> thao tác thì quay về <span class="math">O(n · q)</span>, mất hết lợi ích. <strong>Sửa:</strong> cộng dồn đúng một lần, sau thao tác cuối cùng.</p>
+    </div>
+    <div class="callout warn">
+      <p class="callout-title">Lỗi 5: sai dấu hoặc thiếu góc ở mảng hiệu 2 chiều</p>
+      <p>Bốn góc phải là <span class="math">+x</span> tại <span class="math">(r₁, c₁)</span>, <span class="math">−x</span> tại <span class="math">(r₁, c₂+1)</span> và <span class="math">(r₂+1, c₁)</span>, <span class="math">+x</span> tại <span class="math">(r₂+1, c₂+1)</span>. Quên góc cuối thì vùng dưới phải bị trừ âm <span class="math">x</span>. <strong>Sửa:</strong> thử trên bảng 3 × 3 với một hình chữ nhật 1 ô; sau cộng dồn chỉ đúng ô đó khác 0.</p>
+    </div>
+    <div class="callout warn">
+      <p class="callout-title">Lỗi 6: nhầm điểm nguyên và độ dài</p>
+      <p>Đoạn <span class="math">[2, 5]</span> chứa 4 điểm nguyên nhưng dài 3 đơn vị. Đếm điểm thì dùng <span class="math">D[r+1]</span>; đo độ dài thì dùng <span class="math">D[r]</span>. Trong quét sự kiện, nhớ xử lý hết mọi sự kiện cùng tọa độ rồi mới đọc số lớp phủ.</p>
+    </div>
+    <div class="callout tip">
+      <p class="callout-title">Mẹo kiểm tra nhanh</p>
+      <p>Nếu mảng ban đầu toàn 0 thì cộng dồn tới tận ô <span class="math">D[n+1]</span> phải ra đúng 0, vì mọi đoạn đều đã kết thúc trước ô đó. Ra số khác 0 nghĩa là có chỗ cộng hoặc trừ sai. Cách chắc chắn hơn: viết thêm hàm ngây thơ <span class="math">O(n · q)</span> và so kết quả trên vài bộ dữ liệu nhỏ ngẫu nhiên. Đây là cách “đối chiếu” (stress test) mà các bạn thi giỏi luôn làm.</p>
+    </div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Mảng có 8 phần tử, cần cộng 5 vào đoạn [3, 6]. Em sửa mảng hiệu D thế nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. D[3] += 5 và D[6] −= 5</button>
+        <button type="button" class="quiz-opt" data-correct>B. D[3] += 5 và D[7] −= 5</button>
+        <button type="button" class="quiz-opt">C. Cộng 5 vào D[3], D[4], D[5], D[6]</button>
+        <button type="button" class="quiz-opt">D. D[2] += 5 và D[6] −= 5</button>
+      </div>
+      <p class="quiz-explain">Mức tăng bắt đầu ở ô 3 (đầu đoạn) và chấm dứt ở ô 7 (ngay sau cuối đoạn). Phương án A làm ô 6 không được cộng; phương án C cộng 5 vào bốn độ chênh nên sau cộng dồn các ô tăng 5, 10, 15, 20.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Mảng a = (4, 4, 6, 1). Mảng hiệu D là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. (0, 0, 2, −5)</button>
+        <button type="button" class="quiz-opt" data-correct>B. (4, 0, 2, −5)</button>
+        <button type="button" class="quiz-opt">C. (4, 8, 14, 15)</button>
+        <button type="button" class="quiz-opt">D. (0, 2, −5, 0)</button>
+      </div>
+      <p class="quiz-explain">D[1] = a[1] − a[0] = 4 − 0 = 4, D[2] = 4 − 4 = 0, D[3] = 6 − 4 = 2, D[4] = 1 − 6 = −5. Phương án C là mảng cộng dồn, không phải mảng hiệu.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Sau mọi thao tác, mảng hiệu là D = (2, −1, 3, 0, −2). Mảng cuối cùng là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. (2, −1, 3, 0, −2)</button>
+        <button type="button" class="quiz-opt">B. (2, 3, −4, 3, 2)</button>
+        <button type="button" class="quiz-opt" data-correct>C. (2, 1, 4, 4, 2)</button>
+        <button type="button" class="quiz-opt">D. (2, 1, 3, 3, 1)</button>
+      </div>
+      <p class="quiz-explain">Cộng dồn: 2; 2 − 1 = 1; 1 + 3 = 4; 4 + 0 = 4; 4 − 2 = 2.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Đề cho 2·10⁵ lệnh, mỗi lệnh hoặc là “cộng x vào [l, r]”, hoặc là “in a[k] hiện tại”, xen kẽ nhau. Cách nào phù hợp?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Mảng hiệu, mỗi lần hỏi thì cộng dồn lại từ đầu</button>
+        <button type="button" class="quiz-opt">B. Cộng trực tiếp vào từng ô của đoạn</button>
+        <button type="button" class="quiz-opt" data-correct>C. Cây Fenwick trên mảng hiệu: sửa hai ô và hỏi tổng tiền tố, mỗi việc O(log n)</button>
+        <button type="button" class="quiz-opt">D. Mảng hiệu 2 chiều</button>
+      </div>
+      <p class="quiz-explain">A và B đều có thể tốn O(n · q) ≈ 4·10¹⁰ phép tính. Khi cập nhật và câu hỏi xen kẽ, cần cấu trúc vừa sửa ô vừa tính tổng tiền tố nhanh, đó là cây Fenwick.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Cộng x vào hình chữ nhật (r₁, c₁)–(r₂, c₂) bằng mảng hiệu 2 chiều. Ô nào được <em>cộng</em> x ngoài ô (r₁, c₁)?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. (r₂, c₂)</button>
+        <button type="button" class="quiz-opt">B. (r₁, c₂ + 1)</button>
+        <button type="button" class="quiz-opt" data-correct>C. (r₂ + 1, c₂ + 1)</button>
+        <button type="button" class="quiz-opt">D. Không ô nào khác</button>
+      </div>
+      <p class="quiz-explain">Vùng dưới phải bị trừ hai lần (bởi góc (r₁, c₂+1) và góc (r₂+1, c₁)), nên phải cộng bù x tại (r₂+1, c₂+1).</p>
+    </div>
+
+    <p><strong>Câu 6.</strong> Mảng 6 ô ban đầu toàn 0. Thực hiện ba thao tác (1, 4, +2), (3, 6, +1), (2, 3, −3). Viết mảng hiệu D (7 ô) sau ba thao tác và mảng cuối.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>(1, 4, +2): D[1] += 2, D[5] −= 2. (3, 6, +1): D[3] += 1, D[7] −= 1. (2, 3, −3): D[2] −= 3, D[4] += 3.</p>
+      <p>Vậy D = (2, −3, 1, 3, −2, 0, −1). Cộng dồn: 2, −1, 0, 3, 1, 1. Kiểm tra ô 3: +2 (thao tác 1) +1 (thao tác 2) −3 (thao tác 3) = 0. Đúng.</p>
+    </details>
+
+    <p><strong>Câu 7.</strong> Giải thích bằng lời vì sao <span class="math">D[1] + D[2] + … + D[i] = a[i]</span>.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Viết mỗi <span class="math">D[k] = a[k] − a[k−1]</span>. Trong tổng, <span class="math">a[1]</span> xuất hiện với dấu cộng ở <span class="math">D[1]</span> và dấu trừ ở <span class="math">D[2]</span>; <span class="math">a[2]</span> cũng vậy ở <span class="math">D[2]</span> và <span class="math">D[3]</span>… Mọi số ở giữa triệt tiêu, chỉ còn <span class="math">a[i] − a[0] = a[i]</span>. Giống như đi cầu thang: tổng các bước lên xuống bằng độ cao hiện tại so với mặt đất.</p>
+    </details>
+
+    <p><strong>Câu 8.</strong> Có 3 khách thuê phòng: khách A từ ngày 1 đến ngày 10⁹, khách B từ ngày 5 đến ngày 20, khách C từ ngày 15 đến ngày 10⁹. Vì sao không dùng được mảng D theo ngày? Cần nhiều nhất bao nhiêu phòng cùng lúc?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Mảng 10⁹ ô <code>int</code> cần khoảng 4 GB bộ nhớ, vượt giới hạn. Dùng quét sự kiện: (1, +1), (5, +1), (15, +1), (21, −1), (10⁹ + 1, −1), (10⁹ + 1, −1). Sắp xếp rồi cộng dồn: 1, 2, 3, 2, 0. Cần nhiều nhất 3 phòng, trong các ngày từ 15 đến 20.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Bài 1 là dạng gốc, em nên làm trước tiên. Đề tiếng Anh có tóm tắt tiếng Việt.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/ca0203">CA0203 – Cập nhật đoạn tĩnh</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Mảng N phần tử ban đầu bằng 0, Q thao tác cộng V vào đoạn [L, R] (|V| ≤ 10⁹, N, Q ≤ 2·10⁵). In mảng sau mọi thao tác.</p>
+        <p class="ex-skill"><b>Luyện:</b> cài đặt mảng hiệu chuẩn, kích thước N + 2, dùng long long.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đúng chương trình chính ở mục Cài đặt, bỏ phần đọc mảng ban đầu. Subtask 1 cho phép làm ngây thơ; hãy so hai cách trên cùng dữ liệu để tự kiểm tra.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/contest/816/problem/B">816B – Karen and Coffee</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Có n công thức pha cà phê, công thức thứ i khuyên nhiệt độ trong [lᵢ, rᵢ]. Một nhiệt độ “được chấp nhận” nếu ít nhất k công thức khuyên nó. Trả lời q câu hỏi: trong [a, b] có bao nhiêu nhiệt độ nguyên được chấp nhận? (mọi số ≤ 2·10⁵)</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm phủ bằng mảng hiệu, rồi cộng dồn lần hai.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mảng hiệu cho số công thức khuyên mỗi nhiệt độ. Đánh dấu b[t] = 1 nếu số đó ≥ k, rồi cộng dồn b để trả lời mỗi câu hỏi bằng một phép trừ (Biến thể 1).</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/276/C">276C – Little Girl and Maximum Sum</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho mảng n số và q câu hỏi tổng đoạn [l, r]. Trước khi trả lời, em được sắp xếp lại các phần tử theo ý muốn. Hãy làm cho tổng đáp án của mọi câu hỏi lớn nhất và in tổng đó.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm số lần mỗi vị trí bị “dùng” bằng mảng hiệu, kết hợp sắp xếp và tham lam.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Vị trí i góp a[i] · cnt[i] vào tổng, với cnt[i] là số câu hỏi phủ i. Tính cnt bằng mảng hiệu, sắp xếp cả cnt và mảng số (xem bài <a href="sorting.html">sắp xếp</a>), ghép số lớn nhất với vị trí bị phủ nhiều nhất. Nhớ dùng long long.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/contest/296/problem/C">296C (295A) – Greg and Array</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Mảng n số, m thao tác dạng (l, r, d) “cộng d vào [l, r]”, và k lệnh dạng (x, y) “thực hiện các thao tác số x đến số y”. In mảng sau mọi lệnh. Giới hạn n, m, k ≤ 10⁵.</p>
+        <p class="ex-skill"><b>Luyện:</b> mảng hiệu hai tầng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tầng một: mảng hiệu trên chỉ số thao tác cho biết thao tác j được dùng t[j] lần. Tầng hai: thao tác j thành “cộng d · t[j] vào [l, r]” (Biến thể 6). Giá trị có thể tới khoảng 10⁵ · 10⁵ · 10⁵, cần long long.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qmax">QMAX – Giá trị lớn nhất</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Dãy n phần tử ban đầu bằng 0, m phép “tăng các phần tử từ u đến v thêm k”, sau đó p câu hỏi: giá trị lớn nhất trong đoạn [u, v] là bao nhiêu? (n, m, p ≤ 50 000)</p>
+        <p class="ex-skill"><b>Luyện:</b> mảng hiệu để dựng mảng cuối, kết hợp với một cách hỏi max đoạn nhanh.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mọi cập nhật xảy ra trước câu hỏi, nên dựng mảng cuối bằng mảng hiệu trong O(n + m). Hỏi max từng đoạn bằng vòng lặp có thể tới 50 000 · 50 000 = 2,5·10⁹ phép, quá chậm. Hãy chia mảng thành các khối khoảng 224 phần tử và lưu sẵn max mỗi khối, hoặc tìm hiểu bảng thưa (sparse table).</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/26ts10dth4">26TS10DTH4 – Cập nhật dãy (TS10 Đồng Tháp 2026)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Mảng N số ban đầu bằng 0, Q thao tác (l, r): cộng 1 vào ô l, 2 vào ô l + 1, …, r − l + 1 vào ô r. In giá trị lớn nhất của mảng sau mọi thao tác (N, Q ≤ 2·10⁵).</p>
+        <p class="ex-skill"><b>Luyện:</b> cập nhật “bậc thang” bằng hai mảng hiệu.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lượng cộng vào ô i là 1 · i + (1 − l). Dùng một mảng hiệu cho hệ số của i và một mảng hiệu cho phần hằng số (Biến thể 5). Giá trị có thể vượt 10¹⁰, dùng long long.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses1651">CSES 1651 – Range Update Queries (Truy vấn cập nhật đoạn)</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Mảng n số, q truy vấn xen kẽ: “tăng mọi giá trị trong [a, b] thêm u” hoặc “in giá trị ở vị trí k” (n, q ≤ 2·10⁵).</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra khi mảng hiệu cần thêm cấu trúc dữ liệu; làm quen cây Fenwick.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Cập nhật đoạn vẫn chỉ là hai phép sửa D[a] và D[b + 1]; giá trị ở k là tổng D[1..k]. Vì xen kẽ nên cần cây Fenwick trên D để sửa ô và tính tổng tiền tố trong O(log n) (Biến thể 7, xem thêm VNOI Wiki).</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://usaco.org/index.php?page=viewproblem2&amp;cpid=919">USACO 2019 Feb Silver – Painting the Barn</a>
+          <span class="judge">USACO</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Nông dân John sơn N hình chữ nhật có cạnh song song trục lên bức tường, tọa độ góc từ 0 đến 1000. Tính tổng diện tích được sơn đúng K lớp.</p>
+        <p class="ex-skill"><b>Luyện:</b> mảng hiệu 2 chiều trên các ô đơn vị.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Hình chữ nhật góc (x₁, y₁)–(x₂, y₂) phủ các ô đơn vị có x từ x₁ đến x₂ − 1 và y từ y₁ đến y₂ − 1, nên bốn góc đặt ở x₂, y₂ (không cộng 1; xem Lỗi 6). Cộng dồn 2 chiều rồi đếm số ô bằng đúng K.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/data-structures/prefix-sum-and-difference-array">VNOI Wiki – Mảng cộng dồn và mảng hiệu</a> (tiếng Việt): định nghĩa, chứng minh, mảng hiệu nhiều chiều, danh sách bài tập.</li>
+      <li><a href="https://wiki.vnoi.info/algo/data-structures/fenwick">VNOI Wiki – Cây chỉ số nhị phân (Binary Indexed Tree)</a> (tiếng Việt): dùng khi cập nhật đoạn và câu hỏi xen kẽ.</li>
+      <li><a href="https://usaco.guide/silver/more-prefix-sums">USACO Guide – More on Prefix Sums</a> (tiếng Anh): mục Difference Arrays và bài luyện tập theo mức độ.</li>
+      <li>Bài trước trong lộ trình: <a href="prefix-sum.html">Mảng cộng dồn</a>. Bài sau: <a href="sorting.html">Sắp xếp</a> (dùng cho quét sự kiện) và <a href="two-pointers.html">Hai con trỏ</a>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Mảng hiệu: <span class="math">D[i] = a[i] − a[i−1]</span>, <span class="math">a[0] = 0</span>. Cộng dồn <span class="math">D</span> ra lại <span class="math">a</span>: hai phép ngược nhau.</li>
+        <li>Cộng <span class="math">x</span> vào <span class="math">[l, r]</span>: <span class="math">D[l] += x</span>, <span class="math">D[r+1] −= x</span>. Mảng <span class="math">D</span> cần <span class="math">n + 2</span> ô.</li>
+        <li>Mọi cập nhật xong mới cộng dồn một lần: tổng <span class="bigo">O(n + q)</span> thay vì <span class="bigo">O(n · q)</span>.</li>
+        <li>Đếm số đoạn phủ mỗi điểm = mảng hiệu với <span class="math">x = 1</span>; điểm nguyên dùng <span class="math">r + 1</span>, độ dài dùng <span class="math">r</span>.</li>
+        <li>Tọa độ tới <span class="math">10⁹</span>: lưu sự kiện <span class="math">(l, +1)</span>, <span class="math">(r+1, −1)</span>, sắp xếp rồi quét; hoặc nén tọa độ.</li>
+        <li>2 chiều: bốn góc <span class="math">+, −, −, +</span> tại <span class="math">(r₁, c₁)</span>, <span class="math">(r₁, c₂+1)</span>, <span class="math">(r₂+1, c₁)</span>, <span class="math">(r₂+1, c₂+1)</span>, rồi cộng dồn 2 chiều.</li>
+        <li>Cần tổng đoạn sau cập nhật: cộng dồn hai lần. Cập nhật và hỏi xen kẽ: cây Fenwick.</li>
+        <li>Luôn dùng <code>long long</code> khi tổng các x có thể vượt <span class="math">2·10⁹</span>.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/difference-array.js"></script>
+</body>
+</html>

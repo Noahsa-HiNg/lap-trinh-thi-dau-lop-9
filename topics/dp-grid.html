@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QHĐ trên lưới · Thi đấu lớp 9</title>
+<meta name="description" content="Quy hoạch động trên lưới: đếm đường đi có ô cấm, đường đi tổng lớn nhất, truy vết, bảng ba hướng, tiết kiệm bộ nhớ và hai người cùng đi.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  #viz-dp-grid .grid-viz .g[role="button"] { cursor: pointer; }
+  #viz-dp-grid .grid-viz .g[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+</style>
+</head>
+<body data-page="topic" data-topic="dp-grid">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Định nghĩa được trạng thái <code>dp[i][j]</code> cho bài đường đi trên lưới và viết được công thức chuyển, giá trị cơ sở, vị trí đáp án.</li>
+      <li>Cài đặt được bài đếm số đường đi có ô cấm (lấy dư 10⁹ + 7) và bài đường đi có tổng lớn nhất, kèm truy vết in ra đường đi.</li>
+      <li>Giải thích được vì sao công thức đúng, vì sao chạy nhanh hơn liệt kê, và liên hệ được với tổ hợp C(m + n − 2, m − 1).</li>
+      <li>Chọn đúng thứ tự tính khi đổi hướng đi (bài ba hướng kiểu QBMAX) và rút bảng xuống còn một hàng để tiết kiệm bộ nhớ.</li>
+      <li>Nhận ra các mở rộng: đường đi qua ô bắt buộc, hai người cùng đi (trạng thái theo đường chéo).</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Ở bài <a href="dp-intro.html">Nhập môn quy hoạch động</a>, em đã gặp bảng dp một chiều: dp[i] tính từ dp[i − 1], dp[i − 2]. Bài này nâng lên <strong>hai chiều</strong>. Bảng dp có hình dạng giống hệt tấm lưới trong đề, mỗi ô của bảng ghi một con số nói về ô tương ứng của lưới. Ta điền bảng từ góc trên trái xuống góc dưới phải, mỗi ô chỉ nhìn ô phía trên và ô bên trái.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div>
+        <p><strong>Hình dung:</strong> khu phố nhà em có các con đường cắt nhau như bàn cờ. Nhà em ở góc Tây Bắc, trường ở góc Đông Nam. Sáng nào em cũng chỉ đi về phía Đông (sang phải) hoặc phía Nam (xuống dưới) để không đi vòng. Có vài ngã tư đang sửa đường, không đi qua được. Hỏi: em có bao nhiêu cách đi học khác nhau?</p>
+        <p>Đứng ở một ngã tư bất kỳ, em chỉ có thể vừa tới từ ngã tư phía trên hoặc ngã tư bên trái. Vậy số cách tới ngã tư này bằng <em>số cách tới ngã tư trên</em> cộng <em>số cách tới ngã tư trái</em>. Ghi con số đó lên từng ngã tư, từ nhà ra tới trường, là xong.</p>
+      </div>
+    </div>
+
+    <div class="definition" data-label="Bài toán">
+      <p>Cho lưới m hàng, n cột. Hàng đánh số 1..m từ trên xuống, cột đánh số 1..n từ trái sang. Một số ô là <strong>ô cấm</strong> (vật cản). Một robot đứng ở ô (1, 1), mỗi bước chỉ được đi <strong>sang phải</strong> (từ (i, j) tới (i, j + 1)) hoặc <strong>xuống dưới</strong> (từ (i, j) tới (i + 1, j)), không được bước vào ô cấm.</p>
+      <ul>
+        <li><strong>Bài đếm:</strong> có bao nhiêu đường đi từ (1, 1) tới (m, n)? Đáp án lớn thì in phần dư khi chia cho 10⁹ + 7.</li>
+        <li><strong>Bài tối ưu:</strong> mỗi ô ghi một số nguyên; tìm đường đi có tổng các số trên đường lớn nhất (hoặc chi phí nhỏ nhất), và in ra chính đường đi đó.</li>
+      </ul>
+    </div>
+
+    <div class="definition" data-label="Trạng thái">
+      <p><code>dp[i][j]</code> = <em>số đường đi</em> (hoặc <em>tổng lớn nhất</em>) từ ô xuất phát (1, 1) tới ô (i, j). Đáp án nằm ở <code>dp[m][n]</code>.</p>
+    </div>
+    <p>Quy hoạch động (dynamic programming, viết tắt QHĐ) trên lưới là một trong những dạng QHĐ dễ hình dung nhất, vì “bài toán con” hiện ra ngay trước mắt: mỗi ô của lưới là một bài toán con.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Rất nhiều bài thi học sinh giỏi THCS là biến tấu của tấm lưới này. Những dạng em sẽ gặp:</p>
+    <ul>
+      <li><strong>Đếm đường đi:</strong> robot, con kiến, quân xe đi trên bàn cờ chỉ sang phải/xuống dưới, có ô cấm. Đáp án thường lấy dư 10⁹ + 7.</li>
+      <li><strong>Tổng lớn nhất / chi phí nhỏ nhất:</strong> nhặt nhiều vàng nhất, tốn ít xăng nhất, đi qua các ô có điểm số.</li>
+      <li><strong>Truy vết:</strong> không chỉ in con số tốt nhất mà còn in đường đi (chuỗi R/D, hoặc danh sách ô).</li>
+      <li><strong>Đổi hướng đi:</strong> đi từ cột 1 sang cột n theo ba hướng (chéo lên, ngang, chéo xuống) như bài QBMAX.</li>
+      <li><strong>Bảng hai chiều không phải bản đồ:</strong> hình vuông toàn 0 hoặc toàn 1 lớn nhất (QBSQUARE), dãy con chung dài nhất của hai xâu (<a href="lcs.html">LCS</a>). Ở đó “lưới” là bảng chỉ số i, j, nhưng cách điền bảng y hệt.</li>
+    </ul>
+    <div class="callout note">
+      <p class="callout-title">Dấu hiệu nhận biết</p>
+      <p>Đề cho lưới/bảng m × n với m, n cỡ 100 đến 1000 (hoặc 2000–3000); <strong>hướng đi bị giới hạn</strong> sao cho không bao giờ quay lại được ô cũ (chỉ phải/xuống, hoặc luôn tiến sang cột sau); câu hỏi là “có bao nhiêu cách”, “tổng lớn nhất”, “chi phí nhỏ nhất”.</p>
+    </div>
+    <div class="callout warn">
+      <p class="callout-title">Khi nào KHÔNG dùng được</p>
+      <p>Nếu robot đi được cả bốn hướng (lên, xuống, trái, phải) thì ô (i, j) có thể phụ thuộc vào ô (i + 1, j) và ngược lại, không còn thứ tự “trên trước, dưới sau”. Khi đó hỏi đường ngắn nhất thì dùng <a href="bfs.html">BFS</a>, hỏi vùng đi tới được thì dùng <a href="flood-fill.html">loang trên lưới</a>, có trọng số thì dùng <a href="dijkstra.html">Dijkstra</a>.</p>
+    </div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Lưới 16 × 16 không có ô cấm. Đếm số đường đi từ góc trên trái tới góc dưới phải.</p>
+
+    <h3>Cách ngây thơ 1: liệt kê từng đường</h3>
+    <p>Viết hàm đệ quy <code>dem(i, j)</code>: nếu tới đích thì cộng 1, không thì thử đi phải, rồi thử đi xuống. Mỗi đường đi gồm 15 bước xuống và 15 bước phải, tổng 30 bước. Số đường đi bằng số cách chọn 15 vị trí “xuống” trong 30 bước, tức C(30, 15) = 155 117 520. Vì mỗi đường tốn 30 bước đi, máy phải làm khoảng 155 117 520 × 30 ≈ 4,65 · 10⁹ thao tác. Chừng đó mất vài giây.</p>
+    <p>Lưới lớn hơn thì hết hy vọng. Lưới 20 × 20 có C(38, 19) = 35 345 263 800 đường (hơn 35 tỉ). Lưới 1000 × 1000 có C(1998, 999) đường, một số có khoảng 600 chữ số. Liệt kê đến hết vũ trụ cũng chưa xong.</p>
+
+    <h3>Cách ngây thơ 2: dùng công thức tổ hợp</h3>
+    <p>Khi <em>không có ô cấm</em>, đáp án đúng là C(m + n − 2, m − 1) (xem <a href="binomial.html">Tính C(n, k)</a>). Nhưng chỉ cần một ô cấm là công thức gọn gàng này hỏng: em phải trừ đi các đường đi qua ô cấm, mà nhiều ô cấm thì các đường còn chồng chéo nhau. Bài thi thường có hàng nghìn ô cấm rải rác, công thức không dùng trực tiếp được.</p>
+
+    <h3>Cách ngây thơ 3 (cho bài tổng lớn nhất): tham lam</h3>
+    <p>“Mỗi bước nhìn hai ô kế tiếp, đi vào ô có số lớn hơn.” Nghe hợp lý nhưng sai. Với bảng 4 × 4 ở phần <a href="#truc-quan">minh họa</a>, cách tham lam chỉ được tổng 21, trong khi đường tốt nhất có tổng 25. Lý do: đi vào ô lớn bây giờ có thể dẫn vào một vùng toàn số nhỏ phía sau.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Liệt kê / tham lam</h4><p>Liệt kê: số thao tác bằng số đường đi nhân độ dài đường, cỡ 4,65 · 10⁹ với lưới 16 × 16, và tăng theo hàm mũ. Tham lam: nhanh nhưng <strong>cho đáp án sai</strong>.</p></div>
+      <div class="good-side"><h4>Quy hoạch động trên lưới</h4><p>Mỗi ô tính đúng một lần bằng một phép cộng (hoặc một phép so sánh). Lưới 16 × 16 chỉ cần 256 phép cộng; lưới 1000 × 1000 cần 10⁶ phép, chạy trong vài mili giây. Độ phức tạp <span class="bigo">O(m · n)</span>.</p></div>
+    </div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Như mọi bài QHĐ, em viết ra giấy bốn điều trước khi gõ code: <strong>trạng thái, công thức chuyển, cơ sở, đáp án</strong>.</p>
+
+    <h3>Thuật toán 1: đếm số đường đi có ô cấm</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> dp[i][j] = số đường đi từ (1, 1) tới (i, j). Tạo bảng (m + 1) × (n + 1), hàng 0 và cột 0 là “viền” toàn số 0.</div></li>
+      <li><div><strong>Cơ sở.</strong> dp[1][1] = 1 nếu ô (1, 1) đi được (có đúng một đường: đứng yên), ngược lại bằng 0.</div></li>
+      <li><div><strong>Công thức chuyển.</strong> Duyệt i từ 1 đến m, trong mỗi hàng duyệt j từ 1 đến n. Nếu (i, j) là ô cấm thì dp[i][j] = 0. Nếu không: dp[i][j] = dp[i − 1][j] + dp[i][j − 1] (lấy dư nếu đề yêu cầu).</div></li>
+      <li><div><strong>Đáp án.</strong> In dp[m][n].</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> DemDuongDi(lưới a, m, n):
+    dp ← bảng (m+1) × (n+1) toàn 0          <i>// hàng 0, cột 0 là viền = 0</i>
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> m:
+        <b>với</b> j <b>từ</b> 1 <b>đến</b> n:
+            <b>nếu</b> a[i][j] là ô cấm:  dp[i][j] ← 0
+            <b>ngược lại nếu</b> i = 1 <b>và</b> j = 1:  dp[i][j] ← 1   <i>// cơ sở</i>
+            <b>ngược lại</b>:  dp[i][j] ← (dp[i-1][j] + dp[i][j-1]) mod P
+    <b>trả về</b> dp[m][n]</pre>
+
+    <h3>Thuật toán 2: đường đi có tổng lớn nhất, kèm truy vết</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> dp[i][j] = tổng lớn nhất của một đường đi từ (1, 1) tới (i, j). Ô không tới được (ô cấm, hoặc bị chặn hết lối vào) có giá trị <strong>−∞</strong>.</div></li>
+      <li><div><strong>Cơ sở.</strong> dp[1][1] = a[1][1]. Viền hàng 0, cột 0 đặt −∞ (không có đường nào đến từ ngoài lưới).</div></li>
+      <li><div><strong>Công thức chuyển.</strong> Với ô đi được: tot = max(dp[i − 1][j], dp[i][j − 1]). Nếu tot = −∞ thì ô này cũng −∞; ngược lại dp[i][j] = tot + a[i][j]. Đồng thời ghi lại <code>tu[i][j]</code> = ô trên hay ô trái đã thắng.</div></li>
+      <li><div><strong>Đáp án.</strong> dp[m][n]; nếu bằng −∞ thì báo không có đường đi.</div></li>
+      <li><div><strong>Truy vết.</strong> Đứng ở (m, n), nhìn <code>tu</code> để lùi về ô trước, lặp đến khi về (1, 1). Đường đi thu được bị ngược nên đảo lại.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> TongLonNhat(lưới a, m, n):
+    dp ← bảng (m+1) × (n+1) toàn −∞
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> m:
+        <b>với</b> j <b>từ</b> 1 <b>đến</b> n:
+            <b>nếu</b> a[i][j] là ô cấm: <b>bỏ qua</b>          <i>// giữ −∞</i>
+            <b>nếu</b> i = 1 <b>và</b> j = 1: dp[1][1] ← a[1][1]; <b>bỏ qua</b>
+            <b>nếu</b> dp[i-1][j] ≥ dp[i][j-1]: tot ← dp[i-1][j]; tu[i][j] ← 'D'
+            <b>ngược lại</b>:                  tot ← dp[i][j-1]; tu[i][j] ← 'R'
+            <b>nếu</b> tot ≠ −∞: dp[i][j] ← tot + a[i][j]
+    <b>nếu</b> dp[m][n] = −∞: <b>trả về</b> "không có đường"
+    (i, j) ← (m, n); duong ← ""
+    <b>khi</b> (i, j) ≠ (1, 1):                       <i>// truy vết ngược</i>
+        duong ← duong + tu[i][j]
+        <b>nếu</b> tu[i][j] = 'D': i ← i − 1  <b>ngược lại</b>: j ← j − 1
+    <b>trả về</b> dp[m][n], đảo_ngược(duong)</pre>
+    <p>Ở đây 'D' (down) nghĩa là bước cuối cùng đi <em>xuống</em> vào ô (i, j), tức là tới từ ô phía trên; 'R' (right) nghĩa là bước cuối đi <em>sang phải</em>, tức là tới từ ô bên trái.</p>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Vì sao công thức đếm đúng: nhìn vào bước cuối cùng</h3>
+    <p>Lấy một đường đi bất kỳ từ (1, 1) tới ô (i, j) (không phải ô xuất phát). Bước cuối của nó chỉ có hai khả năng:</p>
+    <ul>
+      <li>Đi <strong>xuống</strong> từ ô (i − 1, j). Bỏ bước cuối đi, ta được một đường từ (1, 1) tới (i − 1, j). Có đúng dp[i − 1][j] đường như vậy.</li>
+      <li>Đi <strong>sang phải</strong> từ ô (i, j − 1). Tương tự, có đúng dp[i][j − 1] đường như vậy.</li>
+    </ul>
+    <p>Hai nhóm này <strong>không chung đường nào</strong> (bước cuối khác nhau) và <strong>gộp lại thì đủ mọi đường</strong> tới (i, j). Theo quy tắc cộng (xem <a href="counting.html">Quy tắc đếm</a>), tổng số đường là dp[i − 1][j] + dp[i][j − 1].</p>
+    <p>Ô cấm thì không đường nào kết thúc ở đó, nên dp = 0. Con số 0 này còn có tác dụng “tự động chặn”: ô bên phải và ô bên dưới ô cấm sẽ cộng thêm 0, đúng như việc không có đường nào đi xuyên qua ô cấm. Viền hàng 0, cột 0 bằng 0 cũng vậy: ô ở hàng 1 không thể tới từ phía trên vì phía trên là ngoài lưới.</p>
+
+    <h3>Vì sao thứ tự duyệt đúng</h3>
+    <p>Khi tính dp[i][j], hai ô nó cần là (i − 1, j) và (i, j − 1). Duyệt hàng từ trên xuống, trong hàng duyệt từ trái sang thì ô trên (hàng trước) và ô trái (cùng hàng, cột trước) <strong>luôn đã được tính xong</strong>. Đây là quy tắc vàng của QHĐ: bài toán con phải xong trước bài toán lớn.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 360 200" width="360" role="img" aria-label="Ô (i, j) nhận giá trị từ ô trên (i−1, j) và ô trái (i, j−1); thứ tự duyệt theo hàng từ trái sang phải">
+        <rect class="node" x="40" y="20" width="70" height="50" rx="6"/>
+        <rect class="node is-cmp" x="120" y="20" width="70" height="50" rx="6"/>
+        <rect class="node" x="200" y="20" width="70" height="50" rx="6"/>
+        <rect class="node is-cmp" x="40" y="80" width="70" height="50" rx="6"/>
+        <rect class="node is-active" x="120" y="80" width="70" height="50" rx="6"/>
+        <rect class="node is-dim" x="200" y="80" width="70" height="50" rx="6"/>
+        <text x="155" y="50" text-anchor="middle">(i−1, j)</text>
+        <text x="75" y="110" text-anchor="middle">(i, j−1)</text>
+        <text x="155" y="110" text-anchor="middle">(i, j)</text>
+        <text x="235" y="110" text-anchor="middle" class="label-sm">chưa tính</text>
+        <text x="75" y="50" text-anchor="middle" class="label-sm">đã tính</text>
+        <text x="235" y="50" text-anchor="middle" class="label-sm">đã tính</text>
+        <line class="edge is-active" x1="155" y1="70" x2="155" y2="80"/>
+        <line class="edge is-active" x1="110" y1="105" x2="120" y2="105"/>
+        <line class="edge" x1="20" y1="160" x2="300" y2="160"/>
+        <polygon class="node" points="300,154 312,160 300,166"/>
+        <text class="label-pen" x="40" y="186">duyệt hàng trên trước, trong hàng đi từ trái sang</text>
+      </svg>
+      <figcaption>Hình 1. Ô đang tính (vàng) chỉ cần ô trên và ô trái (cam), cả hai đều đã có giá trị khi ta duyệt theo hàng.</figcaption>
+    </figure>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Mỗi đường đi bị “nén” lại: thay vì nhớ từng đường riêng, ô (i, j) chỉ nhớ <em>một con số</em> là tổng số đường tới nó. Hàng triệu đường đi qua (i, j) đều dùng chung con số đó cho các ô phía sau. Đây chính là <strong>bài toán con gối nhau</strong>: liệt kê thì đi lại đoạn đầu giống nhau hàng triệu lần, còn QHĐ chỉ tính mỗi ô một lần. Có m · n ô, mỗi ô làm một phép cộng, nên tổng thời gian là O(m · n).</p>
+
+    <h3>Lấy dư thế nào cho đúng</h3>
+    <p>Số đường đi tăng rất nhanh, vượt cả <code>long long</code> (khoảng 9,2 · 10¹⁸) khi lưới chỉ cỡ 35 × 35. Vì (x + y) mod P = ((x mod P) + (y mod P)) mod P, ta lấy dư <strong>ngay sau mỗi phép cộng</strong>. Hai số trước khi cộng đều nhỏ hơn P = 10⁹ + 7 nên tổng nhỏ hơn 2 · 10⁹ + 14, vừa trong <code>long long</code> (thậm chí vừa <code>unsigned int</code>, nhưng em cứ dùng <code>long long</code> cho chắc).</p>
+
+    <h3>Liên hệ với tổ hợp khi không có ô cấm</h3>
+    <p>Mỗi đường từ (1, 1) tới (i, j) gồm đúng i − 1 bước xuống và j − 1 bước phải, xếp theo một thứ tự nào đó. Chọn vị trí cho i − 1 bước xuống trong tổng số i + j − 2 bước: có C(i + j − 2, i − 1) cách. Vậy khi không có ô cấm, dp[i][j] = C(i + j − 2, i − 1), và công thức dp[i][j] = dp[i − 1][j] + dp[i][j − 1] chính là <strong>công thức Pascal</strong> C(n, k) = C(n − 1, k − 1) + C(n − 1, k). Nếu xoay bảng dp 45 độ, em sẽ thấy tam giác Pascal (xem phần <a href="#truc-quan">minh họa</a>).</p>
+    <p>Với lưới 4 × 5: C(4 + 5 − 2, 4 − 1) = C(7, 3) = 35 đường. Khi thêm hai ô cấm như ví dụ dưới đây, chỉ còn 7 đường.</p>
+
+    <h3>Vì sao bài tổng lớn nhất đúng</h3>
+    <p>Xét đường tốt nhất tới (i, j), giả sử bước cuối tới từ ô trên. Khi đó đoạn từ (1, 1) tới (i − 1, j) cũng phải là đoạn tốt nhất tới (i − 1, j): nếu có đoạn khác tổng lớn hơn, ta thay vào và được đường tới (i, j) tổng lớn hơn, vô lý. Đây là tính chất <strong>cấu trúc con tối ưu</strong>. Vậy dp[i][j] = a[i][j] + max(dp[i − 1][j], dp[i][j − 1]): chỉ cần so hai “đại diện tốt nhất” thay vì mọi đường.</p>
+
+    <h3>Vì sao phải dùng −∞ chứ không dùng 0</h3>
+    <p>Giả sử em đặt ô không tới được bằng 0. Nếu các số trên lưới đều âm, ví dụ ô (2, 2) có hai lối vào: ô trên có dp = −5 (thật), ô trái là ô cấm có dp = 0 (giả). Phép max chọn 0 và em vừa “mở đường xuyên qua tường”. Giá trị −∞ (trong code là một số rất âm như <code>LLONG_MIN / 4</code>) không bao giờ thắng phép max khi còn lối thật, và nếu cả hai lối đều −∞ thì ô hiện tại cũng −∞: đúng nghĩa “không tới được”.</p>
+    <p>Chia 4 để có chỗ an toàn: nếu lỡ cộng −∞ với một số âm, kết quả vẫn không tràn số. Tuy vậy, code mẫu kiểm tra <code>tot != NEG</code> trước khi cộng, nên không bao giờ cộng thêm vào −∞.</p>
+
+    <h3>Truy vết: nhớ “ai thắng”</h3>
+    <p>Bảng dp chỉ cho con số. Muốn biết đường đi, mỗi ô nhớ thêm nó lấy giá trị từ ô nào (mảng <code>tu</code>). Từ ô đích, đi ngược theo mũi tên đã nhớ là về tới ô xuất phát. Cũng có thể không cần mảng <code>tu</code>: đứng ở (i, j), kiểm tra xem dp[i][j] − a[i][j] bằng dp[i − 1][j] hay dp[i][j − 1] thì lùi về ô đó. Cách nào cũng tốn thêm O(m + n) bước, rất rẻ.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi code, em hãy tự điền tay một bảng 3 × 4 nhỏ. Điền đúng bằng tay rồi thì code chỉ là chép lại hai vòng for.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <h3>Ví dụ 1: đếm đường đi trên lưới 4 × 5 có hai ô cấm</h3>
+    <p>Bấm nút để xem từng ô được điền. Ô vàng là ô đang tính, ô cam là các ô nó lấy giá trị (ô trên và ô trái), ô sẫm là ô cấm. Hàng và cột tiêu đề màu xám chỉ là số thứ tự.</p>
+    <div class="stepper" data-title="Điền bảng dp đếm đường đi (4 × 5, ô cấm (2, 2) và (3, 4))">
+      <div class="frame" data-caption="&lt;b&gt;Khung 1.&lt;/b&gt; Lưới 4 hàng × 5 cột, hai ô cấm (màu sẫm) là (2, 2) và (3, 4). Robot đi từ S = (1, 1) tới T = (4, 5), chỉ sang phải hoặc xuống dưới. Ta điền bảng dp theo hàng, từ trái sang phải.">
+          <div class="grid-viz" style="--cols:6">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span>
+            <span class="g h">1</span><span class="g is-start">S</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+            <span class="g h">2</span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+            <span class="g h">3</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span>
+            <span class="g h">4</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-end">T</span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 2. Cơ sở.&lt;/b&gt; dp[1][1] = 1: có đúng một cách “tới” ô xuất phát là đứng yên.">
+          <div class="grid-viz" style="--cols:6">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span>
+            <span class="g h">1</span><span class="g is-active">1</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+            <span class="g h">2</span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+            <span class="g h">3</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span>
+            <span class="g h">4</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 3. Hàng 1.&lt;/b&gt; Phía trên là viền (0), nên mỗi ô chỉ nhận từ ô trái: dp[1][j] = 0 + dp[1][j−1] = 1. Cả hàng đều bằng 1, đúng vì chỉ có một cách là đi thẳng sang phải.">
+          <div class="grid-viz" style="--cols:6">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span>
+            <span class="g h">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span><span class="g is-cmp">1</span><span class="g is-active">1</span>
+            <span class="g h">2</span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+            <span class="g h">3</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span>
+            <span class="g h">4</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 4. Đầu hàng 2.&lt;/b&gt; dp[2][1] = dp[1][1] + 0 = 1. Ô (2, 2) là ô cấm nên dp[2][2] = 0, ghi số 0 để các ô sau cộng vào cho tiện.">
+          <div class="grid-viz" style="--cols:6">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span>
+            <span class="g h">1</span><span class="g is-cmp">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span>
+            <span class="g h">2</span><span class="g is-active">1</span><span class="g is-wall">0</span><span class="g"></span><span class="g"></span><span class="g"></span>
+            <span class="g h">3</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span>
+            <span class="g h">4</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 5.&lt;/b&gt; dp[2][3] = dp[1][3] + dp[2][2] = 1 + 0 = 1. Ô cấm bên trái “góp” 0 đường: không đường nào đi xuyên qua nó.">
+          <div class="grid-viz" style="--cols:6">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span>
+            <span class="g h">1</span><span class="g">1</span><span class="g">1</span><span class="g is-cmp">1</span><span class="g">1</span><span class="g">1</span>
+            <span class="g h">2</span><span class="g">1</span><span class="g is-wall">0</span><span class="g is-active">1</span><span class="g"></span><span class="g"></span>
+            <span class="g h">3</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span>
+            <span class="g h">4</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 6.&lt;/b&gt; dp[2][4] = 1 + 1 = 2, rồi dp[2][5] = dp[1][5] + dp[2][4] = 1 + 2 = 3.">
+          <div class="grid-viz" style="--cols:6">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span>
+            <span class="g h">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span><span class="g is-cmp">1</span>
+            <span class="g h">2</span><span class="g">1</span><span class="g is-wall">0</span><span class="g">1</span><span class="g is-cmp">2</span><span class="g is-active">3</span>
+            <span class="g h">3</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span>
+            <span class="g h">4</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 7. Hàng 3.&lt;/b&gt; dp[3][1] = 1; dp[3][2] = 0 + 1 = 1 (ô trên là ô cấm); dp[3][3] = 1 + 1 = 2; ô (3, 4) cấm nên 0; dp[3][5] = dp[2][5] + dp[3][4] = 3 + 0 = 3.">
+          <div class="grid-viz" style="--cols:6">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span>
+            <span class="g h">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span>
+            <span class="g h">2</span><span class="g">1</span><span class="g is-wall">0</span><span class="g">1</span><span class="g">2</span><span class="g is-cmp">3</span>
+            <span class="g h">3</span><span class="g">1</span><span class="g">1</span><span class="g">2</span><span class="g is-wall">0</span><span class="g is-active">3</span>
+            <span class="g h">4</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 8. Hàng 4.&lt;/b&gt; dp[4][1] = 1; dp[4][2] = 1 + 1 = 2; dp[4][3] = 2 + 2 = 4; dp[4][4] = 0 + 4 = 4; dp[4][5] = dp[3][5] + dp[4][4] = 3 + 4 = &lt;b&gt;7&lt;/b&gt;.">
+          <div class="grid-viz" style="--cols:6">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span>
+            <span class="g h">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span>
+            <span class="g h">2</span><span class="g">1</span><span class="g is-wall">0</span><span class="g">1</span><span class="g">2</span><span class="g">3</span>
+            <span class="g h">3</span><span class="g">1</span><span class="g">1</span><span class="g">2</span><span class="g is-wall">0</span><span class="g is-cmp">3</span>
+            <span class="g h">4</span><span class="g">1</span><span class="g">2</span><span class="g">4</span><span class="g is-cmp">4</span><span class="g is-active">7</span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 9. Đáp án: 7 đường.&lt;/b&gt; Nếu không có ô cấm, đáp án là C(7, 3) = 35. Ô viền là một trong 7 đường: xuống, xuống, phải, phải, xuống, phải, phải. Em thử tự liệt kê 6 đường còn lại để kiểm tra.">
+          <div class="grid-viz" style="--cols:6">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span>
+            <span class="g h">1</span><span class="g is-path">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span>
+            <span class="g h">2</span><span class="g is-path">1</span><span class="g is-wall">0</span><span class="g">1</span><span class="g">2</span><span class="g">3</span>
+            <span class="g h">3</span><span class="g is-path">1</span><span class="g is-path">1</span><span class="g is-path">2</span><span class="g is-wall">0</span><span class="g">3</span>
+            <span class="g h">4</span><span class="g">1</span><span class="g">2</span><span class="g is-path">4</span><span class="g is-path">4</span><span class="g is-ok">7</span>
+          </div>
+      </div>
+    </div>
+
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Không có ô cấm: bảng dp chính là tam giác Pascal</p></div>
+      <div class="viz-body">
+        <div class="grid-viz" style="--cols:6">
+          <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span><span class="g h">5</span>
+          <span class="g h">1</span><span class="g">1</span><span class="g">1</span><span class="g">1</span><span class="g is-cmp">1</span><span class="g">1</span>
+          <span class="g h">2</span><span class="g">1</span><span class="g">2</span><span class="g is-cmp">3</span><span class="g">4</span><span class="g">5</span>
+          <span class="g h">3</span><span class="g">1</span><span class="g is-cmp">3</span><span class="g">6</span><span class="g">10</span><span class="g">15</span>
+          <span class="g h">4</span><span class="g is-cmp">1</span><span class="g">4</span><span class="g">10</span><span class="g">20</span><span class="g">35</span>
+        </div>
+      </div>
+      <div class="viz-legend"><span><i class="is-cmp"></i>các ô trên cùng một đường chéo i + j = 5</span></div>
+      <div class="viz-caption"><p>Ô (i, j) ghi C(i + j − 2, i − 1). Đọc các ô cam từ dưới trái lên trên phải: 1, 3, 3, 1, đó là hàng thứ 3 của tam giác Pascal. Góc dưới phải ghi C(7, 3) = 35. So sánh với khung cuối của ví dụ trên: hai ô cấm đã cắt 35 đường xuống còn 7.</p></div>
+    </div>
+
+    <h3>Ví dụ 2: đường đi tổng lớn nhất và truy vết</h3>
+    <p>Bảng số 4 × 4 dưới đây có ô (2, 2) cấm:</p>
+    <table class="trace">
+      <thead><tr><th>a</th><th>cột 1</th><th>cột 2</th><th>cột 3</th><th>cột 4</th></tr></thead>
+      <tbody>
+        <tr><td>hàng 1</td><td>3</td><td>1</td><td>4</td><td>2</td></tr>
+        <tr><td>hàng 2</td><td>2</td><td>#</td><td>5</td><td>0</td></tr>
+        <tr><td>hàng 3</td><td>6</td><td>1</td><td>1</td><td>7</td></tr>
+        <tr><td>hàng 4</td><td>1</td><td>3</td><td>2</td><td>4</td></tr>
+      </tbody>
+    </table>
+    <div class="stepper" data-title="Tổng lớn nhất trên lưới 4 × 4 và truy vết đường đi">
+      <div class="frame" data-caption="&lt;b&gt;Khung 1.&lt;/b&gt; Bảng số a (4 × 4), ô (2, 2) cấm. Tìm đường từ (1, 1) tới (4, 4), chỉ sang phải/xuống dưới, tổng lớn nhất. Các khung sau hiện bảng &lt;b&gt;dp&lt;/b&gt;, không phải bảng a.">
+          <div class="grid-viz" style="--cols:5">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span>
+            <span class="g h">1</span><span class="g">3</span><span class="g">1</span><span class="g">4</span><span class="g">2</span>
+            <span class="g h">2</span><span class="g">2</span><span class="g is-wall"></span><span class="g">5</span><span class="g">0</span>
+            <span class="g h">3</span><span class="g">6</span><span class="g">1</span><span class="g">1</span><span class="g">7</span>
+            <span class="g h">4</span><span class="g">1</span><span class="g">3</span><span class="g">2</span><span class="g">4</span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 2. Hàng 1 và ô (2, 1).&lt;/b&gt; Hàng 1 chỉ đi thẳng sang phải: dp = 3, 3 + 1 = 4, 4 + 4 = 8, 8 + 2 = 10. Ô (2, 1) chỉ nhận từ trên: 3 + 2 = 5. Ô cấm (2, 2) mang giá trị −∞.">
+          <div class="grid-viz" style="--cols:5">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span>
+            <span class="g h">1</span><span class="g is-cmp">3</span><span class="g">4</span><span class="g">8</span><span class="g">10</span>
+            <span class="g h">2</span><span class="g is-active">5</span><span class="g is-wall">−∞</span><span class="g"></span><span class="g"></span>
+            <span class="g h">3</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+            <span class="g h">4</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 3.&lt;/b&gt; dp[2][3] = max(dp[1][3], dp[2][2]) + a[2][3] = max(8, −∞) + 5 = 13. Nếu lỡ đặt ô cấm bằng 0 thì vẫn đúng ở đây, nhưng sẽ sai khi lưới có số âm. Tiếp theo dp[2][4] = max(10, 13) + 0 = 13.">
+          <div class="grid-viz" style="--cols:5">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span>
+            <span class="g h">1</span><span class="g">3</span><span class="g">4</span><span class="g is-cmp">8</span><span class="g">10</span>
+            <span class="g h">2</span><span class="g">5</span><span class="g is-wall">−∞</span><span class="g is-active">13</span><span class="g">13</span>
+            <span class="g h">3</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+            <span class="g h">4</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 4. Hàng 3 và hàng 4.&lt;/b&gt; Ví dụ dp[3][4] = max(13, 14) + 7 = 21; dp[4][3] = max(14, 15) + 2 = 17. Cuối cùng dp[4][4] = max(dp[3][4], dp[4][3]) + 4 = max(21, 17) + 4 = &lt;b&gt;25&lt;/b&gt;.">
+          <div class="grid-viz" style="--cols:5">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span>
+            <span class="g h">1</span><span class="g">3</span><span class="g">4</span><span class="g">8</span><span class="g">10</span>
+            <span class="g h">2</span><span class="g">5</span><span class="g is-wall">−∞</span><span class="g">13</span><span class="g">13</span>
+            <span class="g h">3</span><span class="g">11</span><span class="g">12</span><span class="g">14</span><span class="g is-cmp">21</span>
+            <span class="g h">4</span><span class="g">12</span><span class="g">15</span><span class="g is-cmp">17</span><span class="g is-active">25</span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 5. Truy vết.&lt;/b&gt; Đứng ở (4, 4): 25 − 4 = 21 = dp[3][4], vậy ô trước là (3, 4), bước cuối là D. Ở (3, 4): 21 − 7 = 14 = dp[3][3] (ô trái), bước là R. Ở (3, 3): 14 − 1 = 13, khớp dp[2][3] (ô trên), bước là D.">
+          <div class="grid-viz" style="--cols:5">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span>
+            <span class="g h">1</span><span class="g">3</span><span class="g">4</span><span class="g">8</span><span class="g">10</span>
+            <span class="g h">2</span><span class="g">5</span><span class="g is-wall">−∞</span><span class="g is-active">13</span><span class="g">13</span>
+            <span class="g h">3</span><span class="g">11</span><span class="g">12</span><span class="g is-path">14</span><span class="g is-path">21</span>
+            <span class="g h">4</span><span class="g">12</span><span class="g">15</span><span class="g">17</span><span class="g is-path">25</span>
+          </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Khung 6. Xong.&lt;/b&gt; Tiếp tục lùi: (2, 3) ← (1, 3) ← (1, 2) ← (1, 1). Đọc ngược lại được đường &lt;b&gt;R R D D R D&lt;/b&gt;, tổng 3 + 1 + 4 + 5 + 1 + 7 + 4 = 25. Tham lam (đi vào ô kề lớn hơn, bằng nhau thì sang phải) chỉ được 3 + 2 + 6 + 1 + 3 + 2 + 4 = 21.">
+          <div class="grid-viz" style="--cols:5">
+            <span class="g h"></span><span class="g h">1</span><span class="g h">2</span><span class="g h">3</span><span class="g h">4</span>
+            <span class="g h">1</span><span class="g is-path">3</span><span class="g is-path">4</span><span class="g is-path">8</span><span class="g">10</span>
+            <span class="g h">2</span><span class="g">5</span><span class="g is-wall">−∞</span><span class="g is-path">13</span><span class="g">13</span>
+            <span class="g h">3</span><span class="g">11</span><span class="g">12</span><span class="g is-path">14</span><span class="g is-path">21</span>
+            <span class="g h">4</span><span class="g">12</span><span class="g">15</span><span class="g">17</span><span class="g is-ok">25</span>
+          </div>
+      </div>
+    </div>
+
+    <p>Bảng truy vết đầy đủ: mỗi ô ghi bước cuối cùng của đường tốt nhất tới nó (D = tới từ ô trên, R = tới từ ô trái). Khi hai bên bằng nhau, code mẫu chọn D; bảng này không có trường hợp bằng nhau.</p>
+    <table class="trace">
+      <thead><tr><th>tu</th><th>cột 1</th><th>cột 2</th><th>cột 3</th><th>cột 4</th></tr></thead>
+      <tbody>
+        <tr class="hl"><td>hàng 1</td><td>xuất phát</td><td>R</td><td>R</td><td>R</td></tr>
+        <tr><td>hàng 2</td><td>D</td><td>cấm</td><td>D</td><td>R</td></tr>
+        <tr><td>hàng 3</td><td>D</td><td>R</td><td>D</td><td>R</td></tr>
+        <tr><td>hàng 4</td><td>D</td><td>D</td><td>R</td><td>D</td></tr>
+      </tbody>
+    </table>
+
+    <div class="playground" id="viz-dp-grid">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: bấm ô để đặt hoặc bỏ ô cấm</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="dp-grid-m">Số hàng <input type="number" id="dp-grid-m" min="1" max="9" value="4"></label>
+          <label for="dp-grid-n">Số cột <input type="number" id="dp-grid-n" min="1" max="9" value="5"></label>
+          <button type="button" data-act="new">Tạo lưới mới</button>
+          <button type="button" class="ghost" data-act="random">Ô cấm ngẫu nhiên</button>
+          <button type="button" class="ghost" data-act="clear">Xóa hết ô cấm</button>
+          <button type="button" class="ghost" data-act="anim">Điền từng ô</button>
+          <label for="dp-grid-mode">Khi bấm ô
+            <select id="dp-grid-mode">
+              <option value="wall">đặt / bỏ ô cấm</option>
+              <option value="explain">xem công thức của ô</option>
+            </select>
+          </label>
+        </div>
+        <div data-out="grid"></div>
+        <div class="out" data-out="msg" aria-live="polite">Bảng sẽ hiện ở đây.</div>
+      </div>
+    </div>
+    <p>Gợi ý thí nghiệm: xóa hết ô cấm và kiểm tra góc dưới phải có bằng C(m + n − 2, m − 1) không; đặt ô cấm vào (1, 2) và (2, 1) để thấy cả bảng thành 0 trừ ô xuất phát; tìm một ô cấm duy nhất làm số đường đi giảm nhiều nhất.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Chương trình 1: đếm đường đi có ô cấm</h3>
+    <p>Định dạng giống bài AtCoder DP H (Grid 1): dòng đầu là m, n; m dòng sau, mỗi dòng n ký tự, <code>.</code> là ô trống, <code>#</code> là ô cấm. In số đường đi mod 10⁹ + 7. Để cột đánh số từ 1, ta thêm một dấu cách vào đầu mỗi xâu.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_duong_di.cpp</span> Đếm đường đi phải/xuống tránh ô cấm, O(m · n)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const long long MOD = 1000000007LL;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int m, n;                       // m hàng, n cột
+    cin &gt;&gt; m &gt;&gt; n;
+    vector&lt;string&gt; a(m + 1);
+    for (int i = 1; i &lt;= m; i++) {
+        cin &gt;&gt; a[i];
+        a[i] = " " + a[i];          // thêm 1 ký tự đầu để cột đánh số từ 1
+    }
+
+    // dp[i][j] = số đường đi từ (1,1) tới (i,j), lấy dư MOD.
+    // Hàng 0 và cột 0 là "viền" toàn số 0, nên không cần xét riêng mép lưới.
+    vector&lt;vector&lt;long long&gt;&gt; dp(m + 1, vector&lt;long long&gt;(n + 1, 0));
+
+    for (int i = 1; i &lt;= m; i++) {
+        for (int j = 1; j &lt;= n; j++) {
+            if (a[i][j] == '#') {           // ô cấm: không có đường nào đi qua
+                dp[i][j] = 0;
+            } else if (i == 1 &amp;&amp; j == 1) {  // cơ sở: ô xuất phát
+                dp[i][j] = 1;
+            } else {                        // tới từ ô trên hoặc ô bên trái
+                dp[i][j] = (dp[i - 1][j] + dp[i][j - 1]) % MOD;
+            }
+        }
+    }
+
+    cout &lt;&lt; dp[m][n] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4 5
+.....
+.#...
+...#.
+.....</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">7</code></pre></div>
+    </div>
+    <p>Thử thêm: lưới 16 × 16 toàn dấu chấm cho kết quả 155117520 = C(30, 15), khớp với phần <a href="#tai-sao">vì sao cần</a>. Lưới có ô (1, 1) là <code>#</code> cho kết quả 0.</p>
+
+    <h3>Chương trình 2: tổng lớn nhất, có ô cấm, in đường đi</h3>
+    <p>Dòng đầu là m, n; sau đó m dòng, mỗi dòng n “từ”: một số nguyên (có thể âm) hoặc dấu <code>#</code> cho ô cấm. Ta đọc từng từ dưới dạng <code>string</code> để phân biệt hai loại. In tổng lớn nhất và đường đi dạng chuỗi R/D; nếu không tới được đích thì in <code>KHONG CO DUONG DI</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">tong_lon_nhat.cpp</span> Đường đi tổng lớn nhất, −∞ cho ô không tới được, truy vết</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const long long NEG = LLONG_MIN / 4;   // "âm vô cùng": ô không tới được
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int m, n;
+    cin &gt;&gt; m &gt;&gt; n;
+    // wall[i][j] = true nếu ô cấm; a[i][j] = số ghi trên ô
+    vector&lt;vector&lt;long long&gt;&gt; a(m + 1, vector&lt;long long&gt;(n + 1, 0));
+    vector&lt;vector&lt;bool&gt;&gt; wall(m + 1, vector&lt;bool&gt;(n + 1, false));
+    for (int i = 1; i &lt;= m; i++)
+        for (int j = 1; j &lt;= n; j++) {
+            string s;
+            cin &gt;&gt; s;
+            if (s == "#") wall[i][j] = true;
+            else a[i][j] = stoll(s);
+        }
+
+    // dp[i][j] = tổng lớn nhất của một đường đi từ (1,1) tới (i,j); NEG nếu không tới được.
+    // from[i][j] = 'D' nếu bước cuối là đi xuống (từ ô trên), 'R' nếu đi sang phải (từ ô trái).
+    vector&lt;vector&lt;long long&gt;&gt; dp(m + 1, vector&lt;long long&gt;(n + 1, NEG));
+    vector&lt;vector&lt;char&gt;&gt; from(m + 1, vector&lt;char&gt;(n + 1, '?'));
+
+    for (int i = 1; i &lt;= m; i++) {
+        for (int j = 1; j &lt;= n; j++) {
+            if (wall[i][j]) continue;                  // ô cấm giữ NEG
+            if (i == 1 &amp;&amp; j == 1) { dp[1][1] = a[1][1]; continue; }
+            long long best = NEG;
+            if (dp[i - 1][j] &gt; best) { best = dp[i - 1][j]; from[i][j] = 'D'; }
+            if (dp[i][j - 1] &gt; best) { best = dp[i][j - 1]; from[i][j] = 'R'; }
+            if (best != NEG) dp[i][j] = best + a[i][j];  // chỉ cộng khi có ô trước tới được
+        }
+    }
+
+    if (dp[m][n] == NEG) {
+        cout &lt;&lt; "KHONG CO DUONG DI\n";
+        return 0;
+    }
+
+    // Truy vết: đi ngược từ (m,n) về (1,1) theo mảng from, rồi đảo chuỗi.
+    string path;
+    int i = m, j = n;
+    while (i != 1 || j != 1) {
+        path += from[i][j];
+        if (from[i][j] == 'D') i--; else j--;
+    }
+    reverse(path.begin(), path.end());
+
+    cout &lt;&lt; dp[m][n] &lt;&lt; '\n' &lt;&lt; path &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4 4
+3 1 4 2
+2 # 5 0
+6 1 1 7
+1 3 2 4</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">25
+RRDDRD</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input (toàn số âm)</div><pre><code class="language-text">2 3
+-5 -1 -2
+-3 -9 -1</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">-9
+RRD</code></pre></div>
+    </div>
+    <p>Ví dụ thứ hai cho thấy vì sao không được khởi tạo bằng 0: đáp án đúng là −9 (đường −5 → −1 → −2 → −1). Nếu ô ngoài lưới mang giá trị 0, phép max sẽ “chọn” đi từ ngoài vào và cho kết quả sai.</p>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Cách làm</th><th>Thời gian</th><th>Bộ nhớ</th><th>Ghi chú</th></tr></thead>
+      <tbody>
+        <tr><td>Liệt kê mọi đường (đệ quy)</td><td><span class="bigo">O(C(m+n−2, m−1) · (m+n))</span></td><td><span class="bigo">O(m + n)</span></td><td>Lưới 16 × 16 đã khoảng 4,65 · 10⁹ thao tác</td></tr>
+        <tr><td>QHĐ đếm đường / tổng lớn nhất</td><td><span class="bigo">O(m · n)</span></td><td><span class="bigo">O(m · n)</span></td><td>Mỗi ô một phép cộng hoặc một phép so sánh</td></tr>
+        <tr><td>Truy vết</td><td><span class="bigo">O(m + n)</span></td><td><span class="bigo">O(m · n)</span> cho mảng <code>tu</code></td><td>Đường đi dài đúng m + n − 2 bước</td></tr>
+        <tr><td>QHĐ một hàng (chỉ cần con số)</td><td><span class="bigo">O(m · n)</span></td><td><span class="bigo">O(n)</span></td><td>Xem phần biến thể</td></tr>
+        <tr><td>Công thức tổ hợp (không ô cấm)</td><td><span class="bigo">O(m + n)</span></td><td><span class="bigo">O(m + n)</span></td><td>Cần giai thừa và nghịch đảo modulo</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Ví dụ số phép tính.</strong> m = n = 1000: bảng có 10⁶ ô, khoảng 10⁶ phép cộng và 10⁶ phép lấy dư, chạy dưới 0,1 giây. Bảng <code>long long</code> 1001 × 1001 chiếm khoảng 8 MB, thừa sức với giới hạn 256 MB.</p>
+    <p><strong>Khi nào bộ nhớ thành vấn đề.</strong> m = n = 5000 thì thời gian vẫn ổn (2,5 · 10⁷ phép tính) nhưng bảng <code>long long</code> cần 25 · 10⁶ × 8 byte = 200 MB, sát hoặc vượt giới hạn. Lúc đó dùng kiểu <code>int</code> (giá trị đã lấy dư nhỏ hơn 2³¹) còn 100 MB, hoặc tốt hơn là chỉ giữ một hàng (40 KB). Riêng mảng <code>tu</code> để truy vết thì dùng <code>char</code>: 25 MB.</p>
+    <p><strong>Giới hạn phù hợp.</strong> QHĐ trên lưới O(m · n) hợp với m · n ≤ khoảng 10⁷ trong 1 giây. Nếu lưới tới 10⁵ × 10⁵ mà chỉ có ít ô cấm (bài AtCoder DP Y, Grid 2), phải dùng công thức tổ hợp kết hợp bù trừ trên các ô cấm.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Chi phí nhỏ nhất</h3>
+    <p>Đổi <code>max</code> thành <code>min</code> và −∞ thành <strong>+∞</strong> (ví dụ <code>LLONG_MAX / 4</code>). Mọi thứ còn lại giữ nguyên: dp[i][j] = a[i][j] + min(dp[i − 1][j], dp[i][j − 1]). Ô không tới được mang +∞ để không bao giờ thắng phép min.</p>
+
+    <h3>2. Ba hướng đi, tính theo cột (bài QBMAX)</h3>
+    <p>Đề VNOJ <a href="https://oj.vnoi.info/problem/qbmax">QBMAX</a>: bảng m × n (m, n ≤ 100), xuất phát ở ô <em>bất kỳ</em> của cột 1, cần sang cột n (ô nào cũng được). Từ (i, j) chỉ được sang (i − 1, j + 1), (i, j + 1) hoặc (i + 1, j + 1). Tìm tổng lớn nhất.</p>
+    <ul>
+      <li><strong>Trạng thái:</strong> dp[i][j] = tổng lớn nhất của đường đi kết thúc ở (i, j).</li>
+      <li><strong>Công thức:</strong> dp[i][j] = a[i][j] + max(dp[i − 1][j − 1], dp[i][j − 1], dp[i + 1][j − 1]).</li>
+      <li><strong>Cơ sở:</strong> dp[i][1] = a[i][1] với mọi i (xuất phát ở đâu cũng được).</li>
+      <li><strong>Đáp án:</strong> max của dp[i][n] với mọi i.</li>
+    </ul>
+    <p><strong>Điểm mấu chốt là thứ tự tính.</strong> Ô (i, j) cần ô (i + 1, j − 1), tức là một ô ở <em>hàng dưới</em>. Nếu duyệt theo hàng như bài trước, hàng i + 1 chưa được tính. Vì mọi ô cần nằm ở cột j − 1, ta phải để <strong>vòng ngoài là cột</strong>: tính xong cả cột j − 1 rồi mới sang cột j. Quy tắc chung: tìm xem ô hiện tại phụ thuộc vào ô nào, rồi chọn thứ tự sao cho các ô đó luôn được tính trước.</p>
+    <figure class="code">
+      <figcaption><span class="fn">qbmax.cpp</span> Ba hướng, vòng ngoài duyệt theo cột</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int m, n;
+    cin &gt;&gt; m &gt;&gt; n;
+    vector&lt;vector&lt;long long&gt;&gt; a(m + 2, vector&lt;long long&gt;(n + 1, 0));
+    for (int i = 1; i &lt;= m; i++)
+        for (int j = 1; j &lt;= n; j++) cin &gt;&gt; a[i][j];
+
+    const long long NEG = LLONG_MIN / 4;
+    // Hàng 0 và hàng m+1 là viền NEG để khỏi kiểm tra i-1, i+1 ra ngoài bảng.
+    vector&lt;vector&lt;long long&gt;&gt; dp(m + 2, vector&lt;long long&gt;(n + 1, NEG));
+    for (int i = 1; i &lt;= m; i++) dp[i][1] = a[i][1];      // xuất phát ở ô bất kỳ của cột 1
+
+    for (int j = 2; j &lt;= n; j++)            // VÒNG NGOÀI LÀ CỘT: cột j chỉ cần cột j-1
+        for (int i = 1; i &lt;= m; i++) {
+            long long best = max({dp[i - 1][j - 1], dp[i][j - 1], dp[i + 1][j - 1]});
+            dp[i][j] = best + a[i][j];
+        }
+
+    long long ans = NEG;
+    for (int i = 1; i &lt;= m; i++) ans = max(ans, dp[i][n]);   // kết thúc ở ô bất kỳ của cột n
+    cout &lt;&lt; ans &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 7
+9 -2 6 2 1 3 4
+0 -1 6 7 1 3 3
+8 -2 8 2 5 3 2
+1 -1 6 2 1 6 1
+7 -2 6 2 1 3 7</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">41</code></pre></div>
+    </div>
+    <p>Hàng 0 và hàng m + 1 được đặt sẵn −∞ để hai ô ở mép trên, mép dưới không đọc ra ngoài mảng. Số âm trong đề (|a| ≤ 100) chính là lý do phải dùng −∞ thay cho 0.</p>
+
+    <h3>3. Tiết kiệm bộ nhớ: chỉ giữ một hàng</h3>
+    <p>dp[i][j] chỉ cần hàng i − 1 và hàng i. Ta còn làm gọn hơn: dùng <strong>một mảng f</strong> độ dài n + 1 và ghi đè tại chỗ. Khi duyệt hàng i từ trái sang phải, ngay trước lúc sửa f[j]:</p>
+    <ul>
+      <li>f[j] vẫn là giá trị cũ, tức dp[i − 1][j] (ô trên);</li>
+      <li>f[j − 1] vừa được sửa, tức dp[i][j − 1] (ô trái).</li>
+    </ul>
+    <p>Vậy chỉ cần <code>f[j] = f[j] + f[j - 1]</code>. Bộ nhớ giảm từ O(m · n) xuống O(n). Cái giá phải trả: không truy vết được nữa, vì bảng cũ đã bị ghi đè.</p>
+    <figure class="code">
+      <figcaption><span class="fn">mot_hang.cpp</span> Đếm đường đi chỉ với một mảng f</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const long long MOD = 1000000007LL;
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int m, n;
+    cin &gt;&gt; m &gt;&gt; n;
+    // f[j] lúc đang xử lý hàng i: f[j] (chưa sửa) = dp[i-1][j], f[j-1] (đã sửa) = dp[i][j-1]
+    vector&lt;long long&gt; f(n + 1, 0);
+    f[1] = 1;                                   // "mồi" để ô (1,1) nhận được 1
+    for (int i = 1; i &lt;= m; i++) {
+        string s;
+        cin &gt;&gt; s;
+        for (int j = 1; j &lt;= n; j++) {
+            if (s[j - 1] == '#') f[j] = 0;
+            else f[j] = (f[j] + f[j - 1]) % MOD;   // trên + trái
+        }
+    }
+    cout &lt;&lt; f[n] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <p>Mẹo <code>f[1] = 1</code> trước vòng lặp: ở hàng 1, cột 1, phép <code>f[1] = f[1] + f[0]</code> cho 1 + 0 = 1, đúng giá trị cơ sở. Nếu ô (1, 1) là ô cấm thì nó bị gán 0 ngay, cả bảng thành 0. Với input 4 × 5 ở trên, chương trình in 7.</p>
+
+    <h3>4. Đường đi bắt buộc qua một ô P</h3>
+    <p>Đếm số đường từ S = (1, 1) tới T = (m, n) mà <strong>phải đi qua</strong> ô P = (p, q). Mỗi đường như vậy là một đoạn S → P nối với một đoạn P → T, và hai đoạn chọn độc lập. Theo quy tắc nhân:</p>
+    <div class="math-block">số đường qua P = (số đường S → P) × (số đường P → T)</div>
+    <p>Số đường S → P là dp[p][q] quen thuộc. Số đường P → T tính bằng một bảng <strong>ngược</strong> <code>g</code>: g[i][j] = số đường từ (i, j) tới T, điền từ góc dưới phải lên, g[i][j] = g[i + 1][j] + g[i][j + 1]. Với lưới 4 × 5 ở ví dụ 1, ô (3, 3) có dp = 2 và g = 1 (từ (3, 3) chỉ có đường xuống (4, 3) rồi sang phải, vì (3, 4) cấm), nên có 2 · 1 = 2 đường qua (3, 3).</p>
+    <p>Không có ô cấm thì dùng tổ hợp: C(p + q − 2, p − 1) · C(m − p + n − q, m − p). Phải qua <em>nhiều</em> ô bắt buộc thì sắp các ô theo hàng rồi cột, nhân số đường giữa từng cặp liên tiếp (nếu hai ô liên tiếp không xếp được theo thứ tự “trên trái → dưới phải” thì đáp án là 0).</p>
+    <p>Với bài <strong>tổng lớn nhất qua P</strong>: tổng tốt nhất = (dp xuôi tại P) + (dp ngược tại P) − a[P], vì ô P bị tính hai lần. Kỹ thuật “một bảng xuôi, một bảng ngược, ghép tại ô giữa” chính là chìa khóa của bài Codeforces <a href="https://codeforces.com/problemset/problem/429/B">429B Working out</a> trong phần bài tập (ở đó cần bốn bảng, từ bốn góc).</p>
+
+    <h3>5. Hai người cùng đi (nâng cao, giới thiệu)</h3>
+    <p>Bài: hai người cùng đi từ (1, 1) tới (n, n), mỗi người chỉ sang phải/xuống dưới. Ô nào có ít nhất một người đi qua thì nhặt được số trên ô đó, <strong>nhưng mỗi ô chỉ tính một lần</strong>. Tìm tổng lớn nhất. (Bài Relay Race là dạng một người đi tới rồi quay về; đi ngược đường về chỉ là một đường đi xuôi viết ngược lại.)</p>
+    <p>Sai lầm thường gặp: tìm đường tốt nhất cho người 1, xóa các số trên đường đó, rồi tìm đường tốt nhất cho người 2. Tham lam kiểu này có thể sai, vì đường tốt nhất của người 1 có thể “cướp” mất ô mà hai người chia nhau sẽ tốt hơn.</p>
+    <p><strong>Ý tưởng:</strong> cho hai người đi <em>đồng thời</em>, mỗi lần cả hai cùng bước một bước. Sau k bước, người nào cũng đứng trên <strong>đường chéo</strong> i + j = k + 2. Biết hàng x của một người thì cột của người đó là k + 2 − x. Trạng thái chỉ cần (k, x1, x2): O(n) đường chéo × O(n²) cặp hàng = O(n³) trạng thái, mỗi trạng thái xét 4 tổ hợp (mỗi người tới từ trên hoặc từ trái). Đặc biệt, <em>hai người chỉ có thể đứng cùng một ô khi ở cùng bước k</em>, nên kiểm tra trùng ô rất dễ: x1 = x2.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 300 190" width="300" role="img" aria-label="Lưới 3 × 4, số trong ô là i + j; sau cùng số bước, hai người luôn đứng trên cùng một đường chéo">
+        <rect class="node" x="20" y="20" width="40" height="40"/><rect class="node" x="60" y="20" width="40" height="40"/><rect class="node is-cmp" x="100" y="20" width="40" height="40"/><rect class="node" x="140" y="20" width="40" height="40"/>
+        <rect class="node" x="20" y="60" width="40" height="40"/><rect class="node is-cmp" x="60" y="60" width="40" height="40"/><rect class="node" x="100" y="60" width="40" height="40"/><rect class="node" x="140" y="60" width="40" height="40"/>
+        <rect class="node is-cmp" x="20" y="100" width="40" height="40"/><rect class="node" x="60" y="100" width="40" height="40"/><rect class="node" x="100" y="100" width="40" height="40"/><rect class="node" x="140" y="100" width="40" height="40"/>
+        <text x="40" y="45" text-anchor="middle" class="label-sm">2</text><text x="80" y="45" text-anchor="middle" class="label-sm">3</text><text x="120" y="45" text-anchor="middle">4</text><text x="160" y="45" text-anchor="middle" class="label-sm">5</text>
+        <text x="40" y="85" text-anchor="middle" class="label-sm">3</text><text x="80" y="85" text-anchor="middle">4</text><text x="120" y="85" text-anchor="middle" class="label-sm">5</text><text x="160" y="85" text-anchor="middle" class="label-sm">6</text>
+        <text x="40" y="125" text-anchor="middle">4</text><text x="80" y="125" text-anchor="middle" class="label-sm">5</text><text x="120" y="125" text-anchor="middle" class="label-sm">6</text><text x="160" y="125" text-anchor="middle" class="label-sm">7</text>
+        <line class="edge is-active" x1="130" y1="30" x2="30" y2="130"/>
+        <text class="label-pen" x="190" y="70">chéo i + j = 4</text>
+        <text class="label-sm" x="20" y="165">số trong ô là i + j; sau 2 bước cả hai đều ở chéo 4</text>
+      </svg>
+      <figcaption>Hình 2. Lưới 3 × 4, số ghi trong ô là i + j. Sau k = 2 bước, mọi vị trí có thể có của một người đều nằm trên đường chéo i + j = 4 (các ô tô màu).</figcaption>
+    </figure>
+    <figure class="code">
+      <figcaption><span class="fn">hai_nguoi.cpp</span> Hai người cùng đi, trạng thái (bước k, hàng x1, hàng x2), O(n³)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;vector&lt;long long&gt;&gt; a(n + 1, vector&lt;long long&gt;(n + 1));
+    for (int i = 1; i &lt;= n; i++)
+        for (int j = 1; j &lt;= n; j++) cin &gt;&gt; a[i][j];
+
+    const long long NEG = LLONG_MIN / 4;
+    // Sau k bước, mỗi người đứng trên đường chéo i + j = k + 2.
+    // f[x1][x2] = tổng lớn nhất khi người 1 ở hàng x1, người 2 ở hàng x2 (cột suy ra từ k).
+    vector&lt;vector&lt;long long&gt;&gt; f(n + 2, vector&lt;long long&gt;(n + 2, NEG)), g = f;
+    f[1][1] = a[1][1];
+    for (int k = 1; k &lt;= 2 * n - 2; k++) {
+        for (auto &amp;row : g) fill(row.begin(), row.end(), NEG);
+        int s = k + 2;                               // i + j trên đường chéo mới
+        for (int x1 = max(1, s - n); x1 &lt;= min(n, s - 1); x1++)
+            for (int x2 = max(1, s - n); x2 &lt;= min(n, s - 1); x2++) {
+                // mỗi người tới từ ô trên (hàng x-1) hoặc ô trái (cùng hàng x): 4 tổ hợp
+                long long best = max({f[x1 - 1][x2 - 1], f[x1 - 1][x2], f[x1][x2 - 1], f[x1][x2]});
+                if (best == NEG) continue;
+                long long gain = a[x1][s - x1];
+                if (x1 != x2) gain += a[x2][s - x2];   // cùng ô thì chỉ cộng một lần
+                g[x1][x2] = best + gain;
+            }
+        swap(f, g);
+    }
+    cout &lt;&lt; f[n][n] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3
+1 2 3
+4 5 6
+7 8 9</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">42</code></pre></div>
+    </div>
+    <p>Kiểm tra tay: người 1 đi 1 → 4 → 7 → 8 → 9, người 2 đi 1 → 2 → 5 → 6 → 9. Hai đường chung ô 1 và ô 9, tổng các ô khác nhau là 1 + 2 + 4 + 5 + 6 + 7 + 8 + 9 = 42 (chỉ bỏ sót ô 3). Chương trình đã được đối chiếu với cách thử mọi cặp đường trên 200 lưới ngẫu nhiên. Với n = 300 có khoảng 600 × 300 × 300 = 5,4 · 10⁷ trạng thái, chạy kịp.</p>
+
+    <h3>6. Mở rộng khác</h3>
+    <ul>
+      <li><strong>Hình vuông đồng nhất lớn nhất (QBSQUARE):</strong> dp[i][j] = cạnh hình vuông lớn nhất có góc dưới phải tại (i, j) = 1 + min(ô trên, ô trái, ô chéo trên trái) nếu ba ô đó cùng giá trị với (i, j). Cũng là “nhìn ô trên và ô trái”, chỉ khác phép toán.</li>
+      <li><strong>Lưới cực lớn, ít ô cấm (AtCoder DP Y):</strong> H, W ≤ 10⁵ nhưng chỉ N ≤ 3000 ô cấm. Không thể lập bảng H × W; thay vào đó dp trên các ô cấm (sắp theo hàng rồi cột): f[k] = số đường từ (1, 1) tới ô cấm k mà không đi qua ô cấm nào khác trước đó, tính bằng tổ hợp trừ đi f[t] × (số đường từ ô cấm t tới k). Độ phức tạp O(N²).</li>
+      <li><strong>Có số bước giới hạn hoặc thêm điều kiện:</strong> thêm một chiều vào trạng thái, ví dụ dp[i][j][c] với c là số lần rẽ, số ô đặc biệt đã nhặt…</li>
+      <li><strong>Xâu nhỏ nhất theo thứ tự từ điển (CSES Minimal Grid Path):</strong> đi theo từng đường chéo, chỉ giữ lại các ô đang đạt xâu nhỏ nhất.</li>
+    </ul>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Quên trường hợp ô xuất phát hoặc ô đích là ô cấm</p><p>Nếu code gán <code>dp[1][1] = 1</code> trước rồi mới duyệt mà bỏ qua kiểm tra ô cấm ở (1, 1), em sẽ đếm ra đường đi trong khi đáp án đúng là 0. Hãy kiểm tra ô cấm <strong>trước</strong> khi gán cơ sở, như thứ tự các nhánh <code>if</code> trong code mẫu.</p></div>
+    <div class="callout danger"><p class="callout-title">Dùng 0 cho ô không tới được trong bài tổng lớn nhất</p><p>Với lưới có số âm, 0 thắng phép max và tạo ra “đường đi ma” xuất phát từ ô cấm hoặc từ ngoài lưới. Dùng −∞ (<code>LLONG_MIN / 4</code>) và chỉ cộng khi giá trị trước khác −∞. Với bài chi phí nhỏ nhất thì ngược lại: dùng +∞.</p></div>
+    <div class="callout danger"><p class="callout-title">Ghi đè giá trị cơ sở</p><p>Viết <code>dp[1][1] = 1;</code> rồi cho vòng lặp chạy cả ô (1, 1) với công thức <code>dp[i-1][j] + dp[i][j-1]</code> sẽ biến nó thành 0 + 0 = 0, cả bảng thành 0. Hoặc bỏ qua ô (1, 1) trong vòng lặp, hoặc dùng mẹo “mồi” dp[0][1] = 1.</p></div>
+    <div class="callout warn"><p class="callout-title">Sai thứ tự duyệt khi đổi hướng đi</p><p>Bài ba hướng (QBMAX) mà để vòng ngoài là hàng thì ô (i, j) đọc dp[i + 1][j − 1] khi hàng i + 1 chưa được tính (vẫn là −∞ hoặc rác), kết quả sai mà không báo lỗi. Luôn tự hỏi: “ô này cần những ô nào, chúng đã tính chưa?”.</p></div>
+    <div class="callout warn"><p class="callout-title">Tràn số và lấy dư muộn</p><p>Cộng dồn cả bảng rồi mới lấy dư ở cuối là sai: số đường đã tràn <code>long long</code> từ lưới 35 × 35. Lấy dư <strong>sau mỗi phép cộng</strong>. Nếu đề có phép trừ (ví dụ bù trừ ở Grid 2) thì viết <code>(x - y + MOD) % MOD</code> để không ra số âm.</p></div>
+    <div class="callout warn"><p class="callout-title">Lệch chỉ số khi đọc lưới bằng string</p><p><code>string s</code> đánh số từ 0, trong khi bảng dp đánh số từ 1. Hoặc thêm một ký tự vào đầu xâu (<code>" " + s</code>), hoặc nhớ dùng <code>s[j - 1]</code>. Trộn lẫn hai quy ước là nguồn gốc của rất nhiều bài WA.</p></div>
+    <div class="callout warn"><p class="callout-title">Truy vết khi không có đường đi</p><p>Nếu dp[m][n] = −∞ mà vẫn chạy vòng truy vết, mảng <code>tu</code> chứa giá trị rác và vòng lặp có thể chạy ra ngoài mảng. Kiểm tra trường hợp không tới được trước khi truy vết.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo: thêm viền</p><p>Khai báo bảng rộng hơn 1 hàng, 1 cột (hoặc 2 hàng với bài ba hướng) và đặt sẵn giá trị trung tính (0 cho bài đếm, −∞ cho bài max). Khi đó không cần viết <code>if (i &gt; 1)</code>, <code>if (j &gt; 1)</code> rải rác, code gọn và ít lỗi hơn.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo: kiểm tra bằng tổ hợp</p><p>Chạy chương trình đếm với lưới không có ô cấm, ví dụ 3 × 4: đáp án phải là C(5, 2) = 10. Sai số này thì chắc chắn code có lỗi ở cơ sở hoặc ở chỉ số.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Lưới 3 × 3 không có ô cấm, chỉ đi phải/xuống. Có bao nhiêu đường từ (1, 1) tới (3, 3)?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 4</button>
+        <button type="button" class="quiz-opt" data-correct>B. 6</button>
+        <button type="button" class="quiz-opt">C. 9</button>
+        <button type="button" class="quiz-opt">D. 8</button>
+      </div>
+      <p class="quiz-explain">Mỗi đường có 2 bước xuống và 2 bước phải, chọn vị trí cho 2 bước xuống trong 4 bước: C(4, 2) = 6. Bảng dp: hàng 1 là 1 1 1, hàng 2 là 1 2 3, hàng 3 là 1 3 6.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Cũng lưới 3 × 3 nhưng ô chính giữa (2, 2) bị cấm. Số đường đi là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt" data-correct>A. 2</button>
+        <button type="button" class="quiz-opt">B. 3</button>
+        <button type="button" class="quiz-opt">C. 4</button>
+        <button type="button" class="quiz-opt">D. 5</button>
+      </div>
+      <p class="quiz-explain">Hàng 2: 1 0 1; hàng 3: 1, 0 + 1 = 1, 1 + 1 = 2. Chỉ còn hai đường men theo mép: phải phải xuống xuống, và xuống xuống phải phải. Kiểm tra bằng bù trừ: 6 − (số đường qua (2, 2)) = 6 − 2 · 2 = 2.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Trong bài tổng lớn nhất, vì sao ô không tới được phải mang giá trị −∞ thay vì 0?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Vì 0 làm chương trình chạy chậm hơn.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Vì khi lưới có số âm, 0 có thể thắng phép max và tạo ra đường đi không có thật.</button>
+        <button type="button" class="quiz-opt">C. Vì C++ không cho phép mảng chứa số 0.</button>
+        <button type="button" class="quiz-opt">D. Vì −∞ giúp lấy dư dễ hơn.</button>
+      </div>
+      <p class="quiz-explain">Phép max chỉ nên chọn giữa các đường có thật. −∞ thua mọi giá trị thật nên không bao giờ được chọn khi còn lối khác; 0 thì có thể lớn hơn tổng âm của một đường thật.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Bài QBMAX (từ (i, j) sang (i − 1, j + 1), (i, j + 1), (i + 1, j + 1)). Thứ tự duyệt nào đúng?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Vòng ngoài là hàng i từ 1 đến m, vòng trong là cột j.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Vòng ngoài là cột j từ 1 đến n, vòng trong là hàng i.</button>
+        <button type="button" class="quiz-opt">C. Vòng ngoài là hàng i từ m về 1, vòng trong là cột j.</button>
+      </div>
+      <p class="quiz-explain">Ô (i, j) cần cả ba ô ở cột j − 1, trong đó có ô ở hàng i + 1. Chỉ khi tính xong trọn cột j − 1 thì mới chắc chắn có đủ. Phương án C cũng không được vì ô còn cần hàng i − 1.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Lưới 1000 × 1000. Cách nào chạy kịp 1 giây?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Đệ quy liệt kê mọi đường đi.</button>
+        <button type="button" class="quiz-opt" data-correct>B. QHĐ điền bảng, khoảng 10⁶ phép tính.</button>
+        <button type="button" class="quiz-opt">C. Tham lam chọn ô lớn hơn ở mỗi bước, rồi đếm.</button>
+      </div>
+      <p class="quiz-explain">Số đường là C(1998, 999), khoảng 10⁶⁰⁰, liệt kê không bao giờ xong. Tham lam không đếm được và cũng không cho tổng lớn nhất đúng. QHĐ chỉ cần một phép tính mỗi ô.</p>
+    </div>
+    <p><strong>Câu 6.</strong> Lưới 3 × 4 dưới đây (dấu # là ô cấm). Hãy điền bảng dp đếm đường đi và cho biết đáp án.</p>
+    <pre><code class="language-text">. . . .
+. # . .
+. . . .</code></pre>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Hàng 1: 1 1 1 1. Hàng 2: 1, 0 (cấm), 0 + 1 = 1, 1 + 1 = 2. Hàng 3: 1, 0 + 1 = 1, 1 + 1 = 2, 2 + 2 = 4. Đáp án 4.</p>
+      <p>Kiểm tra bằng bù trừ: không có ô cấm thì có C(5, 2) = 10 đường. Số đường qua (2, 2) = (đường tới (2, 2)) × (đường từ (2, 2) tới (3, 4)) = C(2, 1) × C(3, 1) = 2 × 3 = 6. Vậy 10 − 6 = 4. Khớp.</p>
+    </details>
+    <p><strong>Câu 7.</strong> Em có bảng dp tổng lớn nhất nhưng quên lưu mảng <code>tu</code>. Có truy vết được không? Nếu được, mô tả cách làm.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Được. Đứng ở (i, j) khác ô xuất phát, tính v = dp[i][j] − a[i][j]. Bước trước phải đến từ ô có dp bằng v: nếu dp[i − 1][j] = v thì lùi lên, ngược lại dp[i][j − 1] = v thì lùi sang trái. Lặp tới khi về (1, 1). Nếu cả hai ô cùng bằng v thì chọn ô nào cũng ra một đường tối ưu. Chú ý: cách này cần giữ nguyên cả bảng dp, nên không dùng được với phiên bản một hàng.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Hai bài đầu luyện đúng công thức đếm; bài 3–5 luyện tổng lớn nhất, thứ tự duyệt và biến tấu; bốn bài cuối là các mở rộng nâng cao.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1638">Grid Paths I</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Lưới n × n (n ≤ 1000), ô <code>*</code> là bẫy. Đếm số đường đi từ góc trên trái tới góc dưới phải chỉ sang phải/xuống dưới, in phần dư khi chia 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> công thức dp[i][j] = trên + trái, ô cấm bằng 0, lấy dư sau mỗi phép cộng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đúng như chương trình 1. Nhớ trường hợp ô (1, 1) là bẫy: đáp án 0.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/atcoder_dp_h">Atcoder Educational DP Contest H – Grid 1</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Lưới H × W (H, W ≤ 1000) gồm <code>.</code> và <code>#</code>. Đếm số đường đi từ (1, 1) tới (H, W) chỉ sang phải/xuống dưới qua các ô trống, mod 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> đọc lưới bằng string, xử lý chỉ số 0/1, QHĐ đếm.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sau khi làm xong, thử viết lại bằng một mảng một chiều f[j] = f[j] + f[j − 1].</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qbmax">QBMAX – Đường đi có tổng lớn nhất</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Bảng m × n (m, n ≤ 100), số nguyên |a| ≤ 100. Xuất phát ở ô bất kỳ cột 1, mỗi bước sang cột kế tiếp theo một trong ba hướng (chéo lên, ngang, chéo xuống). Tìm tổng lớn nhất khi tới cột n.</p>
+        <p class="ex-skill"><b>Luyện:</b> chọn thứ tự tính (vòng ngoài là cột), −∞ cho viền, cơ sở là cả một cột.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>dp[i][j] = a[i][j] + max của ba ô ở cột j − 1. Thêm hàng 0 và hàng m + 1 mang −∞. Đáp án là max cột n.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qbsquare">QBSQUARE – Hình vuông 0 1</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Bảng M × N (M, N ≤ 1000) ghi 0 hoặc 1. Tìm cạnh lớn nhất của một hình vuông con mà mọi ô bên trong ghi cùng một số.</p>
+        <p class="ex-skill"><b>Luyện:</b> định nghĩa trạng thái “kết thúc tại ô (i, j)” trên lưới, công thức min ba ô.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>dp[i][j] = cạnh hình vuông lớn nhất có góc dưới phải ở (i, j). Nếu ô trên, ô trái, ô chéo trên trái đều cùng giá trị với a[i][j] thì dp[i][j] = 1 + min của ba dp đó, ngược lại bằng 1.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/3359">Minimal Grid Path</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Lưới n × n (n ≤ 3000) mỗi ô một chữ cái in hoa. Đi từ góc trên trái tới góc dưới phải chỉ sang phải/xuống dưới; in xâu nhỏ nhất theo thứ tự từ điển ghép từ các chữ trên đường.</p>
+        <p class="ex-skill"><b>Luyện:</b> xử lý theo từng đường chéo, đánh dấu tập ô “đang tốt nhất”.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Không thể lưu cả xâu cho mỗi ô. Ở đường chéo k, giữ các ô đạt xâu nhỏ nhất; xét các ô kế tiếp của chúng trên chéo k + 1, tìm chữ nhỏ nhất, chỉ giữ những ô mang chữ đó. Mỗi chéo thêm đúng một chữ vào đáp án.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/429/B">429B – Working out</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Phòng tập n × m. Người thứ nhất đi từ (1, 1) tới (n, m) bằng phải/xuống; người thứ hai đi từ (n, 1) tới (1, m) bằng phải/lên. Hai người gặp nhau đúng một ô (ô đó không ai tính điểm). Tìm tổng điểm lớn nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> bốn bảng dp từ bốn góc, ghép tại ô gặp nhau (mở rộng của “đường qua ô bắt buộc”).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tính dp tổng lớn nhất từ mỗi góc tới mọi ô. Tại ô gặp (i, j), chỉ có hai cách “đi xuyên” để hai người không chung ô nào khác: người 1 vào từ trái ra phải còn người 2 vào từ dưới ra trên, hoặc ngược lại. Lấy max trên mọi ô không nằm ở mép.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/213/C">213C – Relay Race</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Bảng n × n (n ≤ 300). Một người chạy từ (1, 1) tới (n, n) bằng phải/xuống, người kia chạy ngược về bằng trái/lên. Tổng các ô đi qua là lớn nhất, mỗi ô chỉ tính một lần.</p>
+        <p class="ex-skill"><b>Luyện:</b> hai người cùng đi, trạng thái theo đường chéo (k, x1, x2).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đường về viết ngược lại là một đường đi xuôi, nên đây đúng là bài “hai người cùng đi” ở phần biến thể. Chú ý số trên ô có thể âm.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nkpath">NKPATH – Đường đi trên lưới (VOI 2006)</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Lưới m × n (m, n ≤ 100) ghi số nguyên dương. Từ (i, j) được nhảy tới mọi ô (p, q) với p ≥ i, q ≥ j (khác ô cũ) nếu hai số có ước chung lớn hơn 1. Đếm số cách đi từ một ô cột 1 tới một ô cột n, mod 10⁹.</p>
+        <p class="ex-skill"><b>Luyện:</b> QHĐ đếm khi mỗi ô có nhiều ô đứng trước, kết hợp <a href="gcd-lcm.html">ƯCLN</a>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>dp[p][q] = tổng dp[i][j] của mọi ô (i, j) ở phía trên trái thỏa gcd &gt; 1 (cơ sở: dp = 1 ở cột 1). Duyệt theo hàng rồi cột vẫn đúng thứ tự. Đọc kỹ đề: không được đi tiếp từ một ô ở cột n.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/atcoder_dp_y">Atcoder Educational DP Contest Y – Grid 2</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Lưới H × W với H, W ≤ 10⁵ nhưng chỉ N ≤ 3000 ô cấm. Đếm đường đi phải/xuống từ (1, 1) tới (H, W), mod 10⁹ + 7.</p>
+        <p class="ex-skill"><b>Luyện:</b> tổ hợp C(n, k) mod p, bù trừ, QHĐ trên danh sách ô cấm thay vì trên cả lưới.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Thêm ô đích vào danh sách, sắp các ô theo (hàng, cột). f[k] = (số đường tới ô k) − tổng f[t] × (số đường từ ô t tới ô k) với các ô t đứng trước. Đáp án là f của ô đích. Cần giai thừa và nghịch đảo (bài <a href="binomial.html">Tính C(n, k)</a>).</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/dp/basic-problems">VNOI Wiki – Một số bài toán quy hoạch động điển hình</a> (tiếng Việt)</li>
+      <li><a href="https://wiki.vnoi.info/translate/topcoder/dynamic-programming">VNOI Wiki – Nhập môn Quy hoạch động (dịch từ TopCoder)</a> (tiếng Việt)</li>
+      <li><a href="https://atcoder.jp/contests/dp/tasks/dp_h">AtCoder Educational DP Contest – H: Grid 1</a> (đề gốc tiếng Anh/Nhật)</li>
+      <li><a href="https://codeforces.com/blog/entry/4982">Codeforces – Lời giải vòng có bài 213C Relay Race</a> (tiếng Anh, ý tưởng trạng thái theo đường chéo)</li>
+      <li>Lê Minh Hoàng, <em>Giải thuật và lập trình</em>, phần Quy hoạch động (tiếng Việt).</li>
+      <li>Các bài liên quan trong lộ trình: <a href="dp-intro.html">Nhập môn QHĐ</a>, <a href="binomial.html">Tính C(n, k)</a>, <a href="lcs.html">LCS và khoảng cách sửa</a>, <a href="flood-fill.html">Loang trên lưới</a>, <a href="bfs.html">BFS</a>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Trạng thái: dp[i][j] = số đường / tổng tốt nhất từ (1, 1) tới (i, j). Đáp án dp[m][n].</li>
+        <li>Đếm: dp[i][j] = dp[i − 1][j] + dp[i][j − 1]; ô cấm = 0; cơ sở dp[1][1] = 1 (nếu không cấm); lấy dư sau mỗi phép cộng.</li>
+        <li>Không có ô cấm: dp[i][j] = C(i + j − 2, i − 1), bảng dp là tam giác Pascal xoay.</li>
+        <li>Tổng lớn nhất: dp[i][j] = a[i][j] + max(trên, trái); ô không tới được = −∞ (chi phí nhỏ nhất thì min và +∞).</li>
+        <li>Truy vết: lưu ô thắng (D/R) hoặc so dp[i][j] − a[i][j] với hai ô trước, lùi từ (m, n) rồi đảo chuỗi.</li>
+        <li>Thứ tự tính: ô cần ô nào thì ô đó phải xong trước. Ba hướng sang phải (QBMAX) → vòng ngoài là cột.</li>
+        <li>Thời gian O(m · n); bộ nhớ O(m · n), hoặc O(n) với một hàng f[j] += f[j − 1] (mất khả năng truy vết).</li>
+        <li>Mở rộng: qua ô bắt buộc = xuôi × ngược; hai người cùng đi = trạng thái (đường chéo k, x1, x2).</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/dp-grid.js"></script>
+</body>
+</html>

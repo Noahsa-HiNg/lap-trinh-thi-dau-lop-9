@@ -1,0 +1,12 @@
+{
+  "id": "20261108T062729Z-topic-knapsack-cf1f",
+  "agent": "topic-knapsack",
+  "task": "Soạn chủ đề knapsack",
+  "topic": "knapsack",
+  "status": "active",
+  "host": "MyPC",
+  "started_at": "2026-11-08T06:27:29Z",
+  "heartbeat_at": "2026-11-08T06:27:29Z",
+  "ended_at": null,
+  "summary": null
+}
