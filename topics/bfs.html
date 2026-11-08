@@ -1,0 +1,1230 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BFS &amp; đường đi ngắn nhất · Thi đấu lớp 9</title>
+<meta name="description" content="Duyệt đồ thị theo chiều rộng (BFS) bằng hàng đợi: đi theo từng lớp, tìm đường đi ngắn nhất khi mọi cạnh dài bằng nhau, truy vết đường đi, BFS trên không gian trạng thái, 0-1 BFS và đếm số đường đi ngắn nhất.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="bfs">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được vì sao BFS dùng hàng đợi (queue) và vì sao nó đi qua đồ thị theo từng lớp khoảng cách 0, 1, 2, …</li>
+      <li>Cài đặt được BFS với mảng <code>dist</code> khởi tạo bằng −1, đánh dấu đỉnh <b>ngay lúc đẩy vào hàng đợi</b>, và truy vết đường đi bằng mảng <code>par</code>.</li>
+      <li>Chứng minh được BFS cho đường đi ngắn nhất khi mọi cạnh dài bằng nhau, và chỉ ra vì sao nó sai khi cạnh có trọng số khác nhau.</li>
+      <li>Mô hình hóa được các bài “ít bước nhất” (bấm nút, quân mã, đong nước) thành BFS trên không gian trạng thái.</li>
+      <li>Biết hai mở rộng nâng cao: 0-1 BFS bằng <code>deque</code> và đếm số đường đi ngắn nhất.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Duyệt theo chiều rộng (Breadth-First Search, viết tắt BFS) là cách đi thăm các đỉnh của đồ thị <b>theo từng lớp</b>: trước hết thăm điểm xuất phát, rồi tất cả các đỉnh cách nó 1 cạnh, rồi tất cả các đỉnh cách nó 2 cạnh, và cứ thế lan dần ra. Nhờ đi theo đúng thứ tự xa dần như vậy, lần đầu tiên BFS chạm tới một đỉnh cũng chính là lúc nó tìm ra đường ngắn nhất tới đỉnh đó.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div>
+        <p><strong>Hình dung:</strong> em ném một hòn sỏi xuống mặt hồ phẳng lặng. Sóng lan ra thành những vòng tròn đồng tâm. Vòng thứ nhất chạm vào các cây lục bình ở gần trước, vòng thứ hai chạm vào các cây xa hơn một chút, vòng thứ ba xa hơn nữa. Cây nào bị sóng chạm vào sớm thì gần hòn sỏi hơn.</p>
+        <p>Hoặc hình dung một tin đồn trong lớp: hôm nay em kể cho các bạn ngồi cạnh (lớp 1). Ngày mai các bạn đó kể cho bạn ngồi cạnh họ (lớp 2). Muốn biết bạn Lan nghe tin “sau ít nhất mấy ngày”, em chỉ cần xem tin đồn lan tới Lan ở đợt thứ mấy. BFS mô phỏng đúng cách lan này, từng đợt một.</p>
+      </div>
+    </div>
+
+    <p>Bài trước em đã học <a href="graph-dfs.html">DFS</a>: đi sâu hết mức theo một nhánh rồi mới quay lui. DFS giống người đi mê cung bám tay vào tường. BFS thì giống một đám đông chia nhau tỏa ra mọi ngả cùng lúc, mỗi bước mọi người đều tiến thêm đúng một ô. Hai cách đều thăm hết các đỉnh đi tới được, nhưng chỉ BFS cho em <b>khoảng cách ngắn nhất</b> một cách tự nhiên.</p>
+
+    <p>Công cụ giúp BFS đi đúng thứ tự là <b>hàng đợi</b> (queue), kiểu dữ liệu “vào trước, ra trước” (FIFO, First In First Out) mà em đã gặp ở bài <a href="stack-queue.html">ngăn xếp và hàng đợi</a>. Giống như xếp hàng mua vé: ai đến trước thì được phục vụ trước, người mới đến luôn đứng cuối hàng.</p>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p>Cho đồ thị <span class="math">G</span> gồm <span class="math">n</span> đỉnh, <span class="math">m</span> cạnh và một đỉnh nguồn <span class="math">s</span>. <b>Khoảng cách</b> <span class="math">δ(s, v)</span> là số cạnh ít nhất trên một đường đi từ <span class="math">s</span> tới <span class="math">v</span> (bằng ∞ nếu không có đường đi). Thuật toán BFS từ <span class="math">s</span> tính được <span class="math">dist[v] = δ(s, v)</span> cho mọi đỉnh <span class="math">v</span> trong thời gian <span class="math">O(n + m)</span>, và với mỗi đỉnh tới được, ghi lại <span class="math">par[v]</span> là đỉnh đứng ngay trước <span class="math">v</span> trên một đường đi ngắn nhất.</p>
+    </div>
+
+    <p>Trong bài này, “đường đi ngắn nhất” luôn hiểu là <b>ít cạnh nhất</b>, tức là mọi cạnh được coi là dài bằng nhau (thường bằng 1). Đồ thị như vậy gọi là đồ thị <b>không trọng số</b>. Khi các cạnh có độ dài khác nhau, em cần thuật toán khác, sẽ học ở bài <a href="dijkstra.html">Dijkstra</a>.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>BFS là một trong những thuật toán được dùng nhiều nhất trong các kỳ thi học sinh giỏi và thi vào lớp 10 chuyên. Lý do là rất nhiều bài toán “tìm cách ít bước nhất” có thể đưa về đồ thị, dù đề bài không hề nhắc tới chữ “đồ thị”.</p>
+    <ul>
+      <li><b>Đồ thị cho sẵn:</b> mạng máy tính, bản đồ các thành phố nối bằng đường, mạng bạn bè. Hỏi: từ máy 1 tới máy n cần đi qua ít nhất bao nhiêu dây nối? In ra một đường đi như vậy.</li>
+      <li><b>Lưới ô vuông:</b> mê cung với tường <code>#</code> và ô trống <code>.</code>. Mỗi ô là một đỉnh, hai ô kề cạnh là một cạnh. Hỏi số bước ít nhất từ A tới B. (Kỹ thuật loang trên lưới được học kỹ ở bài <a href="flood-fill.html">loang trên lưới</a>.)</li>
+      <li><b>Không gian trạng thái:</b> một máy tính bỏ túi có nút nhân 2 và nút trừ 1; một quân mã trên bàn cờ; hai cái bình đong nước. Mỗi “tình trạng” của bài toán là một đỉnh, mỗi thao tác là một cạnh. Hỏi số thao tác ít nhất.</li>
+      <li><b>Loang nhiều nguồn:</b> lửa cháy từ nhiều chỗ cùng lúc, nhân viên chạy về lối thoát hiểm gần nhất. Đẩy tất cả các nguồn vào hàng đợi từ đầu.</li>
+      <li><b>Kiểm tra liên thông, đếm thành phần:</b> giống DFS, BFS cũng làm được, và không lo tràn ngăn xếp đệ quy.</li>
+    </ul>
+    <div class="callout note">
+      <p class="callout-title">Dấu hiệu nhận biết</p>
+      <p>Đề hỏi “<b>ít nhất bao nhiêu bước / lần / nước đi / phép biến đổi</b>”, “<b>thời gian ngắn nhất</b>” và <b>mỗi bước tốn như nhau</b> (cùng 1 giây, cùng 1 lần bấm). Số trạng thái có thể xảy ra không quá vài triệu (ví dụ <span class="math">n, m ≤ 10<sup>5</sup></span>, lưới <span class="math">1000 × 1000</span>, số trong đoạn <span class="math">[1, 10<sup>6</sup>]</span>). Nếu mỗi bước có “giá” khác nhau thì đó là dấu hiệu của Dijkstra, không phải BFS.</p>
+    </div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><b>Bài toán mở đầu.</b> Một mạng có <span class="math">n</span> máy tính và <span class="math">m</span> dây nối hai chiều. Bạn An ngồi ở máy 1 muốn gửi tin tới máy <span class="math">n</span>. Tin đi qua mỗi dây mất 1 giây. Hỏi tin tới nơi sớm nhất sau bao nhiêu giây, và đi theo đường nào?</p>
+
+    <h3>Cách ngây thơ: thử mọi đường đi</h3>
+    <p>Một ý tưởng tự nhiên là dùng quay lui: từ máy 1 thử đi mọi ngả, không quay lại máy đã đi qua, mỗi lần tới được máy <span class="math">n</span> thì so độ dài với kết quả tốt nhất. Cách này chắc chắn đúng, vì nó xét hết mọi đường. Nhưng số đường đi tăng nhanh khủng khiếp.</p>
+    <p>Lấy ví dụ một lưới ô vuông nhỏ <span class="math">7 × 7</span> (chỉ 49 ô, mỗi ô nối với ô kề cạnh). Số đường đi không lặp ô từ góc trên trái tới góc dưới phải là <b>575 780 564</b>. Với lưới <span class="math">6 × 6</span> là 1 262 816, với <span class="math">5 × 5</span> là 8 512. Chương trình quay lui đếm hết các đường trên lưới <span class="math">7 × 7</span> chạy mất khoảng 2 phút trên máy tính bình thường, trong khi đề thi chỉ cho 1 giây. Thêm một hàng và một cột nữa (lưới <span class="math">8 × 8</span>) thì số đường đi đã lên tới gần <span class="math">8 · 10<sup>11</sup></span>.</p>
+    <p>Vấn đề của cách ngây thơ là nó đi qua cùng một ô rất nhiều lần, mỗi lần theo một đường khác nhau, dù ta chỉ cần biết <i>đường ngắn nhất</i> tới ô đó.</p>
+
+    <h3>Cách BFS: mỗi đỉnh chỉ thăm một lần</h3>
+    <p>BFS nhận xét: nếu đã biết mọi đỉnh cách nguồn đúng <span class="math">k</span> cạnh, thì các đỉnh cách nguồn <span class="math">k + 1</span> cạnh chính là những đỉnh <b>chưa thăm</b> kề với chúng. Vậy ta tính lần lượt lớp 0, lớp 1, lớp 2, … Mỗi đỉnh được gán khoảng cách đúng một lần, mỗi cạnh được xem đúng hai lần (một lần từ mỗi đầu). Với lưới <span class="math">7 × 7</span>, BFS chỉ cần 49 lần lấy ra khỏi hàng đợi và xem 168 đầu cạnh, xong trong chưa tới một phần triệu giây.</p>
+
+    <div class="versus">
+      <div class="bad-side">
+        <h4>Quay lui thử mọi đường</h4>
+        <p>Đi lại một đỉnh nhiều lần theo nhiều đường. Số đường tăng theo hàm mũ: lưới <span class="math">7 × 7</span> đã có hơn 5,7 · 10<sup>8</sup> đường. Với <span class="math">n = 10<sup>5</sup></span> máy thì không bao giờ chạy xong.</p>
+      </div>
+      <div class="good-side">
+        <h4>BFS theo từng lớp</h4>
+        <p>Mỗi đỉnh vào hàng đợi đúng một lần, mỗi cạnh được xem hai lần. Độ phức tạp <span class="bigo">O(n + m)</span>. Với <span class="math">n = 10<sup>5</sup></span>, <span class="math">m = 2 · 10<sup>5</sup></span> chỉ khoảng <span class="math">5 · 10<sup>5</sup></span> thao tác, chạy dưới 0,01 giây.</p>
+      </div>
+    </div>
+
+    <p>Còn DFS thì sao? DFS cũng thăm mỗi đỉnh một lần, nhưng đường mà DFS tìm thấy đầu tiên thường <b>không</b> ngắn nhất. Ví dụ trên đồ thị ở phần Minh họa, DFS từ đỉnh 1 (xét đỉnh kề theo thứ tự số nhỏ trước) đi 1 → 2 → 4 → 7 → 5 → 3 → 6 → 8, tới đỉnh 8 sau tận 7 cạnh, trong khi đường ngắn nhất 1 → 3 → 6 → 8 chỉ có 3 cạnh. Muốn DFS tìm được đường ngắn nhất thì lại phải thử mọi đường, quay về cách ngây thơ.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>BFS cần ba thứ: danh sách kề <code>adj</code> của đồ thị, một hàng đợi <code>q</code>, và hai mảng <code>dist</code> (khoảng cách) và <code>par</code> (đỉnh cha). Giá trị <code>dist[v] = −1</code> mang hai nghĩa cùng lúc: “chưa thăm” và “chưa biết khoảng cách”. Nhờ đó em không cần thêm mảng <code>visited</code> riêng.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Gán <code>dist[v] = −1</code> cho mọi đỉnh. Gán <code>dist[s] = 0</code> và đẩy <code>s</code> vào hàng đợi.</div></li>
+      <li><div><strong>Lấy ra.</strong> Khi hàng đợi còn phần tử: lấy đỉnh <code>u</code> ở <b>đầu</b> hàng đợi.</div></li>
+      <li><div><strong>Xét các đỉnh kề.</strong> Với mỗi đỉnh <code>v</code> kề <code>u</code>: nếu <code>dist[v] ≠ −1</code> (đã thăm) thì bỏ qua.</div></li>
+      <li><div><strong>Đánh dấu ngay khi đẩy vào.</strong> Ngược lại, gán <code>dist[v] = dist[u] + 1</code>, <code>par[v] = u</code>, rồi đẩy <code>v</code> vào <b>cuối</b> hàng đợi. Quay lại bước 2.</div></li>
+      <li><div><strong>Kết thúc và truy vết.</strong> Khi hàng đợi rỗng, <code>dist[v]</code> là khoảng cách ngắn nhất từ <code>s</code> tới <code>v</code> (vẫn là −1 nếu không tới được). Muốn in đường tới <code>t</code>: đi ngược <code>t, par[t], par[par[t]], …</code> cho tới <code>s</code>, rồi đảo ngược dãy.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> BFS(s):
+    <b>với mọi</b> đỉnh v: dist[v] ← −1
+    dist[s] ← 0
+    q ← hàng đợi rỗng;  q.đẩy_vào(s)
+    <b>khi</b> q không rỗng:
+        u ← q.lấy_đầu()
+        <b>với mỗi</b> v <b>kề</b> u:
+            <b>nếu</b> dist[v] = −1:            <i>// v chưa từng được đẩy vào</i>
+                dist[v] ← dist[u] + 1      <i>// đánh dấu NGAY lúc này</i>
+                par[v] ← u
+                q.đẩy_vào(v)
+
+<b>hàm</b> TruyVết(s, t):                  <i>// gọi sau BFS, khi dist[t] ≠ −1</i>
+    đường ← [ ]
+    v ← t
+    <b>khi</b> v ≠ s:
+        đường.thêm(v);  v ← par[v]
+    đường.thêm(s)
+    <b>trả về</b> đảo_ngược(đường)</pre>
+    <p>Chỉ có một chỗ khác với DFS dùng ngăn xếp: BFS lấy đỉnh ở <b>đầu</b> (đỉnh vào sớm nhất), còn DFS lấy đỉnh ở <b>đỉnh ngăn xếp</b> (đỉnh vào muộn nhất). Một thay đổi nhỏ về cấu trúc dữ liệu làm thứ tự thăm khác hẳn nhau.</p>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Hàng đợi luôn có dạng “lớp k, rồi lớp k + 1”</h3>
+    <p>Hãy theo dõi nội dung hàng đợi. Lúc đầu nó chỉ có <code>s</code> (lớp 0). Khi lấy <code>s</code> ra, ta đẩy vào các đỉnh lớp 1. Khi lấy lần lượt các đỉnh lớp 1 ra, ta đẩy vào cuối hàng các đỉnh lớp 2. Vì hàng đợi là FIFO, mọi đỉnh lớp 1 được lấy ra <b>trước</b> mọi đỉnh lớp 2. Khi đỉnh lớp 1 cuối cùng ra khỏi hàng, hàng đợi chỉ còn toàn đỉnh lớp 2, và câu chuyện lặp lại.</p>
+    <p>Nói gọn: ở mọi thời điểm, nếu đọc hàng đợi từ đầu tới cuối, các giá trị <code>dist</code> có dạng</p>
+    <div class="math-block">k, k, …, k, k + 1, k + 1, …, k + 1</div>
+    <p>tức là không giảm, và chênh lệch giữa đầu và cuối không quá 1. Tính chất này đúng lúc đầu (chỉ có một số 0). Mỗi lần lấy ra một đỉnh có <code>dist = k</code> ở đầu và đẩy vào cuối các đỉnh có <code>dist = k + 1</code>, dạng trên vẫn giữ nguyên. Hệ quả: <b>các đỉnh được lấy ra theo thứ tự khoảng cách không giảm</b>, đúng như sóng lan từng vòng.</p>
+
+    <h3>Vì sao đúng: lần đầu chạm tới là ngắn nhất</h3>
+    <p>Em cần tin hai điều về mỗi đỉnh <span class="math">v</span> tới được từ <span class="math">s</span>.</p>
+    <p><b>(1) <code>dist[v]</code> không bao giờ nhỏ hơn khoảng cách thật.</b> Mỗi lần gán <code>dist[v] = dist[u] + 1</code>, ta có một đường thật sự: đường tới <span class="math">u</span> (dài <code>dist[u]</code>) nối thêm cạnh <span class="math">u–v</span>. Đi ngược theo <code>par</code> là ra đường đó. Một đường có thật thì không thể ngắn hơn đường ngắn nhất, nên <code>dist[v] ≥ δ(s, v)</code>.</p>
+    <p><b>(2) <code>dist[v]</code> không lớn hơn khoảng cách thật.</b> Ta chứng minh theo thứ tự <span class="math">k = δ(s, v) = 0, 1, 2, …</span> (quy nạp). Với <span class="math">k = 0</span> thì <span class="math">v = s</span> và <code>dist[s] = 0</code>. Giả sử mọi đỉnh có khoảng cách thật là <span class="math">k − 1</span> đều đã được gán đúng. Xét <span class="math">v</span> có <span class="math">δ(s, v) = k</span>. Trên một đường ngắn nhất tới <span class="math">v</span>, đỉnh <span class="math">u</span> đứng ngay trước <span class="math">v</span> có <span class="math">δ(s, u) = k − 1</span>, nên <code>dist[u] = k − 1</code>, và <span class="math">u</span> có lúc được lấy ra khỏi hàng đợi. Lúc lấy <span class="math">u</span> ra, xảy ra một trong hai trường hợp:</p>
+    <ul>
+      <li><code>dist[v] = −1</code>: BFS gán ngay <code>dist[v] = dist[u] + 1 = k</code>. Đúng.</li>
+      <li><code>dist[v] ≠ −1</code>: một đỉnh <span class="math">w</span> nào đó đã gán cho <span class="math">v</span> trước. Đỉnh <span class="math">w</span> được lấy ra trước <span class="math">u</span>, mà các đỉnh ra theo thứ tự <code>dist</code> không giảm, nên <code>dist[w] ≤ dist[u] = k − 1</code>, suy ra <code>dist[v] = dist[w] + 1 ≤ k</code>.</li>
+    </ul>
+    <p>Kết hợp (1) và (2): <code>dist[v] = δ(s, v)</code>. Đỉnh không tới được từ <span class="math">s</span> thì không bao giờ được đẩy vào, nên <code>dist</code> vẫn là −1. Đường đi in ra bằng <code>par</code> có đúng <code>dist[t]</code> cạnh, vì mỗi bước ngược theo <code>par</code> làm <code>dist</code> giảm đúng 1, từ <code>dist[t]</code> về 0.</p>
+
+    <div class="callout warn">
+      <p class="callout-title">Điều kiện bắt buộc: mọi cạnh dài bằng nhau</p>
+      <p>Chứng minh trên dùng việc “đi thêm một cạnh thì khoảng cách tăng đúng 1”. Nếu cạnh có độ dài khác nhau thì một đường có nhiều cạnh hơn vẫn có thể ngắn hơn, và lập luận sụp đổ. Phần Biến thể có ví dụ cụ thể.</p>
+    </div>
+
+    <h3>Vì sao phải đánh dấu lúc ĐẨY vào, không phải lúc LẤY ra</h3>
+    <p>Đây là chỗ học sinh hay sai nhất. Nếu em chỉ đánh dấu “đã thăm” khi lấy một đỉnh ra, thì trong lúc nó còn nằm chờ trong hàng, các đỉnh khác vẫn thấy nó “chưa thăm” và đẩy nó vào thêm lần nữa. Hậu quả có hai mức:</p>
+    <ul>
+      <li><b>Chậm:</b> một đỉnh có thể nằm trong hàng đợi nhiều lần. Trên đồ thị dày, số lần đẩy có thể lên tới cỡ <span class="math">m</span> thay vì <span class="math">n</span>, và nếu mỗi bản sao lại duyệt danh sách kề của nó thì thời gian vượt xa <span class="math">O(n + m)</span>.</li>
+      <li><b>Sai:</b> nếu mỗi lần đẩy em lại gán <code>dist[v] = dist[u] + 1</code>, giá trị đúng có thể bị ghi đè bằng giá trị lớn hơn. Trên đồ thị 8 đỉnh ở phần Minh họa, cách sai này đẩy tổng cộng 11 lần thay vì 8 lần, và kết luận <code>dist[8] = 4</code> trong khi đáp án đúng là 3: đỉnh 8 được 6 đẩy vào với khoảng cách 3, nhưng chưa kịp lấy ra thì đỉnh 7 (cũng ở khoảng cách 3) lại đẩy nó vào lần nữa với khoảng cách 4.</li>
+    </ul>
+    <p>Đánh dấu ngay lúc đẩy vào bảo đảm: <b>mỗi đỉnh vào hàng đợi đúng một lần</b>, và giá trị <code>dist</code> gán lần đầu là giá trị cuối cùng.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Đếm công việc:</p>
+    <ul>
+      <li>Mỗi đỉnh được đẩy vào và lấy ra khỏi hàng đợi <b>nhiều nhất một lần</b> (nhờ đánh dấu lúc đẩy). Tổng cộng tối đa <span class="math">n</span> lần đẩy và <span class="math">n</span> lần lấy, mỗi lần <span class="math">O(1)</span>.</li>
+      <li>Khi lấy đỉnh <span class="math">u</span> ra, ta duyệt danh sách kề của nó một lần, tốn <span class="math">deg(u)</span> bước. Tổng các bậc trong đồ thị vô hướng bằng <span class="math">2m</span> (mỗi cạnh được đếm ở hai đầu).</li>
+    </ul>
+    <p>Cộng lại: <span class="math">O(n + 2m) = O(n + m)</span>. Không thể tốt hơn đáng kể, vì riêng việc đọc dữ liệu đầu vào đã tốn <span class="math">O(n + m)</span>.</p>
+
+    <div class="callout teacher">
+      <p class="callout-title">Lời thầy cô</p>
+      <p>Trước khi code, em hãy lấy giấy bút chạy tay BFS trên một đồ thị nhỏ, ghi hàng đợi thành một dòng và gạch dần từ trái sang phải. Em sẽ thấy tận mắt các đỉnh lớp 1 luôn bị gạch trước các đỉnh lớp 2.</p>
+    </div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Ta chạy BFS từ đỉnh 1 trên đồ thị vô hướng 8 đỉnh, 10 cạnh sau: 1–2, 1–3, 2–4, 2–5, 3–5, 3–6, 4–7, 5–7, 6–8, 7–8. Danh sách kề được xét theo thứ tự số nhỏ trước. Trong hình, đỉnh <b>đang được lấy ra</b> màu cam, đỉnh <b>đang chờ trong hàng đợi</b> màu tím, đỉnh <b>đã xử lý xong</b> màu xanh; số <code>d=…</code> phía trên mỗi đỉnh là giá trị <code>dist</code> hiện tại. Cạnh nét đứt đỏ là cạnh dẫn tới một đỉnh đã có <code>dist</code>, nên bị bỏ qua.</p>
+
+    <div class="stepper" data-title="BFS từ đỉnh 1 trên đồ thị 8 đỉnh">
+      <div class="frame" data-caption="&lt;b&gt;Khởi tạo.&lt;/b&gt; Mọi dist = −1 (chưa thăm). Gán dist[1] = 0 và đẩy đỉnh 1 vào hàng đợi.">
+        <svg viewBox="0 0 385 240" width="385" role="img" aria-label="Đồ thị 8 đỉnh, trạng thái BFS">
+          <line class="edge" x1="40" y1="127" x2="130" y2="72"/>
+          <line class="edge" x1="40" y1="127" x2="130" y2="182"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="42"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="212"/>
+          <line class="edge" x1="225" y1="42" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="127" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="212" x2="320" y2="182"/>
+          <line class="edge" x1="320" y1="82" x2="320" y2="182"/>
+          <circle class="node is-cmp" cx="40" cy="127" r="17"/><text x="40" y="132" text-anchor="middle">1</text>
+          <text class="label-sm" x="40" y="104" text-anchor="middle">d=0</text>
+          <circle class="node" cx="130" cy="72" r="17"/><text x="130" y="77" text-anchor="middle">2</text>
+          <text class="label-sm" x="130" y="49" text-anchor="middle">d=−1</text>
+          <circle class="node" cx="130" cy="182" r="17"/><text x="130" y="187" text-anchor="middle">3</text>
+          <text class="label-sm" x="130" y="159" text-anchor="middle">d=−1</text>
+          <circle class="node" cx="225" cy="42" r="17"/><text x="225" y="47" text-anchor="middle">4</text>
+          <text class="label-sm" x="225" y="19" text-anchor="middle">d=−1</text>
+          <circle class="node" cx="225" cy="127" r="17"/><text x="225" y="132" text-anchor="middle">5</text>
+          <text class="label-sm" x="225" y="104" text-anchor="middle">d=−1</text>
+          <circle class="node" cx="225" cy="212" r="17"/><text x="225" y="217" text-anchor="middle">6</text>
+          <text class="label-sm" x="225" y="189" text-anchor="middle">d=−1</text>
+          <circle class="node" cx="320" cy="82" r="17"/><text x="320" y="87" text-anchor="middle">7</text>
+          <text class="label-sm" x="342" y="87" text-anchor="start">d=−1</text>
+          <circle class="node" cx="320" cy="182" r="17"/><text x="320" y="187" text-anchor="middle">8</text>
+          <text class="label-sm" x="342" y="187" text-anchor="start">d=−1</text>
+        </svg>
+        <div class="arr"><span class="arr-label">hàng đợi</span><span class="cell is-cmp" data-i="0">1</span></div>
+        <div class="arr"><span class="arr-label">dist</span><span class="cell is-ok" data-i="1">0</span><span class="cell" data-i="2">−1</span><span class="cell" data-i="3">−1</span><span class="cell" data-i="4">−1</span><span class="cell" data-i="5">−1</span><span class="cell" data-i="6">−1</span><span class="cell" data-i="7">−1</span><span class="cell" data-i="8">−1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lấy 1 ra.&lt;/b&gt; Hai đỉnh kề 2 và 3 đều có dist = −1, nên gán dist = 0 + 1 = 1, par = 1, đẩy vào cuối hàng đợi.">
+        <svg viewBox="0 0 385 240" width="385" role="img" aria-label="Đồ thị 8 đỉnh, trạng thái BFS">
+          <line class="edge is-active" x1="40" y1="127" x2="130" y2="72"/>
+          <line class="edge is-active" x1="40" y1="127" x2="130" y2="182"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="42"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="212"/>
+          <line class="edge" x1="225" y1="42" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="127" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="212" x2="320" y2="182"/>
+          <line class="edge" x1="320" y1="82" x2="320" y2="182"/>
+          <circle class="node is-active" cx="40" cy="127" r="17"/><text x="40" y="132" text-anchor="middle">1</text>
+          <text class="label-sm" x="40" y="104" text-anchor="middle">d=0</text>
+          <circle class="node is-cmp" cx="130" cy="72" r="17"/><text x="130" y="77" text-anchor="middle">2</text>
+          <text class="label-sm" x="130" y="49" text-anchor="middle">d=1</text>
+          <circle class="node is-cmp" cx="130" cy="182" r="17"/><text x="130" y="187" text-anchor="middle">3</text>
+          <text class="label-sm" x="130" y="159" text-anchor="middle">d=1</text>
+          <circle class="node" cx="225" cy="42" r="17"/><text x="225" y="47" text-anchor="middle">4</text>
+          <text class="label-sm" x="225" y="19" text-anchor="middle">d=−1</text>
+          <circle class="node" cx="225" cy="127" r="17"/><text x="225" y="132" text-anchor="middle">5</text>
+          <text class="label-sm" x="225" y="104" text-anchor="middle">d=−1</text>
+          <circle class="node" cx="225" cy="212" r="17"/><text x="225" y="217" text-anchor="middle">6</text>
+          <text class="label-sm" x="225" y="189" text-anchor="middle">d=−1</text>
+          <circle class="node" cx="320" cy="82" r="17"/><text x="320" y="87" text-anchor="middle">7</text>
+          <text class="label-sm" x="342" y="87" text-anchor="start">d=−1</text>
+          <circle class="node" cx="320" cy="182" r="17"/><text x="320" y="187" text-anchor="middle">8</text>
+          <text class="label-sm" x="342" y="187" text-anchor="start">d=−1</text>
+        </svg>
+        <div class="arr"><span class="arr-label">hàng đợi</span><span class="cell is-cmp" data-i="0">2</span><span class="cell is-cmp" data-i="1">3</span></div>
+        <div class="arr"><span class="arr-label">dist</span><span class="cell is-active" data-i="1">0</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell" data-i="4">−1</span><span class="cell" data-i="5">−1</span><span class="cell" data-i="6">−1</span><span class="cell" data-i="7">−1</span><span class="cell" data-i="8">−1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lấy 2 ra.&lt;/b&gt; Đỉnh 1 đã thăm, bỏ qua. Đỉnh 4 và 5 chưa thăm: dist = 1 + 1 = 2, par = 2.">
+        <svg viewBox="0 0 385 240" width="385" role="img" aria-label="Đồ thị 8 đỉnh, trạng thái BFS">
+          <line class="edge" x1="40" y1="127" x2="130" y2="72"/>
+          <line class="edge" x1="40" y1="127" x2="130" y2="182"/>
+          <line class="edge is-active" x1="130" y1="72" x2="225" y2="42"/>
+          <line class="edge is-active" x1="130" y1="72" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="212"/>
+          <line class="edge" x1="225" y1="42" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="127" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="212" x2="320" y2="182"/>
+          <line class="edge" x1="320" y1="82" x2="320" y2="182"/>
+          <circle class="node is-ok" cx="40" cy="127" r="17"/><text x="40" y="132" text-anchor="middle">1</text>
+          <text class="label-sm" x="40" y="104" text-anchor="middle">d=0</text>
+          <circle class="node is-active" cx="130" cy="72" r="17"/><text x="130" y="77" text-anchor="middle">2</text>
+          <text class="label-sm" x="130" y="49" text-anchor="middle">d=1</text>
+          <circle class="node is-cmp" cx="130" cy="182" r="17"/><text x="130" y="187" text-anchor="middle">3</text>
+          <text class="label-sm" x="130" y="159" text-anchor="middle">d=1</text>
+          <circle class="node is-cmp" cx="225" cy="42" r="17"/><text x="225" y="47" text-anchor="middle">4</text>
+          <text class="label-sm" x="225" y="19" text-anchor="middle">d=2</text>
+          <circle class="node is-cmp" cx="225" cy="127" r="17"/><text x="225" y="132" text-anchor="middle">5</text>
+          <text class="label-sm" x="225" y="104" text-anchor="middle">d=2</text>
+          <circle class="node" cx="225" cy="212" r="17"/><text x="225" y="217" text-anchor="middle">6</text>
+          <text class="label-sm" x="225" y="189" text-anchor="middle">d=−1</text>
+          <circle class="node" cx="320" cy="82" r="17"/><text x="320" y="87" text-anchor="middle">7</text>
+          <text class="label-sm" x="342" y="87" text-anchor="start">d=−1</text>
+          <circle class="node" cx="320" cy="182" r="17"/><text x="320" y="187" text-anchor="middle">8</text>
+          <text class="label-sm" x="342" y="187" text-anchor="start">d=−1</text>
+        </svg>
+        <div class="arr"><span class="arr-label">hàng đợi</span><span class="cell is-cmp" data-i="0">3</span><span class="cell is-cmp" data-i="1">4</span><span class="cell is-cmp" data-i="2">5</span></div>
+        <div class="arr"><span class="arr-label">dist</span><span class="cell is-ok" data-i="1">0</span><span class="cell is-active" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">2</span><span class="cell is-ok" data-i="5">2</span><span class="cell" data-i="6">−1</span><span class="cell" data-i="7">−1</span><span class="cell" data-i="8">−1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lấy 3 ra.&lt;/b&gt; Đỉnh 5 &lt;b&gt;đã có dist = 2&lt;/b&gt; (được 2 đánh dấu lúc đẩy vào), nên bỏ qua, không đẩy lần hai. Chỉ đỉnh 6 mới: dist[6] = 2, par = 3.">
+        <svg viewBox="0 0 385 240" width="385" role="img" aria-label="Đồ thị 8 đỉnh, trạng thái BFS">
+          <line class="edge" x1="40" y1="127" x2="130" y2="72"/>
+          <line class="edge" x1="40" y1="127" x2="130" y2="182"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="42"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="127"/>
+          <line class="edge is-bad" x1="130" y1="182" x2="225" y2="127"/>
+          <line class="edge is-active" x1="130" y1="182" x2="225" y2="212"/>
+          <line class="edge" x1="225" y1="42" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="127" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="212" x2="320" y2="182"/>
+          <line class="edge" x1="320" y1="82" x2="320" y2="182"/>
+          <circle class="node is-ok" cx="40" cy="127" r="17"/><text x="40" y="132" text-anchor="middle">1</text>
+          <text class="label-sm" x="40" y="104" text-anchor="middle">d=0</text>
+          <circle class="node is-ok" cx="130" cy="72" r="17"/><text x="130" y="77" text-anchor="middle">2</text>
+          <text class="label-sm" x="130" y="49" text-anchor="middle">d=1</text>
+          <circle class="node is-active" cx="130" cy="182" r="17"/><text x="130" y="187" text-anchor="middle">3</text>
+          <text class="label-sm" x="130" y="159" text-anchor="middle">d=1</text>
+          <circle class="node is-cmp" cx="225" cy="42" r="17"/><text x="225" y="47" text-anchor="middle">4</text>
+          <text class="label-sm" x="225" y="19" text-anchor="middle">d=2</text>
+          <circle class="node is-cmp" cx="225" cy="127" r="17"/><text x="225" y="132" text-anchor="middle">5</text>
+          <text class="label-sm" x="225" y="104" text-anchor="middle">d=2</text>
+          <circle class="node is-cmp" cx="225" cy="212" r="17"/><text x="225" y="217" text-anchor="middle">6</text>
+          <text class="label-sm" x="225" y="189" text-anchor="middle">d=2</text>
+          <circle class="node" cx="320" cy="82" r="17"/><text x="320" y="87" text-anchor="middle">7</text>
+          <text class="label-sm" x="342" y="87" text-anchor="start">d=−1</text>
+          <circle class="node" cx="320" cy="182" r="17"/><text x="320" y="187" text-anchor="middle">8</text>
+          <text class="label-sm" x="342" y="187" text-anchor="start">d=−1</text>
+        </svg>
+        <div class="arr"><span class="arr-label">hàng đợi</span><span class="cell is-cmp" data-i="0">4</span><span class="cell is-cmp" data-i="1">5</span><span class="cell is-cmp" data-i="2">6</span></div>
+        <div class="arr"><span class="arr-label">dist</span><span class="cell is-ok" data-i="1">0</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-active" data-i="3">1</span><span class="cell is-ok" data-i="4">2</span><span class="cell is-ok" data-i="5">2</span><span class="cell is-ok" data-i="6">2</span><span class="cell" data-i="7">−1</span><span class="cell" data-i="8">−1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lớp 1 đã xong, sang lớp 2. Lấy 4 ra.&lt;/b&gt; Đỉnh 7 mới: dist[7] = 3, par = 4. Hàng đợi bây giờ chứa các đỉnh lớp 2 rồi mới tới lớp 3.">
+        <svg viewBox="0 0 385 240" width="385" role="img" aria-label="Đồ thị 8 đỉnh, trạng thái BFS">
+          <line class="edge" x1="40" y1="127" x2="130" y2="72"/>
+          <line class="edge" x1="40" y1="127" x2="130" y2="182"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="42"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="212"/>
+          <line class="edge is-active" x1="225" y1="42" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="127" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="212" x2="320" y2="182"/>
+          <line class="edge" x1="320" y1="82" x2="320" y2="182"/>
+          <circle class="node is-ok" cx="40" cy="127" r="17"/><text x="40" y="132" text-anchor="middle">1</text>
+          <text class="label-sm" x="40" y="104" text-anchor="middle">d=0</text>
+          <circle class="node is-ok" cx="130" cy="72" r="17"/><text x="130" y="77" text-anchor="middle">2</text>
+          <text class="label-sm" x="130" y="49" text-anchor="middle">d=1</text>
+          <circle class="node is-ok" cx="130" cy="182" r="17"/><text x="130" y="187" text-anchor="middle">3</text>
+          <text class="label-sm" x="130" y="159" text-anchor="middle">d=1</text>
+          <circle class="node is-active" cx="225" cy="42" r="17"/><text x="225" y="47" text-anchor="middle">4</text>
+          <text class="label-sm" x="225" y="19" text-anchor="middle">d=2</text>
+          <circle class="node is-cmp" cx="225" cy="127" r="17"/><text x="225" y="132" text-anchor="middle">5</text>
+          <text class="label-sm" x="225" y="104" text-anchor="middle">d=2</text>
+          <circle class="node is-cmp" cx="225" cy="212" r="17"/><text x="225" y="217" text-anchor="middle">6</text>
+          <text class="label-sm" x="225" y="189" text-anchor="middle">d=2</text>
+          <circle class="node is-cmp" cx="320" cy="82" r="17"/><text x="320" y="87" text-anchor="middle">7</text>
+          <text class="label-sm" x="342" y="87" text-anchor="start">d=3</text>
+          <circle class="node" cx="320" cy="182" r="17"/><text x="320" y="187" text-anchor="middle">8</text>
+          <text class="label-sm" x="342" y="187" text-anchor="start">d=−1</text>
+        </svg>
+        <div class="arr"><span class="arr-label">hàng đợi</span><span class="cell is-cmp" data-i="0">5</span><span class="cell is-cmp" data-i="1">6</span><span class="cell is-cmp" data-i="2">7</span></div>
+        <div class="arr"><span class="arr-label">dist</span><span class="cell is-ok" data-i="1">0</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-active" data-i="4">2</span><span class="cell is-ok" data-i="5">2</span><span class="cell is-ok" data-i="6">2</span><span class="cell is-ok" data-i="7">3</span><span class="cell" data-i="8">−1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lấy 5 ra.&lt;/b&gt; Ba đỉnh kề 2, 3, 7 đều đã có dist. Không đẩy thêm gì.">
+        <svg viewBox="0 0 385 240" width="385" role="img" aria-label="Đồ thị 8 đỉnh, trạng thái BFS">
+          <line class="edge" x1="40" y1="127" x2="130" y2="72"/>
+          <line class="edge" x1="40" y1="127" x2="130" y2="182"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="42"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="212"/>
+          <line class="edge" x1="225" y1="42" x2="320" y2="82"/>
+          <line class="edge is-bad" x1="225" y1="127" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="212" x2="320" y2="182"/>
+          <line class="edge" x1="320" y1="82" x2="320" y2="182"/>
+          <circle class="node is-ok" cx="40" cy="127" r="17"/><text x="40" y="132" text-anchor="middle">1</text>
+          <text class="label-sm" x="40" y="104" text-anchor="middle">d=0</text>
+          <circle class="node is-ok" cx="130" cy="72" r="17"/><text x="130" y="77" text-anchor="middle">2</text>
+          <text class="label-sm" x="130" y="49" text-anchor="middle">d=1</text>
+          <circle class="node is-ok" cx="130" cy="182" r="17"/><text x="130" y="187" text-anchor="middle">3</text>
+          <text class="label-sm" x="130" y="159" text-anchor="middle">d=1</text>
+          <circle class="node is-ok" cx="225" cy="42" r="17"/><text x="225" y="47" text-anchor="middle">4</text>
+          <text class="label-sm" x="225" y="19" text-anchor="middle">d=2</text>
+          <circle class="node is-active" cx="225" cy="127" r="17"/><text x="225" y="132" text-anchor="middle">5</text>
+          <text class="label-sm" x="225" y="104" text-anchor="middle">d=2</text>
+          <circle class="node is-cmp" cx="225" cy="212" r="17"/><text x="225" y="217" text-anchor="middle">6</text>
+          <text class="label-sm" x="225" y="189" text-anchor="middle">d=2</text>
+          <circle class="node is-cmp" cx="320" cy="82" r="17"/><text x="320" y="87" text-anchor="middle">7</text>
+          <text class="label-sm" x="342" y="87" text-anchor="start">d=3</text>
+          <circle class="node" cx="320" cy="182" r="17"/><text x="320" y="187" text-anchor="middle">8</text>
+          <text class="label-sm" x="342" y="187" text-anchor="start">d=−1</text>
+        </svg>
+        <div class="arr"><span class="arr-label">hàng đợi</span><span class="cell is-cmp" data-i="0">6</span><span class="cell is-cmp" data-i="1">7</span></div>
+        <div class="arr"><span class="arr-label">dist</span><span class="cell is-ok" data-i="1">0</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">2</span><span class="cell is-active" data-i="5">2</span><span class="cell is-ok" data-i="6">2</span><span class="cell is-ok" data-i="7">3</span><span class="cell" data-i="8">−1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lấy 6 ra.&lt;/b&gt; Đỉnh 8 mới: dist[8] = 3, par = 6.">
+        <svg viewBox="0 0 385 240" width="385" role="img" aria-label="Đồ thị 8 đỉnh, trạng thái BFS">
+          <line class="edge" x1="40" y1="127" x2="130" y2="72"/>
+          <line class="edge" x1="40" y1="127" x2="130" y2="182"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="42"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="212"/>
+          <line class="edge" x1="225" y1="42" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="127" x2="320" y2="82"/>
+          <line class="edge is-active" x1="225" y1="212" x2="320" y2="182"/>
+          <line class="edge" x1="320" y1="82" x2="320" y2="182"/>
+          <circle class="node is-ok" cx="40" cy="127" r="17"/><text x="40" y="132" text-anchor="middle">1</text>
+          <text class="label-sm" x="40" y="104" text-anchor="middle">d=0</text>
+          <circle class="node is-ok" cx="130" cy="72" r="17"/><text x="130" y="77" text-anchor="middle">2</text>
+          <text class="label-sm" x="130" y="49" text-anchor="middle">d=1</text>
+          <circle class="node is-ok" cx="130" cy="182" r="17"/><text x="130" y="187" text-anchor="middle">3</text>
+          <text class="label-sm" x="130" y="159" text-anchor="middle">d=1</text>
+          <circle class="node is-ok" cx="225" cy="42" r="17"/><text x="225" y="47" text-anchor="middle">4</text>
+          <text class="label-sm" x="225" y="19" text-anchor="middle">d=2</text>
+          <circle class="node is-ok" cx="225" cy="127" r="17"/><text x="225" y="132" text-anchor="middle">5</text>
+          <text class="label-sm" x="225" y="104" text-anchor="middle">d=2</text>
+          <circle class="node is-active" cx="225" cy="212" r="17"/><text x="225" y="217" text-anchor="middle">6</text>
+          <text class="label-sm" x="225" y="189" text-anchor="middle">d=2</text>
+          <circle class="node is-cmp" cx="320" cy="82" r="17"/><text x="320" y="87" text-anchor="middle">7</text>
+          <text class="label-sm" x="342" y="87" text-anchor="start">d=3</text>
+          <circle class="node is-cmp" cx="320" cy="182" r="17"/><text x="320" y="187" text-anchor="middle">8</text>
+          <text class="label-sm" x="342" y="187" text-anchor="start">d=3</text>
+        </svg>
+        <div class="arr"><span class="arr-label">hàng đợi</span><span class="cell is-cmp" data-i="0">7</span><span class="cell is-cmp" data-i="1">8</span></div>
+        <div class="arr"><span class="arr-label">dist</span><span class="cell is-ok" data-i="1">0</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">2</span><span class="cell is-ok" data-i="5">2</span><span class="cell is-active" data-i="6">2</span><span class="cell is-ok" data-i="7">3</span><span class="cell is-ok" data-i="8">3</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lấy 7 ra.&lt;/b&gt; Đỉnh 8 đã có dist = 3, bỏ qua. Cạnh 7–8 nối hai đỉnh &lt;i&gt;cùng lớp&lt;/i&gt; nên không làm ngắn đường nào.">
+        <svg viewBox="0 0 385 240" width="385" role="img" aria-label="Đồ thị 8 đỉnh, trạng thái BFS">
+          <line class="edge" x1="40" y1="127" x2="130" y2="72"/>
+          <line class="edge" x1="40" y1="127" x2="130" y2="182"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="42"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="212"/>
+          <line class="edge" x1="225" y1="42" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="127" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="212" x2="320" y2="182"/>
+          <line class="edge is-bad" x1="320" y1="82" x2="320" y2="182"/>
+          <circle class="node is-ok" cx="40" cy="127" r="17"/><text x="40" y="132" text-anchor="middle">1</text>
+          <text class="label-sm" x="40" y="104" text-anchor="middle">d=0</text>
+          <circle class="node is-ok" cx="130" cy="72" r="17"/><text x="130" y="77" text-anchor="middle">2</text>
+          <text class="label-sm" x="130" y="49" text-anchor="middle">d=1</text>
+          <circle class="node is-ok" cx="130" cy="182" r="17"/><text x="130" y="187" text-anchor="middle">3</text>
+          <text class="label-sm" x="130" y="159" text-anchor="middle">d=1</text>
+          <circle class="node is-ok" cx="225" cy="42" r="17"/><text x="225" y="47" text-anchor="middle">4</text>
+          <text class="label-sm" x="225" y="19" text-anchor="middle">d=2</text>
+          <circle class="node is-ok" cx="225" cy="127" r="17"/><text x="225" y="132" text-anchor="middle">5</text>
+          <text class="label-sm" x="225" y="104" text-anchor="middle">d=2</text>
+          <circle class="node is-ok" cx="225" cy="212" r="17"/><text x="225" y="217" text-anchor="middle">6</text>
+          <text class="label-sm" x="225" y="189" text-anchor="middle">d=2</text>
+          <circle class="node is-active" cx="320" cy="82" r="17"/><text x="320" y="87" text-anchor="middle">7</text>
+          <text class="label-sm" x="342" y="87" text-anchor="start">d=3</text>
+          <circle class="node is-cmp" cx="320" cy="182" r="17"/><text x="320" y="187" text-anchor="middle">8</text>
+          <text class="label-sm" x="342" y="187" text-anchor="start">d=3</text>
+        </svg>
+        <div class="arr"><span class="arr-label">hàng đợi</span><span class="cell is-cmp" data-i="0">8</span></div>
+        <div class="arr"><span class="arr-label">dist</span><span class="cell is-ok" data-i="1">0</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">2</span><span class="cell is-ok" data-i="5">2</span><span class="cell is-ok" data-i="6">2</span><span class="cell is-active" data-i="7">3</span><span class="cell is-ok" data-i="8">3</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lấy 8 ra.&lt;/b&gt; Mọi đỉnh kề đã thăm. Hàng đợi rỗng, BFS dừng. Mỗi đỉnh vào và ra hàng đợi đúng một lần.">
+        <svg viewBox="0 0 385 240" width="385" role="img" aria-label="Đồ thị 8 đỉnh, trạng thái BFS">
+          <line class="edge" x1="40" y1="127" x2="130" y2="72"/>
+          <line class="edge" x1="40" y1="127" x2="130" y2="182"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="42"/>
+          <line class="edge" x1="130" y1="72" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="127"/>
+          <line class="edge" x1="130" y1="182" x2="225" y2="212"/>
+          <line class="edge" x1="225" y1="42" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="127" x2="320" y2="82"/>
+          <line class="edge" x1="225" y1="212" x2="320" y2="182"/>
+          <line class="edge" x1="320" y1="82" x2="320" y2="182"/>
+          <circle class="node is-ok" cx="40" cy="127" r="17"/><text x="40" y="132" text-anchor="middle">1</text>
+          <text class="label-sm" x="40" y="104" text-anchor="middle">d=0</text>
+          <circle class="node is-ok" cx="130" cy="72" r="17"/><text x="130" y="77" text-anchor="middle">2</text>
+          <text class="label-sm" x="130" y="49" text-anchor="middle">d=1</text>
+          <circle class="node is-ok" cx="130" cy="182" r="17"/><text x="130" y="187" text-anchor="middle">3</text>
+          <text class="label-sm" x="130" y="159" text-anchor="middle">d=1</text>
+          <circle class="node is-ok" cx="225" cy="42" r="17"/><text x="225" y="47" text-anchor="middle">4</text>
+          <text class="label-sm" x="225" y="19" text-anchor="middle">d=2</text>
+          <circle class="node is-ok" cx="225" cy="127" r="17"/><text x="225" y="132" text-anchor="middle">5</text>
+          <text class="label-sm" x="225" y="104" text-anchor="middle">d=2</text>
+          <circle class="node is-ok" cx="225" cy="212" r="17"/><text x="225" y="217" text-anchor="middle">6</text>
+          <text class="label-sm" x="225" y="189" text-anchor="middle">d=2</text>
+          <circle class="node is-ok" cx="320" cy="82" r="17"/><text x="320" y="87" text-anchor="middle">7</text>
+          <text class="label-sm" x="342" y="87" text-anchor="start">d=3</text>
+          <circle class="node is-active" cx="320" cy="182" r="17"/><text x="320" y="187" text-anchor="middle">8</text>
+          <text class="label-sm" x="342" y="187" text-anchor="start">d=3</text>
+        </svg>
+        <div class="arr"><span class="arr-label">hàng đợi</span><span class="cell is-dim">rỗng</span></div>
+        <div class="arr"><span class="arr-label">dist</span><span class="cell is-ok" data-i="1">0</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">2</span><span class="cell is-ok" data-i="5">2</span><span class="cell is-ok" data-i="6">2</span><span class="cell is-ok" data-i="7">3</span><span class="cell is-active" data-i="8">3</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Truy vết đường tới 8.&lt;/b&gt; par[8] = 6, par[6] = 3, par[3] = 1. Đảo lại: 1 → 3 → 6 → 8, dài dist[8] = 3 cạnh.">
+        <svg viewBox="0 0 385 240" width="385" role="img" aria-label="Đồ thị 8 đỉnh, trạng thái BFS">
+          <line class="edge is-dim" x1="40" y1="127" x2="130" y2="72"/>
+          <line class="edge is-ok" x1="40" y1="127" x2="130" y2="182"/>
+          <line class="edge is-dim" x1="130" y1="72" x2="225" y2="42"/>
+          <line class="edge is-dim" x1="130" y1="72" x2="225" y2="127"/>
+          <line class="edge is-dim" x1="130" y1="182" x2="225" y2="127"/>
+          <line class="edge is-ok" x1="130" y1="182" x2="225" y2="212"/>
+          <line class="edge is-dim" x1="225" y1="42" x2="320" y2="82"/>
+          <line class="edge is-dim" x1="225" y1="127" x2="320" y2="82"/>
+          <line class="edge is-ok" x1="225" y1="212" x2="320" y2="182"/>
+          <line class="edge is-dim" x1="320" y1="82" x2="320" y2="182"/>
+          <circle class="node is-ok" cx="40" cy="127" r="17"/><text x="40" y="132" text-anchor="middle">1</text>
+          <text class="label-sm" x="40" y="104" text-anchor="middle">d=0</text>
+          <circle class="node is-dim" cx="130" cy="72" r="17"/><text x="130" y="77" text-anchor="middle">2</text>
+          <text class="label-sm" x="130" y="49" text-anchor="middle">d=1</text>
+          <circle class="node is-ok" cx="130" cy="182" r="17"/><text x="130" y="187" text-anchor="middle">3</text>
+          <text class="label-sm" x="130" y="159" text-anchor="middle">d=1</text>
+          <circle class="node is-dim" cx="225" cy="42" r="17"/><text x="225" y="47" text-anchor="middle">4</text>
+          <text class="label-sm" x="225" y="19" text-anchor="middle">d=2</text>
+          <circle class="node is-dim" cx="225" cy="127" r="17"/><text x="225" y="132" text-anchor="middle">5</text>
+          <text class="label-sm" x="225" y="104" text-anchor="middle">d=2</text>
+          <circle class="node is-ok" cx="225" cy="212" r="17"/><text x="225" y="217" text-anchor="middle">6</text>
+          <text class="label-sm" x="225" y="189" text-anchor="middle">d=2</text>
+          <circle class="node is-dim" cx="320" cy="82" r="17"/><text x="320" y="87" text-anchor="middle">7</text>
+          <text class="label-sm" x="342" y="87" text-anchor="start">d=3</text>
+          <circle class="node is-ok" cx="320" cy="182" r="17"/><text x="320" y="187" text-anchor="middle">8</text>
+          <text class="label-sm" x="342" y="187" text-anchor="start">d=3</text>
+        </svg>
+        <div class="arr"><span class="arr-label">hàng đợi</span><span class="cell is-dim">rỗng</span></div>
+        <div class="arr"><span class="arr-label">dist</span><span class="cell is-ok" data-i="1">0</span><span class="cell is-ok" data-i="2">1</span><span class="cell is-ok" data-i="3">1</span><span class="cell is-ok" data-i="4">2</span><span class="cell is-ok" data-i="5">2</span><span class="cell is-ok" data-i="6">2</span><span class="cell is-ok" data-i="7">3</span><span class="cell is-ok" data-i="8">3</span></div>
+      </div>
+    </div>
+
+    <p>Bảng dưới tóm tắt lại cả quá trình. Em để ý cột “hàng đợi sau bước”: các số <code>dist</code> trong hàng đợi luôn có dạng <span class="math">k, …, k, k + 1, …, k + 1</span>.</p>
+    <table class="trace">
+      <thead><tr><th>Bước</th><th>Lấy ra u</th><th>Đẩy vào (dist)</th><th>Bỏ qua</th><th>Hàng đợi sau bước</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>—</td><td>1 (0)</td><td>—</td><td>[1]</td></tr>
+        <tr><td>1</td><td>1</td><td>2 (1), 3 (1)</td><td>—</td><td>[2, 3]</td></tr>
+        <tr><td>2</td><td>2</td><td>4 (2), 5 (2)</td><td>1</td><td>[3, 4, 5]</td></tr>
+        <tr class="hl"><td>3</td><td>3</td><td>6 (2)</td><td>1, 5</td><td>[4, 5, 6]</td></tr>
+        <tr><td>4</td><td>4</td><td>7 (3)</td><td>2</td><td>[5, 6, 7]</td></tr>
+        <tr><td>5</td><td>5</td><td>—</td><td>2, 3, 7</td><td>[6, 7]</td></tr>
+        <tr><td>6</td><td>6</td><td>8 (3)</td><td>3</td><td>[7, 8]</td></tr>
+        <tr class="hl"><td>7</td><td>7</td><td>—</td><td>4, 5, 8</td><td>[8]</td></tr>
+        <tr><td>8</td><td>8</td><td>—</td><td>6, 7</td><td>[ ]</td></tr>
+      </tbody>
+    </table>
+    <p>Kết quả: <code>dist = [0, 1, 1, 2, 2, 2, 3, 3]</code> cho các đỉnh 1..8 và <code>par = [–, 1, 1, 2, 2, 3, 4, 6]</code>. Tổng cộng 8 lần đẩy (mỗi đỉnh một lần) và 20 lần xét đầu cạnh (bằng <span class="math">2m = 2 · 10</span>).</p>
+
+    <h3>Các lớp khoảng cách</h3>
+    <p>Vẽ lại đồ thị sao cho đỉnh có <code>dist = k</code> nằm trên vòng tròn thứ <span class="math">k</span>, em thấy rõ hình ảnh “sóng lan”. Cạnh xanh là cạnh <code>par</code>: chúng tạo thành <b>cây BFS</b>, mỗi đỉnh có đúng một cạnh đi về phía tâm. Cạnh đỏ nét đứt là cạnh còn lại. Một tính chất quan trọng: <b>mọi cạnh chỉ nối hai đỉnh cùng lớp hoặc hai lớp liền nhau</b>, không bao giờ nhảy cóc từ lớp 1 sang lớp 3. Nếu có cạnh như vậy, đỉnh ở lớp 3 đã được tới sau 2 bước, vô lý.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 400 350" width="400" role="img" aria-label="Các lớp khoảng cách đồng tâm của BFS từ đỉnh 1">
+        <circle class="edge is-dim" cx="200" cy="175" r="148"/>
+        <circle class="edge is-dim" cx="200" cy="175" r="100"/>
+        <circle class="edge is-dim" cx="200" cy="175" r="52"/>
+        <text class="label-pen" x="142" y="180" text-anchor="end">lớp 1</text>
+        <text class="label-pen" x="94" y="180" text-anchor="end">lớp 2</text>
+        <text class="label-pen" x="46" y="180" text-anchor="end">lớp 3</text>
+        <line class="edge is-ok" x1="200" y1="175" x2="191" y2="124"/>
+        <line class="edge is-ok" x1="200" y1="175" x2="209" y2="226"/>
+        <line class="edge is-ok" x1="191" y1="124" x2="136" y2="98"/>
+        <line class="edge is-ok" x1="191" y1="124" x2="300" y2="175"/>
+        <line class="edge is-bad" x1="209" y1="226" x2="300" y2="175"/>
+        <line class="edge is-ok" x1="209" y1="226" x2="166" y2="269"/>
+        <line class="edge is-ok" x1="136" y1="98" x2="285" y2="54"/>
+        <line class="edge is-bad" x1="300" y1="175" x2="285" y2="54"/>
+        <line class="edge is-ok" x1="166" y1="269" x2="295" y2="288"/>
+        <path class="edge is-bad" d="M285 54 Q415 167 295 288"/>
+        <circle class="node is-active" cx="200" cy="175" r="15"/><text x="200" y="180" text-anchor="middle">1</text>
+        <circle class="node" cx="191" cy="124" r="15"/><text x="191" y="129" text-anchor="middle">2</text>
+        <circle class="node" cx="209" cy="226" r="15"/><text x="209" y="231" text-anchor="middle">3</text>
+        <circle class="node" cx="136" cy="98" r="15"/><text x="136" y="103" text-anchor="middle">4</text>
+        <circle class="node" cx="300" cy="175" r="15"/><text x="300" y="180" text-anchor="middle">5</text>
+        <circle class="node" cx="166" cy="269" r="15"/><text x="166" y="274" text-anchor="middle">6</text>
+        <circle class="node" cx="285" cy="54" r="15"/><text x="285" y="59" text-anchor="middle">7</text>
+        <circle class="node" cx="295" cy="288" r="15"/><text x="295" y="293" text-anchor="middle">8</text>
+      </svg>
+      <figcaption>Hình 1. Các lớp BFS từ đỉnh 1. Cây BFS (cạnh xanh) gồm 7 cạnh, nối 8 đỉnh. Cạnh 3–5 nối lớp 1 với lớp 2, cạnh 5–7 nối lớp 2 với lớp 3, cạnh 7–8 nối hai đỉnh cùng lớp 3.</figcaption>
+    </figure>
+
+    <h3>Một ví dụ trên bàn cờ</h3>
+    <p>BFS không chỉ chạy trên đồ thị vẽ bằng chấm và đoạn thẳng. Dưới đây là số nước đi ít nhất của quân mã từ góc trên trái (ô <b>0</b>) tới mỗi ô của bàn cờ <span class="math">8 × 8</span>. Mỗi ô là một đỉnh, hai ô cách nhau một nước mã là một cạnh. Hai ô màu cam là lớp 1. Góc đối diện cần 6 nước. Số ô ở các lớp 0, 1, …, 6 lần lượt là 1, 2, 9, 20, 21, 10, 1, tổng đúng 64 ô. Lạ là ô ngay cạnh góc lại cần tới 3 nước!</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Số nước mã ít nhất từ góc trên trái</p></div>
+      <div class="viz-body">
+        <div class="grid-viz" style="--cols:8">
+          <span class="g is-ok">0</span><span class="g">3</span><span class="g">2</span><span class="g">3</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g">5</span>
+          <span class="g">3</span><span class="g">4</span><span class="g is-active">1</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g">3</span><span class="g">4</span>
+          <span class="g">2</span><span class="g is-active">1</span><span class="g">4</span><span class="g">3</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g">5</span>
+          <span class="g">3</span><span class="g">2</span><span class="g">3</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g">3</span><span class="g">4</span>
+          <span class="g">2</span><span class="g">3</span><span class="g">2</span><span class="g">3</span><span class="g">4</span><span class="g">3</span><span class="g">4</span><span class="g">5</span>
+          <span class="g">3</span><span class="g">4</span><span class="g">3</span><span class="g">4</span><span class="g">3</span><span class="g">4</span><span class="g">5</span><span class="g">4</span>
+          <span class="g">4</span><span class="g">3</span><span class="g">4</span><span class="g">3</span><span class="g">4</span><span class="g">5</span><span class="g">4</span><span class="g">5</span>
+          <span class="g">5</span><span class="g">4</span><span class="g">5</span><span class="g">4</span><span class="g">5</span><span class="g">4</span><span class="g">5</span><span class="g is-bad">6</span>
+        </div>
+      </div>
+      <div class="viz-legend"><span><i class="is-ok"></i>ô xuất phát (dist 0)</span><span><i class="is-active"></i>lớp 1</span><span><i class="is-bad"></i>góc đối diện (dist 6)</span></div>
+    </div>
+
+    <div class="playground" id="viz-bfs">
+      <div class="viz-head"><p class="viz-title">Tự tay chạy BFS</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="bfs-edges">Các cạnh <input type="text" id="bfs-edges" size="38" value="1-2 1-3 2-4 2-5 3-5 3-6 4-7 5-7 6-8 7-8"></label>
+          <label for="bfs-src">Nguồn <input type="number" id="bfs-src" min="1" max="12" value="1"></label>
+          <label for="bfs-dst">Đích <input type="number" id="bfs-dst" min="1" max="12" value="8"></label>
+        </div>
+        <div class="controls">
+          <button type="button" data-act="reset">Làm lại</button>
+          <button type="button" data-act="step">Bước tiếp</button>
+          <button type="button" data-act="all" class="ghost">Chạy hết</button>
+        </div>
+        <div class="bfs-board" style="overflow-x:auto"></div>
+        <div class="bfs-arrays" style="overflow-x:auto"></div>
+        <div class="out" aria-live="polite">Nhập các cạnh dạng “u-v” cách nhau bởi dấu cách (đỉnh 1 đến 12), rồi bấm “Bước tiếp”.</div>
+      </div>
+      <div class="viz-legend"><span><i class="is-active"></i>đang lấy ra</span><span><i class="is-cmp"></i>đang trong hàng đợi</span><span><i class="is-ok"></i>đã xử lý</span><span><i class="is-bad"></i>cạnh bị bỏ qua</span></div>
+    </div>
+    <p>Gợi ý thử: đổi nguồn thành 8 và xem các lớp thay đổi ra sao; thêm cạnh <code>1-8</code> và xem <code>dist[8]</code> còn bao nhiêu; xóa cạnh <code>6-8</code> và <code>7-8</code> để thấy đỉnh 8 giữ <code>dist = −1</code>.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p><b>Đề:</b> dòng đầu có hai số <span class="math">n, m</span> (<span class="math">n, m ≤ 2 · 10<sup>5</sup></span>). <span class="math">m</span> dòng sau, mỗi dòng hai số <span class="math">u, v</span> là một cạnh vô hướng. Dòng cuối có hai số <span class="math">s, t</span>. In ra số cạnh ít nhất từ <span class="math">s</span> tới <span class="math">t</span> và một đường đi như vậy; nếu không có đường thì in <code>-1</code>.</p>
+    <p>Chương trình dùng <code>vector&lt;vector&lt;int&gt;&gt;</code> làm danh sách kề (xem bài <a href="stl.html">STL</a>) và <code>queue&lt;int&gt;</code> làm hàng đợi. Phần truy vết đi từ <code>t</code> ngược về <code>s</code> theo <code>par</code>, nên cần <code>reverse</code> trước khi in.</p>
+    <figure class="code">
+      <figcaption><span class="fn">bfs_path.cpp</span> BFS tìm đường đi ngắn nhất và truy vết</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;                       // số đỉnh, số cạnh
+    vector&lt;vector&lt;int&gt;&gt; adj(n + 1);      // danh sách kề, đỉnh đánh số 1..n
+    for (int i = 0; i &lt; m; i++) {
+        int u, v;
+        cin &gt;&gt; u &gt;&gt; v;
+        adj[u].push_back(v);             // cạnh vô hướng: thêm cả hai chiều
+        adj[v].push_back(u);
+    }
+    int s, t;
+    cin &gt;&gt; s &gt;&gt; t;                       // nguồn và đích
+
+    vector&lt;int&gt; dist(n + 1, -1);         // -1 nghĩa là "chưa thăm"
+    vector&lt;int&gt; par(n + 1, 0);           // par[v] = đỉnh đứng ngay trước v trên đường ngắn nhất
+    queue&lt;int&gt; q;
+
+    dist[s] = 0;                         // nguồn cách chính nó 0 bước
+    q.push(s);
+    while (!q.empty()) {
+        int u = q.front();               // lấy đỉnh ở đầu hàng đợi
+        q.pop();
+        for (int v : adj[u]) {
+            if (dist[v] != -1) continue; // đã thăm (đã được đẩy vào hàng đợi) thì bỏ qua
+            dist[v] = dist[u] + 1;       // đánh dấu NGAY khi đẩy vào
+            par[v] = u;
+            q.push(v);
+        }
+    }
+
+    if (dist[t] == -1) {                 // không có đường đi
+        cout &lt;&lt; -1 &lt;&lt; '\n';
+        return 0;
+    }
+    cout &lt;&lt; dist[t] &lt;&lt; '\n';             // số cạnh ít nhất
+
+    vector&lt;int&gt; path;                    // truy vết: đi ngược từ t về s theo par
+    for (int v = t; v != s; v = par[v]) path.push_back(v);
+    path.push_back(s);
+    reverse(path.begin(), path.end());   // đảo lại để in từ s tới t
+    for (int i = 0; i &lt; (int)path.size(); i++)
+        cout &lt;&lt; path[i] &lt;&lt; (i + 1 &lt; (int)path.size() ? ' ' : '\n');
+    return 0;
+}</code></pre>
+    </figure>
+    <p>Với đồ thị 8 đỉnh ở phần Minh họa, nguồn 1 và đích 8:</p>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8 10
+1 2
+1 3
+2 4
+2 5
+3 5
+3 6
+4 7
+5 7
+6 8
+7 8
+1 8</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">3
+1 3 6 8</code></pre></div>
+    </div>
+    <p>Một ví dụ không có đường đi (đỉnh 5 chỉ nối với đỉnh 4, mà 4 không nối với 1, 2, 3):</p>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 3
+1 2
+2 3
+4 5
+1 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">-1</code></pre></div>
+    </div>
+    <div class="callout tip">
+      <p class="callout-title">Ghi nhớ khuôn mẫu</p>
+      <p>Ba dòng quan trọng nhất của BFS luôn đi cùng nhau: <code>if (dist[v] != -1) continue;</code>, <code>dist[v] = dist[u] + 1;</code>, <code>q.push(v);</code>. Nếu đề chỉ cần khoảng cách, bỏ <code>par</code> đi là xong. Nếu đề là bài CSES Message Route (in số máy trên đường), đáp số là <code>dist[n] + 1</code>, vì đường có <span class="math">k</span> cạnh đi qua <span class="math">k + 1</span> đỉnh.</p>
+    </div>
+  </section>
+
+  <section id="khong-gian-trang-thai">
+    <h2>BFS trên không gian trạng thái</h2>
+    <p>Nhiều bài “ít bước nhất” không cho đồ thị có sẵn. Em phải tự dựng đồ thị bằng cách trả lời hai câu hỏi:</p>
+    <ol>
+      <li><b>Đỉnh là gì?</b> Mỗi “tình trạng” có thể xảy ra của bài toán: con số đang hiện trên màn hình, ô quân mã đang đứng, lượng nước trong hai bình…</li>
+      <li><b>Cạnh là gì?</b> Mỗi thao tác hợp lệ biến tình trạng này thành tình trạng khác, và mỗi thao tác tốn đúng 1 bước.</li>
+    </ol>
+    <p>Sau đó chạy BFS như bình thường. Điểm khác duy nhất: em <b>không lưu danh sách kề</b>; mỗi khi lấy một trạng thái ra, em tự tính các trạng thái kề của nó bằng công thức. Mảng <code>dist</code> được đánh chỉ số theo trạng thái (một số, một cặp tọa độ, một cặp lượng nước…), nên cần ước lượng trước có bao nhiêu trạng thái để khai báo đủ lớn.</p>
+
+    <h3>Ví dụ 1: Hai nút bấm (Codeforces 520B)</h3>
+    <p>Màn hình hiện số <span class="math">n</span>. Nút đỏ nhân số đó với 2, nút xanh trừ đi 1. Nếu số không còn dương thì máy hỏng. Hỏi cần bấm ít nhất bao nhiêu lần để màn hình hiện <span class="math">m</span> (<span class="math">1 ≤ n, m ≤ 10<sup>4</sup></span>)?</p>
+    <p><b>Đỉnh:</b> các số nguyên dương. <b>Cạnh:</b> <span class="math">x → 2x</span> và <span class="math">x → x − 1</span>. Có vô hạn số nguyên dương, nhưng ta không bao giờ cần vượt quá <span class="math">2 · 10<sup>4</sup></span>: nếu đã lớn hơn <span class="math">m</span> thì chỉ còn cách trừ dần, nhân thêm nữa chỉ làm xa thêm. Vậy chỉ có tối đa 20 000 đỉnh, mỗi đỉnh 2 cạnh.</p>
+    <p>Chạy tay với <span class="math">n = 3, m = 10</span>: lớp 0 là {3}; lớp 1 là {6, 2}; lớp 2 là {12, 5, 4, 1}; ở lớp 3, từ 5 nhân 2 được 10. Đáp số 3, với đường 3 → 6 → 5 → 10 (nhân 2, trừ 1, nhân 2).</p>
+    <figure class="code">
+      <figcaption><span class="fn">two_buttons.cpp</span> BFS trên các số từ 1 đến 20 000</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    const int LIM = 20000;               // không bao giờ cần vượt quá 2 * 10^4
+    vector&lt;int&gt; dist(LIM + 1, -1);       // dist[x] = số lần bấm ít nhất để từ n thành x
+    queue&lt;int&gt; q;
+    dist[n] = 0;
+    q.push(n);
+    while (!q.empty()) {
+        int x = q.front();
+        q.pop();
+        if (x == m) break;               // gặp đích lần đầu là ít bước nhất
+        int nxt[2] = {x * 2, x - 1};     // nút đỏ: nhân 2; nút xanh: trừ 1
+        for (int y : nxt) {
+            if (y &lt; 1 || y &gt; LIM) continue;  // số phải dương, và không cần quá lớn
+            if (dist[y] != -1) continue;
+            dist[y] = dist[x] + 1;
+            q.push(y);
+        }
+    }
+    cout &lt;&lt; dist[m] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4 6</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">10 1</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">9</code></pre></div>
+    </div>
+    <p>Bài này còn có lời giải tham lam đi ngược từ <span class="math">m</span> (chia 2 nếu chẵn, cộng 1 nếu lẻ), nhưng BFS là cách <b>không cần nghĩ mẹo</b>: chỉ cần mô tả đúng đỉnh và cạnh là chắc chắn ra đáp án.</p>
+
+    <h3>Ví dụ 2: Quân mã ít nước nhất</h3>
+    <p><b>Đỉnh:</b> ô <span class="math">(x, y)</span> trên bàn <span class="math">N × N</span>. <b>Cạnh:</b> 8 nước đi hình chữ L, viết bằng hai mảng hướng:</p>
+    <pre><code class="language-cpp">int dx[8] = {1, 2, 2, 1, -1, -2, -2, -1};
+int dy[8] = {2, 1, -1, -2, -2, -1, 1, 2};
+// từ (x, y) đi tới (x + dx[k], y + dy[k]) nếu ô đó còn nằm trong bàn cờ</code></pre>
+    <p>Mảng <code>dist</code> là mảng hai chiều <code>dist[N][N]</code>, hàng đợi chứa <code>pair&lt;int,int&gt;</code>. Số đỉnh là <span class="math">N<sup>2</sup></span>, mỗi đỉnh tối đa 8 cạnh, nên với <span class="math">N = 1000</span> có <span class="math">10<sup>6</sup></span> đỉnh và khoảng <span class="math">8 · 10<sup>6</sup></span> lần xét cạnh, vẫn chạy kịp. Bảng <span class="math">8 × 8</span> ở phần Minh họa chính là kết quả BFS này.</p>
+
+    <h3>Ví dụ 3: Đong nước bằng hai bình</h3>
+    <p>Có một bình 3 lít và một bình 5 lít, không có vạch chia, cạnh vòi nước. Mỗi bước được: đổ đầy một bình, đổ hết một bình, hoặc rót từ bình này sang bình kia cho tới khi bình kia đầy hoặc bình này cạn. Cần ít nhất bao nhiêu bước để một bình có đúng 4 lít?</p>
+    <p><b>Đỉnh:</b> cặp <span class="math">(a, b)</span> với <span class="math">0 ≤ a ≤ 3</span>, <span class="math">0 ≤ b ≤ 5</span>, tức tối đa <span class="math">4 · 6 = 24</span> trạng thái. <b>Cạnh:</b> 6 thao tác. BFS từ <span class="math">(0, 0)</span> cho đáp số <b>6 bước</b>:</p>
+    <div class="math-block">(0, 0) → (0, 5) → (3, 2) → (0, 2) → (2, 0) → (2, 5) → (3, 4)</div>
+    <p>Đọc là: đổ đầy bình 5; rót sang bình 3 (còn 2 lít); đổ hết bình 3; rót 2 lít sang bình 3; đổ đầy bình 5; rót sang bình 3 cho đầy (bình 3 chỉ nhận thêm 1 lít), bình 5 còn đúng 4 lít. Cách “bắt đầu bằng đổ đầy bình 3” cũng làm được nhưng mất 8 bước, và BFS tự động chọn cách ngắn hơn.</p>
+    <figure class="code">
+      <figcaption><span class="fn">jugs.cpp</span> BFS trên cặp (a, b); nhập A B C, in số bước ít nhất hoặc -1</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int A, B, C;                         // dung tích hai bình và lượng nước cần đong
+    cin &gt;&gt; A &gt;&gt; B &gt;&gt; C;
+    // trạng thái (a, b): bình 1 có a lít, bình 2 có b lít
+    vector&lt;vector&lt;int&gt;&gt; dist(A + 1, vector&lt;int&gt;(B + 1, -1));
+    queue&lt;pair&lt;int,int&gt;&gt; q;
+    dist[0][0] = 0;
+    q.push({0, 0});
+    while (!q.empty()) {
+        auto [a, b] = q.front();
+        q.pop();
+        if (a == C || b == C) {          // một trong hai bình có đúng C lít
+            cout &lt;&lt; dist[a][b] &lt;&lt; '\n';
+            return 0;
+        }
+        int d1 = min(a, B - b);          // lượng rót được từ bình 1 sang bình 2
+        int d2 = min(b, A - a);          // lượng rót được từ bình 2 sang bình 1
+        pair&lt;int,int&gt; nxt[6] = {
+            {A, b}, {a, B},              // đổ đầy bình 1 / bình 2
+            {0, b}, {a, 0},              // đổ hết bình 1 / bình 2
+            {a - d1, b + d1},            // rót 1 sang 2
+            {a + d2, b - d2}             // rót 2 sang 1
+        };
+        for (auto [x, y] : nxt) {
+            if (dist[x][y] != -1) continue;
+            dist[x][y] = dist[a][b] + 1;
+            q.push({x, y});
+        }
+    }
+    cout &lt;&lt; -1 &lt;&lt; '\n';                  // không đong được
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3 5 4</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">6</code></pre></div>
+    </div>
+    <p>Với hai bình 2 lít và 4 lít, cần 3 lít thì chương trình in <code>-1</code>: mọi lượng nước đong được đều chẵn, vì luôn là bội của <span class="math">gcd(2, 4) = 2</span> (xem bài <a href="gcd-lcm.html">ƯCLN và BCNN</a>).</p>
+
+    <h3>BFS trên lưới (giới thiệu)</h3>
+    <p>Mê cung trên bảng <span class="math">R × C</span> cũng là không gian trạng thái: đỉnh là ô trống, cạnh nối hai ô kề cạnh. Code giống hệt quân mã, chỉ đổi 8 hướng thành 4 hướng <code>dx[] = {-1, 1, 0, 0}, dy[] = {0, 0, -1, 1}</code> và thêm điều kiện ô không phải tường. Các kỹ thuật riêng của lưới (đếm vùng, loang nhiều nguồn, truy vết bằng chữ L/R/U/D) được học kỹ ở bài <a href="flood-fill.html">loang trên lưới</a>.</p>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Bài toán / cách làm</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>BFS trên danh sách kề (n đỉnh, m cạnh)</td><td><span class="bigo">O(n + m)</span></td><td><span class="bigo">O(n + m)</span></td></tr>
+        <tr><td>BFS trên ma trận kề n × n</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n²)</span></td></tr>
+        <tr><td>Truy vết một đường đi</td><td><span class="bigo">O(độ dài đường)</span> ≤ <span class="bigo">O(n)</span></td><td><span class="bigo">O(n)</span></td></tr>
+        <tr><td>BFS trên lưới R × C (4 hướng)</td><td><span class="bigo">O(R · C)</span></td><td><span class="bigo">O(R · C)</span></td></tr>
+        <tr><td>BFS trạng thái: S trạng thái, mỗi trạng thái k thao tác</td><td><span class="bigo">O(S · k)</span></td><td><span class="bigo">O(S)</span></td></tr>
+        <tr><td>0-1 BFS bằng deque</td><td><span class="bigo">O(n + m)</span></td><td><span class="bigo">O(n + m)</span></td></tr>
+        <tr><td>Quay lui thử mọi đường (để so sánh)</td><td>hàm mũ</td><td><span class="bigo">O(n)</span></td></tr>
+      </tbody>
+    </table>
+    <p><b>Ví dụ số phép tính.</b> Với <span class="math">n = 10<sup>5</sup></span> đỉnh và <span class="math">m = 2 · 10<sup>5</sup></span> cạnh, BFS làm khoảng <span class="math">10<sup>5</sup></span> lần lấy ra và <span class="math">4 · 10<sup>5</sup></span> lần xét đầu cạnh, tổng cỡ <span class="math">5 · 10<sup>5</sup></span> thao tác, chạy chưa tới 0,01 giây. Lưới <span class="math">1000 × 1000</span> có <span class="math">10<sup>6</sup></span> ô, mỗi ô xét 4 hướng, khoảng <span class="math">4 · 10<sup>6</sup></span> thao tác. Bài Two Buttons có 20 000 trạng thái, mỗi trạng thái 2 thao tác: 40 000 thao tác.</p>
+    <p><b>Bộ nhớ là thứ cần để ý.</b> Mảng <code>dist</code> cần một ô cho mỗi trạng thái. Lưới <span class="math">1000 × 1000</span> với <code>int</code> tốn 4 MB, ổn. Nhưng nếu trạng thái là bộ ba số mỗi số tới 1000 thì có <span class="math">10<sup>9</sup></span> trạng thái, không thể khai báo; khi đó em phải tìm cách mô tả trạng thái gọn hơn. Ma trận kề <span class="math">n × n</span> chỉ dùng được khi <span class="math">n</span> cỡ vài nghìn: với <span class="math">n = 10<sup>5</sup></span> nó cần <span class="math">10<sup>10</sup></span> ô, quá bộ nhớ, nên hầu như luôn dùng danh sách kề.</p>
+    <p>Hàng đợi chứa nhiều nhất <span class="math">n</span> phần tử cùng lúc (nhờ đánh dấu lúc đẩy). <code>queue</code> của C++ đẩy và lấy trong <span class="math">O(1)</span>.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Vì sao BFS sai khi cạnh có trọng số</h3>
+    <p>BFS tìm đường <b>ít cạnh nhất</b>. Khi cạnh có độ dài khác nhau, đường ít cạnh nhất chưa chắc ngắn nhất. Xét ba đỉnh: cạnh 1–2 dài 5, cạnh 1–3 dài 1, cạnh 3–2 dài 1. BFS từ 1 thấy đỉnh 2 ngay ở lớp 1 (qua cạnh dài 5) và chốt luôn. Nhưng đường 1 → 3 → 2 chỉ dài 1 + 1 = 2.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 320 150" width="320" role="img" aria-label="Phản ví dụ: BFS chọn cạnh dài 5 thay vì đường dài 2">
+        <line class="edge is-bad" x1="50" y1="75" x2="270" y2="75"/>
+        <line class="edge is-ok" x1="50" y1="75" x2="160" y2="130"/>
+        <line class="edge is-ok" x1="160" y1="130" x2="270" y2="75"/>
+        <circle class="node is-active" cx="50" cy="75" r="17"/><text x="50" y="80" text-anchor="middle">1</text>
+        <circle class="node" cx="160" cy="130" r="17"/><text x="160" y="135" text-anchor="middle">3</text>
+        <circle class="node" cx="270" cy="75" r="17"/><text x="270" y="80" text-anchor="middle">2</text>
+        <text class="label-sm" x="160" y="68" text-anchor="middle">dài 5</text>
+        <text class="label-sm" x="95" y="115" text-anchor="middle">1</text>
+        <text class="label-sm" x="225" y="115" text-anchor="middle">1</text>
+        <text class="label-pen" x="160" y="30" text-anchor="middle">BFS chọn 1 cạnh, dài 5 — sai</text>
+      </svg>
+      <figcaption>Hình 2. Đường ít cạnh nhất (đỏ, dài 5) khác đường ngắn nhất (xanh, dài 2).</figcaption>
+    </figure>
+    <p>Chỗ sai trong chứng minh: ta đã dùng “lấy ra theo thứ tự <code>dist</code> không giảm”, điều chỉ đúng khi mỗi cạnh làm <code>dist</code> tăng đúng 1. Với trọng số dương tùy ý, em cần hàng đợi ưu tiên luôn lấy ra đỉnh có <code>dist</code> nhỏ nhất: đó là thuật toán <a href="dijkstra.html">Dijkstra</a>, độ phức tạp <span class="math">O((n + m) log n)</span>. Mẹo “chia cạnh dài 5 thành 5 cạnh dài 1 rồi BFS” chỉ dùng được khi tổng độ dài rất nhỏ.</p>
+
+    <h3>BFS nhiều nguồn</h3>
+    <p>Nếu muốn biết khoảng cách từ mỗi đỉnh tới <b>nguồn gần nhất</b> trong nhiều nguồn (nhiều lối thoát hiểm, nhiều đám cháy), em không cần chạy BFS từ từng nguồn. Chỉ cần lúc khởi tạo gán <code>dist = 0</code> cho <b>tất cả</b> các nguồn và đẩy hết vào hàng đợi, phần còn lại giữ nguyên.</p>
+    <pre><code class="language-cpp">for (int x : sources) {      // mọi nguồn đều ở lớp 0
+    dist[x] = 0;
+    q.push(x);
+}
+// sau đó vòng while giống hệt BFS một nguồn</code></pre>
+    <p>Vì sao đúng? Hãy tưởng tượng thêm một đỉnh ảo <span class="math">S*</span> nối với mọi nguồn. Khoảng cách từ <span class="math">S*</span> tới <span class="math">v</span> trừ 1 chính là khoảng cách tới nguồn gần nhất. BFS từ <span class="math">S*</span> sẽ lấy <span class="math">S*</span> ra đầu tiên và đẩy mọi nguồn vào, đúng như đoạn code trên. Thời gian vẫn <span class="math">O(n + m)</span>, thay vì <span class="math">O(k · (n + m))</span> nếu chạy <span class="math">k</span> lần.</p>
+
+    <h3>So sánh DFS và BFS</h3>
+    <table>
+      <thead><tr><th></th><th>DFS</th><th>BFS</th></tr></thead>
+      <tbody>
+        <tr><td>Cấu trúc dữ liệu</td><td>ngăn xếp (thường là đệ quy)</td><td>hàng đợi</td></tr>
+        <tr><td>Thứ tự thăm</td><td>đi sâu một nhánh rồi quay lui</td><td>theo lớp khoảng cách 0, 1, 2, …</td></tr>
+        <tr><td>Đường đi ngắn nhất (không trọng số)</td><td>không cho</td><td><b>cho</b></td></tr>
+        <tr><td>Độ phức tạp</td><td><span class="bigo">O(n + m)</span></td><td><span class="bigo">O(n + m)</span></td></tr>
+        <tr><td>Rủi ro</td><td>tràn stack khi đệ quy quá sâu (lưới lớn, đường dài 10⁶)</td><td>không đệ quy, an toàn</td></tr>
+        <tr><td>Dùng tốt cho</td><td>đếm thành phần liên thông, phát hiện chu trình, thứ tự topo, cây DFS</td><td>số bước ít nhất, loang theo thời gian, loang nhiều nguồn</td></tr>
+      </tbody>
+    </table>
+    <p>Quy tắc chọn: cần <b>khoảng cách ngắn nhất</b> thì dùng BFS. Chỉ cần biết “đi tới được những đâu” thì cái nào cũng được; DFS đệ quy viết ngắn hơn, BFS an toàn hơn trên đồ thị rất lớn.</p>
+
+    <h3>Nâng cao 1: 0-1 BFS bằng deque</h3>
+    <p>Có những bài mà mỗi cạnh dài 0 hoặc 1. Ví dụ: đi trên lưới, bước theo hướng mũi tên in sẵn trong ô thì miễn phí (0), đổi hướng thì mất 1 lần sửa. BFS thường sai (cạnh 0 không làm tăng khoảng cách), còn Dijkstra thì đúng nhưng chậm hơn. <b>0-1 BFS</b> dùng hàng đợi hai đầu (<code>deque</code>):</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> <code>dist[v] = ∞</code>, <code>dist[s] = 0</code>, đẩy <code>s</code> vào deque.</div></li>
+      <li><div><strong>Lấy đầu deque.</strong> Lấy <code>u</code> ở đầu.</div></li>
+      <li><div><strong>Nới cạnh.</strong> Với mỗi cạnh <code>(u, v, w)</code>: nếu <code>dist[u] + w &lt; dist[v]</code> thì cập nhật <code>dist[v]</code>, rồi nếu <code>w = 0</code> đẩy <code>v</code> vào <b>đầu</b> deque, nếu <code>w = 1</code> đẩy vào <b>cuối</b>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>khi</b> deque không rỗng:
+    u ← lấy_đầu()
+    <b>với mỗi</b> (v, w) <b>kề</b> u:
+        <b>nếu</b> dist[u] + w &lt; dist[v]:
+            dist[v] ← dist[u] + w
+            <b>nếu</b> w = 0: đẩy_đầu(v)   <i>// cùng lớp với u</i>
+            <b>ngược lại</b>: đẩy_cuối(v)  <i>// lớp sau</i></pre>
+    <p><b>Vì sao đúng:</b> đỉnh nối với <span class="math">u</span> bằng cạnh 0 có cùng khoảng cách với <span class="math">u</span>, nên nó phải được xử lý trước mọi đỉnh lớp sau: đặt nó lên đầu. Nhờ vậy deque vẫn giữ dạng “<span class="math">d, …, d, d + 1, …, d + 1</span>” như BFS thường. Khác BFS thường ở chỗ một đỉnh có thể được cập nhật lại khi tìm thấy đường tốt hơn, nên ta so sánh <code>dist[u] + w &lt; dist[v]</code> thay vì kiểm tra <code>−1</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">zero_one_bfs.cpp</span> 0-1 BFS từ đỉnh 1; mỗi cạnh ghi u v w với w ∈ {0, 1}</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vector&lt;vector&lt;pair&lt;int,int&gt;&gt;&gt; adj(n + 1);   // (đỉnh kề, trọng số 0 hoặc 1)
+    for (int i = 0; i &lt; m; i++) {
+        int u, v, w;
+        cin &gt;&gt; u &gt;&gt; v &gt;&gt; w;
+        adj[u].push_back({v, w});
+        adj[v].push_back({u, w});
+    }
+    const int INF = 1e9;
+    vector&lt;int&gt; dist(n + 1, INF);
+    deque&lt;int&gt; dq;
+    dist[1] = 0;
+    dq.push_back(1);
+    while (!dq.empty()) {
+        int u = dq.front();
+        dq.pop_front();
+        for (auto [v, w] : adj[u]) {
+            if (dist[u] + w &lt; dist[v]) {        // tìm được đường tốt hơn
+                dist[v] = dist[u] + w;
+                if (w == 0) dq.push_front(v);   // cạnh 0: vào ĐẦU deque
+                else        dq.push_back(v);    // cạnh 1: vào CUỐI deque
+            }
+        }
+    }
+    for (int v = 1; v &lt;= n; v++)
+        cout &lt;&lt; (dist[v] == INF ? -1 : dist[v]) &lt;&lt; (v &lt; n ? ' ' : '\n');
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 6
+1 2 1
+1 3 0
+3 4 1
+2 4 0
+4 5 0
+2 5 1</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">0 1 0 1 1</code></pre></div>
+    </div>
+    <p>Ở ví dụ này, đỉnh 3 cách 1 đúng 0 (cạnh miễn phí). Đỉnh 2 có hai cách cùng tốn 1: đi thẳng 1 → 2, hoặc 1 → 3 → 4 → 2 với chi phí 0 + 1 + 0.</p>
+
+    <h3>Nâng cao 2: đếm số đường đi ngắn nhất</h3>
+    <p>Đề hỏi: có bao nhiêu đường đi khác nhau từ <span class="math">s</span> tới mỗi đỉnh mà đều có độ dài ngắn nhất? Thêm mảng <code>cnt</code> với <code>cnt[s] = 1</code>. Khi lấy <span class="math">u</span> ra và xét đỉnh kề <span class="math">v</span>:</p>
+    <ul>
+      <li>nếu <span class="math">v</span> chưa thăm: <code>dist[v] = dist[u] + 1</code>, <code>cnt[v] = cnt[u]</code>, đẩy vào hàng đợi;</li>
+      <li>nếu <code>dist[v] == dist[u] + 1</code>: <span class="math">u</span> là thêm một “đỉnh trước” hợp lệ của <span class="math">v</span>, nên <code>cnt[v] += cnt[u]</code>;</li>
+      <li>còn lại (<span class="math">v</span> cùng lớp hoặc lớp trước): bỏ qua.</li>
+    </ul>
+    <p><b>Vì sao đúng:</b> mọi đường ngắn nhất tới <span class="math">v</span> đều đi qua một đỉnh <span class="math">u</span> ở lớp <code>dist[v] − 1</code> ngay trước <span class="math">v</span>, nên <code>cnt[v]</code> bằng tổng <code>cnt[u]</code> của các đỉnh như vậy. Khi BFS lấy <span class="math">u</span> ra, mọi đỉnh lớp trước của <span class="math">u</span> đã được lấy ra hết, nên <code>cnt[u]</code> lúc đó đã đủ.</p>
+    <p>Trên đồ thị 8 đỉnh ở phần Minh họa: <code>cnt[5] = cnt[2] + cnt[3] = 2</code>; <code>cnt[7] = cnt[4] + cnt[5] = 1 + 2 = 3</code>, ứng với ba đường 1–2–4–7, 1–2–5–7, 1–3–5–7; còn <code>cnt[8] = cnt[6] = 1</code>, vì cạnh 7–8 nối hai đỉnh cùng lớp nên không được cộng.</p>
+    <figure class="code">
+      <figcaption><span class="fn">count_paths.cpp</span> Đếm số đường đi ngắn nhất từ đỉnh 1 (lấy dư 10⁹ + 7)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vector&lt;vector&lt;int&gt;&gt; adj(n + 1);
+    for (int i = 0; i &lt; m; i++) {
+        int u, v;
+        cin &gt;&gt; u &gt;&gt; v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    const long long MOD = 1e9 + 7;
+    vector&lt;int&gt; dist(n + 1, -1);
+    vector&lt;long long&gt; cnt(n + 1, 0);    // cnt[v] = số đường đi ngắn nhất từ 1 tới v
+    queue&lt;int&gt; q;
+    dist[1] = 0; cnt[1] = 1;
+    q.push(1);
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        for (int v : adj[u]) {
+            if (dist[v] == -1) {                // lần đầu gặp v
+                dist[v] = dist[u] + 1;
+                cnt[v] = cnt[u];
+                q.push(v);
+            } else if (dist[v] == dist[u] + 1) { // thêm một cách tới v cũng ngắn nhất
+                cnt[v] = (cnt[v] + cnt[u]) % MOD;
+            }
+        }
+    }
+    for (int v = 1; v &lt;= n; v++) cout &lt;&lt; cnt[v] &lt;&lt; (v &lt; n ? ' ' : '\n');
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8 10
+1 2
+1 3
+2 4
+2 5
+3 5
+3 6
+4 7
+5 7
+6 8
+7 8</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">1 1 1 1 2 1 3 1</code></pre></div>
+    </div>
+    <div class="callout warn">
+      <p class="callout-title">Số đường đi tăng rất nhanh</p>
+      <p>Trên lưới hay đồ thị nhiều tầng, số đường ngắn nhất có thể vượt <code>long long</code>. Đề thường yêu cầu lấy dư cho <span class="math">10<sup>9</sup> + 7</span>; nhớ lấy dư ở mỗi lần cộng (xem bài <a href="modular-power.html">số học đồng dư</a>).</p>
+    </div>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger">
+      <p class="callout-title">1. Đánh dấu lúc lấy ra thay vì lúc đẩy vào</p>
+      <p>Một đỉnh bị đẩy vào hàng đợi nhiều lần, chương trình chậm và có thể ghi đè <code>dist</code> bằng giá trị lớn hơn (trên đồ thị mẫu ra <code>dist[8] = 4</code> thay vì 3). <b>Sửa:</b> kiểm tra <code>dist[v] == -1</code> rồi gán <code>dist[v]</code> ngay trước <code>q.push(v)</code>.</p>
+    </div>
+    <div class="callout danger">
+      <p class="callout-title">2. Quên đánh dấu đỉnh nguồn</p>
+      <p>Đẩy <code>s</code> vào mà quên <code>dist[s] = 0</code>: <code>dist[s]</code> vẫn là −1, nên đỉnh kề của <code>s</code> có <code>dist = −1 + 1 = 0</code> và còn đẩy <code>s</code> vào lại lần nữa. <b>Sửa:</b> luôn viết hai dòng <code>dist[s] = 0; q.push(s);</code> đi liền nhau.</p>
+    </div>
+    <div class="callout danger">
+      <p class="callout-title">3. Dùng BFS cho đồ thị có trọng số</p>
+      <p>Cạnh dài khác nhau thì BFS cho đường ít cạnh, không phải đường ngắn nhất (Hình 2). <b>Sửa:</b> cạnh chỉ 0/1 thì dùng 0-1 BFS, trọng số dương bất kỳ thì dùng <a href="dijkstra.html">Dijkstra</a>.</p>
+    </div>
+    <div class="callout warn">
+      <p class="callout-title">4. Quên thêm cạnh hai chiều</p>
+      <p>Đồ thị vô hướng mà chỉ viết <code>adj[u].push_back(v)</code>, BFS sẽ không đi được từ <code>v</code> về <code>u</code>. <b>Sửa:</b> thêm cả <code>adj[v].push_back(u)</code>. Ngược lại, đề nói “đường một chiều” thì chỉ thêm một chiều.</p>
+    </div>
+    <div class="callout warn">
+      <p class="callout-title">5. Trạng thái ra ngoài phạm vi mảng</p>
+      <p>Trong bài Two Buttons, <code>2x</code> có thể vượt kích thước mảng; trên lưới, <code>x + dx[k]</code> có thể bằng −1. Truy cập <code>dist[-1]</code> làm chương trình chạy sai hoặc bị lỗi. <b>Sửa:</b> kiểm tra biên <b>trước</b> khi đọc <code>dist</code> của trạng thái mới.</p>
+    </div>
+    <div class="callout warn">
+      <p class="callout-title">6. Truy vết sai chiều hoặc lặp vô hạn</p>
+      <p>Đi theo <code>par</code> từ <code>t</code> cho ra đường ngược, phải <code>reverse</code>. Nếu chưa kiểm tra <code>dist[t] != -1</code> mà đã truy vết, vòng <code>while (v != s)</code> chạy theo <code>par[t] = 0</code> và không bao giờ dừng. <b>Sửa:</b> kiểm tra tới được rồi mới truy vết.</p>
+    </div>
+    <div class="callout warn">
+      <p class="callout-title">7. Nhiều bộ test nhưng không khởi tạo lại</p>
+      <p>Đề có nhiều test mà quên đặt lại <code>dist</code> về −1 và xóa danh sách kề, test sau dùng dữ liệu thừa của test trước. <b>Sửa:</b> mỗi test gọi <code>fill</code> lại <code>dist</code> và <code>adj[i].clear()</code> cho <span class="math">i = 1..n</span>.</p>
+    </div>
+    <div class="callout tip">
+      <p class="callout-title">Mẹo</p>
+      <p>Trước khi code một bài BFS trạng thái, viết ra giấy: <b>đỉnh là gì, có bao nhiêu đỉnh, mỗi đỉnh có những cạnh nào</b>. Nếu số đỉnh nhân số cạnh mỗi đỉnh dưới khoảng <span class="math">10<sup>7</sup></span> thì BFS chạy kịp.</p>
+    </div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. BFS dùng cấu trúc dữ liệu nào để đi theo từng lớp?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Ngăn xếp (vào sau, ra trước)</button>
+        <button type="button" class="quiz-opt" data-correct>B. Hàng đợi (vào trước, ra trước)</button>
+        <button type="button" class="quiz-opt">C. Mảng đã sắp xếp</button>
+      </div>
+      <p class="quiz-explain">Hàng đợi bảo đảm các đỉnh lớp k (vào trước) được lấy ra trước các đỉnh lớp k + 1 (vào sau). Dùng ngăn xếp thì thành DFS.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Trên đồ thị 8 đỉnh ở phần Minh họa, nếu chạy BFS từ đỉnh 8 thì dist[1] bằng bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 2</button>
+        <button type="button" class="quiz-opt" data-correct>B. 3</button>
+        <button type="button" class="quiz-opt">C. 4</button>
+      </div>
+      <p class="quiz-explain">Đồ thị vô hướng nên khoảng cách hai chiều bằng nhau: δ(8, 1) = δ(1, 8) = 3, ví dụ đường 8 → 6 → 3 → 1.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Đồ thị có cạnh dài 1, 2 hoặc 3. Thuật toán nào chắc chắn cho đường đi ngắn nhất?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. BFS thường</button>
+        <button type="button" class="quiz-opt">B. 0-1 BFS</button>
+        <button type="button" class="quiz-opt" data-correct>C. Dijkstra</button>
+      </div>
+      <p class="quiz-explain">BFS chỉ đúng khi mọi cạnh dài bằng nhau; 0-1 BFS chỉ cho cạnh 0 hoặc 1. Trọng số dương bất kỳ thì dùng Dijkstra.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Đồ thị có n = 10⁵ đỉnh và m = 3 · 10⁵ cạnh vô hướng. BFS cài bằng danh sách kề xét tổng cộng bao nhiêu đầu cạnh?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 3 · 10⁵</button>
+        <button type="button" class="quiz-opt" data-correct>B. 6 · 10⁵</button>
+        <button type="button" class="quiz-opt">C. 10¹⁰</button>
+      </div>
+      <p class="quiz-explain">Mỗi cạnh vô hướng nằm trong danh sách kề của cả hai đầu, nên tổng các bậc là 2m = 6 · 10⁵ (với điều kiện mọi đỉnh tới được từ nguồn).</p>
+    </div>
+    <p><strong>Câu 5.</strong> Chạy tay BFS bài Two Buttons với n = 5, m = 8. Viết các lớp và đáp số.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Lớp 0: {5}. Lớp 1: {10, 4}. Lớp 2: từ 10 được 20, 9; từ 4 được 8 → gặp đích. Đáp số 2: 5 → 4 → 8 (trừ 1 rồi nhân 2).</p>
+    </details>
+    <p><strong>Câu 6.</strong> Một bạn viết BFS nhưng gán <code>dist[v] = dist[u] + 1</code> mỗi khi gặp <code>v</code> mà <code>v</code> chưa được <i>lấy ra</i>. Vì sao chương trình có thể in sai? Nêu một sửa đổi.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Khi <code>v</code> đang nằm chờ trong hàng đợi với khoảng cách đúng <span class="math">k</span>, một đỉnh khác cũng ở lớp <span class="math">k</span> có thể gặp lại <code>v</code> và ghi đè <code>dist[v] = k + 1</code>. Trên đồ thị mẫu, đỉnh 7 ghi đè <code>dist[8]</code> từ 3 thành 4. Sửa: chỉ gán khi <code>dist[v] == -1</code>, tức đánh dấu ngay lúc đẩy vào.</p>
+    </details>
+    <p><strong>Câu 7.</strong> Bàn cờ có các ô cấm. Cần số nước mã ít nhất từ ô A tới ô B, nhưng mỗi nước nhảy vào ô màu đen tốn 1, vào ô màu trắng tốn 0. Em dùng thuật toán gì?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Đỉnh là ô không cấm, cạnh là nước mã với trọng số 0 hoặc 1 tùy màu ô đích. Đây là đồ thị trọng số 0/1, nên dùng 0-1 BFS bằng <code>deque</code>: cạnh 0 đẩy vào đầu, cạnh 1 đẩy vào cuối. Độ phức tạp <span class="math">O(8 · N<sup>2</sup>)</span>.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Ưu tiên đề tiếng Việt (LQDOJ, VNOJ); đề tiếng Anh có tóm tắt tiếng Việt.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/bfscoban">BFSCOBAN – BFS</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đồ thị vô hướng n ≤ 1000 đỉnh, m ≤ 10⁴ cạnh. In số cạnh ít nhất từ đỉnh 1 tới mỗi đỉnh 2..n, in −1 nếu không tới được.</p>
+        <p class="ex-skill"><b>Luyện:</b> khuôn BFS chuẩn với <code>dist = −1</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chạy đúng code ở phần Cài đặt (bỏ <code>par</code>), rồi in <code>dist[2..n]</code>. Đề đọc/ghi qua bàn phím, màn hình.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/bfs">BFS – BFS Cơ bản</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">N, M ≤ 10⁵, nút trung tâm S. In các đỉnh tới được từ S kèm khoảng cách, theo khoảng cách tăng dần; cùng khoảng cách thì đỉnh nhãn nhỏ đứng trước.</p>
+        <p class="ex-skill"><b>Luyện:</b> BFS trên đồ thị lớn, kết hợp sắp xếp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Thứ tự lấy ra khỏi hàng đợi chưa chắc có nhãn tăng trong cùng lớp. Sau BFS, gom các cặp <code>(dist[v], v)</code> với <code>dist[v] ≠ −1</code> rồi <code>sort</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1667">Message Route</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Mạng n máy, m dây nối. Tìm đường từ máy 1 tới máy n đi qua ít máy nhất; in số máy và đường đi, hoặc <code>IMPOSSIBLE</code>.</p>
+        <p class="ex-skill"><b>Luyện:</b> truy vết bằng <code>par</code>.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Số máy trên đường bằng <code>dist[n] + 1</code>. Đi ngược theo <code>par</code> từ n về 1 rồi đảo lại.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/520/B">520B – Two Buttons</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Màn hình hiện n; nút đỏ nhân 2, nút xanh trừ 1, số phải luôn dương. Số lần bấm ít nhất để được m (1 ≤ n, m ≤ 10⁴).</p>
+        <p class="ex-skill"><b>Luyện:</b> BFS trên không gian trạng thái là các số.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đỉnh là các số từ 1 tới 2 · 10⁴, cạnh x → 2x và x → x − 1. Xem phần BFS trên không gian trạng thái.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/cses3217">CSES3217 – Lưới nước đi quân mã</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Bàn cờ n × n (n ≤ 1000). Với mỗi ô, in số nước đi ít nhất để quân mã từ ô đó về góc trên trái.</p>
+        <p class="ex-skill"><b>Luyện:</b> BFS trên lưới với 8 hướng nước mã.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Nước mã đi được hai chiều, nên chỉ cần một lần BFS bắt đầu từ góc trên trái. Bảng 8 × 8 ở phần Minh họa chính là đáp án của test mẫu.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/bfseva">BFSEVA – Sơ tán</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">n ≤ 10⁵ phòng, m ≤ 10⁵ đường hầm, k phòng có lối thoát hiểm. Với mỗi phòng, in thời gian ít nhất để tới một lối thoát hiểm.</p>
+        <p class="ex-skill"><b>Luyện:</b> BFS nhiều nguồn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đừng chạy BFS từ từng phòng. Đẩy cả k phòng thoát hiểm vào hàng đợi với <code>dist = 0</code> rồi BFS một lần.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1193">Labyrinth</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Mê cung n × m ≤ 1000 × 1000. Tìm đường ngắn nhất từ A tới B, in độ dài và chuỗi các bước L, R, U, D.</p>
+        <p class="ex-skill"><b>Luyện:</b> BFS trên lưới kèm truy vết hướng đi.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lưu cho mỗi ô hướng đã dùng để tới nó (chỉ số k của mảng dx, dy). Truy vết từ B: lùi theo hướng ngược lại, ghi ký tự, cuối cùng đảo chuỗi.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://lqdoj.edu.vn/problem/3d17zero">3D17ZERO – Biến đổi về Zero</a>
+          <span class="judge">LQDOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Mỗi bước: nếu N = a · b (a, b ≠ 1) thì được đổi N thành max(a, b), hoặc giảm N đi 1. Với Q ≤ 1000 truy vấn N ≤ 10⁶, in số bước ít nhất để về 0.</p>
+        <p class="ex-skill"><b>Luyện:</b> mô hình hóa trạng thái, tính trước một lần cho mọi N.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Mọi thao tác đều làm số nhỏ đi, nên tính <code>f[N]</code> cho N = 0, 1, 2, … theo thứ tự tăng: <code>f[N] = 1 + min(f[N − 1], f[max(a, b)])</code> với mọi cách tách. Duyệt ước tới √N, hoặc duyệt mọi a và bội a · b như sàng.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/173/B">173B – Chamber of Secrets</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Căn phòng là lưới n × m, một số ô có cột đá <code>#</code>. Tia nhìn đi thẳng xuyên qua cột thường, còn cột “ma thuật” tỏa tia ra cả bốn hướng. Con quái vật nhìn dọc hàng dưới cùng, người bước vào nhìn dọc hàng trên cùng. Tìm số cột ít nhất cần biến thành ma thuật để hai tia nhìn gặp nhau, hoặc báo không thể.</p>
+        <p class="ex-skill"><b>Luyện:</b> chọn đỉnh khéo (hàng và cột là đỉnh), BFS hoặc 0-1 BFS.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tạo n đỉnh cho các hàng và m đỉnh cho các cột; mỗi ô <code>#</code> ở (i, j) nối hàng i với cột j. Mỗi lần tia đổi từ hàng sang cột (hay ngược lại) là đi qua một cạnh, tức dùng một cột ma thuật. Đáp án là số cạnh ít nhất từ đỉnh hàng 1 tới đỉnh hàng n, hoặc −1.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/kandp">KANDP – Mã và tốt</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Bàn cờ vô hạn, quân mã và quân tốt đi xen kẽ, tốt chỉ đi xuống một ô mỗi lượt. Hỏi mã có bắt được tốt không, nếu có thì ít nhất mấy nước (tọa độ có trị tuyệt đối ≤ 1000).</p>
+        <p class="ex-skill"><b>Luyện:</b> BFS quân mã kết hợp lập luận theo thời gian.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sau k nước của tốt, vị trí tốt đã biết. Mã bắt được tốt ở nước thứ k nếu số nước mã ít nhất tới ô đó không quá k và cùng tính chẵn lẻ (mã có thể đi tới rồi đi về mất 2 nước). Chú ý cả trường hợp tốt đi vào ô của mã.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/graph-theory/breadth-first-search">VNOI Wiki – BFS (Breadth-first search)</a> (tiếng Việt): BFS trên đồ thị và lưới, truy vết, 0-1 BFS, nhiều bài tập.</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer's Handbook</a>, chương 12 “Graph traversal” (tiếng Anh, miễn phí).</li>
+      <li><a href="https://cp-algorithms.com/graph/breadth-first-search.html">CP-Algorithms – Breadth-first search</a> và <a href="https://cp-algorithms.com/graph/01_bfs.html">0-1 BFS</a> (tiếng Anh).</li>
+      <li>Lê Minh Hoàng – <i>Giải thuật và lập trình</i>, phần Lý thuyết đồ thị, mục thuật toán tìm kiếm theo chiều rộng (tiếng Việt).</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>BFS đi theo lớp khoảng cách 0, 1, 2, … nhờ <b>hàng đợi FIFO</b>; lần đầu chạm tới một đỉnh là đường ngắn nhất.</li>
+        <li>Khuôn mẫu: <code>dist</code> = −1, <code>dist[s] = 0</code>, đẩy <code>s</code>; lấy <code>u</code> ra, với <code>v</code> kề mà <code>dist[v] == -1</code> thì gán <code>dist[v] = dist[u] + 1</code>, <code>par[v] = u</code>, đẩy <code>v</code>.</li>
+        <li><b>Đánh dấu lúc đẩy vào</b>, không phải lúc lấy ra: mỗi đỉnh vào hàng đúng một lần, <code>dist</code> không bị ghi đè.</li>
+        <li>Truy vết: đi <code>t → par[t] → …</code> về <code>s</code>, rồi đảo ngược.</li>
+        <li>Độ phức tạp <span class="bigo">O(n + m)</span> với danh sách kề.</li>
+        <li>Chỉ đúng khi mọi cạnh dài bằng nhau. Cạnh 0/1: 0-1 BFS bằng <code>deque</code>; trọng số dương: Dijkstra.</li>
+        <li>Bài “ít bước nhất” không có đồ thị: tự hỏi “đỉnh là gì, cạnh là gì”, rồi BFS trên trạng thái. Nhiều nguồn: đẩy hết vào hàng đợi từ đầu.</li>
+        <li>Đếm đường ngắn nhất: <code>cnt[v] += cnt[u]</code> khi <code>dist[v] == dist[u] + 1</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/bfs.js"></script>
+</body>
+</html>

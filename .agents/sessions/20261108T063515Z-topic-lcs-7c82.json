@@ -3,10 +3,10 @@
   "agent": "topic-lcs",
   "task": "Soạn chủ đề lcs",
   "topic": "lcs",
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-11-08T06:35:15Z",
-  "heartbeat_at": "2026-11-08T06:54:51Z",
-  "ended_at": null,
-  "summary": null
+  "heartbeat_at": "2026-11-08T06:58:52Z",
+  "ended_at": "2026-11-08T06:58:52Z",
+  "summary": "9 bài tập (5 VI, 4 EN), 6002 từ, stepper 8 khung, widget có (LCS/edit distance/xâu con liên tiếp)"
 }

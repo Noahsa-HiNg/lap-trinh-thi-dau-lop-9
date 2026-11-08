@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Loang trên lưới &amp; BFS đa nguồn · Thi đấu lớp 9</title>
+<meta name="description" content="Loang (flood fill) trên bảng lưới: đếm vùng, diện tích, mê cung BFS và truy vết đường đi, BFS đa nguồn cho lửa lan, quái vật đuổi, loang từ biên tìm vùng bị bao.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  #viz-flood-fill .ff-wrap { overflow-x: auto; padding: 0.25rem 0; }
+  #viz-flood-fill .grid-viz { touch-action: none; user-select: none; }
+  #viz-flood-fill .grid-viz .g[role="button"] { cursor: pointer; }
+  #viz-flood-fill .grid-viz .g[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+  svg .ff-wall { fill: var(--ink-2); stroke: var(--ink-2); stroke-width: 1.5; }
+  .ff-pair { display: flex; flex-wrap: wrap; gap: 1.25rem; justify-content: center; align-items: flex-start; }
+  .ff-pair > div { text-align: center; }
+  .ff-pair p { margin: 0.25rem 0 0; font-size: var(--fs-sm); color: var(--ink-2); }
+</style>
+</head>
+<body data-page="topic" data-topic="flood-fill">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Nhìn một bảng lưới như một đồ thị: ô là đỉnh, hai ô kề nhau là cạnh, và duyệt được nó bằng hai mảng <code>dx</code>, <code>dy</code> mà không cần dựng danh sách kề.</li>
+      <li>Cài đặt được thuật toán loang (flood fill) bằng BFS để đếm số vùng, tính diện tích từng vùng và vùng lớn nhất.</li>
+      <li>Tìm được đường đi ngắn nhất trong mê cung bằng BFS và in ra đường đi dạng chuỗi <code>L/R/U/D</code> bằng truy vết.</li>
+      <li>Giải thích được vì sao BFS đa nguồn cho khoảng cách tới nguồn gần nhất, và dùng nó cho bài lửa lan, quái vật đuổi.</li>
+      <li>Biết khi nào DFS đệ quy bị tràn ngăn xếp trên lưới lớn và chuyển sang BFS; ước lượng được độ phức tạp <span class="bigo">O(R·C)</span>.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Rất nhiều đề thi cho em một tấm bản đồ kẻ ô vuông: ô trống và ô tường, đất và nước, cỏ và đá. Đề hỏi “có bao nhiêu hòn đảo?”, “đi từ A tới B ít nhất mấy bước?”, “sau bao lâu thì lửa cháy hết?”. Cả ba câu hỏi này đều được giải bằng một ý tưởng duy nhất: <strong>loang</strong>. Ta bắt đầu từ một ô, lan sang các ô kề, rồi lan tiếp từ các ô vừa tới, giống như giọt mực loang trên tờ giấy thấm.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div>
+        <p><strong>Hình dung:</strong> em làm đổ một ít nước lên sàn nhà lát gạch vuông. Nước tràn từ viên gạch đầu tiên sang bốn viên bên cạnh, rồi từ đó sang các viên kế tiếp. Nước không vượt qua được chân tủ (ô tường) và dừng lại ở mép phòng (biên của bảng). Viên gạch nào bị ướt sau 1 giây, sau 2 giây, sau 3 giây… chính là các “lớp” của thuật toán BFS.</p>
+        <p>Nếu em làm đổ nước ở <em>hai</em> chỗ cùng lúc, mỗi viên gạch sẽ bị ướt bởi vũng nước tới nó sớm hơn. Đó là <strong>BFS đa nguồn</strong>.</p>
+      </div>
+    </div>
+
+    <p>Bài này nối tiếp hai bài trước: <a href="graph-dfs.html">DFS và thành phần liên thông</a> và <a href="bfs.html">BFS và đường đi ngắn nhất</a>. Ở hai bài đó, đồ thị được cho bằng danh sách cạnh. Ở bài này, đồ thị ẩn bên trong một bảng ký tự, và em sẽ học cách duyệt nó trực tiếp.</p>
+
+    <div class="definition" data-label="Lưới là đồ thị">
+      <p>Cho bảng <span class="math">R</span> hàng, <span class="math">C</span> cột, đánh số hàng 0 … R − 1 từ trên xuống, cột 0 … C − 1 từ trái sang. Mỗi <strong>ô đi được</strong> là một đỉnh. Hai ô đi được <strong>kề cạnh</strong> (chung một cạnh, tức là lệch nhau đúng 1 hàng hoặc đúng 1 cột) thì có một cạnh vô hướng nối chúng. Đồ thị này có tối đa <span class="math">R·C</span> đỉnh và mỗi đỉnh có tối đa 4 cạnh (hoặc 8 cạnh nếu đề cho đi chéo).</p>
+    </div>
+
+    <div class="definition" data-label="Loang (flood fill)">
+      <p>Loang từ ô <span class="math">s</span> là thăm mọi ô đi được nối với <span class="math">s</span> bằng một dãy ô kề nhau. Tập ô thăm được gọi là <strong>vùng</strong> (thành phần liên thông) chứa <span class="math">s</span>. Nếu loang bằng BFS, ta còn biết được <strong>số bước ít nhất</strong> từ <span class="math">s</span> tới mỗi ô.</p>
+    </div>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Loang trên lưới là dạng đồ thị gặp nhiều nhất trong đề thi THCS, vì đề không cần nói chữ “đồ thị” mà học sinh vẫn hình dung được ngay. Có bốn nhóm bài chính:</p>
+    <table>
+      <thead><tr><th>Nhóm bài</th><th>Câu hỏi điển hình</th><th>Kỹ thuật</th></tr></thead>
+      <tbody>
+        <tr><td>Đếm vùng</td><td>Có bao nhiêu hòn đảo, căn phòng, vết dầu? Vùng lớn nhất rộng bao nhiêu ô?</td><td>Quét mọi ô, gặp ô chưa thăm thì loang (DFS hoặc BFS).</td></tr>
+        <tr><td>Mê cung</td><td>Đi từ A tới B ít nhất mấy bước? In đường đi.</td><td>BFS một nguồn + truy vết.</td></tr>
+        <tr><td>Lan truyền</td><td>Lửa, nước, dịch bệnh lan từ nhiều điểm; sau bao lâu thì phủ hết? Ô nào cách điểm gần nhất xa nhất?</td><td>BFS đa nguồn.</td></tr>
+        <tr><td>Vùng bị bao</td><td>Ô nào bị tường bao kín, không thông ra ngoài?</td><td>Loang từ toàn bộ biên.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề cho bảng ký tự hoặc bảng số kích thước tới khoảng 1000 × 1000; có các cụm từ “ô kề cạnh”, “đi sang 4 ô xung quanh”, “vùng liên thông”, “số bước ít nhất”, “mỗi giây lan sang ô bên cạnh”. Khi thấy “mỗi bước tốn như nhau” và “ít nhất”, nghĩ ngay tới BFS. Khi thấy “nhiều điểm bắt đầu cùng lúc”, nghĩ tới BFS đa nguồn.</p></div>
+    <p>Ngoài đề thi, loang có mặt trong công cụ “thùng sơn” của phần mềm vẽ (bấm một điểm, tô cả vùng cùng màu), trong trò chơi dò mìn (bấm vào ô trống, mở cả vùng trống), và trong robot hút bụi tìm đường quanh đồ đạc.</p>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <h3>Bài toán 1: đếm số phòng</h3>
+    <p>Bản đồ một tòa nhà 1000 × 1000 ô, ô <code>.</code> là sàn, ô <code>#</code> là tường. Hai ô sàn kề cạnh thuộc cùng một phòng. Hỏi có bao nhiêu phòng?</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p>Với mỗi cặp ô sàn, kiểm tra xem chúng có thông nhau không, rồi gom nhóm. Có tới 10⁶ ô, tức khoảng 5·10¹¹ cặp, mỗi lần kiểm tra lại phải duyệt cả bảng. Kể cả cách “với mỗi ô, duyệt cả bảng để xem nó nối được với ô nào đã đếm” cũng tốn <span class="bigo">O((R·C)²)</span> = 10¹² phép tính, chạy hàng giờ.</p></div>
+      <div class="good-side"><h4>Loang</h4><p>Quét từng ô một lần. Gặp ô sàn chưa thăm thì tăng bộ đếm và loang hết phòng đó, đánh dấu mọi ô trong phòng. Mỗi ô được thăm đúng một lần, mỗi lần xét 4 ô kề: khoảng 4·10⁶ phép tính, chạy chưa tới 0,1 giây.</p></div>
+    </div>
+
+    <h3>Bài toán 2: đường đi ngắn nhất trong mê cung</h3>
+    <p>Đi từ ô A tới ô B, mỗi bước sang một ô kề cạnh, không đi vào tường. Ít nhất mấy bước?</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Quay lui thử mọi đường</h4><p>Liệt kê mọi đường đi không lặp ô rồi lấy đường ngắn nhất. Số đường bùng nổ rất nhanh: chỉ riêng lưới trống 7 × 7 ô đã có 575 780 564 đường đi không tự cắt từ góc trên trái tới góc dưới phải; lưới 10 × 10 có khoảng 4·10¹⁹ đường. Không máy nào chạy kịp.</p></div>
+      <div class="good-side"><h4>BFS</h4><p>Đi theo từng lớp: mọi ô cách A 1 bước, rồi 2 bước, rồi 3 bước… Lần đầu chạm tới B chính là số bước ít nhất. Mỗi ô vào hàng đợi một lần: lưới 1000 × 1000 chỉ cần khoảng 4·10⁶ phép tính.</p></div>
+    </div>
+
+    <h3>Bài toán 3: lửa lan từ nhiều đám cháy</h3>
+    <p>Có <span class="math">k</span> đám cháy. Mỗi phút lửa lan sang các ô kề. Hỏi mỗi ô bắt lửa vào phút thứ mấy?</p>
+    <div class="versus">
+      <div class="bad-side"><h4>BFS riêng từng đám cháy</h4><p>Chạy BFS từ mỗi đám cháy, rồi lấy nhỏ nhất ở mỗi ô. Tốn <span class="bigo">O(k·R·C)</span>. Với k = 1000 đám cháy trên lưới 10⁶ ô là 10⁹ ô phải thăm, mỗi ô 4 phép kiểm tra: quá chậm.</p></div>
+      <div class="good-side"><h4>BFS đa nguồn</h4><p>Đẩy cả k đám cháy vào hàng đợi cùng lúc với thời gian 0, rồi chạy BFS một lần. Vẫn chỉ <span class="bigo">O(R·C)</span> ≈ 4·10⁶ phép tính, không phụ thuộc k.</p></div>
+    </div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>Chuẩn bị chung: dx, dy và hàm kiểm tra ô</h3>
+    <p>Ta không dựng danh sách kề. Từ ô <span class="math">(x, y)</span>, bốn ô kề là <span class="math">(x − 1, y)</span> ở trên, <span class="math">(x + 1, y)</span> ở dưới, <span class="math">(x, y − 1)</span> bên trái, <span class="math">(x, y + 1)</span> bên phải. Ghi phần chênh lệch vào hai mảng rồi dùng một vòng lặp:</p>
+    <pre class="pseudo">dx = {−1, 1, 0, 0}         <i>// lên, xuống, trái, phải</i>
+dy = { 0, 0, −1, 1}
+<b>với</b> k <b>từ</b> 0 <b>đến</b> 3:
+    nx = x + dx[k];  ny = y + dy[k]
+    <b>nếu</b> nx, ny nằm ngoài bảng <b>thì</b> bỏ qua      <i>// kiểm tra biên TRƯỚC</i>
+    <b>nếu</b> ô (nx, ny) là tường hoặc đã thăm <b>thì</b> bỏ qua
+    ... xử lý ô kề (nx, ny) ...</pre>
+    <p>Muốn đi 8 hướng (cả đường chéo), chỉ cần thêm 4 cặp <span class="math">(−1, −1), (−1, 1), (1, −1), (1, 1)</span> và cho k chạy tới 7. Thứ tự kiểm tra rất quan trọng: phải kiểm tra <strong>biên trước</strong>, rồi mới đọc <code>g[nx][ny]</code>, nếu không sẽ đọc ra ngoài mảng.</p>
+
+    <h3>Thuật toán A: loang đếm vùng</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Mảng <code>seen</code> toàn <code>false</code>, bộ đếm <code>vung = 0</code>.</div></li>
+      <li><div><strong>Quét bảng.</strong> Duyệt mọi ô theo hàng. Gặp ô đi được mà chưa thăm thì <code>vung++</code> và gọi loang từ ô đó.</div></li>
+      <li><div><strong>Loang (BFS).</strong> Đánh dấu ô xuất phát, đẩy vào hàng đợi. Lặp: lấy một ô ra, cộng 1 vào diện tích, xét 4 ô kề; ô kề nào hợp lệ, chưa thăm thì <strong>đánh dấu ngay</strong> rồi đẩy vào hàng đợi.</div></li>
+      <li><div><strong>Kết thúc.</strong> Sau khi quét xong, <code>vung</code> là số vùng; diện tích mỗi lần loang cho biết kích thước từng vùng, lấy max để có vùng lớn nhất.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Loang(sx, sy):
+    seen[sx][sy] = <b>true</b>;  q.đẩy(sx, sy);  dt = 0
+    <b>khi</b> q khác rỗng:
+        (x, y) = q.lấy_đầu();  dt = dt + 1
+        <b>với mỗi</b> ô kề (nx, ny) hợp lệ <b>và</b> chưa seen:
+            seen[nx][ny] = <b>true</b>             <i>// đánh dấu khi ĐẨY, không đợi khi lấy</i>
+            q.đẩy(nx, ny)
+    <b>trả về</b> dt
+
+vung = 0
+<b>với mỗi</b> ô (i, j) <b>theo hàng</b>:
+    <b>nếu</b> ô (i, j) đi được <b>và</b> chưa seen:
+        vung = vung + 1;  dt = Loang(i, j)    <i>// dt là diện tích vùng mới</i></pre>
+    <p>Bước 3 có thể thay bằng DFS (đệ quy hoặc dùng ngăn xếp); kết quả đếm vùng như nhau. Chỉ khi cần <em>khoảng cách</em> thì bắt buộc phải là BFS.</p>
+
+    <h3>Thuật toán B: BFS mê cung và truy vết</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Mảng <code>d</code> toàn −1 (chưa thăm). <code>d[A] = 0</code>, đẩy A vào hàng đợi.</div></li>
+      <li><div><strong>Lan theo lớp.</strong> Lấy ô <span class="math">u</span> ở đầu hàng đợi. Với mỗi ô kề <span class="math">v</span> đi được và <code>d[v] == −1</code>: gán <code>d[v] = d[u] + 1</code>, ghi lại <strong>hướng</strong> đã đi từ u sang v (hoặc ghi ô cha <code>par[v] = u</code>), đẩy v vào hàng đợi.</div></li>
+      <li><div><strong>Trả lời.</strong> Hàng đợi rỗng. Nếu <code>d[B] == −1</code> thì không có đường; ngược lại <code>d[B]</code> là số bước ít nhất.</div></li>
+      <li><div><strong>Truy vết.</strong> Đứng ở B, đọc hướng đã ghi, ghi chữ cái tương ứng, lùi một bước ngược hướng đó. Lặp tới khi về A. Đảo ngược chuỗi vừa ghi.</div></li>
+    </ol>
+    <pre class="pseudo">d[mọi ô] = −1;  d[A] = 0;  q.đẩy(A)
+<b>khi</b> q khác rỗng:
+    u = q.lấy_đầu()
+    <b>với</b> k <b>từ</b> 0 <b>đến</b> 3:
+        v = u + (dx[k], dy[k])
+        <b>nếu</b> v hợp lệ <b>và</b> d[v] = −1:
+            d[v] = d[u] + 1;  huong[v] = k;  q.đẩy(v)
+
+<b>nếu</b> d[B] = −1: in "NO"
+<b>ngược lại</b>:
+    s = "";  x = B
+    <b>khi</b> x ≠ A:
+        k = huong[x];  s = s + chữ[k];  x = x − (dx[k], dy[k])   <i>// lùi ngược hướng</i>
+    in đảo_ngược(s)</pre>
+
+    <h3>Thuật toán C: BFS đa nguồn</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> <code>d</code> toàn −1. Với <em>mọi</em> ô nguồn (mọi đám lửa, mọi quái vật…): <code>d = 0</code> và đẩy vào hàng đợi.</div></li>
+      <li><div><strong>Lan.</strong> Chạy vòng lặp BFS y hệt thuật toán B. Không cần biết ô đang xét đến từ nguồn nào.</div></li>
+      <li><div><strong>Kết quả.</strong> <code>d[v]</code> là khoảng cách từ v tới <strong>nguồn gần nhất</strong>. Ô có <code>d = −1</code> không nguồn nào tới được.</div></li>
+    </ol>
+    <pre class="pseudo">d[mọi ô] = −1
+<b>với mỗi</b> ô nguồn s:  d[s] = 0;  q.đẩy(s)    <i>// điểm khác duy nhất so với BFS thường</i>
+<b>khi</b> q khác rỗng:  ... (giống hệt BFS một nguồn) ...</pre>
+
+    <h3>Thuật toán D: loang từ biên tìm vùng bị bao</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Nguồn là cả đường biên.</strong> Mọi ô đi được nằm ở hàng 0, hàng R − 1, cột 0, cột C − 1 đều được đánh dấu “thông ra ngoài” và đẩy vào hàng đợi.</div></li>
+      <li><div><strong>Loang.</strong> Lan như bình thường, đánh dấu “thông ra ngoài” cho mọi ô tới được.</div></li>
+      <li><div><strong>Kết quả.</strong> Ô đi được nào <em>không</em> được đánh dấu là ô bị bao kín.</div></li>
+    </ol>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Vì sao không cần danh sách kề</h3>
+    <p>Trong bài <a href="graph-dfs.html">DFS</a>, ta lưu <code>adj[u]</code> vì các cạnh là tùy ý, không đoán trước được. Trên lưới, hàng xóm của một ô luôn tính ra được bằng công thức <span class="math">(x + dx[k], y + dy[k])</span>. Dựng danh sách kề cho lưới 1000 × 1000 sẽ tốn tới 4·10⁶ phần tử vô ích; tính tại chỗ vừa nhanh vừa không tốn bộ nhớ.</p>
+    <p>Nếu thích lưu mỗi ô bằng <strong>một</strong> số nguyên (ví dụ để dùng <code>queue&lt;int&gt;</code> hoặc để dùng lại code đồ thị cũ), em đánh số ô <span class="math">(i, j)</span> thành <span class="math">id = i·C + j</span>. Ngược lại, <span class="math">i = id / C</span> và <span class="math">j = id % C</span> (chia lấy nguyên và lấy dư). Ví dụ với C = 6, ô (2, 3) có số hiệu 2·6 + 3 = 15; và 15 / 6 = 2, 15 % 6 = 3. Các số hiệu đi từ 0 tới R·C − 1, không trùng nhau.</p>
+
+    <h3>Hàng đợi chạy như thế nào: bảng vết trên mê cung nhỏ</h3>
+    <p>Xét mê cung 5 × 6 ở phần <a href="#truc-quan">Minh họa trực quan</a>, xuất phát S = (0, 0). Thứ tự hướng là lên, xuống, trái, phải. Tám lần lấy ra đầu tiên:</p>
+    <table class="trace">
+      <thead><tr><th>Lần</th><th>Lấy ra</th><th>d</th><th>Đẩy vào (kèm d mới)</th><th>Hàng đợi sau đó</th></tr></thead>
+      <tbody>
+          <tr><td>1</td><td>(0,0)</td><td>0</td><td>(1,0)=1, (0,1)=1</td><td>(1,0) (0,1)</td></tr>
+          <tr><td>2</td><td>(1,0)</td><td>1</td><td>(2,0)=2</td><td>(0,1) (2,0)</td></tr>
+          <tr><td>3</td><td>(0,1)</td><td>1</td><td>(0,2)=2</td><td>(2,0) (0,2)</td></tr>
+          <tr><td>4</td><td>(2,0)</td><td>2</td><td>(3,0)=3</td><td>(0,2) (3,0)</td></tr>
+          <tr><td>5</td><td>(0,2)</td><td>2</td><td>(1,2)=3</td><td>(3,0) (1,2)</td></tr>
+          <tr><td>6</td><td>(3,0)</td><td>3</td><td>(3,1)=4</td><td>(1,2) (3,1)</td></tr>
+          <tr><td>7</td><td>(1,2)</td><td>3</td><td>(2,2)=4</td><td>(3,1) (2,2)</td></tr>
+          <tr><td>8</td><td>(3,1)</td><td>4</td><td>(4,1)=5</td><td>(2,2) (4,1)</td></tr>
+      </tbody>
+    </table>
+    <p>Hãy để ý cột “d”: các ô được lấy ra theo thứ tự 0, 1, 1, 2, 2, 3, 3, 4, … không bao giờ giảm. Trong hàng đợi lúc nào cũng chỉ có các ô mang hai giá trị liền nhau, ví dụ 3 và 4. Đây chính là chìa khóa cho tính đúng của BFS.</p>
+
+    <h3>Vì sao BFS cho số bước ít nhất</h3>
+    <p>Ta chứng minh hai ý.</p>
+    <p><strong>Ý 1: hàng đợi luôn có dạng “vài ô d = t, sau đó vài ô d = t + 1”.</strong> Lúc đầu chỉ có nguồn với d = 0. Mỗi lần lấy ra một ô d = t, ta chỉ đẩy thêm ô có d = t + 1 vào <em>cuối</em> hàng. Vậy dạng trên được giữ nguyên. Hệ quả: các ô được lấy ra theo thứ tự d không giảm.</p>
+    <p><strong>Ý 2: d[v] đúng bằng số bước ít nhất.</strong> Giả sử có ô v mà d[v] lớn hơn số bước thật. Chọn v là ô sai có số bước thật nhỏ nhất, gọi số đó là t. Trên một đường ngắn nhất tới v, ô đứng ngay trước v là u, có số bước thật t − 1 và (do v là ô sai nhỏ nhất) d[u] = t − 1 đúng. Khi u được lấy ra, nếu v chưa có số thì v nhận d = t, mâu thuẫn. Nếu v đã có số từ trước, thì v được đẩy bởi một ô w lấy ra trước u, nên theo ý 1, d[w] ≤ d[u] = t − 1, suy ra d[v] = d[w] + 1 ≤ t, cũng mâu thuẫn. Vậy không có ô sai.</p>
+    <div class="callout note"><p class="callout-title">Điều kiện bắt buộc</p><p>Lập luận trên cần mọi bước đi tốn như nhau (cùng 1 bước, 1 phút, 1 đồng). Nếu mỗi ô có chi phí khác nhau, BFS không còn đúng; khi đó phải dùng thuật toán khác (Dijkstra) mà em sẽ học sau.</p></div>
+
+    <h3>Vì sao phải đánh dấu khi đẩy</h3>
+    <p>Có hai chỗ để đánh dấu “đã thăm”: lúc <em>đẩy</em> vào hàng đợi, hoặc lúc <em>lấy</em> ra. Nếu đợi tới lúc lấy ra mới đánh dấu, một ô có thể bị đẩy vào nhiều lần: một ô nằm giữa vùng trống có 4 hàng xóm, nhiều hàng xóm được lấy ra trước nó, đều thấy nó “chưa thăm” và cùng đẩy nó. Trên lưới trống 1000 × 1000, hàng đợi phình lên gần gấp 4, chạy chậm hẳn và có thể hết bộ nhớ. Đánh dấu ngay khi đẩy bảo đảm mỗi ô vào hàng đợi <strong>đúng một lần</strong>. Với BFS mê cung, việc gán <code>d[v]</code> (khác −1) chính là đánh dấu.</p>
+
+    <h3>Vì sao loang đếm vùng đúng</h3>
+    <p>Khi loang từ ô s, mọi ô được thăm đều nối với s (vì ta chỉ đi qua ô kề). Ngược lại, mọi ô v nối được với s cũng sẽ được thăm: lấy một dãy ô kề từ s tới v; nếu có ô đầu tiên trong dãy chưa được thăm thì ô đứng ngay trước nó đã được thăm, đã bị lấy ra khỏi hàng đợi và đã xét nó, mâu thuẫn. Vậy mỗi lần loang tô đúng một vùng trọn vẹn. Vòng quét chỉ bắt đầu loang ở ô chưa tô, tức là ở một vùng mới; mỗi vùng được đếm đúng một lần.</p>
+
+    <h3>Vì sao BFS đa nguồn đúng</h3>
+    <p>Tưởng tượng thêm một ô ảo <span class="math">S*</span> nằm “ngoài bảng”, nối với mọi nguồn bằng một bước. Chạy BFS thường từ <span class="math">S*</span>: các nguồn có d = 1, ô kề nguồn có d = 2, … Khoảng cách từ <span class="math">S*</span> tới ô v bằng 1 cộng khoảng cách từ v tới nguồn gần nhất. Bỏ đi phần “1 +” ta được đúng cái cần tìm. Đẩy tất cả nguồn vào hàng đợi với d = 0 chính là bỏ qua bước đầu tiên của BFS từ <span class="math">S*</span>. Vì vậy mọi lập luận ở trên vẫn áp dụng nguyên vẹn.</p>
+    <p>Một cách hiểu khác: mỗi nguồn phát ra một “làn sóng”. Các làn sóng tiến cùng tốc độ, một ô một phút. Ô nào bị làn sóng nào chạm trước thì thuộc về nguồn đó. BFS đa nguồn mô phỏng tất cả làn sóng một lúc, nên tốn đúng bằng một lần BFS.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Mỗi ô đi được vào hàng đợi tối đa một lần và ra tối đa một lần. Mỗi lần ra, ta xét 4 ô kề (hoặc 8). Tổng cộng không quá <span class="math">4·R·C</span> lần kiểm tra, tức <span class="bigo">O(R·C)</span>. Vòng quét ở thuật toán A cũng chỉ thêm <span class="math">R·C</span> lần kiểm tra. Lưới 1000 × 1000 có 10⁶ ô, nên chỉ cần vài triệu phép tính.</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi code, hãy lấy bút chì ghi số bước vào từng ô của mê cung trên giấy, lớp 0, lớp 1, lớp 2… Em sẽ thấy BFS là thứ em đã làm bằng tay từ lâu. Code chỉ là ghi lại đúng việc ấy.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+
+    <h3>Từ bảng lưới sang đồ thị</h3>
+    <p>Hình dưới cho thấy một bảng 3 × 3 có ô giữa là tường biến thành đồ thị 8 đỉnh. Mỗi ô trống thành một đỉnh, đánh số <span class="math">i·3 + j</span>. Hai ô kề cạnh thì nối một cạnh. Ô tường không thành đỉnh nào cả.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 440 185" width="440" role="img" aria-label="Lưới 3 nhân 3 có ô giữa là tường, và đồ thị tương ứng gồm 8 đỉnh nối thành vòng">
+        <rect class="node" x="20" y="25" width="40" height="40"/>
+        <text class="label-sm" x="40" y="49" text-anchor="middle">(0,0)</text>
+        <rect class="node" x="60" y="25" width="40" height="40"/>
+        <text class="label-sm" x="80" y="49" text-anchor="middle">(0,1)</text>
+        <rect class="node" x="100" y="25" width="40" height="40"/>
+        <text class="label-sm" x="120" y="49" text-anchor="middle">(0,2)</text>
+        <rect class="node" x="20" y="65" width="40" height="40"/>
+        <text class="label-sm" x="40" y="89" text-anchor="middle">(1,0)</text>
+        <rect class="ff-wall" x="60" y="65" width="40" height="40"/>
+        <rect class="node" x="100" y="65" width="40" height="40"/>
+        <text class="label-sm" x="120" y="89" text-anchor="middle">(1,2)</text>
+        <rect class="node" x="20" y="105" width="40" height="40"/>
+        <text class="label-sm" x="40" y="129" text-anchor="middle">(2,0)</text>
+        <rect class="node" x="60" y="105" width="40" height="40"/>
+        <text class="label-sm" x="80" y="129" text-anchor="middle">(2,1)</text>
+        <rect class="node" x="100" y="105" width="40" height="40"/>
+        <text class="label-sm" x="120" y="129" text-anchor="middle">(2,2)</text>
+        <text class="label-pen" x="80" y="178" text-anchor="middle">bảng 3 × 3, ô giữa là tường</text>
+        <text class="label-pen" x="190" y="90" text-anchor="middle">⟶</text>
+        <line class="edge" x1="260" y1="40" x2="330" y2="40"/>
+        <line class="edge" x1="260" y1="40" x2="260" y2="90"/>
+        <line class="edge" x1="330" y1="40" x2="400" y2="40"/>
+        <line class="edge" x1="400" y1="40" x2="400" y2="90"/>
+        <line class="edge" x1="260" y1="90" x2="260" y2="140"/>
+        <line class="edge" x1="400" y1="90" x2="400" y2="140"/>
+        <line class="edge" x1="260" y1="140" x2="330" y2="140"/>
+        <line class="edge" x1="330" y1="140" x2="400" y2="140"/>
+        <circle class="node" cx="260" cy="40" r="16"/><text x="260" y="45" text-anchor="middle">0</text>
+        <circle class="node" cx="330" cy="40" r="16"/><text x="330" y="45" text-anchor="middle">1</text>
+        <circle class="node" cx="400" cy="40" r="16"/><text x="400" y="45" text-anchor="middle">2</text>
+        <circle class="node" cx="260" cy="90" r="16"/><text x="260" y="95" text-anchor="middle">3</text>
+        <circle class="node" cx="400" cy="90" r="16"/><text x="400" y="95" text-anchor="middle">5</text>
+        <circle class="node" cx="260" cy="140" r="16"/><text x="260" y="145" text-anchor="middle">6</text>
+        <circle class="node" cx="330" cy="140" r="16"/><text x="330" y="145" text-anchor="middle">7</text>
+        <circle class="node" cx="400" cy="140" r="16"/><text x="400" y="145" text-anchor="middle">8</text>
+        <text class="label-pen" x="330" y="178" text-anchor="middle">đỉnh mang số hiệu i·3 + j</text>
+      </svg>
+      <figcaption>Hình 1. Ô (1, 1) là tường nên không có đỉnh số 4. Lưới là đồ thị ẩn: không cần lưu cạnh, vì hàng xóm của ô (i, j) luôn tính được bằng dx, dy.</figcaption>
+    </figure>
+
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Các hướng đi: phần chênh lệch (dx, dy) so với ô (x, y)</p></div>
+      <div class="viz-body">
+        <div class="ff-pair">
+        <div><div class="grid-viz" style="--cols:3"><span class="g"></span><span class="g is-active">−1,0</span><span class="g"></span><span class="g is-active">0,−1</span><span class="g is-start">x,y</span><span class="g is-active">0,1</span><span class="g"></span><span class="g is-active">1,0</span><span class="g"></span></div><p>4 hướng: k = 0 … 3</p></div>
+        <div><div class="grid-viz" style="--cols:3"><span class="g is-cmp">−1,−1</span><span class="g is-active">−1,0</span><span class="g is-cmp">−1,1</span><span class="g is-active">0,−1</span><span class="g is-start">x,y</span><span class="g is-active">0,1</span><span class="g is-cmp">1,−1</span><span class="g is-active">1,0</span><span class="g is-cmp">1,1</span></div><p>8 hướng: thêm 4 ô chéo</p></div>
+        </div>
+      </div>
+      <div class="viz-caption"><p>Ô ghi “−1,0” nghĩa là hàng giảm 1, cột giữ nguyên, tức ô phía trên. Đi 8 hướng thì thêm 4 ô chéo (màu khác).</p></div>
+    </div>
+
+    <h3>Ví dụ 1: BFS mê cung, ghi số bước theo từng lớp</h3>
+    <p>Mê cung 5 × 6, xuất phát S = (0, 0) ở góc trên trái, đích T = (4, 5) ở góc dưới phải. Ô đen là tường. Mỗi khung hình là một “lớp” BFS: các ô vừa được ghi số (tô màu) đều cách S cùng một số bước. Đây đúng là hoạt động “ghi số bằng bút chì” trên giấy kẻ ô.</p>
+    <div class="stepper" data-title="BFS mê cung 5 × 6 và truy vết">
+      <div class="frame" data-caption="&lt;b&gt;Lớp 0.&lt;/b&gt; Chỉ có ô xuất phát S = (0,0), ghi số 0. Hàng đợi: [(0,0)]. Ô trống chưa ghi số là ô chưa thăm; ô đen là tường.">
+        <div class="grid-viz" style="--cols:6">
+          <span class="g is-start">S</span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g is-wall"></span>
+          <span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g"></span>
+          <span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g is-end">T</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lớp 1.&lt;/b&gt; Lấy (0,0) ra, xét 4 ô kề: (1,0) và (0,1) là ô trống chưa thăm, ghi 1 và đẩy vào hàng đợi. Hai ô còn lại nằm ngoài bảng.">
+        <div class="grid-viz" style="--cols:6">
+          <span class="g is-start">S</span><span class="g is-active">1</span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+          <span class="g is-active">1</span><span class="g is-wall"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g is-wall"></span>
+          <span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g"></span>
+          <span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g is-end">T</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lớp 2.&lt;/b&gt; Lấy (1,0) ra, ghi 2 cho (2,0); lấy (0,1) ra, ghi 2 cho (0,2). Ô (1,1) là tường nên bỏ qua.">
+        <div class="grid-viz" style="--cols:6">
+          <span class="g is-start">S</span><span class="g">1</span><span class="g is-active">2</span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+          <span class="g">1</span><span class="g is-wall"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g is-wall"></span>
+          <span class="g is-active">2</span><span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g"></span>
+          <span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g is-end">T</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lớp 3 và 4.&lt;/b&gt; Hai “đầu sóng” chạy song song: nhánh trái xuống (3,0) = 3, (3,1) = 4; nhánh phải xuống (1,2) = 3, (2,2) = 4.">
+        <div class="grid-viz" style="--cols:6">
+          <span class="g is-start">S</span><span class="g">1</span><span class="g">2</span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+          <span class="g">1</span><span class="g is-wall"></span><span class="g is-active">3</span><span class="g is-wall"></span><span class="g"></span><span class="g is-wall"></span>
+          <span class="g">2</span><span class="g is-wall"></span><span class="g is-active">4</span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g is-active">3</span><span class="g is-active">4</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g"></span>
+          <span class="g is-wall"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g is-end">T</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lớp 5 và 6.&lt;/b&gt; Nhánh trái rẽ sang hàng dưới: (4,1) = 5, (4,2) = 6. Nhánh phải đi ngang hàng 2: (2,3) = 5, (2,4) = 6.">
+        <div class="grid-viz" style="--cols:6">
+          <span class="g is-start">S</span><span class="g">1</span><span class="g">2</span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+          <span class="g">1</span><span class="g is-wall"></span><span class="g">3</span><span class="g is-wall"></span><span class="g"></span><span class="g is-wall"></span>
+          <span class="g">2</span><span class="g is-wall"></span><span class="g">4</span><span class="g is-active">5</span><span class="g is-active">6</span><span class="g"></span>
+          <span class="g">3</span><span class="g">4</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g"></span>
+          <span class="g is-wall"></span><span class="g is-active">5</span><span class="g is-active">6</span><span class="g"></span><span class="g is-wall"></span><span class="g is-end">T</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lớp 7.&lt;/b&gt; Ba ô mới: (4,3), (1,4), (2,5). Ô (4,3) là ngõ cụt vì (4,4) là tường, nhánh trái dừng ở đây.">
+        <div class="grid-viz" style="--cols:6">
+          <span class="g is-start">S</span><span class="g">1</span><span class="g">2</span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+          <span class="g">1</span><span class="g is-wall"></span><span class="g">3</span><span class="g is-wall"></span><span class="g is-active">7</span><span class="g is-wall"></span>
+          <span class="g">2</span><span class="g is-wall"></span><span class="g">4</span><span class="g">5</span><span class="g">6</span><span class="g is-active">7</span>
+          <span class="g">3</span><span class="g">4</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g"></span>
+          <span class="g is-wall"></span><span class="g">5</span><span class="g">6</span><span class="g is-active">7</span><span class="g is-wall"></span><span class="g is-end">T</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lớp 8.&lt;/b&gt; (0,4) và (3,5) được ghi 8. Đích T vẫn chưa có số.">
+        <div class="grid-viz" style="--cols:6">
+          <span class="g is-start">S</span><span class="g">1</span><span class="g">2</span><span class="g is-wall"></span><span class="g is-active">8</span><span class="g"></span>
+          <span class="g">1</span><span class="g is-wall"></span><span class="g">3</span><span class="g is-wall"></span><span class="g">7</span><span class="g is-wall"></span>
+          <span class="g">2</span><span class="g is-wall"></span><span class="g">4</span><span class="g">5</span><span class="g">6</span><span class="g">7</span>
+          <span class="g">3</span><span class="g">4</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-active">8</span>
+          <span class="g is-wall"></span><span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g is-wall"></span><span class="g is-end">T</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Lớp 9.&lt;/b&gt; Từ (3,5) đi xuống, T = (4,5) lần đầu được chạm tới, ghi 9. Vì BFS đi đúng theo lớp, 9 là số bước ít nhất. Ô (0,5) cũng được ghi 9.">
+        <div class="grid-viz" style="--cols:6">
+          <span class="g is-start">S</span><span class="g">1</span><span class="g">2</span><span class="g is-wall"></span><span class="g">8</span><span class="g is-active">9</span>
+          <span class="g">1</span><span class="g is-wall"></span><span class="g">3</span><span class="g is-wall"></span><span class="g">7</span><span class="g is-wall"></span>
+          <span class="g">2</span><span class="g is-wall"></span><span class="g">4</span><span class="g">5</span><span class="g">6</span><span class="g">7</span>
+          <span class="g">3</span><span class="g">4</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g">8</span>
+          <span class="g is-wall"></span><span class="g">5</span><span class="g">6</span><span class="g">7</span><span class="g is-wall"></span><span class="g is-end">9</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Truy vết.&lt;/b&gt; Từ T đi ngược theo ô cha: 9 ← 8 ← 7 ← … ← 0. Mỗi bước lùi, số giảm đúng 1. Đường đi ngắn nhất: &lt;code&gt;RRDDRRRDD&lt;/code&gt; (9 bước).">
+        <div class="grid-viz" style="--cols:6">
+          <span class="g is-start">S</span><span class="g is-path">1</span><span class="g is-path">2</span><span class="g is-wall"></span><span class="g is-dim">8</span><span class="g is-dim">9</span>
+          <span class="g is-dim">1</span><span class="g is-wall"></span><span class="g is-path">3</span><span class="g is-wall"></span><span class="g is-dim">7</span><span class="g is-wall"></span>
+          <span class="g is-dim">2</span><span class="g is-wall"></span><span class="g is-path">4</span><span class="g is-path">5</span><span class="g is-path">6</span><span class="g is-path">7</span>
+          <span class="g is-dim">3</span><span class="g is-dim">4</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-path">8</span>
+          <span class="g is-wall"></span><span class="g is-dim">5</span><span class="g is-dim">6</span><span class="g is-dim">7</span><span class="g is-wall"></span><span class="g is-end">9</span>
+        </div>
+      </div>
+    </div>
+    <p>Hãy để ý ô (4, 3) được ghi 7 nhưng không dẫn tới đâu: BFS vẫn đi vào ngõ cụt, nhưng chỉ tốn đúng một lần thăm cho mỗi ô, không bao giờ quay lại. Ô (0, 5) cũng nhận 9 cùng lúc với T, vì BFS lan đều mọi hướng chứ không “nhắm” vào đích.</p>
+
+    <h3>Ví dụ 2: BFS đa nguồn, lửa lan từ hai đám cháy</h3>
+    <p>Cánh đồng cỏ khô 5 × 5, có hai đám lửa ở (2, 0) và (4, 4), ba ô đá (1, 1), (1, 2), (3, 2) không cháy. Mỗi phút lửa lan sang các ô kề cạnh. Ô màu đỏ đã cháy từ trước, ô màu vàng vừa bắt lửa trong phút đó, số trong ô là phút bắt lửa.</p>
+    <div class="stepper" data-title="Lửa lan từ 2 nguồn cùng lúc">
+      <div class="frame" data-caption="&lt;b&gt;Phút 0.&lt;/b&gt; Hai đám lửa ở (2,0) và (4,4). Cả hai cùng được đẩy vào hàng đợi với thời gian 0: hàng đợi [(2,0), (4,4)].">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+          <span class="g is-cmp">0</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-cmp">0</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Phút 1.&lt;/b&gt; Mỗi đám lửa bén sang các ô kề: (1,0), (3,0), (2,1) từ đám bên trái; (3,4), (4,3) từ đám bên phải.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g is-cmp">1</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+          <span class="g is-bad">0</span><span class="g is-cmp">1</span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g is-cmp">1</span><span class="g"></span><span class="g is-wall"></span><span class="g"></span><span class="g is-cmp">1</span>
+          <span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-cmp">1</span><span class="g is-bad">0</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Phút 2.&lt;/b&gt; Lửa lan tiếp một bước nữa từ mọi ô vừa cháy. Ô (2,4) bị đám bên phải đốt ở phút 2, không cần đợi đám bên trái.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g is-cmp">2</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g is-bad">1</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g"></span><span class="g"></span>
+          <span class="g is-bad">0</span><span class="g is-bad">1</span><span class="g is-cmp">2</span><span class="g"></span><span class="g is-cmp">2</span>
+          <span class="g is-bad">1</span><span class="g is-cmp">2</span><span class="g is-wall"></span><span class="g is-cmp">2</span><span class="g is-bad">1</span>
+          <span class="g is-cmp">2</span><span class="g"></span><span class="g is-cmp">2</span><span class="g is-bad">1</span><span class="g is-bad">0</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Phút 3.&lt;/b&gt; Hai mặt lửa gặp nhau. Ô (2,3) được cả hai phía chạm tới ở phút 3, nhưng chỉ được ghi số một lần: ô nào lấy ra khỏi hàng đợi trước thì ghi, ô sau thấy đã có số thì bỏ qua.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g is-bad">2</span><span class="g is-cmp">3</span><span class="g"></span><span class="g"></span><span class="g"></span>
+          <span class="g is-bad">1</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g"></span><span class="g is-cmp">3</span>
+          <span class="g is-bad">0</span><span class="g is-bad">1</span><span class="g is-bad">2</span><span class="g is-cmp">3</span><span class="g is-bad">2</span>
+          <span class="g is-bad">1</span><span class="g is-bad">2</span><span class="g is-wall"></span><span class="g is-bad">2</span><span class="g is-bad">1</span>
+          <span class="g is-bad">2</span><span class="g is-cmp">3</span><span class="g is-bad">2</span><span class="g is-bad">1</span><span class="g is-bad">0</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Phút 4.&lt;/b&gt; Lửa vượt qua hàng rào đá (1,1), (1,2) từ hai phía: (0,2) cháy từ bên trái, (1,3) cháy từ bên phải.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g is-bad">2</span><span class="g is-bad">3</span><span class="g is-cmp">4</span><span class="g"></span><span class="g is-cmp">4</span>
+          <span class="g is-bad">1</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-cmp">4</span><span class="g is-bad">3</span>
+          <span class="g is-bad">0</span><span class="g is-bad">1</span><span class="g is-bad">2</span><span class="g is-bad">3</span><span class="g is-bad">2</span>
+          <span class="g is-bad">1</span><span class="g is-bad">2</span><span class="g is-wall"></span><span class="g is-bad">2</span><span class="g is-bad">1</span>
+          <span class="g is-bad">2</span><span class="g is-bad">3</span><span class="g is-bad">2</span><span class="g is-bad">1</span><span class="g is-bad">0</span>
+        </div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Phút 5.&lt;/b&gt; Ô cuối cùng (0,3) bắt lửa. Cả cánh đồng cháy hết sau 5 phút, đúng bằng số lớn nhất trong bảng.">
+        <div class="grid-viz" style="--cols:5">
+          <span class="g is-bad">2</span><span class="g is-bad">3</span><span class="g is-bad">4</span><span class="g is-cmp">5</span><span class="g is-bad">4</span>
+          <span class="g is-bad">1</span><span class="g is-wall"></span><span class="g is-wall"></span><span class="g is-bad">4</span><span class="g is-bad">3</span>
+          <span class="g is-bad">0</span><span class="g is-bad">1</span><span class="g is-bad">2</span><span class="g is-bad">3</span><span class="g is-bad">2</span>
+          <span class="g is-bad">1</span><span class="g is-bad">2</span><span class="g is-wall"></span><span class="g is-bad">2</span><span class="g is-bad">1</span>
+          <span class="g is-bad">2</span><span class="g is-bad">3</span><span class="g is-bad">2</span><span class="g is-bad">1</span><span class="g is-bad">0</span>
+        </div>
+      </div>
+    </div>
+    <p>So sánh: nếu chạy BFS riêng từ (2, 0), ô (0, 4) cách 6 bước; từ (4, 4) thì cách 4 bước. BFS đa nguồn ghi ngay 4 = min(6, 4) mà không cần chạy hai lần.</p>
+
+    <h3>Ví dụ 3: đếm đảo, 4 hướng khác 8 hướng</h3>
+    <p>Bảng 5 × 7, ô có số là đất, ô trống là nước. Số trong ô là số thứ tự của hòn đảo, theo thứ tự vòng quét gặp nó (từ trên xuống, từ trái sang).</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Cùng một bản đồ, hai cách hiểu “kề nhau”</p></div>
+      <div class="viz-body">
+        <div class="ff-pair">
+          <div>
+          <div class="grid-viz" style="--cols:7">
+            <span class="g is-ok">1</span><span class="g is-ok">1</span><span class="g"></span><span class="g"></span><span class="g is-cmp">2</span><span class="g"></span><span class="g is-active">3</span>
+            <span class="g is-ok">1</span><span class="g"></span><span class="g"></span><span class="g is-cmp">2</span><span class="g is-cmp">2</span><span class="g"></span><span class="g"></span>
+            <span class="g"></span><span class="g"></span><span class="g is-bad">4</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-path">5</span>
+            <span class="g is-end">6</span><span class="g"></span><span class="g is-bad">4</span><span class="g is-bad">4</span><span class="g"></span><span class="g is-path">5</span><span class="g is-path">5</span>
+            <span class="g is-end">6</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-path">5</span>
+          </div>
+          <p>4 hướng: 6 đảo, diện tích 3, 3, 1, 3, 4, 2</p></div>
+          <div>
+          <div class="grid-viz" style="--cols:7">
+            <span class="g is-ok">1</span><span class="g is-ok">1</span><span class="g"></span><span class="g"></span><span class="g is-cmp">2</span><span class="g"></span><span class="g is-active">3</span>
+            <span class="g is-ok">1</span><span class="g"></span><span class="g"></span><span class="g is-cmp">2</span><span class="g is-cmp">2</span><span class="g"></span><span class="g"></span>
+            <span class="g"></span><span class="g"></span><span class="g is-cmp">2</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-bad">4</span>
+            <span class="g is-path">5</span><span class="g"></span><span class="g is-cmp">2</span><span class="g is-cmp">2</span><span class="g"></span><span class="g is-bad">4</span><span class="g is-bad">4</span>
+            <span class="g is-path">5</span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g"></span><span class="g is-bad">4</span>
+          </div>
+          <p>8 hướng: 5 đảo, diện tích 3, 6, 1, 4, 2</p></div>
+        </div>
+      </div>
+      <div class="viz-caption"><p>Ô (1, 3) và ô (2, 2) chỉ chạm nhau ở góc. Đi 4 hướng thì đảo số 2 và đảo số 4 tách rời; đi 8 hướng thì chúng nhập làm một đảo 6 ô. Đọc kỹ đề xem “kề” nghĩa là chung cạnh hay chung cả đỉnh.</p></div>
+    </div>
+
+    <div class="playground" id="viz-flood-fill">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: vẽ mê cung, đặt nguồn, chạy BFS</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="ff-tool">Bấm ô để <select id="ff-tool">
+            <option value="wall">vẽ / xóa tường</option>
+            <option value="src">đặt / bỏ nguồn S</option>
+            <option value="end">đặt đích T</option>
+          </select></label>
+          <label for="ff-dir">Đi <select id="ff-dir">
+            <option value="4">4 hướng</option>
+            <option value="8">8 hướng</option>
+          </select></label>
+          <label for="ff-rows">Hàng <input type="number" id="ff-rows" min="3" max="14" value="8"></label>
+          <label for="ff-cols">Cột <input type="number" id="ff-cols" min="3" max="18" value="12"></label>
+        </div>
+        <div class="controls">
+          <button type="button" data-act="run">Chạy BFS</button>
+          <button type="button" class="ghost" data-act="step">Thêm một lớp</button>
+          <button type="button" class="ghost" data-act="clear">Xóa số</button>
+          <button type="button" class="ghost" data-act="random">Mê cung ngẫu nhiên</button>
+          <button type="button" class="ghost" data-act="reset">Lưới mới</button>
+        </div>
+        <div class="ff-wrap"><div class="grid-viz ff-grid" style="--cols:12"></div></div>
+        <div class="viz-legend"><span><i class="is-wall"></i>tường</span><span><i class="is-active"></i>lớp vừa lan tới</span><span><i class="is-ok"></i>đã thăm</span><span><i class="is-cmp"></i>đường đi ngắn nhất</span></div>
+        <div class="out" aria-live="polite">Bấm “Chạy BFS” để xem số bước. Đặt nhiều ô S để thấy BFS đa nguồn.</div>
+      </div>
+    </div>
+    <p>Gợi ý thí nghiệm: (1) đặt một S và một T, chạy BFS, đếm tay độ dài đường tô màu; (2) thêm S thứ hai gần T và chạy lại, khoảng cách tới T giảm, đường đi xuất phát từ S gần hơn; (3) đổi sang 8 hướng, đường đi ngắn đi vì được cắt chéo; (4) vẽ một bức tường kín quanh T, chương trình báo không tới được.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+
+    <h3>Chương trình 1: đếm vùng, diện tích từng vùng, vùng lớn nhất</h3>
+    <p>Dữ liệu theo dạng bài CSES Counting Rooms: dòng đầu R, C; tiếp theo R dòng, mỗi dòng C ký tự <code>.</code> (sàn) hoặc <code>#</code> (tường). In ra số phòng, diện tích từng phòng theo thứ tự tìm thấy, và diện tích lớn nhất. Dữ liệu ví dụ chính là bản đồ ở Ví dụ 3 (đất là <code>.</code>), đi 4 hướng.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_vung.cpp</span> Loang BFS đếm vùng</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int R, C;
+vector&lt;string&gt; g;                       // '.' là ô sàn, '#' là tường
+vector&lt;vector&lt;bool&gt;&gt; seen;              // seen[x][y] = ô (x, y) đã được đánh dấu chưa
+int dx[] = {-1, 1, 0, 0};               // 4 hướng: lên, xuống, trái, phải
+int dy[] = {0, 0, -1, 1};
+
+// Loang từ ô (sx, sy), trả về diện tích (số ô) của vùng chứa nó
+int loang(int sx, int sy) {
+    queue&lt;pair&lt;int,int&gt;&gt; q;
+    seen[sx][sy] = true;                // đánh dấu NGAY khi đẩy vào hàng đợi
+    q.push({sx, sy});
+    int dienTich = 0;
+    while (!q.empty()) {
+        auto [x, y] = q.front(); q.pop();
+        dienTich++;
+        for (int k = 0; k &lt; 4; k++) {
+            int nx = x + dx[k], ny = y + dy[k];
+            if (nx &lt; 0 || ny &lt; 0 || nx &gt;= R || ny &gt;= C) continue;   // ra ngoài bảng
+            if (g[nx][ny] == '#' || seen[nx][ny]) continue;          // tường hoặc đã thăm
+            seen[nx][ny] = true;
+            q.push({nx, ny});
+        }
+    }
+    return dienTich;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin &gt;&gt; R &gt;&gt; C;
+    g.resize(R);
+    for (auto &amp;row : g) cin &gt;&gt; row;
+    seen.assign(R, vector&lt;bool&gt;(C, false));
+
+    vector&lt;int&gt; dt;                     // diện tích từng vùng theo thứ tự tìm thấy
+    for (int i = 0; i &lt; R; i++)
+        for (int j = 0; j &lt; C; j++)
+            if (g[i][j] == '.' &amp;&amp; !seen[i][j])
+                dt.push_back(loang(i, j));   // gặp ô mới: thêm một vùng
+
+    cout &lt;&lt; dt.size() &lt;&lt; '\n';
+    for (int x : dt) cout &lt;&lt; x &lt;&lt; ' ';
+    cout &lt;&lt; '\n';
+    cout &lt;&lt; (dt.empty() ? 0 : *max_element(dt.begin(), dt.end())) &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 7
+..##.#.
+.##..##
+##.###.
+.#..#..
+.#####.</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">6
+3 3 1 3 4 2
+4</code></pre></div>
+    </div>
+
+    <h3>Chương trình 2: mê cung, số bước ít nhất và in đường đi</h3>
+    <p>Dạng bài CSES Labyrinth: tìm đường từ <code>A</code> tới <code>B</code>, in <code>YES</code>, độ dài và chuỗi hướng <code>U/D/L/R</code>, hoặc <code>NO</code>. Thay vì lưu ô cha, ta lưu <strong>chỉ số hướng</strong> k đã dùng để tới mỗi ô: khi truy vết, chữ cái là <code>ch[k]</code>, còn ô trước đó là <span class="math">(x − dx[k], y − dy[k])</span>. Dữ liệu ví dụ là mê cung ở Ví dụ 1.</p>
+    <figure class="code">
+      <figcaption><span class="fn">me_cung.cpp</span> BFS một nguồn + truy vết</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vector&lt;string&gt; g(n);
+    for (auto &amp;row : g) cin &gt;&gt; row;
+
+    // Hướng thứ k: lên, xuống, trái, phải và chữ cái tương ứng
+    const int dx[] = {-1, 1, 0, 0};
+    const int dy[] = {0, 0, -1, 1};
+    const char ch[] = {'U', 'D', 'L', 'R'};
+
+    int sx = 0, sy = 0, tx = 0, ty = 0;
+    for (int i = 0; i &lt; n; i++)
+        for (int j = 0; j &lt; m; j++) {
+            if (g[i][j] == 'A') { sx = i; sy = j; }
+            if (g[i][j] == 'B') { tx = i; ty = j; }
+        }
+
+    vector&lt;vector&lt;int&gt;&gt; d(n, vector&lt;int&gt;(m, -1));     // -1 = chưa thăm
+    vector&lt;vector&lt;int&gt;&gt; huong(n, vector&lt;int&gt;(m, -1));  // bước cuối cùng để tới ô này
+    queue&lt;pair&lt;int,int&gt;&gt; q;
+    d[sx][sy] = 0;
+    q.push({sx, sy});
+    while (!q.empty()) {
+        auto [x, y] = q.front(); q.pop();
+        for (int k = 0; k &lt; 4; k++) {
+            int nx = x + dx[k], ny = y + dy[k];
+            if (nx &lt; 0 || ny &lt; 0 || nx &gt;= n || ny &gt;= m) continue;
+            if (g[nx][ny] == '#' || d[nx][ny] != -1) continue;
+            d[nx][ny] = d[x][y] + 1;
+            huong[nx][ny] = k;            // nhớ: tới (nx, ny) bằng hướng k
+            q.push({nx, ny});
+        }
+    }
+
+    if (d[tx][ty] == -1) { cout &lt;&lt; "NO\n"; return 0; }
+
+    // Truy vết: đi ngược từ đích về nguồn, mỗi bước lùi lại theo hướng đã nhớ
+    string path;
+    int x = tx, y = ty;
+    while (x != sx || y != sy) {
+        int k = huong[x][y];
+        path += ch[k];
+        x -= dx[k];
+        y -= dy[k];
+    }
+    reverse(path.begin(), path.end());    // đường đang ngược, đảo lại
+
+    cout &lt;&lt; "YES\n" &lt;&lt; path.size() &lt;&lt; '\n' &lt;&lt; path &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 6
+A..#..
+.#.#.#
+.#....
+..###.
+#...#B</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">YES
+9
+RRDDRRRDD</code></pre></div>
+    </div>
+
+    <h3>Chương trình 3: BFS đa nguồn, lửa lan</h3>
+    <p>Bảng gồm <code>F</code> (lửa), <code>#</code> (đá), <code>.</code> (cỏ). In ra phút bắt lửa của từng ô và thời điểm cả cánh đồng cháy hết. So với chương trình 2, chỉ khác ở vòng lặp khởi tạo: <strong>mọi</strong> ô <code>F</code> được đẩy vào hàng đợi.</p>
+    <figure class="code">
+      <figcaption><span class="fn">lua_lan.cpp</span> BFS đa nguồn</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vector&lt;string&gt; g(n);
+    for (auto &amp;row : g) cin &gt;&gt; row;      // 'F' = lửa, '#' = tường đá, '.' = cỏ khô
+
+    const int dx[] = {-1, 1, 0, 0};
+    const int dy[] = {0, 0, -1, 1};
+    vector&lt;vector&lt;int&gt;&gt; t(n, vector&lt;int&gt;(m, -1));   // t[x][y] = phút ô (x, y) bắt lửa
+    queue&lt;pair&lt;int,int&gt;&gt; q;
+
+    // BFS đa nguồn: đẩy MỌI đám lửa vào hàng đợi cùng lúc, thời điểm 0
+    for (int i = 0; i &lt; n; i++)
+        for (int j = 0; j &lt; m; j++)
+            if (g[i][j] == 'F') { t[i][j] = 0; q.push({i, j}); }
+
+    while (!q.empty()) {
+        auto [x, y] = q.front(); q.pop();
+        for (int k = 0; k &lt; 4; k++) {
+            int nx = x + dx[k], ny = y + dy[k];
+            if (nx &lt; 0 || ny &lt; 0 || nx &gt;= n || ny &gt;= m) continue;
+            if (g[nx][ny] == '#' || t[nx][ny] != -1) continue;
+            t[nx][ny] = t[x][y] + 1;
+            q.push({nx, ny});
+        }
+    }
+
+    int lauNhat = 0;
+    bool conSot = false;                 // có ô cỏ nào không bao giờ cháy không?
+    for (int i = 0; i &lt; n; i++) {
+        for (int j = 0; j &lt; m; j++) {
+            if (g[i][j] == '#') { cout &lt;&lt; " #"; continue; }
+            cout &lt;&lt; setw(2) &lt;&lt; t[i][j];
+            if (t[i][j] == -1) conSot = true;
+            else lauNhat = max(lauNhat, t[i][j]);
+        }
+        cout &lt;&lt; '\n';
+    }
+    if (conSot) cout &lt;&lt; "Co o khong bao gio chay\n";
+    else cout &lt;&lt; "Chay het sau " &lt;&lt; lauNhat &lt;&lt; " phut\n";
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 5
+.....
+.##..
+F....
+..#..
+....F</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text"> 2 3 4 5 4
+ 1 # # 4 3
+ 0 1 2 3 2
+ 1 2 # 2 1
+ 2 3 2 1 0
+Chay het sau 5 phut</code></pre></div>
+    </div>
+    <div class="callout tip"><p class="callout-title">Mẹo đọc dữ liệu</p><p>Đọc mỗi hàng bằng <code>cin &gt;&gt; row</code> vào <code>string</code> là gọn nhất khi các ký tự viết liền nhau. Nếu đề cho bảng số cách nhau bởi dấu cách (như bài NKGUARD), hãy đọc vào <code>vector&lt;vector&lt;int&gt;&gt;</code> từng số một.</p></div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <p>Gọi <span class="math">N = R·C</span> là số ô. Mỗi ô vào và ra hàng đợi tối đa một lần, mỗi lần ra xét 4 (hoặc 8) ô kề.</p>
+    <table>
+      <thead><tr><th>Bài toán</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Đếm vùng, diện tích, vùng lớn nhất (BFS hoặc DFS)</td><td><span class="bigo">O(R·C)</span></td><td><span class="bigo">O(R·C)</span></td></tr>
+        <tr><td>BFS mê cung một nguồn + truy vết</td><td><span class="bigo">O(R·C)</span></td><td><span class="bigo">O(R·C)</span></td></tr>
+        <tr><td>BFS đa nguồn (k nguồn)</td><td><span class="bigo">O(R·C)</span>, không phụ thuộc k</td><td><span class="bigo">O(R·C)</span></td></tr>
+        <tr><td>Chạy BFS riêng từ từng nguồn rồi lấy min</td><td><span class="bigo">O(k·R·C)</span></td><td><span class="bigo">O(R·C)</span></td></tr>
+        <tr><td>Monsters: BFS quái vật + BFS người</td><td><span class="bigo">O(R·C)</span> (hai lần BFS)</td><td><span class="bigo">O(R·C)</span></td></tr>
+        <tr><td>BFS từ mọi ô (tìm cặp ô xa nhau nhất)</td><td><span class="bigo">O((R·C)²)</span></td><td><span class="bigo">O(R·C)</span></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Ví dụ số phép tính.</strong> Lưới 1000 × 1000 có 10⁶ ô. Một lần BFS kiểm tra tối đa 4·10⁶ ô kề, chạy khoảng 0,02–0,05 giây. Với 8 hướng là 8·10⁶ phép kiểm tra, vẫn rất nhanh.</p>
+    <p><strong>Bộ nhớ.</strong> Bảng ký tự 10⁶ byte (1 MB); mảng <code>int d</code> 4 MB; hàng đợi chứa tối đa 10⁶ cặp <code>pair&lt;int,int&gt;</code> là 8 MB. Tổng khoảng 15 MB, thoải mái với giới hạn 256 MB thường gặp.</p>
+    <p><strong>Khi nào quá chậm?</strong> BFS từ mọi ô chỉ dùng được khi lưới nhỏ: 20 × 20 = 400 ô thì 400 lần BFS, mỗi lần 1600 phép kiểm tra, khoảng 6,4·10⁵ phép tính (bài Maze Master). Lưới 1000 × 1000 thì không thể làm vậy.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Loang bằng DFS đệ quy, và nguy cơ tràn ngăn xếp</h3>
+    <p>Code DFS đệ quy rất ngắn, phù hợp với lưới nhỏ (vài trăm ô mỗi chiều trở xuống):</p>
+<pre><code class="language-cpp">void dfs(int x, int y) {
+    seen[x][y] = true;
+    for (int k = 0; k &lt; 4; k++) {
+        int nx = x + dx[k], ny = y + dy[k];
+        if (nx &lt; 0 || ny &lt; 0 || nx &gt;= R || ny &gt;= C) continue;
+        if (g[nx][ny] == '#' || seen[nx][ny]) continue;
+        dfs(nx, ny);
+    }
+}</code></pre>
+    <p>Nhưng mỗi lần gọi hàm lồng nhau tốn một khung trên <strong>ngăn xếp gọi hàm (call stack)</strong>, cỡ vài chục byte. Trên lưới 1000 × 1000 trống hoàn toàn hoặc có hình con rắn, DFS có thể đi sâu tới 10⁶ tầng, cần hàng chục MB ngăn xếp. Nhiều máy chấm chỉ cho 1–8 MB ngăn xếp (Windows mặc định 1 MB, Linux thường 8 MB), nên chương trình bị dừng đột ngột (lỗi <em>stack overflow</em>, máy chấm báo RE). Cách chữa: dùng BFS như trong bài, hoặc DFS bằng <code>stack</code> tự quản lý (xem bài <a href="stack-queue.html">Ngăn xếp và hàng đợi</a>): chỉ cần thay <code>queue</code> bằng <code>stack</code> và <code>front()</code> bằng <code>top()</code> trong code loang. Kết quả đếm vùng y hệt, chỉ thứ tự thăm khác.</p>
+
+    <h3>2. Đi 8 hướng, đi như quân mã</h3>
+    <p>Chỉ cần thay mảng hướng. Tám hướng: thêm bốn đường chéo. Quân mã: tám bước <span class="math">(±1, ±2)</span> và <span class="math">(±2, ±1)</span>. BFS vẫn đúng vì mỗi bước đi vẫn tốn như nhau.</p>
+<pre><code class="language-cpp">int dx8[] = {-1, -1, -1, 0, 0, 1, 1, 1}, dy8[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+int dxMa[] = {-2, -2, -1, -1, 1, 1, 2, 2}, dyMa[] = {-1, 1, -2, 2, -2, 2, -1, 1};</code></pre>
+
+    <h3>3. Loang từ biên: tìm vùng bị bao kín</h3>
+    <p>Đề hỏi “có bao nhiêu ô trống bị tường bao kín, không thông ra mép bản đồ?”. Cách ngây thơ: với mỗi vùng, kiểm tra xem có ô nào chạm biên không. Cách gọn hơn: loang đa nguồn từ <strong>mọi ô trống trên biên</strong>; ô trống nào không được chạm tới là ô bị bao. Ví dụ bảng dưới có 3 ô bị bao: (1, 2), (1, 3), (2, 2).</p>
+<pre><code class="language-cpp">// nguồn: mọi ô '.' nằm trên biên
+for (int i = 0; i &lt; n; i++)
+    for (int j = 0; j &lt; m; j++)
+        if ((i == 0 || j == 0 || i == n - 1 || j == m - 1) &amp;&amp; g[i][j] == '.') {
+            ra[i][j] = true; q.push({i, j});
+        }
+// ... loang như bình thường, đánh dấu ra[][] ...
+// ô '.' có ra[i][j] == false là ô bị bao kín</code></pre>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 6
+.####.
+.#..#.
+.#.##.
+.####.
+......</code></pre></div>
+      <div><div class="io-k">Output (số ô bị bao)</div><pre><code class="language-text">3</code></pre></div>
+    </div>
+    <p>Bài Codeforces 1365D (Solve The Maze) dùng cùng ý tưởng “loang ngược”: thay vì loang từ từng người, loang một lần từ lối ra để biết ai thoát được.</p>
+
+    <h3>4. Monsters: BFS quái vật rồi BFS người (nâng cao)</h3>
+    <p>Bài CSES Monsters: em ở ô <code>A</code>, có nhiều quái vật <code>M</code>, cần đi ra biên bản đồ mà không bao giờ đứng chung ô với quái. Quái vật di chuyển thông minh nhất có thể. Ý tưởng hai bước:</p>
+    <ol class="algo-steps">
+      <li><div><strong>BFS đa nguồn cho quái vật.</strong> <code>dm[v]</code> = thời điểm sớm nhất mà <em>một con quái nào đó</em> tới được ô v.</div></li>
+      <li><div><strong>BFS cho người.</strong> Chỉ cho người bước vào ô v nếu thời điểm người tới <code>da[u] + 1</code> <strong>nhỏ hơn hẳn</strong> <code>dm[v]</code>. Lần đầu lấy ra một ô nằm trên biên là thoát; truy vết như bài mê cung.</div></li>
+    </ol>
+    <p><strong>Vì sao đúng?</strong> Nếu một con quái tới ô v sớm hơn hoặc cùng lúc với em, nó chỉ cần đứng đợi ở đó, nên ô v không an toàn. Ngược lại, nếu em tới mọi ô trên đường sớm hơn hẳn mọi con quái, thì không có con quái nào có thể đứng chung ô với em ở bất kỳ thời điểm nào: nếu có, con quái đó đã tới ô ấy không muộn hơn em, trái với điều kiện. Hai lần BFS, tổng <span class="bigo">O(R·C)</span>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">monsters.cpp</span> BFS đa nguồn + BFS có điều kiện</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int n, m;
+vector&lt;string&gt; g;
+const int dx[] = {-1, 1, 0, 0};
+const int dy[] = {0, 0, -1, 1};
+const char ch[] = {'U', 'D', 'L', 'R'};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    cin &gt;&gt; n &gt;&gt; m;
+    g.resize(n);
+    for (auto &amp;row : g) cin &gt;&gt; row;
+
+    const int INF = INT_MAX;
+    vector&lt;vector&lt;int&gt;&gt; dm(n, vector&lt;int&gt;(m, INF));   // thời điểm quái sớm nhất tới ô
+    queue&lt;pair&lt;int,int&gt;&gt; q;
+    int sx = 0, sy = 0;
+    for (int i = 0; i &lt; n; i++)
+        for (int j = 0; j &lt; m; j++) {
+            if (g[i][j] == 'M') { dm[i][j] = 0; q.push({i, j}); }   // đa nguồn
+            if (g[i][j] == 'A') { sx = i; sy = j; }
+        }
+
+    // Lần 1: BFS đa nguồn cho tất cả quái vật
+    while (!q.empty()) {
+        auto [x, y] = q.front(); q.pop();
+        for (int k = 0; k &lt; 4; k++) {
+            int nx = x + dx[k], ny = y + dy[k];
+            if (nx &lt; 0 || ny &lt; 0 || nx &gt;= n || ny &gt;= m) continue;
+            if (g[nx][ny] == '#' || dm[nx][ny] != INF) continue;
+            dm[nx][ny] = dm[x][y] + 1;
+            q.push({nx, ny});
+        }
+    }
+
+    // Lần 2: BFS cho người, chỉ vào ô mà người tới SỚM HƠN hẳn quái
+    vector&lt;vector&lt;int&gt;&gt; da(n, vector&lt;int&gt;(m, -1)), huong(n, vector&lt;int&gt;(m, -1));
+    da[sx][sy] = 0;
+    q.push({sx, sy});
+    while (!q.empty()) {
+        auto [x, y] = q.front(); q.pop();
+        if (x == 0 || y == 0 || x == n - 1 || y == m - 1) {   // tới biên: thoát
+            string path;
+            while (x != sx || y != sy) {
+                int k = huong[x][y];
+                path += ch[k];
+                x -= dx[k]; y -= dy[k];
+            }
+            reverse(path.begin(), path.end());
+            cout &lt;&lt; "YES\n" &lt;&lt; path.size() &lt;&lt; '\n' &lt;&lt; path &lt;&lt; '\n';
+            return 0;
+        }
+        for (int k = 0; k &lt; 4; k++) {
+            int nx = x + dx[k], ny = y + dy[k];
+            if (nx &lt; 0 || ny &lt; 0 || nx &gt;= n || ny &gt;= m) continue;
+            if (g[nx][ny] == '#' || da[nx][ny] != -1) continue;
+            if (da[x][y] + 1 &gt;= dm[nx][ny]) continue;          // quái tới trước hoặc cùng lúc
+            da[nx][ny] = da[x][y] + 1;
+            huong[nx][ny] = k;
+            q.push({nx, ny});
+        }
+    }
+    cout &lt;&lt; "NO\n";
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">5 8
+########
+#M..A..#
+#.#.M#.#
+#M#..#..
+#.######</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">YES
+5
+RRDDR</code></pre></div>
+    </div>
+
+    <h3>5. Mỗi vùng một mã số: trả lời nhiều truy vấn</h3>
+    <p>Bài Igor In The Museum hỏi tới 10⁵ lần “đứng ở ô này thì xem được bao nhiêu bức tranh?”. Loang lại cho mỗi truy vấn sẽ tốn 10⁵ · 10⁶ phép tính. Thay vào đó, loang mỗi vùng <strong>một lần</strong>, ghi mã vùng <code>id[x][y]</code> cho mọi ô và lưu đáp án của vùng vào <code>ans[id]</code>. Mỗi truy vấn chỉ còn là tra <code>ans[id[x][y]]</code>, <span class="bigo">O(1)</span>.</p>
+
+    <h3>6. Liên hệ với các bài khác</h3>
+    <ul>
+      <li>Nếu chỉ được đi sang phải và xuống dưới, lưới không còn chu trình; khi đó đếm số đường hoặc tìm đường tổng lớn nhất dùng <a href="dp-grid.html">quy hoạch động trên lưới</a> thay vì BFS.</li>
+      <li>Nếu mỗi bước tốn 0 hoặc 1 (ví dụ đi trên đường không tốn, phá tường tốn 1), dùng BFS 0-1 với hàng đợi hai đầu <code>deque</code>: bước tốn 0 đẩy vào đầu, bước tốn 1 đẩy vào cuối.</li>
+      <li>Nếu trạng thái gồm cả vị trí và thông tin khác (ví dụ đã cầm chìa khóa chưa), đỉnh của đồ thị là cặp (ô, trạng thái); BFS vẫn chạy như cũ trên đồ thị lớn hơn.</li>
+    </ul>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Đọc ra ngoài bảng</p><p>Viết <code>if (g[nx][ny] == '#' || nx &lt; 0 …)</code> là sai thứ tự: chương trình đọc <code>g[-1][y]</code> trước khi kiểm tra biên, có thể ra kết quả lạ hoặc bị lỗi. Luôn kiểm tra <code>nx &lt; 0 || ny &lt; 0 || nx &gt;= R || ny &gt;= C</code> <strong>trước</strong>. Cách khác: thêm một viền tường quanh bảng (đánh số hàng, cột từ 1 tới R, C và coi hàng 0, R + 1 là tường).</p></div>
+    <div class="callout danger"><p class="callout-title">Quên đánh dấu, hoặc đánh dấu khi lấy ra</p><p>Quên đánh dấu thì hai ô kề đẩy qua đẩy lại lẫn nhau mãi, chương trình chạy vô hạn. Đánh dấu khi lấy ra thì một ô bị đẩy nhiều lần, hàng đợi phình to. Hãy đánh dấu (hoặc gán <code>d</code>) <strong>ngay khi đẩy</strong>.</p></div>
+    <div class="callout danger"><p class="callout-title">DFS đệ quy trên lưới 1000 × 1000</p><p>Độ sâu đệ quy có thể tới 10⁶, tràn ngăn xếp và bị RE. Lưới lớn hãy dùng BFS hoặc DFS bằng <code>stack</code>.</p></div>
+    <div class="callout warn"><p class="callout-title">Nhầm hàng với cột</p><p>Quy ước <code>x</code> là hàng (chạy tới R), <code>y</code> là cột (chạy tới C). Đề thường cho “N dòng, M cột” rồi cho tọa độ (dòng, cột) đánh số từ 1; nhớ trừ 1 nếu mảng của em đánh số từ 0. Với lưới không vuông, nhầm R với C sẽ chỉ lộ ra ở một số test.</p></div>
+    <div class="callout warn"><p class="callout-title">BFS đa nguồn nhưng chạy riêng từng nguồn</p><p>Viết vòng <code>for</code> qua từng nguồn, mỗi lần gọi một BFS mới và xóa mảng <code>d</code>, sẽ tốn <span class="bigo">O(k·R·C)</span> và dễ bị quá thời gian. Hãy đẩy tất cả nguồn vào <em>cùng một</em> hàng đợi trước khi bắt đầu vòng lặp.</p></div>
+    <div class="callout warn"><p class="callout-title">Truy vết bị ngược</p><p>Đi từ đích về nguồn nên chuỗi thu được bị ngược. Nhớ <code>reverse</code>. Và khi lùi, phải <em>trừ</em> <code>dx[k]</code>, <code>dy[k]</code> chứ không phải cộng.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo kiểm tra nhanh</p><p>In bảng <code>d</code> ra màn hình với ví dụ nhỏ và so với bảng em tự ghi bằng bút chì. Hai ô kề nhau luôn có <code>d</code> chênh nhau không quá 1; nếu thấy chênh 2 trở lên, chắc chắn có lỗi.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Bảng 3 × 3 sau (1 là đất, 0 là nước) có bao nhiêu hòn đảo nếu đi 4 hướng, và bao nhiêu nếu đi 8 hướng?<br><code>1 0 1</code><br><code>0 1 0</code><br><code>1 0 1</code></p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 4 hướng: 1 đảo; 8 hướng: 5 đảo</button>
+        <button type="button" class="quiz-opt" data-correct>B. 4 hướng: 5 đảo; 8 hướng: 1 đảo</button>
+        <button type="button" class="quiz-opt">C. Cả hai cách đều 5 đảo</button>
+        <button type="button" class="quiz-opt">D. 4 hướng: 5 đảo; 8 hướng: 2 đảo</button>
+      </div>
+      <p class="quiz-explain">Đi 4 hướng, không có hai ô đất nào chung cạnh, nên mỗi ô là một đảo: 5 đảo. Đi 8 hướng, ô giữa chạm chéo cả 4 ô góc, nên tất cả nhập thành 1 đảo.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Có 3 đám cháy. Cách khởi tạo nào đúng cho BFS đa nguồn?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Đẩy đám cháy thứ nhất với d = 0, đám thứ hai d = 1, đám thứ ba d = 2.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Đẩy cả 3 đám cháy vào cùng một hàng đợi, tất cả có d = 0, rồi mới chạy vòng lặp BFS.</button>
+        <button type="button" class="quiz-opt">C. Chạy BFS từ đám thứ nhất xong, rồi đẩy đám thứ hai vào và chạy tiếp mà không xóa mảng d.</button>
+        <button type="button" class="quiz-opt">D. Chỉ cần BFS từ đám cháy ở gần giữa bảng nhất.</button>
+      </div>
+      <p class="quiz-explain">Mọi nguồn phải cùng ở lớp 0 thì hàng đợi mới giữ được thứ tự d không giảm. Cách C sai vì các ô đã bị đám thứ nhất ghi số (có thể là số lớn) sẽ không được đám thứ hai sửa lại.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Em loang bằng DFS đệ quy trên lưới 1000 × 1000 toàn ô trống và bị lỗi RE (runtime error). Nguyên nhân có khả năng nhất là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Mảng 1000 × 1000 quá lớn so với bộ nhớ 256 MB.</button>
+        <button type="button" class="quiz-opt">B. DFS chạy quá 10⁹ phép tính.</button>
+        <button type="button" class="quiz-opt" data-correct>C. Đệ quy lồng sâu tới cỡ 10⁶ tầng, tràn ngăn xếp gọi hàm.</button>
+        <button type="button" class="quiz-opt">D. DFS không đếm được vùng, phải dùng BFS.</button>
+      </div>
+      <p class="quiz-explain">Mảng 10⁶ phần tử chỉ vài MB, DFS chỉ cần O(R·C) ≈ 4·10⁶ phép tính, và DFS đếm vùng hoàn toàn đúng. Vấn đề là độ sâu đệ quy. Chữa bằng BFS hoặc DFS với <code>stack</code> tự quản lý.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Trong mê cung ở Ví dụ 1, nếu ô (4, 4) không phải tường mà là ô trống, số bước ít nhất từ S tới T là bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 8</button>
+        <button type="button" class="quiz-opt" data-correct>B. 9</button>
+        <button type="button" class="quiz-opt">C. 10</button>
+      </div>
+      <p class="quiz-explain">(4, 3) có d = 7, nên (4, 4) có d = 8 và T vẫn là 9. Lúc này có hai đường ngắn nhất dài 9 bước (đi hàng dưới hoặc đi hàng 2 rồi xuống); BFS chỉ in một trong hai, đường nào tùy thứ tự hướng.</p>
+    </div>
+    <p><strong>Câu 5.</strong> Bảng có C = 1000 cột, đánh số ô theo <span class="math">id = i·C + j</span>. Ô (12, 345) có số hiệu bao nhiêu? Ô có số hiệu 54 321 nằm ở hàng nào, cột nào?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>12·1000 + 345 = 12 345. Ngược lại 54 321 / 1000 = 54 (chia lấy nguyên) và 54 321 % 1000 = 321, nên là ô (54, 321).</p></details>
+    <p><strong>Câu 6.</strong> Trong bài Monsters, vì sao điều kiện để người bước vào ô v là <code>da + 1 &lt; dm[v]</code> (nhỏ hơn hẳn) chứ không phải <code>&lt;=</code>?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Nếu người và quái tới ô v cùng một thời điểm thì cả hai đứng chung ô, tức người bị bắt. Chỉ khi người tới sớm hơn hẳn thì quái không thể chặn ở đó. Đổi thành <code>&lt;=</code> sẽ cho đáp án YES sai ở những test quái và người gặp nhau đúng lúc.</p></details>
+    <p><strong>Câu 7.</strong> Ghi tay bảng thời gian bắt lửa cho bảng 3 × 4 có hai đám lửa ở hai góc trên: <code>F..F</code>, <code>.#..</code>, <code>....</code>. Ô nào cháy muộn nhất?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Bảng thời gian: hàng 0: <code>0 1 1 0</code>; hàng 1: <code>1 # 2 1</code>; hàng 2: <code>2 3 3 2</code>. Ô (2, 1) và (2, 2) cháy muộn nhất, ở phút 3. Ô (1, 2) cháy ở phút 2 vì (0, 2) và (1, 3) đều cháy ở phút 1.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Ba bài tiếng Việt trên VNOJ, còn lại là đề tiếng Anh có tóm tắt tiếng Việt. Bộ CSES (Counting Rooms → Labyrinth → Monsters) đi đúng thứ tự của bài học này.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1192">Counting Rooms</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Bản đồ n × m (n, m ≤ 1000) gồm ô sàn <code>.</code> và tường <code>#</code>. Đếm số phòng, mỗi phòng là một vùng ô sàn liên thông theo 4 hướng.</p>
+        <p class="ex-skill"><b>Luyện:</b> vòng quét + loang đếm vùng, đúng Chương trình 1.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lưới tới 10⁶ ô: dùng BFS thay cho DFS đệ quy để tránh tràn ngăn xếp.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/vmunch">VMUNCH – Gặm cỏ</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đồng cỏ R × C (R, C ≤ 100) có cỏ <code>.</code> và đá <code>*</code>. Bò Bessie ở ô C muốn về chuồng B ở ô (1, 1) theo đường ngắn nhất; hỏi ăn được bao nhiêu ô cỏ trên đường.</p>
+        <p class="ex-skill"><b>Luyện:</b> BFS một nguồn đếm số bước trên lưới.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Số ô cỏ ăn được đúng bằng số bước ít nhất từ C tới B (ô chuồng không có cỏ, ô xuất phát không tính).</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1193">Labyrinth</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Mê cung n × m (≤ 1000) có điểm A và B. In YES, độ dài đường ngắn nhất và chuỗi hướng L/R/U/D; hoặc NO nếu không tới được.</p>
+        <p class="ex-skill"><b>Luyện:</b> BFS + truy vết in đường đi, đúng Chương trình 2.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Lưu hướng đã dùng để tới mỗi ô, truy vết từ B về A rồi đảo chuỗi. Đừng lưu cả chuỗi đường đi cho mỗi ô, sẽ hết bộ nhớ.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nkguard">NKGUARD – Bảo vệ nông trang</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Bản đồ độ cao N × M (≤ 700). Đỉnh đồi là một nhóm ô cùng độ cao, kề nhau theo 8 hướng, mà mọi ô xung quanh nhóm đều thấp hơn (hoặc là mép bản đồ). Đếm số đỉnh đồi.</p>
+        <p class="ex-skill"><b>Luyện:</b> loang 8 hướng theo điều kiện “cùng giá trị”, kiểm tra tính chất của cả vùng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Loang từng vùng cùng độ cao; trong lúc loang, nếu gặp ô kề cao hơn thì ghi nhớ “vùng này không phải đỉnh”, nhưng vẫn loang hết vùng để đánh dấu.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/cf_edu1d">CF_EDU1D – Igor In The Museum</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Bảo tàng n × m (≤ 1000), giữa mỗi ô trống và ô <code>*</code> kề nó có một bức tranh. Với k ≤ 10⁵ vị trí xuất phát, cho biết Igor xem được tối đa bao nhiêu bức tranh.</p>
+        <p class="ex-skill"><b>Luyện:</b> gán mã vùng, tính đáp án mỗi vùng một lần, trả lời truy vấn O(1).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Khi loang, mỗi lần gặp ô kề là <code>*</code> thì cộng 1 tranh cho vùng. Lưu <code>id[x][y]</code> để truy vấn sau không phải loang lại.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/377/A">377A – Maze</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Mê cung n × m (≤ 500), các ô trống đang liên thông. Biến đúng k ô trống thành tường (đánh dấu <code>X</code>) sao cho các ô trống còn lại vẫn liên thông.</p>
+        <p class="ex-skill"><b>Luyện:</b> hiểu thứ tự thăm của BFS/DFS, nghĩ ngược.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Gọi s là số ô trống. Loang từ một ô trống bất kỳ và chỉ giữ lại s − k ô được thăm đầu tiên; tập này luôn liên thông vì mỗi ô được nối với một ô thăm trước nó. Mọi ô trống còn lại đổi thành X.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://atcoder.jp/contests/abc151/tasks/abc151_d">ABC151 D – Maze Master</a>
+          <span class="judge">AtCoder</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Mê cung H × W (≤ 20). Chọn ô xuất phát và ô đích (đều trống) sao cho số bước ít nhất giữa chúng là lớn nhất. In số bước đó.</p>
+        <p class="ex-skill"><b>Luyện:</b> chạy BFS nhiều lần, ước lượng độ phức tạp O((H·W)²).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chỉ 400 ô: BFS từ mọi ô trống, lấy max của mọi d. Nhớ khởi tạo lại mảng d trước mỗi lần BFS.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/1365/D">1365D – Solve The Maze</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Lưới có người tốt G, người xấu B, lối ra ở ô (n, m). Được biến ô trống thành tường. Hỏi có cách để mọi G thoát được còn mọi B thì không.</p>
+        <p class="ex-skill"><b>Luyện:</b> loang ngược từ lối ra, suy luận tham lam.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xây tường ở mọi ô trống kề B (nếu B kề G thì chắc chắn không được). Sau đó loang một lần từ lối ra và kiểm tra: mọi G phải được chạm tới, không B nào được chạm tới. Cẩn thận khi không có G nào.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1194">Monsters</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Em ở ô A, nhiều quái vật M di chuyển cùng lúc. Tìm đường ra biên bản đồ sao cho không bao giờ đứng chung ô với quái; in đường đi.</p>
+        <p class="ex-skill"><b>Luyện:</b> BFS đa nguồn rồi BFS có điều kiện, truy vết.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xem mục Biến thể 4. Chú ý trường hợp A đã nằm trên biên (đáp án YES, độ dài 0) và trường hợp không có quái nào.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/graph-theory/breadth-first-search">VNOI Wiki – BFS (Breadth-first search)</a> (tiếng Việt): BFS, loang trên ma trận, BFS đa nguồn, kèm danh sách bài tập.</li>
+      <li><a href="https://cses.fi/problemset/">CSES Problem Set – mục Graph Algorithms</a> (tiếng Anh): ba bài đầu tiên là Counting Rooms, Labyrinth, Monsters.</li>
+      <li>Lê Minh Hoàng, <em>Giải thuật và lập trình</em>, phần Lý thuyết đồ thị: thuật toán tìm kiếm theo chiều rộng (tiếng Việt).</li>
+      <li>Antti Laaksonen, <em>Competitive Programmer’s Handbook</em>, chương 12 “Graph traversal” (tiếng Anh, có bản PDF miễn phí trên trang CSES).</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Lưới là đồ thị ẩn: ô là đỉnh, ô kề là cạnh. Duyệt bằng <code>dx[] = {-1,1,0,0}</code>, <code>dy[] = {0,0,-1,1}</code>; kiểm tra biên trước, rồi mới kiểm tra tường và đã thăm.</li>
+        <li>Đếm vùng: quét mọi ô, gặp ô chưa thăm thì đếm + 1 và loang; diện tích = số ô lấy ra trong một lần loang.</li>
+        <li>BFS cho số bước ít nhất vì lấy ô ra theo thứ tự d không giảm; chỉ đúng khi mọi bước tốn như nhau.</li>
+        <li>Đánh dấu (gán d) ngay khi đẩy vào hàng đợi, để mỗi ô vào hàng đợi đúng một lần.</li>
+        <li>Truy vết: lưu hướng hoặc ô cha, đi ngược từ đích về nguồn, rồi đảo chuỗi.</li>
+        <li>BFS đa nguồn: đẩy mọi nguồn vào hàng đợi với d = 0; kết quả là khoảng cách tới nguồn gần nhất. Loang từ biên để tìm vùng bị bao.</li>
+        <li>Lưới lớn (10⁶ ô): tránh DFS đệ quy vì tràn ngăn xếp; dùng BFS. Độ phức tạp <span class="bigo">O(R·C)</span> thời gian và bộ nhớ.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/flood-fill.js"></script>
+</body>
+</html>

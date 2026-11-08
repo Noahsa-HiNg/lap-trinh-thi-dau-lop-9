@@ -1,0 +1,1230 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đường đi ngắn nhất có trọng số · Thi đấu lớp 9</title>
+<meta name="description" content="Dijkstra (bản mảng O(n²) và bản priority_queue), truy vết đường đi, Floyd–Warshall cho mọi cặp đỉnh, vì sao cạnh âm làm Dijkstra sai và cách chọn thuật toán theo giới hạn.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  .dij-wrap { display: grid; gap: 0.75rem; }
+  .dij-wrap .trace { margin: 0; }
+  .dij-pq { font-family: var(--f-mono); font-size: var(--fs-sm); color: var(--ink-2); }
+</style>
+</head>
+<body data-page="topic" data-topic="dijkstra">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được vì sao BFS cho kết quả sai khi các cạnh có độ dài khác nhau, bằng một phản ví dụ nhỏ.</li>
+      <li>Chạy tay được thuật toán Dijkstra: khởi tạo dist, chọn đỉnh chưa chốt gần nhất, chốt, nới lỏng.</li>
+      <li>Cài đặt được Dijkstra bản mảng <span class="bigo">O(n²)</span> và bản <code>priority_queue</code> <span class="bigo">O((n + m) log n)</span>, có truy vết đường đi bằng mảng <code>par</code>.</li>
+      <li>Nhận ra khi nào Dijkstra sai (cạnh âm) và biết tên thuật toán thay thế (Bellman–Ford).</li>
+      <li>Cài đặt được Floyd–Warshall để tìm đường ngắn nhất giữa mọi cặp đỉnh và giải thích vì sao vòng <code>k</code> phải ở ngoài cùng.</li>
+      <li>Chọn đúng thuật toán (BFS, Dijkstra, Floyd) chỉ bằng cách nhìn giới hạn của đề.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Ở bài <a href="bfs.html">BFS</a>, mỗi bước đi đều “dài” như nhau, nên đường ít cạnh nhất cũng là đường ngắn nhất. Ngoài đời thì không như vậy: đoạn đường từ nhà em tới trường có thể dài 2 km, đoạn khác chỉ 300 m. Khi mỗi cạnh mang một con số (độ dài, thời gian, tiền vé), ta có <b>đồ thị có trọng số</b>, và cần thuật toán mới để tìm đường ngắn nhất.</p>
+
+    <p>Bài này học hai thuật toán quan trọng nhất:</p>
+    <ul>
+      <li><b>Dijkstra</b> (đọc là “Đai-xtra”): tìm đường ngắn nhất từ <b>một</b> đỉnh nguồn tới <b>mọi</b> đỉnh khác, khi mọi trọng số không âm.</li>
+      <li><b>Floyd–Warshall</b>: tìm đường ngắn nhất giữa <b>mọi cặp</b> đỉnh, code chỉ ba vòng lặp lồng nhau, hợp với đồ thị nhỏ (n khoảng 400–500).</li>
+    </ul>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> mỗi con đường giữa hai thị trấn là một sợi dây cháy chậm, cháy đều 1 mét mỗi giây. Lúc 0 giây, em châm lửa ở thị trấn xuất phát. Lửa lan theo mọi sợi dây cùng lúc. Thị trấn nào bén lửa trước thì ở gần hơn. Thời điểm một thị trấn bén lửa <b>lần đầu</b> chính là độ dài đường ngắn nhất tới nó. Dijkstra mô phỏng đúng đám cháy này: lần lượt “nhìn thấy” các thị trấn theo thứ tự bén lửa, từ gần đến xa.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p><b>Đồ thị có trọng số</b> gồm n đỉnh, m cạnh; mỗi cạnh (u, v) có một số <span class="math">w(u, v)</span> gọi là <b>trọng số</b> (weight). Độ dài một đường đi là <b>tổng trọng số</b> các cạnh trên đường đó (không phải số cạnh).</p>
+      <p><b>Bài toán đường đi ngắn nhất một nguồn</b> (single-source shortest path): cho đỉnh nguồn s, tính <span class="math">dist[v]</span> = độ dài nhỏ nhất của một đường đi từ s tới v, với mọi đỉnh v. Nếu không có đường thì dist[v] = ∞.</p>
+      <p><b>Bài toán mọi cặp</b> (all-pairs shortest path): tính <span class="math">d[i][j]</span> cho mọi cặp đỉnh i, j.</p>
+    </div>
+
+    <h3>Vì sao BFS không dùng được nữa</h3>
+    <p>Xét đồ thị ba đỉnh: cạnh 1–3 dài 5, còn cạnh 1–2 và 2–3 mỗi cạnh dài 1.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 340 150" width="340" role="img" aria-label="Phản ví dụ BFS: cạnh 1-3 dài 5, đường 1-2-3 dài 2">
+        <line class="edge is-bad" x1="50" y1="110" x2="290" y2="110"/>
+        <line class="edge is-ok" x1="50" y1="110" x2="170" y2="35"/>
+        <line class="edge is-ok" x1="170" y1="35" x2="290" y2="110"/>
+        <text class="label-sm" x="170" y="132" text-anchor="middle">5</text>
+        <text class="label-sm" x="98" y="64" text-anchor="middle">1</text>
+        <text class="label-sm" x="242" y="64" text-anchor="middle">1</text>
+        <circle class="node is-active" cx="50" cy="110" r="18"/><text x="50" y="115" text-anchor="middle">1</text>
+        <circle class="node" cx="170" cy="35" r="18"/><text x="170" y="40" text-anchor="middle">2</text>
+        <circle class="node" cx="290" cy="110" r="18"/><text x="290" y="115" text-anchor="middle">3</text>
+      </svg>
+      <figcaption>Hình 1. BFS chọn đường 1 → 3 (một cạnh, dài 5, nét đứt). Đường thật sự ngắn nhất là 1 → 2 → 3 (hai cạnh, dài 1 + 1 = 2).</figcaption>
+    </figure>
+    <p>BFS đi theo “lớp”: đỉnh 3 nằm ở lớp 1 (một cạnh từ đỉnh 1), nên BFS gán dist[3] = 5 và không bao giờ sửa lại. Nhưng đi vòng qua đỉnh 2 chỉ tốn 2. BFS đếm <b>số cạnh</b>, còn đề hỏi <b>tổng độ dài</b>. Hai thứ này chỉ trùng nhau khi mọi cạnh dài bằng nhau.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Đường đi ngắn nhất có trọng số là một trong những dạng bài đồ thị gặp nhiều nhất trong đề thi học sinh giỏi và thi vào lớp 10 chuyên Tin. Ngoài đời, nó chạy trong mọi ứng dụng bản đồ chỉ đường, trong bộ định tuyến mạng Internet, trong trò chơi khi nhân vật tự tìm đường.</p>
+    <ul>
+      <li><b>Bản đồ, giao thông:</b> thời gian ngắn nhất từ nhà tới trường, chi phí vé rẻ nhất giữa hai thành phố.</li>
+      <li><b>Lưới có chi phí:</b> mỗi ô có “độ khó” khác nhau, đi vào ô tốn chừng đó công sức. Đây là đồ thị có trọng số trên lưới.</li>
+      <li><b>Đồ thị trạng thái:</b> đỉnh không chỉ là “đang ở đâu” mà còn “đã dùng mấy phiếu giảm giá”, “đang cầm bao nhiêu xăng”. Dijkstra chạy trên các trạng thái đó.</li>
+      <li><b>Bảng khoảng cách mọi cặp:</b> khi đề có nhiều truy vấn “khoảng cách giữa a và b” trên đồ thị nhỏ, ta tính sẵn bằng Floyd rồi trả lời mỗi câu trong <span class="bigo">O(1)</span>.</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p>
+      <p>Đề có “đường đi”, “chi phí nhỏ nhất”, “thời gian ít nhất”, các cạnh có <b>độ dài khác nhau</b> và <b>không âm</b>. Với n, m tới 10⁵–2·10⁵: Dijkstra dùng <code>priority_queue</code>. Với n ≤ 400–500 và hỏi nhiều cặp: Floyd–Warshall. Nếu mọi cạnh dài bằng nhau: quay về <a href="bfs.html">BFS</a> cho nhanh và gọn.</p>
+    </div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><b>Bài toán mở đầu.</b> Có n thành phố, m con đường hai chiều, mỗi đường có độ dài từ 1 tới 10⁹. Tìm độ dài đường ngắn nhất từ thành phố 1 tới mọi thành phố. Giới hạn n ≤ 10⁵, m ≤ 2·10⁵.</p>
+
+    <h3>Cách 1: thử mọi đường đi</h3>
+    <p>Dùng <a href="backtracking.html">quay lui</a> liệt kê mọi đường đi không lặp đỉnh từ 1 tới đích, lấy đường ngắn nhất. Trên đồ thị đầy đủ (mọi cặp đỉnh đều có cạnh) với 10 đỉnh, số đường không lặp từ đỉnh 1 tới đỉnh 10 là</p>
+    <div class="math-block">1 + 8 + 8·7 + 8·7·6 + … + 8! = 109 601</div>
+    <p>Mới 20 đỉnh, con số đã khoảng e · 18! ≈ 1,7·10¹⁶. Với 10⁵ đỉnh thì không thể nào.</p>
+
+    <h3>Cách 2: chia cạnh dài thành nhiều cạnh ngắn rồi BFS</h3>
+    <p>Một cạnh dài w thay bằng w cạnh dài 1 (thêm w − 1 đỉnh giả), rồi chạy BFS. Ý tưởng đúng, nhưng tổng độ dài có thể tới 2·10⁵ · 10⁹ = 2·10¹⁴ cạnh đơn vị. Không đủ bộ nhớ, không đủ thời gian.</p>
+
+    <h3>Cách 3: Dijkstra</h3>
+    <p>Dijkstra không xét từng đường. Nó chốt từng đỉnh một theo thứ tự gần đến xa, mỗi cạnh chỉ được xét đúng một lần từ mỗi đầu đã chốt. Với <code>priority_queue</code>, tổng công việc khoảng (n + m) · log₂ n ≈ 3·10⁵ · 17 ≈ 5·10⁶ phép tính.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Thử mọi đường / chia cạnh</h4><p>Số đường tăng theo giai thừa; chia cạnh thì có thể tới 2·10¹⁴ đỉnh giả. Với n = 10⁵ là hoàn toàn bất khả thi.</p></div>
+      <div class="good-side"><h4>Dijkstra + priority_queue</h4><p>Độ phức tạp <span class="bigo">O((n + m) log n)</span>, khoảng 5·10⁶ phép tính với n = 10⁵, m = 2·10⁵. Chạy dưới 0,1 giây.</p></div>
+    </div>
+
+    <p>Còn khi đề hỏi <b>mọi cặp</b> trên đồ thị n = 400 đỉnh? Chạy Dijkstra từ từng đỉnh cũng được, nhưng Floyd–Warshall chỉ cần 400³ = 6,4·10⁷ phép cộng – so sánh đơn giản, code ngắn hơn rất nhiều, gần như không thể viết sai.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>Thuật toán Dijkstra</h3>
+    <p>Mỗi đỉnh có một giá trị <code>dist[v]</code>: độ dài đường ngắn nhất từ s tới v <b>mà ta biết tới lúc này</b>. Ban đầu chỉ biết dist[s] = 0. Mỗi đỉnh ở một trong hai trạng thái: <b>chưa chốt</b> (dist có thể còn giảm) và <b>đã chốt</b> (dist đã là đáp án cuối cùng).</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> dist[s] = 0; dist[v] = ∞ với mọi v ≠ s. Mọi đỉnh đều chưa chốt. par[v] = 0 (chưa có đỉnh đứng trước).</div></li>
+      <li><div><strong>Chọn.</strong> Trong các đỉnh chưa chốt, chọn đỉnh u có dist[u] <b>nhỏ nhất</b>. Nếu không còn đỉnh nào, hoặc dist[u] = ∞, dừng.</div></li>
+      <li><div><strong>Chốt.</strong> Đánh dấu u đã chốt. Từ giờ dist[u] không đổi nữa.</div></li>
+      <li><div><strong>Nới lỏng (relax).</strong> Với mỗi cạnh u → v dài w: nếu dist[u] + w &lt; dist[v] thì gán dist[v] = dist[u] + w và par[v] = u. Nghĩa là: “đi tới u rồi bước sang v” tốt hơn mọi đường tới v đã biết.</div></li>
+      <li><div><strong>Lặp.</strong> Quay lại bước 2.</div></li>
+      <li><div><strong>Truy vết.</strong> Muốn in đường tới t: đi ngược t, par[t], par[par[t]], … cho tới s, rồi đảo ngược.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Dijkstra(s):
+    dist[mọi v] = ∞;  dist[s] = 0
+    <b>lặp</b>:
+        u = đỉnh <b>chưa chốt</b> có dist nhỏ nhất
+        <b>nếu</b> không có u <b>hoặc</b> dist[u] = ∞: <b>dừng</b>
+        chốt u
+        <b>với</b> mỗi cạnh (u, v, w):
+            <b>nếu</b> dist[u] + w &lt; dist[v]:      <i>// nới lỏng</i>
+                dist[v] = dist[u] + w
+                par[v] = u</pre>
+
+    <p><b>Bản dùng hàng đợi ưu tiên.</b> Bước “chọn đỉnh nhỏ nhất” nếu duyệt cả mảng sẽ tốn <span class="bigo">O(n)</span> mỗi lần. Ta thay bằng <code>priority_queue</code> (xem bài <a href="stl.html">STL</a>) chứa các cặp (dist, đỉnh), luôn lấy ra cặp có dist nhỏ nhất. Mỗi lần nới lỏng thành công, ta đẩy thêm cặp mới. Cặp cũ của cùng đỉnh vẫn nằm trong hàng đợi; khi lấy ra mà thấy d &gt; dist[u] thì đó là <b>phần tử lỗi thời</b>, bỏ qua.</p>
+    <pre class="pseudo"><b>hàm</b> DijkstraPQ(s):
+    dist[mọi v] = ∞;  dist[s] = 0
+    pq.đẩy((0, s))
+    <b>trong khi</b> pq không rỗng:
+        (d, u) = pq.lấy_nhỏ_nhất()
+        <b>nếu</b> d &gt; dist[u]: <b>bỏ qua</b>        <i>// lỗi thời: u đã chốt với dist nhỏ hơn</i>
+        <b>với</b> mỗi cạnh (u, v, w):
+            <b>nếu</b> d + w &lt; dist[v]:
+                dist[v] = d + w;  par[v] = u
+                pq.đẩy((dist[v], v))</pre>
+
+    <h3>Thuật toán Floyd–Warshall</h3>
+    <p>Dùng ma trận <code>d[i][j]</code>. Ý tưởng: lần lượt <b>cho phép</b> đi qua đỉnh 1, rồi thêm đỉnh 2, rồi đỉnh 3, … làm “trạm trung chuyển”. Mỗi lần cho phép thêm đỉnh k, ta hỏi với mọi cặp (i, j): đi i → k → j có ngắn hơn đường đang biết không?</p>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> d[i][i] = 0; d[i][j] = độ dài cạnh i → j (nếu nhiều cạnh lấy cạnh ngắn nhất); không có cạnh thì d[i][j] = ∞.</div></li>
+      <li><div><strong>Vòng k (ngoài cùng).</strong> Với k = 1, 2, …, n: cho phép dùng thêm đỉnh k làm trung gian.</div></li>
+      <li><div><strong>Cập nhật.</strong> Với mọi i, j: d[i][j] = min(d[i][j], d[i][k] + d[k][j]).</div></li>
+      <li><div><strong>Kết thúc.</strong> d[i][j] là độ dài đường ngắn nhất từ i tới j; vẫn ∞ nghĩa là không có đường.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Floyd():
+    <b>với</b> k <b>từ</b> 1 <b>đến</b> n:            <i>// PHẢI là vòng ngoài cùng</i>
+        <b>với</b> i <b>từ</b> 1 <b>đến</b> n:
+            <b>với</b> j <b>từ</b> 1 <b>đến</b> n:
+                <b>nếu</b> d[i][k] + d[k][j] &lt; d[i][j]:
+                    d[i][j] = d[i][k] + d[k][j]</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Dijkstra: nới lỏng là gì?</h3>
+    <p>Nới lỏng cạnh (u, v, w) là trả lời câu hỏi: “Nếu ta đã có đường tới u dài dist[u], thì bước thêm cạnh u → v được đường tới v dài dist[u] + w. Đường này có tốt hơn đường tới v đang giữ không?” Nếu có thì thay. Giá trị dist[v] <b>chỉ giảm, không bao giờ tăng</b>, và luôn là độ dài của một đường đi có thật (vì nó được tạo ra từ đường tới u cộng thêm một cạnh). Nên dist[v] luôn <b>lớn hơn hoặc bằng</b> đáp án đúng.</p>
+
+    <h3>Dijkstra: vì sao đúng (khi trọng số không âm)</h3>
+    <p>Điều cần chứng minh: lúc đỉnh u được chọn để chốt (dist[u] nhỏ nhất trong các đỉnh chưa chốt), dist[u] đã là đáp án đúng.</p>
+    <p>Giả sử có một đường P nào đó từ s tới u. Đường này bắt đầu ở s (đã chốt) và kết thúc ở u (chưa chốt), nên trên P có một chỗ <b>lần đầu tiên</b> bước ra khỏi vùng đã chốt: cạnh x → y với x đã chốt, y chưa chốt.</p>
+    <ul>
+      <li>Lúc chốt x, ta đã nới lỏng cạnh x → y, nên dist[y] ≤ (độ dài đoạn P từ s tới y).</li>
+      <li>u được chọn vì có dist nhỏ nhất trong các đỉnh chưa chốt, nên dist[u] ≤ dist[y].</li>
+      <li>Phần còn lại của P, từ y tới u, gồm các cạnh <b>không âm</b>, nên không làm đường ngắn đi: độ dài P ≥ độ dài đoạn s → y.</li>
+    </ul>
+    <p>Ghép lại: dist[u] ≤ dist[y] ≤ (đoạn s → y) ≤ (độ dài P). Mọi đường tới u đều dài ít nhất dist[u], tức dist[u] là ngắn nhất. Chốt u là an toàn.</p>
+    <div class="callout warn"><p class="callout-title">Chỗ dùng “không âm”</p><p>Bước thứ ba ở trên cần mọi cạnh ≥ 0. Nếu có cạnh âm, đoạn y → u có thể làm đường <b>ngắn đi</b>, và lập luận sụp đổ. Phần <a href="#bien-the">Biến thể</a> có phản ví dụ cụ thể.</p></div>
+    <p>Quay lại hình ảnh sợi dây cháy: đỉnh chưa chốt có dist nhỏ nhất là thị trấn sắp bén lửa sớm nhất. Không có cách nào để lửa tới đó sớm hơn, vì mọi đường lửa khác phải đi qua một thị trấn còn bén lửa muộn hơn, rồi cháy thêm một đoạn dây có độ dài không âm.</p>
+
+    <h3>Dijkstra: vì sao nhanh</h3>
+    <p><b>Bản mảng.</b> Có n lần chốt. Mỗi lần: tìm đỉnh nhỏ nhất mất n phép so sánh, nới lỏng tối đa n cạnh (dùng ma trận kề). Tổng <span class="bigo">O(n²)</span>. Với n = 5 000 là 2,5·10⁷ phép tính, rất nhanh. Bản này tốt cho <b>đồ thị dày</b> (m gần n²).</p>
+    <p><b>Bản priority_queue.</b> Mỗi đỉnh được chốt một lần, lúc đó duyệt danh sách kề của nó; tổng số lần duyệt cạnh là m (đồ thị có hướng) hoặc 2m (vô hướng). Mỗi lần nới lỏng thành công đẩy một phần tử vào hàng đợi, nên hàng đợi có tối đa khoảng m phần tử; mỗi thao tác đẩy/lấy tốn <span class="bigo">O(log m)</span>. Vì m ≤ n² nên log m ≤ 2 log n. Tổng <span class="bigo">O((n + m) log n)</span>. Bản này tốt cho <b>đồ thị thưa</b> (m cỡ n), là trường hợp gặp nhiều nhất trong đề thi.</p>
+    <p><b>Phần tử lỗi thời.</b> Ta không xóa được phần tử ở giữa <code>priority_queue</code>. Thay vì xóa, ta cứ để nó nằm đó. Khi lấy (d, u) ra mà d &gt; dist[u], nghĩa là sau khi đẩy cặp này, dist[u] đã được sửa nhỏ hơn và cặp (dist[u], u) nhỏ hơn đã được lấy ra và xử lý trước rồi. Dòng <code>if (d &gt; dist[u]) continue;</code> đảm bảo mỗi đỉnh chỉ duyệt danh sách kề <b>một lần</b>. Thiếu dòng này, kết quả vẫn đúng nhưng một đỉnh có nhiều cạnh có thể bị duyệt lại nhiều lần, chạy chậm hẳn.</p>
+
+    <h3>Floyd–Warshall: vì sao đúng</h3>
+    <p>Sau khi xong vòng k, <b>d[i][j] là độ dài đường ngắn nhất từ i tới j chỉ được đi qua các đỉnh trung gian trong tập {1, 2, …, k}</b>. Ta kiểm tra điều này đúng sau mỗi vòng:</p>
+    <ul>
+      <li>Trước vòng 1 (k = 0): không được đi qua đỉnh trung gian nào, chỉ được đi thẳng một cạnh. Đó đúng là giá trị khởi tạo.</li>
+      <li>Ở vòng k, đường ngắn nhất từ i tới j (trung gian thuộc {1, …, k}) có hai khả năng:
+        <ul>
+          <li><b>Không đi qua k:</b> độ dài là d[i][j] của vòng trước.</li>
+          <li><b>Đi qua k</b> (đúng một lần, vì đi qua hai lần là có vòng, bỏ vòng đi không dài hơn): gồm đoạn i → k và đoạn k → j, mỗi đoạn chỉ dùng trung gian trong {1, …, k − 1}. Độ dài là d[i][k] + d[k][j] của vòng trước.</li>
+        </ul>
+      </li>
+      <li>Lấy min của hai khả năng là đúng câu lệnh cập nhật.</li>
+    </ul>
+    <p>Sau vòng k = n, mọi đỉnh đều được phép làm trung gian, nên d[i][j] là đáp án thật.</p>
+    <p><b>Vì sao cập nhật ngay trên một ma trận mà không cần bản sao?</b> Trong vòng k, hai giá trị d[i][k] và d[k][j] không đổi: chẳng hạn d[i][k] = min(d[i][k], d[i][k] + d[k][k]) mà d[k][k] = 0. Nên dù cập nhật tại chỗ, ta vẫn dùng đúng giá trị của vòng trước.</p>
+    <p><b>Vì sao k phải ở ngoài cùng?</b> Khi tính d[i][j] qua k, ta cần d[i][k] và d[k][j] đã là đáp án tốt nhất với trung gian {1, …, k − 1}. Nếu đặt k ở trong cùng, lúc tính d[i][j] ta thử mọi k ngay một lượt, trong khi nhiều d[i][k] vẫn còn là ∞ hoặc chưa tối ưu. Kết quả sai, và đây là lỗi rất hay gặp.</p>
+
+    <h3>Floyd–Warshall: vì sao nhanh (với đồ thị nhỏ)</h3>
+    <p>Ba vòng lặp, mỗi vòng n lần: đúng n³ lần cập nhật, mỗi lần một phép cộng và một phép so sánh. Với n = 400 là 6,4·10⁷; với n = 500 là 1,25·10⁸, vẫn chạy trong khoảng 1 giây vì thao tác rất đơn giản và truy cập bộ nhớ đều đặn. Đổi lại, ta có luôn bảng khoảng cách của n² cặp.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Dijkstra là “BFS có trọng số”: thay hàng đợi thường bằng hàng đợi ưu tiên, thay “đã thăm” bằng “đã chốt”. Em nắm chắc BFS thì Dijkstra chỉ còn là chuyện thay hai chi tiết đó.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Đồ thị vô hướng 6 đỉnh, 8 cạnh dưới đây. Nguồn là đỉnh 1. Số nhỏ trên cạnh là độ dài; dòng “d=…” cạnh mỗi đỉnh là dist hiện tại (chữ viết tay màu đỏ là giá trị vừa được sửa). Đỉnh viền xanh lá đã chốt; đỉnh đang được chốt tô màu nhấn; cạnh tô đậm là cạnh vừa nới lỏng thành công; cạnh nét đứt là cạnh được thử nhưng không làm dist nhỏ đi.</p>
+
+<div class="stepper" data-title="Dijkstra từ đỉnh 1 trên đồ thị 6 đỉnh">
+<div class="frame" data-caption="&lt;b&gt;Khởi tạo.&lt;/b&gt; dist[1] = 0, các đỉnh khác dist = ∞ (chưa biết đường). Hàng đợi chỉ có (0, 1).">
+<figure class="diagram">
+<svg viewBox="0 0 470 245" width="470" role="img" aria-label="Đồ thị 6 đỉnh có trọng số">
+<line class="edge" x1="50" y1="120" x2="170" y2="50"/>
+<line class="edge" x1="50" y1="120" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="300" y2="50"/>
+<line class="edge" x1="170" y1="190" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="420" y2="120"/>
+<line class="edge" x1="300" y1="190" x2="420" y2="120"/>
+<text class="label-sm" x="100" y="76" text-anchor="middle">7</text>
+<text class="label-sm" x="100" y="174" text-anchor="middle">2</text>
+<text class="label-sm" x="182" y="125" text-anchor="middle">3</text>
+<text class="label-sm" x="235" y="40" text-anchor="middle">4</text>
+<text class="label-sm" x="235" y="210" text-anchor="middle">9</text>
+<text class="label-sm" x="312" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="372" y="76" text-anchor="middle">5</text>
+<text class="label-sm" x="372" y="174" text-anchor="middle">3</text>
+<circle class="node" cx="50" cy="120" r="18"/><text x="50" y="125" text-anchor="middle">1</text>
+<text class="label-pen" x="50" y="162" text-anchor="middle">d=0</text>
+<circle class="node" cx="170" cy="50" r="18"/><text x="170" y="55" text-anchor="middle">2</text>
+<text class="label-sm" x="170" y="20" text-anchor="middle">d=∞</text>
+<circle class="node" cx="170" cy="190" r="18"/><text x="170" y="195" text-anchor="middle">3</text>
+<text class="label-sm" x="170" y="232" text-anchor="middle">d=∞</text>
+<circle class="node" cx="300" cy="50" r="18"/><text x="300" y="55" text-anchor="middle">4</text>
+<text class="label-sm" x="300" y="20" text-anchor="middle">d=∞</text>
+<circle class="node" cx="300" cy="190" r="18"/><text x="300" y="195" text-anchor="middle">5</text>
+<text class="label-sm" x="300" y="232" text-anchor="middle">d=∞</text>
+<circle class="node" cx="420" cy="120" r="18"/><text x="420" y="125" text-anchor="middle">6</text>
+<text class="label-sm" x="420" y="162" text-anchor="middle">d=∞</text>
+</svg>
+<table class="trace"><thead><tr><th>Đỉnh</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+<tr><td>dist</td><td class="hl">0</td><td>∞</td><td>∞</td><td>∞</td><td>∞</td><td>∞</td></tr>
+<tr><td>par</td><td class="hl">–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+<tr><td>chốt</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</tbody></table>
+<p><b>Hàng đợi ưu tiên:</b> <code>(0,1)</code></p>
+</figure>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Bước 1.&lt;/b&gt; Lấy (0, 1) ra, chốt đỉnh 1. Nới lỏng 1–2: 0 + 7 = 7 &amp;lt; ∞ nên dist[2] = 7. Nới lỏng 1–3: 0 + 2 = 2 nên dist[3] = 2.">
+<figure class="diagram">
+<svg viewBox="0 0 470 245" width="470" role="img" aria-label="Đồ thị 6 đỉnh có trọng số">
+<line class="edge is-active" x1="50" y1="120" x2="170" y2="50"/>
+<line class="edge is-active" x1="50" y1="120" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="300" y2="50"/>
+<line class="edge" x1="170" y1="190" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="420" y2="120"/>
+<line class="edge" x1="300" y1="190" x2="420" y2="120"/>
+<text class="label-sm" x="100" y="76" text-anchor="middle">7</text>
+<text class="label-sm" x="100" y="174" text-anchor="middle">2</text>
+<text class="label-sm" x="182" y="125" text-anchor="middle">3</text>
+<text class="label-sm" x="235" y="40" text-anchor="middle">4</text>
+<text class="label-sm" x="235" y="210" text-anchor="middle">9</text>
+<text class="label-sm" x="312" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="372" y="76" text-anchor="middle">5</text>
+<text class="label-sm" x="372" y="174" text-anchor="middle">3</text>
+<circle class="node is-active" cx="50" cy="120" r="18"/><text x="50" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="50" y="162" text-anchor="middle">d=0</text>
+<circle class="node" cx="170" cy="50" r="18"/><text x="170" y="55" text-anchor="middle">2</text>
+<text class="label-pen" x="170" y="20" text-anchor="middle">d=7</text>
+<circle class="node" cx="170" cy="190" r="18"/><text x="170" y="195" text-anchor="middle">3</text>
+<text class="label-pen" x="170" y="232" text-anchor="middle">d=2</text>
+<circle class="node" cx="300" cy="50" r="18"/><text x="300" y="55" text-anchor="middle">4</text>
+<text class="label-sm" x="300" y="20" text-anchor="middle">d=∞</text>
+<circle class="node" cx="300" cy="190" r="18"/><text x="300" y="195" text-anchor="middle">5</text>
+<text class="label-sm" x="300" y="232" text-anchor="middle">d=∞</text>
+<circle class="node" cx="420" cy="120" r="18"/><text x="420" y="125" text-anchor="middle">6</text>
+<text class="label-sm" x="420" y="162" text-anchor="middle">d=∞</text>
+</svg>
+<table class="trace"><thead><tr><th>Đỉnh</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+<tr><td>dist</td><td>0</td><td class="hl">7</td><td class="hl">2</td><td>∞</td><td>∞</td><td>∞</td></tr>
+<tr><td>par</td><td>–</td><td class="hl">1</td><td class="hl">1</td><td>–</td><td>–</td><td>–</td></tr>
+<tr><td>chốt</td><td>✓</td><td></td><td></td><td></td><td></td><td></td></tr>
+</tbody></table>
+<p><b>Hàng đợi ưu tiên:</b> <code>(2,3) (7,2)</code></p>
+</figure>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Bước 2.&lt;/b&gt; Nhỏ nhất là (2, 3): chốt đỉnh 3. Nới lỏng 3–2: 2 + 3 = 5 &amp;lt; 7, sửa dist[2] = 5, par[2] = 3. Nới lỏng 3–5: 2 + 9 = 11. Cặp (7, 2) cũ vẫn nằm trong hàng đợi.">
+<figure class="diagram">
+<svg viewBox="0 0 470 245" width="470" role="img" aria-label="Đồ thị 6 đỉnh có trọng số">
+<line class="edge" x1="50" y1="120" x2="170" y2="50"/>
+<line class="edge is-bad" x1="50" y1="120" x2="170" y2="190"/>
+<line class="edge is-active" x1="170" y1="50" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="300" y2="50"/>
+<line class="edge is-active" x1="170" y1="190" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="420" y2="120"/>
+<line class="edge" x1="300" y1="190" x2="420" y2="120"/>
+<text class="label-sm" x="100" y="76" text-anchor="middle">7</text>
+<text class="label-sm" x="100" y="174" text-anchor="middle">2</text>
+<text class="label-sm" x="182" y="125" text-anchor="middle">3</text>
+<text class="label-sm" x="235" y="40" text-anchor="middle">4</text>
+<text class="label-sm" x="235" y="210" text-anchor="middle">9</text>
+<text class="label-sm" x="312" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="372" y="76" text-anchor="middle">5</text>
+<text class="label-sm" x="372" y="174" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="50" cy="120" r="18"/><text x="50" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="50" y="162" text-anchor="middle">d=0</text>
+<circle class="node" cx="170" cy="50" r="18"/><text x="170" y="55" text-anchor="middle">2</text>
+<text class="label-pen" x="170" y="20" text-anchor="middle">d=5</text>
+<circle class="node is-active" cx="170" cy="190" r="18"/><text x="170" y="195" text-anchor="middle">3</text>
+<text class="label-sm" x="170" y="232" text-anchor="middle">d=2</text>
+<circle class="node" cx="300" cy="50" r="18"/><text x="300" y="55" text-anchor="middle">4</text>
+<text class="label-sm" x="300" y="20" text-anchor="middle">d=∞</text>
+<circle class="node" cx="300" cy="190" r="18"/><text x="300" y="195" text-anchor="middle">5</text>
+<text class="label-pen" x="300" y="232" text-anchor="middle">d=11</text>
+<circle class="node" cx="420" cy="120" r="18"/><text x="420" y="125" text-anchor="middle">6</text>
+<text class="label-sm" x="420" y="162" text-anchor="middle">d=∞</text>
+</svg>
+<table class="trace"><thead><tr><th>Đỉnh</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+<tr><td>dist</td><td>0</td><td class="hl">5</td><td>2</td><td>∞</td><td class="hl">11</td><td>∞</td></tr>
+<tr><td>par</td><td>–</td><td class="hl">3</td><td>1</td><td>–</td><td class="hl">3</td><td>–</td></tr>
+<tr><td>chốt</td><td>✓</td><td></td><td>✓</td><td></td><td></td><td></td></tr>
+</tbody></table>
+<p><b>Hàng đợi ưu tiên:</b> <code>(5,2) (7,2) (11,5)</code></p>
+</figure>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Bước 3.&lt;/b&gt; Lấy (5, 2): chốt đỉnh 2. Nới lỏng 2–4: 5 + 4 = 9, dist[4] = 9. Cạnh 2–1 và 2–3 dẫn về đỉnh đã chốt, không làm nhỏ hơn được (nét đứt).">
+<figure class="diagram">
+<svg viewBox="0 0 470 245" width="470" role="img" aria-label="Đồ thị 6 đỉnh có trọng số">
+<line class="edge is-bad" x1="50" y1="120" x2="170" y2="50"/>
+<line class="edge" x1="50" y1="120" x2="170" y2="190"/>
+<line class="edge is-bad" x1="170" y1="50" x2="170" y2="190"/>
+<line class="edge is-active" x1="170" y1="50" x2="300" y2="50"/>
+<line class="edge" x1="170" y1="190" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="420" y2="120"/>
+<line class="edge" x1="300" y1="190" x2="420" y2="120"/>
+<text class="label-sm" x="100" y="76" text-anchor="middle">7</text>
+<text class="label-sm" x="100" y="174" text-anchor="middle">2</text>
+<text class="label-sm" x="182" y="125" text-anchor="middle">3</text>
+<text class="label-sm" x="235" y="40" text-anchor="middle">4</text>
+<text class="label-sm" x="235" y="210" text-anchor="middle">9</text>
+<text class="label-sm" x="312" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="372" y="76" text-anchor="middle">5</text>
+<text class="label-sm" x="372" y="174" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="50" cy="120" r="18"/><text x="50" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="50" y="162" text-anchor="middle">d=0</text>
+<circle class="node is-active" cx="170" cy="50" r="18"/><text x="170" y="55" text-anchor="middle">2</text>
+<text class="label-sm" x="170" y="20" text-anchor="middle">d=5</text>
+<circle class="node is-ok" cx="170" cy="190" r="18"/><text x="170" y="195" text-anchor="middle">3</text>
+<text class="label-sm" x="170" y="232" text-anchor="middle">d=2</text>
+<circle class="node" cx="300" cy="50" r="18"/><text x="300" y="55" text-anchor="middle">4</text>
+<text class="label-pen" x="300" y="20" text-anchor="middle">d=9</text>
+<circle class="node" cx="300" cy="190" r="18"/><text x="300" y="195" text-anchor="middle">5</text>
+<text class="label-sm" x="300" y="232" text-anchor="middle">d=11</text>
+<circle class="node" cx="420" cy="120" r="18"/><text x="420" y="125" text-anchor="middle">6</text>
+<text class="label-sm" x="420" y="162" text-anchor="middle">d=∞</text>
+</svg>
+<table class="trace"><thead><tr><th>Đỉnh</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+<tr><td>dist</td><td>0</td><td>5</td><td>2</td><td class="hl">9</td><td>11</td><td>∞</td></tr>
+<tr><td>par</td><td>–</td><td>3</td><td>1</td><td class="hl">2</td><td>3</td><td>–</td></tr>
+<tr><td>chốt</td><td>✓</td><td>✓</td><td>✓</td><td></td><td></td><td></td></tr>
+</tbody></table>
+<p><b>Hàng đợi ưu tiên:</b> <code>(7,2) (9,4) (11,5)</code></p>
+</figure>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Bước 4.&lt;/b&gt; Lấy (7, 2) ra. Nhưng 7 &amp;gt; dist[2] = 5: đây là phần tử &lt;b&gt;lỗi thời&lt;/b&gt;, bỏ qua ngay, không nới lỏng gì.">
+<figure class="diagram">
+<svg viewBox="0 0 470 245" width="470" role="img" aria-label="Đồ thị 6 đỉnh có trọng số">
+<line class="edge" x1="50" y1="120" x2="170" y2="50"/>
+<line class="edge" x1="50" y1="120" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="300" y2="50"/>
+<line class="edge" x1="170" y1="190" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="420" y2="120"/>
+<line class="edge" x1="300" y1="190" x2="420" y2="120"/>
+<text class="label-sm" x="100" y="76" text-anchor="middle">7</text>
+<text class="label-sm" x="100" y="174" text-anchor="middle">2</text>
+<text class="label-sm" x="182" y="125" text-anchor="middle">3</text>
+<text class="label-sm" x="235" y="40" text-anchor="middle">4</text>
+<text class="label-sm" x="235" y="210" text-anchor="middle">9</text>
+<text class="label-sm" x="312" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="372" y="76" text-anchor="middle">5</text>
+<text class="label-sm" x="372" y="174" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="50" cy="120" r="18"/><text x="50" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="50" y="162" text-anchor="middle">d=0</text>
+<circle class="node is-ok" cx="170" cy="50" r="18"/><text x="170" y="55" text-anchor="middle">2</text>
+<text class="label-sm" x="170" y="20" text-anchor="middle">d=5</text>
+<circle class="node is-ok" cx="170" cy="190" r="18"/><text x="170" y="195" text-anchor="middle">3</text>
+<text class="label-sm" x="170" y="232" text-anchor="middle">d=2</text>
+<circle class="node" cx="300" cy="50" r="18"/><text x="300" y="55" text-anchor="middle">4</text>
+<text class="label-sm" x="300" y="20" text-anchor="middle">d=9</text>
+<circle class="node" cx="300" cy="190" r="18"/><text x="300" y="195" text-anchor="middle">5</text>
+<text class="label-sm" x="300" y="232" text-anchor="middle">d=11</text>
+<circle class="node" cx="420" cy="120" r="18"/><text x="420" y="125" text-anchor="middle">6</text>
+<text class="label-sm" x="420" y="162" text-anchor="middle">d=∞</text>
+</svg>
+<table class="trace"><thead><tr><th>Đỉnh</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+<tr><td>dist</td><td>0</td><td>5</td><td>2</td><td>9</td><td>11</td><td>∞</td></tr>
+<tr><td>par</td><td>–</td><td>3</td><td>1</td><td>2</td><td>3</td><td>–</td></tr>
+<tr><td>chốt</td><td>✓</td><td>✓</td><td>✓</td><td></td><td></td><td></td></tr>
+</tbody></table>
+<p><b>Hàng đợi ưu tiên:</b> <code>(9,4) (11,5)</code></p>
+</figure>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Bước 5.&lt;/b&gt; Lấy (9, 4): chốt đỉnh 4. Nới lỏng 4–5: 9 + 1 = 10 &amp;lt; 11, sửa dist[5] = 10, par[5] = 4. Nới lỏng 4–6: 9 + 5 = 14.">
+<figure class="diagram">
+<svg viewBox="0 0 470 245" width="470" role="img" aria-label="Đồ thị 6 đỉnh có trọng số">
+<line class="edge" x1="50" y1="120" x2="170" y2="50"/>
+<line class="edge" x1="50" y1="120" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="170" y2="190"/>
+<line class="edge is-bad" x1="170" y1="50" x2="300" y2="50"/>
+<line class="edge" x1="170" y1="190" x2="300" y2="190"/>
+<line class="edge is-active" x1="300" y1="50" x2="300" y2="190"/>
+<line class="edge is-active" x1="300" y1="50" x2="420" y2="120"/>
+<line class="edge" x1="300" y1="190" x2="420" y2="120"/>
+<text class="label-sm" x="100" y="76" text-anchor="middle">7</text>
+<text class="label-sm" x="100" y="174" text-anchor="middle">2</text>
+<text class="label-sm" x="182" y="125" text-anchor="middle">3</text>
+<text class="label-sm" x="235" y="40" text-anchor="middle">4</text>
+<text class="label-sm" x="235" y="210" text-anchor="middle">9</text>
+<text class="label-sm" x="312" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="372" y="76" text-anchor="middle">5</text>
+<text class="label-sm" x="372" y="174" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="50" cy="120" r="18"/><text x="50" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="50" y="162" text-anchor="middle">d=0</text>
+<circle class="node is-ok" cx="170" cy="50" r="18"/><text x="170" y="55" text-anchor="middle">2</text>
+<text class="label-sm" x="170" y="20" text-anchor="middle">d=5</text>
+<circle class="node is-ok" cx="170" cy="190" r="18"/><text x="170" y="195" text-anchor="middle">3</text>
+<text class="label-sm" x="170" y="232" text-anchor="middle">d=2</text>
+<circle class="node is-active" cx="300" cy="50" r="18"/><text x="300" y="55" text-anchor="middle">4</text>
+<text class="label-sm" x="300" y="20" text-anchor="middle">d=9</text>
+<circle class="node" cx="300" cy="190" r="18"/><text x="300" y="195" text-anchor="middle">5</text>
+<text class="label-pen" x="300" y="232" text-anchor="middle">d=10</text>
+<circle class="node" cx="420" cy="120" r="18"/><text x="420" y="125" text-anchor="middle">6</text>
+<text class="label-pen" x="420" y="162" text-anchor="middle">d=14</text>
+</svg>
+<table class="trace"><thead><tr><th>Đỉnh</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+<tr><td>dist</td><td>0</td><td>5</td><td>2</td><td>9</td><td class="hl">10</td><td class="hl">14</td></tr>
+<tr><td>par</td><td>–</td><td>3</td><td>1</td><td>2</td><td class="hl">4</td><td class="hl">4</td></tr>
+<tr><td>chốt</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td></td><td></td></tr>
+</tbody></table>
+<p><b>Hàng đợi ưu tiên:</b> <code>(10,5) (11,5) (14,6)</code></p>
+</figure>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Bước 6.&lt;/b&gt; Lấy (10, 5): chốt đỉnh 5. Nới lỏng 5–6: 10 + 3 = 13 &amp;lt; 14, sửa dist[6] = 13, par[6] = 5. Cạnh 5–3 không giúp gì (10 + 9 &amp;gt; 2).">
+<figure class="diagram">
+<svg viewBox="0 0 470 245" width="470" role="img" aria-label="Đồ thị 6 đỉnh có trọng số">
+<line class="edge" x1="50" y1="120" x2="170" y2="50"/>
+<line class="edge" x1="50" y1="120" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="300" y2="50"/>
+<line class="edge is-bad" x1="170" y1="190" x2="300" y2="190"/>
+<line class="edge is-bad" x1="300" y1="50" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="420" y2="120"/>
+<line class="edge is-active" x1="300" y1="190" x2="420" y2="120"/>
+<text class="label-sm" x="100" y="76" text-anchor="middle">7</text>
+<text class="label-sm" x="100" y="174" text-anchor="middle">2</text>
+<text class="label-sm" x="182" y="125" text-anchor="middle">3</text>
+<text class="label-sm" x="235" y="40" text-anchor="middle">4</text>
+<text class="label-sm" x="235" y="210" text-anchor="middle">9</text>
+<text class="label-sm" x="312" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="372" y="76" text-anchor="middle">5</text>
+<text class="label-sm" x="372" y="174" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="50" cy="120" r="18"/><text x="50" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="50" y="162" text-anchor="middle">d=0</text>
+<circle class="node is-ok" cx="170" cy="50" r="18"/><text x="170" y="55" text-anchor="middle">2</text>
+<text class="label-sm" x="170" y="20" text-anchor="middle">d=5</text>
+<circle class="node is-ok" cx="170" cy="190" r="18"/><text x="170" y="195" text-anchor="middle">3</text>
+<text class="label-sm" x="170" y="232" text-anchor="middle">d=2</text>
+<circle class="node is-ok" cx="300" cy="50" r="18"/><text x="300" y="55" text-anchor="middle">4</text>
+<text class="label-sm" x="300" y="20" text-anchor="middle">d=9</text>
+<circle class="node is-active" cx="300" cy="190" r="18"/><text x="300" y="195" text-anchor="middle">5</text>
+<text class="label-sm" x="300" y="232" text-anchor="middle">d=10</text>
+<circle class="node" cx="420" cy="120" r="18"/><text x="420" y="125" text-anchor="middle">6</text>
+<text class="label-pen" x="420" y="162" text-anchor="middle">d=13</text>
+</svg>
+<table class="trace"><thead><tr><th>Đỉnh</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+<tr><td>dist</td><td>0</td><td>5</td><td>2</td><td>9</td><td>10</td><td class="hl">13</td></tr>
+<tr><td>par</td><td>–</td><td>3</td><td>1</td><td>2</td><td>4</td><td class="hl">5</td></tr>
+<tr><td>chốt</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td></td></tr>
+</tbody></table>
+<p><b>Hàng đợi ưu tiên:</b> <code>(11,5) (13,6) (14,6)</code></p>
+</figure>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Bước 7.&lt;/b&gt; (11, 5) lỗi thời, bỏ qua. Lấy (13, 6): chốt đỉnh 6, không cạnh nào làm nhỏ hơn. (14, 6) cũng lỗi thời. Hàng đợi rỗng, thuật toán dừng.">
+<figure class="diagram">
+<svg viewBox="0 0 470 245" width="470" role="img" aria-label="Đồ thị 6 đỉnh có trọng số">
+<line class="edge" x1="50" y1="120" x2="170" y2="50"/>
+<line class="edge" x1="50" y1="120" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="170" y2="190"/>
+<line class="edge" x1="170" y1="50" x2="300" y2="50"/>
+<line class="edge" x1="170" y1="190" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="300" y2="190"/>
+<line class="edge is-bad" x1="300" y1="50" x2="420" y2="120"/>
+<line class="edge is-bad" x1="300" y1="190" x2="420" y2="120"/>
+<text class="label-sm" x="100" y="76" text-anchor="middle">7</text>
+<text class="label-sm" x="100" y="174" text-anchor="middle">2</text>
+<text class="label-sm" x="182" y="125" text-anchor="middle">3</text>
+<text class="label-sm" x="235" y="40" text-anchor="middle">4</text>
+<text class="label-sm" x="235" y="210" text-anchor="middle">9</text>
+<text class="label-sm" x="312" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="372" y="76" text-anchor="middle">5</text>
+<text class="label-sm" x="372" y="174" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="50" cy="120" r="18"/><text x="50" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="50" y="162" text-anchor="middle">d=0</text>
+<circle class="node is-ok" cx="170" cy="50" r="18"/><text x="170" y="55" text-anchor="middle">2</text>
+<text class="label-sm" x="170" y="20" text-anchor="middle">d=5</text>
+<circle class="node is-ok" cx="170" cy="190" r="18"/><text x="170" y="195" text-anchor="middle">3</text>
+<text class="label-sm" x="170" y="232" text-anchor="middle">d=2</text>
+<circle class="node is-ok" cx="300" cy="50" r="18"/><text x="300" y="55" text-anchor="middle">4</text>
+<text class="label-sm" x="300" y="20" text-anchor="middle">d=9</text>
+<circle class="node is-ok" cx="300" cy="190" r="18"/><text x="300" y="195" text-anchor="middle">5</text>
+<text class="label-sm" x="300" y="232" text-anchor="middle">d=10</text>
+<circle class="node is-active" cx="420" cy="120" r="18"/><text x="420" y="125" text-anchor="middle">6</text>
+<text class="label-sm" x="420" y="162" text-anchor="middle">d=13</text>
+</svg>
+<table class="trace"><thead><tr><th>Đỉnh</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+<tr><td>dist</td><td>0</td><td>5</td><td>2</td><td>9</td><td>10</td><td>13</td></tr>
+<tr><td>par</td><td>–</td><td>3</td><td>1</td><td>2</td><td>4</td><td>5</td></tr>
+<tr><td>chốt</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+</tbody></table>
+<p><b>Hàng đợi ưu tiên:</b> <code>rỗng</code></p>
+</figure>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Truy vết.&lt;/b&gt; Từ 6 lần theo par: 6 ← 5 ← 4 ← 2 ← 3 ← 1. Đường ngắn nhất 1 → 3 → 2 → 4 → 5 → 6 dài 2 + 3 + 4 + 1 + 3 = 13, dù đi qua 5 cạnh.">
+<figure class="diagram">
+<svg viewBox="0 0 470 245" width="470" role="img" aria-label="Đồ thị 6 đỉnh có trọng số">
+<line class="edge" x1="50" y1="120" x2="170" y2="50"/>
+<line class="edge is-ok" x1="50" y1="120" x2="170" y2="190"/>
+<line class="edge is-ok" x1="170" y1="50" x2="170" y2="190"/>
+<line class="edge is-ok" x1="170" y1="50" x2="300" y2="50"/>
+<line class="edge" x1="170" y1="190" x2="300" y2="190"/>
+<line class="edge is-ok" x1="300" y1="50" x2="300" y2="190"/>
+<line class="edge" x1="300" y1="50" x2="420" y2="120"/>
+<line class="edge is-ok" x1="300" y1="190" x2="420" y2="120"/>
+<text class="label-sm" x="100" y="76" text-anchor="middle">7</text>
+<text class="label-sm" x="100" y="174" text-anchor="middle">2</text>
+<text class="label-sm" x="182" y="125" text-anchor="middle">3</text>
+<text class="label-sm" x="235" y="40" text-anchor="middle">4</text>
+<text class="label-sm" x="235" y="210" text-anchor="middle">9</text>
+<text class="label-sm" x="312" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="372" y="76" text-anchor="middle">5</text>
+<text class="label-sm" x="372" y="174" text-anchor="middle">3</text>
+<circle class="node is-ok" cx="50" cy="120" r="18"/><text x="50" y="125" text-anchor="middle">1</text>
+<text class="label-sm" x="50" y="162" text-anchor="middle">d=0</text>
+<circle class="node is-ok" cx="170" cy="50" r="18"/><text x="170" y="55" text-anchor="middle">2</text>
+<text class="label-sm" x="170" y="20" text-anchor="middle">d=5</text>
+<circle class="node is-ok" cx="170" cy="190" r="18"/><text x="170" y="195" text-anchor="middle">3</text>
+<text class="label-sm" x="170" y="232" text-anchor="middle">d=2</text>
+<circle class="node is-ok" cx="300" cy="50" r="18"/><text x="300" y="55" text-anchor="middle">4</text>
+<text class="label-sm" x="300" y="20" text-anchor="middle">d=9</text>
+<circle class="node is-ok" cx="300" cy="190" r="18"/><text x="300" y="195" text-anchor="middle">5</text>
+<text class="label-sm" x="300" y="232" text-anchor="middle">d=10</text>
+<circle class="node is-ok" cx="420" cy="120" r="18"/><text x="420" y="125" text-anchor="middle">6</text>
+<text class="label-sm" x="420" y="162" text-anchor="middle">d=13</text>
+</svg>
+<table class="trace"><thead><tr><th>Đỉnh</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+<tr><td>dist</td><td>0</td><td>5</td><td>2</td><td>9</td><td>10</td><td>13</td></tr>
+<tr><td>par</td><td>–</td><td>3</td><td>1</td><td>2</td><td>4</td><td>5</td></tr>
+<tr><td>chốt</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+</tbody></table>
+<p><b>Hàng đợi ưu tiên:</b> <code>rỗng</code></p>
+</figure>
+</div>
+</div>
+
+    <p>Để ý ba điều. Thứ nhất, dist[2] lúc đầu là 7 (đi thẳng), sau đó giảm còn 5 nhờ đi vòng qua đỉnh 3: đây chính là chỗ BFS sai. Thứ hai, đỉnh được chốt theo thứ tự dist tăng dần: 1 (0), 3 (2), 2 (5), 4 (9), 5 (10), 6 (13). Thứ ba, hàng đợi có 3 phần tử lỗi thời là (7, 2), (11, 5), (14, 6), và chúng đều bị bỏ qua mà không tốn công nới lỏng.</p>
+
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">So sánh BFS và Dijkstra trên cùng đồ thị</p></div>
+      <div class="viz-body">
+        <table>
+          <thead><tr><th>Đỉnh</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead>
+          <tbody>
+            <tr><td>Số cạnh ít nhất (BFS)</td><td>0</td><td>1</td><td>1</td><td>2</td><td>2</td><td>3</td></tr>
+            <tr><td>Độ dài theo đường BFS tìm</td><td>0</td><td class="hl">7</td><td>2</td><td class="hl">11</td><td class="hl">11</td><td class="hl">16</td></tr>
+            <tr><td>Độ dài ngắn nhất (Dijkstra)</td><td>0</td><td>5</td><td>2</td><td>9</td><td>10</td><td>13</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="viz-caption"><p>BFS duyệt đỉnh kề theo thứ tự số hiệu nên đi 1 → 2 → 4 → 6 = 7 + 4 + 5 = 16 tới đỉnh 6. Bốn ô tô màu là chỗ BFS cho đáp án sai. Đường ngắn nhất thật 1 → 3 → 2 → 4 → 5 → 6 dùng tới 5 cạnh.</p></div>
+    </div>
+
+    <h3>Floyd–Warshall qua từng vòng k</h3>
+    <p>Đồ thị 4 đỉnh hình vuông: cạnh 1–2 dài 4, 1–3 dài 5, 2–4 dài 6, 3–4 dài 2. Ma trận đối xứng vì đồ thị vô hướng.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 260 170" width="260" role="img" aria-label="Đồ thị vuông 4 đỉnh: 1-2 dài 4, 1-3 dài 5, 2-4 dài 6, 3-4 dài 2">
+        <line class="edge" x1="50" y1="40" x2="210" y2="40"/>
+        <line class="edge" x1="50" y1="40" x2="50" y2="130"/>
+        <line class="edge" x1="210" y1="40" x2="210" y2="130"/>
+        <line class="edge" x1="50" y1="130" x2="210" y2="130"/>
+        <text class="label-sm" x="130" y="32" text-anchor="middle">4</text>
+        <text class="label-sm" x="36" y="90" text-anchor="middle">5</text>
+        <text class="label-sm" x="224" y="90" text-anchor="middle">6</text>
+        <text class="label-sm" x="130" y="150" text-anchor="middle">2</text>
+        <circle class="node" cx="50" cy="40" r="18"/><text x="50" y="45" text-anchor="middle">1</text>
+        <circle class="node" cx="210" cy="40" r="18"/><text x="210" y="45" text-anchor="middle">2</text>
+        <circle class="node" cx="50" cy="130" r="18"/><text x="50" y="135" text-anchor="middle">3</text>
+        <circle class="node" cx="210" cy="130" r="18"/><text x="210" y="135" text-anchor="middle">4</text>
+      </svg>
+      <figcaption>Hình 2. Đồ thị dùng cho ví dụ Floyd–Warshall.</figcaption>
+    </figure>
+
+<div class="stepper" data-title="Floyd–Warshall trên đồ thị 4 đỉnh">
+<div class="frame" data-caption="&lt;b&gt;k = 0.&lt;/b&gt; Ma trận ban đầu: d[i][j] = độ dài cạnh i–j, ∞ nếu không có cạnh, 0 trên đường chéo. Chưa được đi qua đỉnh trung gian nào.">
+<table class="trace"><thead><tr><th>d</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead><tbody>
+<tr><th>1</th><td>0</td><td>4</td><td>5</td><td>∞</td></tr>
+<tr><th>2</th><td>4</td><td>0</td><td>∞</td><td>6</td></tr>
+<tr><th>3</th><td>5</td><td>∞</td><td>0</td><td>2</td></tr>
+<tr><th>4</th><td>∞</td><td>6</td><td>2</td><td>0</td></tr>
+</tbody></table>
+</div>
+<div class="frame" data-caption="&lt;b&gt;k = 1.&lt;/b&gt; Cho phép đi qua đỉnh 1. d[2][3] = d[2][1] + d[1][3] = 4 + 5 = 9 &amp;lt; ∞. Ô đổi màu là ô vừa được sửa.">
+<table class="trace"><thead><tr><th>d</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead><tbody>
+<tr><th>1</th><td>0</td><td>4</td><td>5</td><td>∞</td></tr>
+<tr><th>2</th><td>4</td><td>0</td><td class="hl">9</td><td>6</td></tr>
+<tr><th>3</th><td>5</td><td class="hl">9</td><td>0</td><td>2</td></tr>
+<tr><th>4</th><td>∞</td><td>6</td><td>2</td><td>0</td></tr>
+</tbody></table>
+</div>
+<div class="frame" data-caption="&lt;b&gt;k = 2.&lt;/b&gt; Cho phép đi qua đỉnh 1, 2. d[1][4] = d[1][2] + d[2][4] = 4 + 6 = 10 &amp;lt; ∞.">
+<table class="trace"><thead><tr><th>d</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead><tbody>
+<tr><th>1</th><td>0</td><td>4</td><td>5</td><td class="hl">10</td></tr>
+<tr><th>2</th><td>4</td><td>0</td><td>9</td><td>6</td></tr>
+<tr><th>3</th><td>5</td><td>9</td><td>0</td><td>2</td></tr>
+<tr><th>4</th><td class="hl">10</td><td>6</td><td>2</td><td>0</td></tr>
+</tbody></table>
+</div>
+<div class="frame" data-caption="&lt;b&gt;k = 3.&lt;/b&gt; Cho phép đi qua 1, 2, 3. d[1][4] = d[1][3] + d[3][4] = 5 + 2 = 7 &amp;lt; 10: tìm được đường tốt hơn.">
+<table class="trace"><thead><tr><th>d</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead><tbody>
+<tr><th>1</th><td>0</td><td>4</td><td>5</td><td class="hl">7</td></tr>
+<tr><th>2</th><td>4</td><td>0</td><td>9</td><td>6</td></tr>
+<tr><th>3</th><td>5</td><td>9</td><td>0</td><td>2</td></tr>
+<tr><th>4</th><td class="hl">7</td><td>6</td><td>2</td><td>0</td></tr>
+</tbody></table>
+</div>
+<div class="frame" data-caption="&lt;b&gt;k = 4.&lt;/b&gt; Cho phép đi qua mọi đỉnh. d[2][3] = d[2][4] + d[4][3] = 6 + 2 = 8 &amp;lt; 9. Xong: đây là bảng khoảng cách ngắn nhất giữa mọi cặp.">
+<table class="trace"><thead><tr><th>d</th><th>1</th><th>2</th><th>3</th><th>4</th></tr></thead><tbody>
+<tr><th>1</th><td>0</td><td>4</td><td>5</td><td>7</td></tr>
+<tr><th>2</th><td>4</td><td>0</td><td class="hl">8</td><td>6</td></tr>
+<tr><th>3</th><td>5</td><td class="hl">8</td><td>0</td><td>2</td></tr>
+<tr><th>4</th><td>7</td><td>6</td><td>2</td><td>0</td></tr>
+</tbody></table>
+</div>
+</div>
+
+    <p>Ô d[1][4] được sửa hai lần: 10 (qua đỉnh 2) rồi 7 (qua đỉnh 3). Ô d[2][3] cũng hai lần: 9 (qua 1) rồi 8 (qua 4). Mỗi vòng k chỉ “mở khóa” thêm một trạm trung chuyển, và bảng tốt dần lên.</p>
+
+    <div class="playground" id="viz-dijkstra">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: Dijkstra từng bước</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="dij-edges">Cạnh (u v w) <input type="text" id="dij-edges" value="1 2 7, 1 3 2, 2 3 3, 2 4 4, 3 5 9, 4 5 1, 4 6 5, 5 6 3" style="min-width:18rem"></label>
+          <label for="dij-src">Nguồn <input type="number" id="dij-src" value="1" min="1" max="10"></label>
+        </div>
+        <div class="controls">
+          <button type="button" data-act="reset">Đặt lại</button>
+          <button type="button" data-act="step">Bước tiếp</button>
+          <button type="button" data-act="all">Chạy hết</button>
+          <button type="button" class="ghost" data-act="sample">Đồ thị mẫu</button>
+        </div>
+        <div class="dij-wrap">
+          <figure class="diagram dij-svg"></figure>
+          <div class="dij-table"></div>
+          <p class="dij-pq"></p>
+        </div>
+        <div class="out">Nhập các cạnh rồi bấm “Bước tiếp”.</div>
+      </div>
+      <div class="viz-legend"><span><i class="is-active"></i>đang chốt / cạnh vừa nới lỏng</span><span><i class="is-ok"></i>đã chốt</span><span><i class="is-bad"></i>cạnh thử nhưng không cải thiện</span></div>
+      <div class="viz-caption"><p>Đồ thị vô hướng, đỉnh đánh số 1..10, trọng số nguyên từ 0 tới 10⁶ (không nhận cạnh âm). Mỗi lần bấm “Bước tiếp” là một lần lấy phần tử nhỏ nhất ra khỏi hàng đợi ưu tiên. Thử thêm cạnh “1 6 12” rồi chạy lại xem đường tới 6 có đổi không.</p></div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Dijkstra với priority_queue (dùng nhiều nhất)</h3>
+    <p>Chương trình đọc đồ thị vô hướng n đỉnh, m cạnh; in dist từ đỉnh 1 tới mọi đỉnh (−1 nếu không tới được), rồi in một đường ngắn nhất từ 1 tới n. Vài chi tiết quan trọng:</p>
+    <ul>
+      <li>Danh sách kề <code>vector&lt;vector&lt;pair&lt;int, long long&gt;&gt;&gt;</code>: mỗi phần tử là (đỉnh kề, độ dài).</li>
+      <li><code>priority_queue</code> mặc định lấy ra phần tử <b>lớn nhất</b>. Thêm <code>greater&lt;...&gt;</code> để lấy <b>nhỏ nhất</b>. Cặp đặt <b>dist trước, đỉnh sau</b>, vì pair so sánh theo thành phần đầu.</li>
+      <li>Dùng <code>long long</code>: đường dài tới 10⁵ cạnh × 10⁹ = 10¹⁴, tràn <code>int</code>.</li>
+    </ul>
+    <figure class="code">
+      <figcaption><span class="fn">dijkstra.cpp</span> Dijkstra O((n + m) log n) + truy vết</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const long long INF = 4e18;   // "vô cùng": lớn hơn mọi độ dài đường đi có thể có
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    // adj[u] chứa các cặp (v, w): có cạnh u - v dài w
+    vector&lt;vector&lt;pair&lt;int, long long&gt;&gt;&gt; adj(n + 1);
+    for (int i = 0; i &lt; m; i++) {
+        int u, v; long long w;
+        cin &gt;&gt; u &gt;&gt; v &gt;&gt; w;
+        adj[u].push_back({v, w});
+        adj[v].push_back({u, w});   // đồ thị vô hướng: thêm cả hai chiều
+    }
+
+    int s = 1;                                  // đỉnh nguồn
+    vector&lt;long long&gt; dist(n + 1, INF);
+    vector&lt;int&gt; par(n + 1, 0);                  // par[v] = đỉnh đứng ngay trước v
+    // hàng đợi ưu tiên lấy ra cặp (dist, đỉnh) có dist NHỎ NHẤT trước
+    priority_queue&lt;pair&lt;long long, int&gt;,
+                   vector&lt;pair&lt;long long, int&gt;&gt;,
+                   greater&lt;pair&lt;long long, int&gt;&gt;&gt; pq;
+
+    dist[s] = 0;
+    pq.push({0, s});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+        if (d &gt; dist[u]) continue;              // phần tử lỗi thời: bỏ qua
+        // tới đây u được chốt: dist[u] là độ dài ngắn nhất
+        for (auto [v, w] : adj[u]) {
+            if (dist[u] + w &lt; dist[v]) {        // nới lỏng cạnh u - v
+                dist[v] = dist[u] + w;
+                par[v] = u;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+
+    // In khoảng cách từ s tới mọi đỉnh (-1 nếu không tới được)
+    for (int v = 1; v &lt;= n; v++)
+        cout &lt;&lt; (dist[v] == INF ? -1 : dist[v]) &lt;&lt; (v == n ? '\n' : ' ');
+
+    // Truy vết đường đi từ s tới n bằng mảng par
+    if (dist[n] == INF) {
+        cout &lt;&lt; -1 &lt;&lt; '\n';
+    } else {
+        vector&lt;int&gt; path;
+        for (int v = n; v != 0; v = par[v]) path.push_back(v);
+        reverse(path.begin(), path.end());
+        for (size_t i = 0; i &lt; path.size(); i++)
+            cout &lt;&lt; path[i] &lt;&lt; (i + 1 == path.size() ? '\n' : ' ');
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <p>Chạy với đồ thị ở phần Minh họa:</p>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">6 8
+1 2 7
+1 3 2
+2 3 3
+2 4 4
+3 5 9
+4 5 1
+4 6 5
+5 6 3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">0 5 2 9 10 13
+1 3 2 4 5 6</code></pre></div>
+    </div>
+    <p>Truy vết dừng được vì par[1] = 0, mà không có đỉnh số 0. Nếu đề cho đỉnh đánh số từ 0, hãy khởi tạo par bằng −1 và dừng khi gặp −1.</p>
+
+    <h3>Dijkstra bản mảng O(n²) (cho đồ thị dày)</h3>
+    <p>Không cần hàng đợi ưu tiên. Mỗi lượt duyệt cả mảng tìm đỉnh chưa chốt nhỏ nhất. Dùng khi n ≤ 5 000 và m có thể tới n² (ví dụ đề cho sẵn ma trận khoảng cách). Cùng Input như trên, chương trình in dòng đầu <code>0 5 2 9 10 13</code>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dijkstra_n2.cpp</span> Dijkstra O(n²) trên ma trận kề</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const long long INF = 4e18;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    // ma trận kề: w[u][v] = độ dài cạnh u - v, INF nếu không có cạnh
+    vector&lt;vector&lt;long long&gt;&gt; w(n + 1, vector&lt;long long&gt;(n + 1, INF));
+    for (int i = 0; i &lt; m; i++) {
+        int u, v; long long c;
+        cin &gt;&gt; u &gt;&gt; v &gt;&gt; c;
+        w[u][v] = min(w[u][v], c);   // có thể có nhiều cạnh giữa u và v: giữ cạnh ngắn nhất
+        w[v][u] = min(w[v][u], c);
+    }
+    vector&lt;long long&gt; dist(n + 1, INF);
+    vector&lt;bool&gt; done(n + 1, false);   // done[u] = u đã được chốt
+    dist[1] = 0;
+    for (int it = 0; it &lt; n; it++) {
+        // 1) tìm đỉnh chưa chốt có dist nhỏ nhất: O(n)
+        int u = -1;
+        for (int v = 1; v &lt;= n; v++)
+            if (!done[v] &amp;&amp; (u == -1 || dist[v] &lt; dist[u])) u = v;
+        if (dist[u] == INF) break;     // các đỉnh còn lại không tới được
+        done[u] = true;                // 2) chốt u
+        // 3) nới lỏng mọi cạnh đi ra từ u: O(n)
+        for (int v = 1; v &lt;= n; v++)
+            if (w[u][v] != INF &amp;&amp; dist[u] + w[u][v] &lt; dist[v])
+                dist[v] = dist[u] + w[u][v];
+    }
+    for (int v = 1; v &lt;= n; v++)
+        cout &lt;&lt; (dist[v] == INF ? -1 : dist[v]) &lt;&lt; (v == n ? '\n' : ' ');
+    return 0;
+}</code></pre>
+    </figure>
+
+    <h3>Floyd–Warshall</h3>
+    <p>Định dạng giống bài CSES Shortest Routes II: n, m, q; m cạnh hai chiều; q truy vấn (a, b), in độ dài ngắn nhất hoặc −1. Chọn INF = 10¹⁸ để INF + INF = 2·10¹⁸ vẫn nhỏ hơn giới hạn long long (khoảng 9,2·10¹⁸), không tràn khi cộng hai ô ∞.</p>
+    <figure class="code">
+      <figcaption><span class="fn">floyd.cpp</span> Floyd–Warshall O(n³)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const long long INF = 1e18;   // đủ lớn, và INF + INF vẫn không tràn long long
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m, q;
+    cin &gt;&gt; n &gt;&gt; m &gt;&gt; q;
+    // d[i][j] = độ dài đường đi ngắn nhất từ i tới j tìm được tới lúc này
+    vector&lt;vector&lt;long long&gt;&gt; d(n + 1, vector&lt;long long&gt;(n + 1, INF));
+    for (int i = 1; i &lt;= n; i++) d[i][i] = 0;
+    for (int e = 0; e &lt; m; e++) {
+        int a, b; long long c;
+        cin &gt;&gt; a &gt;&gt; b &gt;&gt; c;
+        d[a][b] = min(d[a][b], c);    // cạnh lặp: giữ cạnh ngắn nhất
+        d[b][a] = min(d[b][a], c);
+    }
+    // k PHẢI là vòng ngoài cùng: lần lượt cho phép đi qua đỉnh 1, 2, ..., k
+    for (int k = 1; k &lt;= n; k++)
+        for (int i = 1; i &lt;= n; i++)
+            for (int j = 1; j &lt;= n; j++)
+                if (d[i][k] + d[k][j] &lt; d[i][j])
+                    d[i][j] = d[i][k] + d[k][j];
+    while (q--) {
+        int a, b;
+        cin &gt;&gt; a &gt;&gt; b;
+        cout &lt;&lt; (d[a][b] &gt;= INF ? -1 : d[a][b]) &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4 4 3
+1 2 4
+1 3 5
+2 4 6
+3 4 2
+1 4
+2 3
+3 3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">7
+8
+0</code></pre></div>
+    </div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Thuật toán</th><th>Thời gian</th><th>Bộ nhớ</th><th>Điều kiện dùng</th></tr></thead>
+      <tbody>
+        <tr><td><a href="bfs.html">BFS</a></td><td><span class="bigo">O(n + m)</span></td><td><span class="bigo">O(n + m)</span></td><td>Mọi cạnh dài bằng nhau</td></tr>
+        <tr><td>Dijkstra bản mảng</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n²)</span> nếu dùng ma trận kề</td><td>Một nguồn, cạnh ≥ 0, đồ thị dày</td></tr>
+        <tr><td>Dijkstra + priority_queue</td><td><span class="bigo">O((n + m) log n)</span></td><td><span class="bigo">O(n + m)</span></td><td>Một nguồn, cạnh ≥ 0, đồ thị thưa</td></tr>
+        <tr><td>Floyd–Warshall</td><td><span class="bigo">O(n³)</span></td><td><span class="bigo">O(n²)</span></td><td>Mọi cặp, n nhỏ (cho phép cạnh âm nếu không có chu trình âm)</td></tr>
+        <tr><td>Bellman–Ford (chỉ nhắc tên)</td><td><span class="bigo">O(n · m)</span></td><td><span class="bigo">O(n + m)</span></td><td>Một nguồn, có cạnh âm</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Chọn thuật toán theo giới hạn</h3>
+    <p>Máy chấm làm được khoảng 10⁸ phép tính đơn giản mỗi giây (xem bài <a href="complexity.html">Độ phức tạp</a>). Áp vào từng thuật toán:</p>
+    <table>
+      <thead><tr><th>Đề cho</th><th>Chọn</th><th>Số phép tính ước lượng</th></tr></thead>
+      <tbody>
+        <tr><td>Cạnh không trọng số (hoặc bằng nhau), n, m ≤ 10⁶</td><td>BFS</td><td>≈ 2·10⁶</td></tr>
+        <tr><td>Một nguồn, n ≤ 5 000, m tới n²</td><td>Dijkstra mảng</td><td>5 000² = 2,5·10⁷</td></tr>
+        <tr><td>Một nguồn, n ≤ 10⁵, m ≤ 2·10⁵</td><td>Dijkstra + priority_queue</td><td>3·10⁵ · 17 ≈ 5·10⁶</td></tr>
+        <tr><td>Một nguồn, n, m ≤ 10⁶</td><td>Dijkstra + priority_queue (đọc nhanh)</td><td>2·10⁶ · 20 = 4·10⁷</td></tr>
+        <tr><td>Mọi cặp hoặc nhiều truy vấn, n ≤ 400–500</td><td>Floyd–Warshall</td><td>500³ = 1,25·10⁸</td></tr>
+        <tr><td>Nhiều truy vấn nhưng n = 10⁵</td><td>Không Floyd được (10¹⁵). Tìm tính chất riêng của đề, hoặc chỉ chạy Dijkstra từ vài nguồn cố định</td><td>—</td></tr>
+        <tr><td>Có cạnh âm</td><td>Không dùng Dijkstra. Floyd (n nhỏ) hoặc Bellman–Ford</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p><b>Ví dụ.</b> CSES Shortest Routes II có n ≤ 500, q ≤ 10⁵ truy vấn. Chạy Dijkstra cho mỗi truy vấn: 10⁵ · (500 + 2,5·10⁵) · 9 ≈ 2·10¹¹, quá chậm. Floyd một lần 1,25·10⁸ rồi mỗi truy vấn <span class="bigo">O(1)</span>: kịp. Ngược lại, CSES Shortest Routes I có n = 10⁵: ma trận 10⁵ × 10⁵ cần 10¹⁰ ô, Floyd không thể; Dijkstra một lần là đủ.</p>
+    <p><b>Bộ nhớ Floyd.</b> Ma trận 500 × 500 số long long chiếm 500 · 500 · 8 = 2·10⁶ byte = 2 MB, rất nhỏ. Ma trận 5 000 × 5 000 long long đã là 200 MB: cẩn thận khi dùng Dijkstra mảng với ma trận kề; khi đó nên dùng danh sách kề cho phần nới lỏng.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Cạnh âm làm Dijkstra sai</h3>
+    <p>Đồ thị có hướng: 1 → 2 dài 2, 1 → 3 dài 3, 3 → 2 dài −2, 2 → 4 dài 1.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 380 170" width="380" role="img" aria-label="Phản ví dụ cạnh âm: 1 đến 2 dài 2, 1 đến 3 dài 3, 3 đến 2 dài -2, 2 đến 4 dài 1">
+        <line class="edge" x1="50" y1="85" x2="170" y2="35"/>
+        <line class="edge is-ok" x1="50" y1="85" x2="170" y2="135"/>
+        <line class="edge is-bad" x1="170" y1="135" x2="170" y2="35"/>
+        <line class="edge" x1="170" y1="35" x2="320" y2="35"/>
+        <text class="label-sm" x="100" y="50" text-anchor="middle">2</text>
+        <text class="label-sm" x="100" y="128" text-anchor="middle">3</text>
+        <text class="label-sm" x="190" y="90" text-anchor="middle">−2</text>
+        <text class="label-sm" x="245" y="27" text-anchor="middle">1</text>
+        <circle class="node is-ok" cx="50" cy="85" r="18"/><text x="50" y="90" text-anchor="middle">1</text>
+        <circle class="node" cx="170" cy="35" r="18"/><text x="170" y="40" text-anchor="middle">2</text>
+        <circle class="node" cx="170" cy="135" r="18"/><text x="170" y="140" text-anchor="middle">3</text>
+        <circle class="node is-bad" cx="320" cy="35" r="18"/><text x="320" y="40" text-anchor="middle">4</text>
+      </svg>
+      <figcaption>Hình 3. Các cạnh 1 → 2, 1 → 3, 2 → 4 hướng sang phải; cạnh −2 (nét đứt) hướng từ 3 lên 2. Đường thật sự ngắn nhất tới 4 là 1 → 3 → 2 → 4 = 3 − 2 + 1 = 2, nhưng Dijkstra trả lời 3.</figcaption>
+    </figure>
+    <p>Chạy Dijkstra bản mảng: chốt 1 (dist 0) → dist[2] = 2, dist[3] = 3. Chốt 2 (dist 2 nhỏ nhất) → dist[4] = 3. Chốt 3 → nới lỏng 3 → 2 được 1, nhưng đỉnh 2 <b>đã chốt</b> và đỉnh 4 đã được tính từ giá trị cũ. Kết quả dist[4] = 3, sai (đúng là 2). Lý do: lúc chốt đỉnh 2, thuật toán tin rằng “không đường nào tới 2 ngắn hơn 2 được nữa”, nhưng cạnh −2 phá vỡ niềm tin đó.</p>
+    <p>Một số cách cài bằng <code>priority_queue</code> tình cờ sửa lại được trên ví dụ nhỏ này (vì đỉnh 2 được đẩy vào hàng đợi lần nữa), nhưng khi đó không còn gì đảm bảo: có những đồ thị khiến số lần xử lý lại tăng theo hàm mũ. Kết luận: <b>có cạnh âm thì không dùng Dijkstra</b>. Dùng <b>Bellman–Ford</b> (nới lỏng mọi cạnh, lặp n − 1 lượt, <span class="bigo">O(n · m)</span>; em sẽ học ở chương trình chuyên) hoặc Floyd nếu n nhỏ. Nếu đồ thị có <b>chu trình âm</b> (đi một vòng tổng âm) thì đường “ngắn nhất” không tồn tại, vì đi vòng mãi sẽ càng ngày càng ngắn.</p>
+
+    <h3>Đếm số đường đi ngắn nhất</h3>
+    <p>Bài <a href="https://oj.vnoi.info/problem/qbschool">QBSCHOOL</a> hỏi thêm: có bao nhiêu đường ngắn nhất từ 1 tới n? Thêm mảng <code>cnt</code>, cnt[s] = 1. Khi nới lỏng:</p>
+    <ul>
+      <li>Nếu dist[u] + w &lt; dist[v]: tìm được đường tốt hơn hẳn, các đường cũ bị loại: cnt[v] = cnt[u].</li>
+      <li>Nếu dist[u] + w == dist[v]: thêm một cách tới v bằng đúng độ dài tốt nhất: cnt[v] += cnt[u].</li>
+    </ul>
+    <figure class="code">
+      <figcaption><span class="fn">dem_duong.cpp</span> Phần nới lỏng có đếm (thay vào vòng for trong dijkstra.cpp)</figcaption>
+<pre><code class="language-cpp">for (auto [v, w] : adj[u]) {
+    if (dist[u] + w &lt; dist[v]) {          // đường mới tốt hơn hẳn
+        dist[v] = dist[u] + w;
+        cnt[v] = cnt[u];                  // bỏ hết các cách cũ
+        pq.push({dist[v], v});
+    } else if (dist[u] + w == dist[v]) {  // thêm một cách tốt ngang bằng
+        cnt[v] += cnt[u];
+    }
+}</code></pre>
+    </figure>
+    <p>Vì sao đúng: khi u được lấy ra (không lỗi thời), mọi đỉnh x có cạnh x → u và dist[x] + w(x, u) = dist[u] đều có dist[x] &lt; dist[u] (cạnh dương), nên đã được chốt trước, cnt[u] đã đủ. Cần cạnh <b>dương</b>: nếu có cạnh dài 0, thứ tự chốt giữa các đỉnh cùng dist có thể làm đếm thiếu. Số đường có thể rất lớn: đề thường yêu cầu lấy dư hoặc dùng long long.</p>
+
+    <h3>Dijkstra nhiều nguồn</h3>
+    <p>Bài toán: thành phố có k trạm cứu hỏa; với mỗi ngôi nhà, tính khoảng cách tới trạm <b>gần nhất</b>. Không cần chạy k lần. Đặt dist = 0 cho <b>mọi</b> trạm và đẩy hết vào hàng đợi ngay từ đầu, rồi chạy Dijkstra như thường. Cách hiểu: thêm một đỉnh “siêu nguồn” nối tới mọi trạm bằng cạnh dài 0. Độ phức tạp vẫn <span class="bigo">O((n + m) log n)</span>. Đây cũng là ý tưởng của BFS nhiều nguồn trong bài <a href="flood-fill.html">loang</a>.</p>
+
+    <h3>Đồ thị ngược và đường qua một cạnh</h3>
+    <p>Muốn biết khoảng cách từ <b>mọi</b> đỉnh tới đích t trên đồ thị có hướng: đảo chiều mọi cạnh rồi chạy Dijkstra từ t. Kết hợp hai lần chạy (từ s trên đồ thị gốc, từ t trên đồ thị ngược) cho ta công thức quan trọng: cạnh u → v dài w nằm trên một đường ngắn nhất s → t khi và chỉ khi <span class="math">ds[u] + w + dt[v] = ds[t]</span>. Đỉnh v nằm trên một đường ngắn nhất khi <span class="math">ds[v] + dt[v] = ds[t]</span>. Bài <a href="https://oj.vnoi.info/problem/centre28">CENTRE28</a> dùng đúng ý này cùng với đếm số đường.</p>
+
+    <h3>Đồ thị trạng thái (nâng cao): Flight Discount</h3>
+    <p>Bài CSES <a href="https://cses.fi/problemset/task/1195">Flight Discount</a>: đi máy bay từ thành phố 1 tới n, được dùng <b>một</b> phiếu giảm nửa giá (làm tròn xuống) cho một chuyến. Chỉ biết “đang ở thành phố nào” là chưa đủ, còn phải biết “đã dùng phiếu chưa”. Vậy mỗi đỉnh mới là một <b>cặp</b> (u, j), với j = 0 (chưa dùng) hoặc 1 (đã dùng). Từ (u, 0) qua chuyến u → v giá c có hai lựa chọn: tới (v, 0) tốn c, hoặc dùng phiếu tới (v, 1) tốn ⌊c/2⌋. Từ (u, 1) chỉ tới (v, 1) tốn c. Đồ thị mới có 2n đỉnh, 3m cạnh, chạy Dijkstra bình thường. Đáp án là dist[n][1].</p>
+    <figure class="code">
+      <figcaption><span class="fn">flight_discount.cpp</span> Dijkstra trên đồ thị trạng thái (u, đã dùng phiếu?)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const long long INF = 4e18;
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    vector&lt;vector&lt;pair&lt;int, long long&gt;&gt;&gt; adj(n + 1);
+    for (int i = 0; i &lt; m; i++) {
+        int a, b; long long c;
+        cin &gt;&gt; a &gt;&gt; b &gt;&gt; c;
+        adj[a].push_back({b, c});            // chuyến bay một chiều a -&gt; b
+    }
+    // dist[u][j]: đang ở u, j = 0 chưa dùng phiếu, j = 1 đã dùng phiếu
+    vector&lt;array&lt;long long, 2&gt;&gt; dist(n + 1, {INF, INF});
+    priority_queue&lt;tuple&lt;long long, int, int&gt;,
+                   vector&lt;tuple&lt;long long, int, int&gt;&gt;,
+                   greater&lt;tuple&lt;long long, int, int&gt;&gt;&gt; pq;
+    dist[1][0] = 0;
+    pq.push({0, 1, 0});
+    while (!pq.empty()) {
+        auto [d, u, j] = pq.top();
+        pq.pop();
+        if (d &gt; dist[u][j]) continue;
+        for (auto [v, c] : adj[u]) {
+            // đi thường, giữ nguyên trạng thái j
+            if (d + c &lt; dist[v][j]) { dist[v][j] = d + c; pq.push({dist[v][j], v, j}); }
+            // dùng phiếu cho chuyến này (chỉ khi chưa dùng)
+            if (j == 0 &amp;&amp; d + c / 2 &lt; dist[v][1]) { dist[v][1] = d + c / 2; pq.push({dist[v][1], v, 1}); }
+        }
+    }
+    cout &lt;&lt; dist[n][1] &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">3 4
+1 2 3
+2 3 1
+1 3 7
+2 1 5</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2</code></pre></div>
+    </div>
+    <p>Đường tốt nhất: 1 → 2 dùng phiếu (⌊3/2⌋ = 1), rồi 2 → 3 giá 1, tổng 2. Bài <a href="https://oj.vnoi.info/problem/dhfrbus">DHFRBUS</a> mở rộng thành k ≤ 5 vé miễn phí: trạng thái (u, số vé đã dùng), có (k + 1) · n đỉnh.</p>
+
+    <h3>Truy vết trong Floyd</h3>
+    <p>Giữ thêm ma trận p[i][j] = đỉnh đứng ngay trước j trên đường ngắn nhất từ i. Khởi tạo p[i][j] = i nếu có cạnh i → j. Khi cập nhật d[i][j] qua k, gán p[i][j] = p[k][j] (đỉnh đứng trước j trên đoạn k → j). In đường: từ j lùi về p[i][j], p[i][p[i][j]], … cho tới i. Bài <a href="https://oj.vnoi.info/problem/floyd">FLOYD</a> trên VNOJ yêu cầu đúng việc này.</p>
+
+    <h3>0-1 BFS</h3>
+    <p>Nếu trọng số chỉ là 0 hoặc 1, có cách nhanh hơn Dijkstra: dùng <code>deque</code>, cạnh 0 đẩy vào đầu, cạnh 1 đẩy vào cuối, <span class="bigo">O(n + m)</span>. Xem bài viết “BFS 0-1” trên VNOI Wiki ở phần tham khảo.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Quên greater, hàng đợi lấy ra phần tử lớn nhất</p><p><code>priority_queue&lt;pair&lt;long long,int&gt;&gt; pq;</code> lấy ra dist <b>lớn nhất</b>. Nhờ dòng kiểm tra lỗi thời, đáp án có thể vẫn đúng, nhưng thuật toán không còn là Dijkstra và có thể chạy chậm khủng khiếp (TLE). Sửa: thêm <code>vector&lt;...&gt;, greater&lt;...&gt;</code>, hoặc đẩy <code>{-dist, v}</code> rồi đổi dấu khi lấy ra.</p></div>
+    <div class="callout danger"><p class="callout-title">Đặt đỉnh trước, dist sau</p><p><code>pq.push({v, dist[v]})</code> làm hàng đợi so sánh theo số hiệu đỉnh, không theo dist. Luôn đặt <b>dist trước</b>.</p></div>
+    <div class="callout danger"><p class="callout-title">Tràn số</p><p>Trọng số tới 10⁹, đường có thể có 10⁵ cạnh, tổng 10¹⁴. Dùng <code>long long</code> cho dist, cho trọng số, cho phần tử trong hàng đợi. INF đặt cỡ 10¹⁸, không dùng <code>INT_MAX</code> rồi cộng thêm w (tràn thành số âm).</p></div>
+    <div class="callout warn"><p class="callout-title">Đánh dấu “đã thăm” lúc đẩy vào hàng đợi như BFS</p><p>Trong BFS ta đánh dấu ngay khi đẩy. Làm vậy với Dijkstra là sai: đỉnh 2 trong ví dụ được đẩy với 7 trước, rồi mới tìm ra 5. Chỉ được coi là đã chốt khi <b>lấy ra</b> khỏi hàng đợi (và không lỗi thời).</p></div>
+    <div class="callout warn"><p class="callout-title">Thiếu dòng bỏ phần tử lỗi thời</p><p>Không có <code>if (d &gt; dist[u]) continue;</code>, một đỉnh bị lấy ra nhiều lần sẽ duyệt danh sách kề nhiều lần. Đồ thị hình sao (một đỉnh nối 10⁵ đỉnh khác) dễ làm chương trình chạy quá giờ.</p></div>
+    <div class="callout warn"><p class="callout-title">Floyd đặt k ở trong cùng</p><p>Thứ tự đúng là <code>for k</code> → <code>for i</code> → <code>for j</code>. Đặt k trong cùng cho kết quả sai mà ví dụ nhỏ có khi vẫn đúng, rất khó phát hiện.</p></div>
+    <div class="callout warn"><p class="callout-title">Floyd tràn khi cộng hai ô vô cùng</p><p>Nếu INF = <code>LLONG_MAX</code> thì d[i][k] + d[k][j] tràn. Chọn INF = 10¹⁸ (tổng 2·10¹⁸ vẫn an toàn), hoặc kiểm tra <code>d[i][k] &lt; INF &amp;&amp; d[k][j] &lt; INF</code> trước khi cộng. Nếu dùng <code>int</code> với INF = 10⁹ thì INF + INF = 2·10⁹ vẫn vừa <code>int</code> (giới hạn khoảng 2,147·10⁹), nhưng chỉ dùng được khi mọi đường đi thật đều ngắn hơn 10⁹.</p></div>
+    <div class="callout tip"><p class="callout-title">Cạnh lặp và đồ thị vô hướng</p><p>Đề có thể cho nhiều cạnh giữa cùng hai đỉnh: với ma trận, lấy <code>min</code>, đừng ghi đè. Đồ thị vô hướng phải thêm cạnh <b>cả hai chiều</b>. Đọc kỹ đề: “đường một chiều” hay “hai chiều”.</p></div>
+    <div class="callout tip"><p class="callout-title">In −1 khi không tới được</p><p>Đề thường yêu cầu in −1 cho đỉnh không tới được. Đừng in thẳng giá trị INF ra màn hình.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. BFS cho đường đi ngắn nhất đúng trong trường hợp nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Mọi đồ thị có trọng số dương</button>
+        <button type="button" class="quiz-opt" data-correct>B. Mọi cạnh có cùng độ dài</button>
+        <button type="button" class="quiz-opt">C. Đồ thị có ít hơn 1 000 đỉnh</button>
+        <button type="button" class="quiz-opt">D. Đồ thị vô hướng</button>
+      </div>
+      <p class="quiz-explain">BFS đếm số cạnh. Số cạnh ít nhất trùng với tổng độ dài nhỏ nhất chỉ khi mọi cạnh dài bằng nhau. Phản ví dụ ba đỉnh ở Hình 1 cho thấy A sai.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Trong Dijkstra dùng priority_queue, lấy ra cặp (d, u) mà d &gt; dist[u]. Điều đó nghĩa là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Đồ thị có cạnh âm, phải dừng</button>
+        <button type="button" class="quiz-opt">B. Phải nới lỏng lại mọi cạnh của u</button>
+        <button type="button" class="quiz-opt" data-correct>C. Cặp này lỗi thời, u đã được xử lý với dist nhỏ hơn, bỏ qua</button>
+        <button type="button" class="quiz-opt">D. Chương trình bị lỗi tràn số</button>
+      </div>
+      <p class="quiz-explain">Sau khi đẩy (d, u), dist[u] đã giảm và cặp (dist[u], u) nhỏ hơn được lấy ra trước. Cặp cũ chỉ còn là rác, bỏ qua để mỗi đỉnh chỉ duyệt danh sách kề một lần.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Đề: n ≤ 300 thành phố, q ≤ 10⁵ câu hỏi “đường ngắn nhất giữa a và b”, cạnh dương. Nên dùng gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Chạy Dijkstra cho mỗi câu hỏi</button>
+        <button type="button" class="quiz-opt" data-correct>B. Floyd–Warshall một lần, mỗi câu trả lời O(1)</button>
+        <button type="button" class="quiz-opt">C. BFS cho mỗi câu hỏi</button>
+        <button type="button" class="quiz-opt">D. Thử mọi đường bằng quay lui</button>
+      </div>
+      <p class="quiz-explain">Floyd tốn 300³ = 2,7·10⁷ phép tính. Chạy Dijkstra 10⁵ lần thì mỗi lần cỡ (300 + m) log, với m tới 45 000 là hơn 10¹⁰ tổng cộng. BFS sai vì cạnh có độ dài khác nhau.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Trong Floyd–Warshall, sau khi xong vòng k = 3, d[i][j] có ý nghĩa gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Đường ngắn nhất dùng tối đa 3 cạnh</button>
+        <button type="button" class="quiz-opt" data-correct>B. Đường ngắn nhất chỉ đi qua các đỉnh trung gian trong {1, 2, 3}</button>
+        <button type="button" class="quiz-opt">C. Đường ngắn nhất thật sự giữa i và j</button>
+        <button type="button" class="quiz-opt">D. Đường ngắn nhất đi qua đúng đỉnh 3</button>
+      </div>
+      <p class="quiz-explain">Vòng k mở khóa đỉnh k làm trạm trung chuyển. Sau vòng 3, chỉ đỉnh 1, 2, 3 được làm trung gian; số cạnh không bị giới hạn (đường 1 → 2 → 3 → 4 dùng 3 cạnh nhưng cũng hợp lệ). Chỉ sau vòng n mới là đáp án thật.</p>
+    </div>
+
+    <p><strong>Câu 5.</strong> Đồ thị vô hướng 5 đỉnh, các cạnh: 1–2 dài 10, 1–3 dài 3, 3–2 dài 4, 2–4 dài 2, 3–4 dài 8, 4–5 dài 5, 3–5 dài 15. Chạy tay Dijkstra từ đỉnh 1: ghi thứ tự chốt và dist cuối cùng. Đường ngắn nhất tới 5 là gì?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Chốt 1 (0): dist[2] = 10, dist[3] = 3. Chốt 3 (3): dist[2] = min(10, 3 + 4) = 7, dist[4] = 3 + 8 = 11, dist[5] = 3 + 15 = 18. Chốt 2 (7): dist[4] = min(11, 7 + 2) = 9. Chốt 4 (9): dist[5] = min(18, 9 + 5) = 14. Chốt 5 (14).</p>
+      <p>Thứ tự chốt: 1, 3, 2, 4, 5. dist = [0, 7, 3, 9, 14]. Truy vết: par[5] = 4, par[4] = 2, par[2] = 3, par[3] = 1, nên đường là 1 → 3 → 2 → 4 → 5, dài 3 + 4 + 2 + 5 = 14.</p>
+    </details>
+
+    <p><strong>Câu 6.</strong> Bạn An viết Floyd với thứ tự vòng <code>for i, for j, for k</code>. Hãy tìm một đồ thị nhỏ cho kết quả sai.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Đồ thị đường thẳng 1 – 3 – 4 – 2 (cạnh 1–3, 3–4, 4–2, mỗi cạnh dài 1). Khi tính d[1][2] (i = 1, j = 2), An thử mọi k: d[1][k] + d[k][2]. Lúc này d[1][4] vẫn là ∞ (chưa được tính, vì cặp (1, 4) đến sau (1, 2) theo thứ tự vòng j), còn d[3][2] cũng là ∞. Không k nào cho giá trị hữu hạn, nên d[1][2] = ∞ mãi mãi, trong khi đáp án là 3. Với đúng thứ tự k ngoài cùng, d[1][2] = 3.</p>
+    </details>
+
+    <p><strong>Câu 7.</strong> Vì sao Dijkstra bản priority_queue có độ phức tạp O((n + m) log n) chứ không phải O((n + m) log m)?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Hàng đợi có thể chứa tới khoảng m phần tử, nên mỗi thao tác là O(log m). Nhưng đồ thị đơn có m ≤ n², nên log m ≤ log n² = 2 log n. Hằng số 2 bị bỏ trong ký hiệu O, nên O(log m) = O(log n).</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Ba bài đầu là cài đặt trực tiếp; nhóm giữa cần chọn đúng thuật toán theo giới hạn; nhóm cuối cần đếm đường hoặc dựng đồ thị trạng thái.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/floyd">FLOYD – Floyd hoặc Dijkstra (Cơ bản)</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đồ thị vô hướng N ≤ 100 đỉnh, trọng số dương. Trả lời K ≤ 1 000 câu hỏi: hoặc in độ dài đường ngắn nhất giữa hai đỉnh, hoặc in hẳn một đường ngắn nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> Floyd–Warshall, truy vết đường đi.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>N nhỏ nên chạy Floyd một lần. Để in đường, giữ ma trận p[i][j] như mục “Truy vết trong Floyd”, hoặc chạy Dijkstra có mảng par cho riêng câu hỏi loại in đường.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1671">Shortest Routes I</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">n ≤ 10⁵ thành phố, m ≤ 2·10⁵ chuyến bay <b>một chiều</b> dài tới 10⁹. In khoảng cách ngắn nhất từ thành phố 1 tới mọi thành phố.</p>
+        <p class="ex-skill"><b>Luyện:</b> Dijkstra + priority_queue chuẩn, long long.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đúng chương trình mẫu, nhưng chỉ thêm cạnh một chiều a → b. Đừng quên dòng bỏ phần tử lỗi thời, và dùng long long cho mọi thứ liên quan tới khoảng cách.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://codeforces.com/problemset/problem/20/C">20C – Dijkstra?</a>
+          <span class="judge">Codeforces</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đồ thị vô hướng có trọng số. In một đường ngắn nhất từ đỉnh 1 tới đỉnh n (dãy đỉnh), hoặc −1 nếu không có.</p>
+        <p class="ex-skill"><b>Luyện:</b> truy vết bằng mảng par, đồ thị vô hướng, cạnh lặp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Ghi par[v] = u mỗi lần nới lỏng thành công. Cuối cùng đi ngược từ n theo par rồi đảo mảng. Bài có thể có cạnh lặp và khuyên (u = v): danh sách kề xử lý được cả hai.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1672">Shortest Routes II</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">n ≤ 500 thành phố, m đường hai chiều, q ≤ 10⁵ câu hỏi “đường ngắn nhất giữa a và b” (−1 nếu không có).</p>
+        <p class="ex-skill"><b>Luyện:</b> chọn Floyd theo giới hạn, INF an toàn, cạnh lặp.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đúng chương trình floyd.cpp ở trên. Hai điểm hay sai: cạnh lặp giữa cùng hai thành phố phải lấy min, và INF đủ lớn nhưng cộng hai INF không tràn.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/vdanger">VDANGER – Nguy hiểm rõ ràng trước mắt</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">N ≤ 100 hòn đảo, cho ma trận độ nguy hiểm giữa mọi cặp đảo. John phải đi qua dãy đảo A₁, A₂, …, A_M (M ≤ 10 000) theo đúng thứ tự. Tìm tổng độ nguy hiểm nhỏ nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> Floyd làm tiền xử lý, rồi cộng dồn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giữa hai đảo liên tiếp trong dãy, John được đi đường vòng tùy ý. Chạy Floyd trên ma trận, đáp án là tổng d[A_i][A_(i+1)] với i = 1..M − 1.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qbschool">QBSCHOOL – Đến trường</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Bản đồ N ≤ 5 000 nút giao, M ≤ 20 000 con đường (có đường một chiều, có đường hai chiều). Tìm độ dài đường ngắn nhất từ nút 1 tới nút N và số đường ngắn nhất khác nhau.</p>
+        <p class="ex-skill"><b>Luyện:</b> Dijkstra kèm đếm số đường đi ngắn nhất.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Dùng mảng cnt như mục “Đếm số đường đi ngắn nhất”. Số đường có thể rất lớn: dùng long long. Đọc kỹ cách đề mã hóa đường một chiều và hai chiều.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1195">Flight Discount</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Đi từ thành phố 1 tới n với chi phí nhỏ nhất, được dùng một phiếu giảm nửa giá (làm tròn xuống) cho đúng một chuyến bay. n ≤ 10⁵, m ≤ 2·10⁵.</p>
+        <p class="ex-skill"><b>Luyện:</b> Dijkstra trên đồ thị trạng thái.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Trạng thái (thành phố, đã dùng phiếu chưa). Cách khác: chạy Dijkstra từ 1 trên đồ thị gốc và từ n trên đồ thị ngược, rồi thử dùng phiếu ở từng cạnh u → v: d1[u] + c/2 + dn[v].</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/dhfrbus">DHFRBUS – Vé xe miễn phí</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">n ≤ 10⁵ bến, m ≤ 10⁵ tuyến xe buýt hai chiều có giá vé. Có k ≤ 5 vé miễn phí, mỗi vé bỏ qua tiền một chặng. Tìm chi phí nhỏ nhất từ s tới t.</p>
+        <p class="ex-skill"><b>Luyện:</b> đồ thị trạng thái nhiều tầng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Trạng thái (bến, số vé đã dùng j), j = 0..k. Từ (u, j) đi chặng giá c: tới (v, j) tốn c, hoặc tới (v, j + 1) tốn 0 nếu j &lt; k. Đáp án là min của dist[t][j].</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/centre28">CENTRE28 – CENTRE</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">N ≤ 30 000 thành phố, M ≤ 100 000 đường hai chiều. Đếm và liệt kê các thành phố có thể đóng cửa mà khoảng cách ngắn nhất từ 1 tới N không đổi.</p>
+        <p class="ex-skill"><b>Luyện:</b> Dijkstra hai đầu, đếm số đường ngắn nhất.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chạy Dijkstra từ 1 và từ N, kèm số đường cnt1, cntN. Thành phố v <b>không</b> đóng được khi mọi đường ngắn nhất đều đi qua nó: d1[v] + dN[v] = d1[N] và cnt1[v] · cntN[v] = cnt1[N]. Số đường rất lớn: lấy dư theo một (hoặc hai) số nguyên tố lớn.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qbbuild">QBBUILD – Xây dựng đường</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">N ≤ 100 thành phố, mỗi con đường có chi phí xây. Chọn một tập đường có tổng chi phí nhỏ nhất sao cho 4 thành phố đặc biệt liên thông với nhau.</p>
+        <p class="ex-skill"><b>Luyện:</b> Floyd làm tiền xử lý, liệt kê các “hình dạng” kết nối.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chạy Floyd trước. Mạng nối 4 điểm có dạng hai “điểm rẽ” u, v: hai thành phố đặc biệt nối về u, hai cái còn lại nối về v, và u nối v. Thử mọi cặp (u, v) và mọi cách chia 4 thành phố thành hai cặp: N² · 3 trường hợp, mỗi trường hợp cộng 5 giá trị d.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/graph-theory/shortest-path">VNOI Wiki – Các thuật toán tìm đường đi ngắn nhất (Phần 1)</a> (tiếng Việt): Dijkstra, Bellman–Ford, Floyd, kèm bài tập.</li>
+      <li><a href="https://wiki.vnoi.info/algo/graph-theory/bfs-01">VNOI Wiki – BFS 0-1</a> (tiếng Việt): đường ngắn nhất khi trọng số chỉ là 0 hoặc 1.</li>
+      <li><a href="https://cp-algorithms.com/graph/dijkstra.html">cp-algorithms – Dijkstra Algorithm</a> (tiếng Anh): chứng minh đầy đủ và danh sách bài tập.</li>
+      <li><a href="https://cp-algorithms.com/graph/all-pair-shortest-path-floyd-warshall.html">cp-algorithms – Floyd-Warshall</a> (tiếng Anh): truy vết, xử lý chu trình âm.</li>
+      <li><a href="https://cses.fi/problemset/">CSES Problem Set</a>: mục Graph Algorithms có chuỗi bài Shortest Routes, Flight Discount, Flight Routes.</li>
+      <li>Bài liên quan trên trang: <a href="bfs.html">BFS</a>, <a href="graph-dfs.html">Đồ thị và DFS</a>, <a href="stl.html">STL (priority_queue)</a>, <a href="greedy.html">Tham lam</a> (Dijkstra là một thuật toán tham lam), <a href="complexity.html">Độ phức tạp</a>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Đồ thị có trọng số: độ dài đường = tổng trọng số. BFS chỉ đúng khi mọi cạnh dài bằng nhau.</li>
+        <li>Dijkstra: dist[s] = 0, còn lại ∞; lặp: chọn đỉnh chưa chốt có dist nhỏ nhất, chốt, nới lỏng các cạnh ra khỏi nó.</li>
+        <li>Đúng vì cạnh không âm: không đường vòng nào tới đỉnh đang chốt có thể ngắn hơn. Có cạnh âm thì sai, dùng Bellman–Ford.</li>
+        <li>Bản mảng O(n²) cho đồ thị dày; bản <code>priority_queue&lt;pair&lt;ll,int&gt;, vector&lt;…&gt;, greater&lt;…&gt;&gt;</code> O((n + m) log n), nhớ <code>if (d &gt; dist[u]) continue;</code>.</li>
+        <li>Truy vết: par[v] = u khi nới lỏng thành công, đi ngược từ đích rồi đảo.</li>
+        <li>Floyd–Warshall: <code>for k, for i, for j: d[i][j] = min(d[i][j], d[i][k] + d[k][j])</code>, k ngoài cùng, O(n³), n ≤ 400–500.</li>
+        <li>Chọn theo giới hạn: cạnh đều → BFS; một nguồn, n lớn → Dijkstra pq; mọi cặp, n nhỏ → Floyd.</li>
+        <li>Mở rộng: đếm số đường (cnt), nhiều nguồn (đẩy mọi nguồn với dist 0), đồ thị trạng thái (đỉnh = (u, thông tin thêm)).</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/dijkstra.js"></script>
+</body>
+</html>

@@ -3,10 +3,10 @@
   "agent": "topic-bfs",
   "task": "Soạn chủ đề bfs",
   "topic": "bfs",
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-11-08T06:27:29Z",
-  "heartbeat_at": "2026-11-08T06:52:58Z",
-  "ended_at": null,
-  "summary": null
+  "heartbeat_at": "2026-11-08T06:56:23Z",
+  "ended_at": "2026-11-08T06:56:23Z",
+  "summary": "10 bài tập (6 VI, 4 EN), 7979 từ, stepper 10 khung + 3 SVG/bảng, widget có (assets/js/viz/bfs.js), 7 câu tự kiểm tra, 6 chương trình C++ đã biên dịch chạy thử"
 }

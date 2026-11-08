@@ -1,5 +1,5 @@
 /* data/status.js — SINH TỰ ĐỘNG bởi scripts/validate.py --write-status. Đừng sửa tay. */
-/* 2026-11-08T06:55:29Z */
+/* 2026-11-08T09:09:35Z */
 window.TOPIC_STATUS = {
   "complexity": {
     "ok": true,
@@ -197,7 +197,7 @@ window.TOPIC_STATUS = {
     "ok": true,
     "exercises": 9,
     "vi": 3,
-    "words": 7072,
+    "words": 7079,
     "frames": 15,
     "interactive": true
   },
@@ -234,17 +234,27 @@ window.TOPIC_STATUS = {
     "interactive": true
   },
   "lcs": {
-    "ok": false,
-    "exercises": 0,
-    "vi": 0,
-    "words": 3146,
+    "ok": true,
+    "exercises": 9,
+    "vi": 5,
+    "words": 6002,
     "frames": 8,
     "interactive": true
   },
   "dijkstra": {
-    "ok": false
+    "ok": true,
+    "exercises": 10,
+    "vi": 6,
+    "words": 7646,
+    "frames": 14,
+    "interactive": true
   },
   "dsu-mst": {
-    "ok": false
+    "ok": true,
+    "exercises": 8,
+    "vi": 4,
+    "words": 7001,
+    "frames": 18,
+    "interactive": true
   }
 };

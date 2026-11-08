@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QHĐ trên xâu: LCS &amp; khoảng cách sửa · Thi đấu lớp 9</title>
+<meta name="description" content="Dãy con chung dài nhất (LCS), khoảng cách sửa xâu (edit distance), dãy con đối xứng dài nhất và xâu con chung liên tiếp dài nhất bằng quy hoạch động hai chiều.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  table.dp-table td.is-active { font-weight: 700; box-shadow: inset 0 0 0 2px var(--accent); }
+  table.dp-table td.is-ok { font-weight: 700; color: var(--ok); }
+  table.dp-table td[data-i] { cursor: pointer; }
+</style>
+</head>
+<body data-page="topic" data-topic="lcs">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Phân biệt được <em>dãy con</em> (giữ thứ tự, không cần liền nhau) với <em>xâu con</em> (phải liền nhau).</li>
+      <li>Lập được bảng quy hoạch động dp[i][j] cho bài dãy con chung dài nhất (LCS), giải thích được vì sao công thức đúng và truy vết in ra một dãy con chung.</li>
+      <li>Cài đặt được bài khoảng cách sửa xâu (edit distance) với ba phép chèn, xóa, thay.</li>
+      <li>Đưa được bài dãy con đối xứng dài nhất và bài chèn ít ký tự nhất để thành xâu đối xứng về LCS.</li>
+      <li>Biết tiết kiệm bộ nhớ bằng hai hàng và ước lượng được thời gian chạy với n, m ≤ 5000.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Cho hai xâu, ví dụ <code>AGGTAB</code> và <code>GXTXAYB</code>. Em muốn tìm một dãy ký tự dài nhất xuất hiện trong <em>cả hai</em> xâu theo đúng thứ tự trước sau, được phép bỏ qua các ký tự xen giữa. Ở đây đáp án là <code>GTAB</code>, dài 4. Bài toán này gọi là <strong>dãy con chung dài nhất</strong> (Longest Common Subsequence, viết tắt LCS). Nó là bài “mẹ” của cả một họ bài quy hoạch động trên hai xâu, trong đó nổi tiếng nhất là <strong>khoảng cách sửa xâu</strong> (edit distance).</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> hai bạn Minh và Lan cùng chép một bài thơ nhưng mỗi bạn chép sót vài chữ và chép thừa vài chữ khác. Cô giáo muốn biết hai bản giống nhau đến mức nào. Cô đặt hai bản cạnh nhau, nối các chữ giống nhau bằng những đường thẳng sao cho <em>không có hai đường nào cắt nhau</em> (vì thứ tự câu chữ phải giữ nguyên). Số đường nối nhiều nhất cô vẽ được chính là độ dài LCS. Còn câu hỏi “phải sửa ít nhất mấy chữ để bản của Minh thành bản của Lan” là bài khoảng cách sửa.</p></div>
+    </div>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>Dãy con</strong> (subsequence) của xâu s là xâu thu được khi xóa đi một số ký tự của s (có thể không xóa ký tự nào, có thể xóa hết), giữ nguyên thứ tự các ký tự còn lại. Ví dụ <code>ACE</code> là dãy con của <code>ABCDE</code>, nhưng <code>AEC</code> thì không.</p>
+      <p><strong>Xâu con</strong> (substring) thì phải là một đoạn <em>liên tiếp</em>: <code>BCD</code> là xâu con của <code>ABCDE</code>, còn <code>ACE</code> không phải.</p>
+      <p><strong>Bài LCS:</strong> cho hai xâu s (độ dài n) và t (độ dài m), tìm độ dài lớn nhất của một xâu vừa là dãy con của s vừa là dãy con của t, và nếu cần thì in ra một xâu như vậy.</p>
+      <p><strong>Bài khoảng cách sửa:</strong> mỗi phép là chèn một ký tự, xóa một ký tự hoặc thay một ký tự bằng ký tự khác. Tìm số phép ít nhất để biến s thành t.</p>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 380 150" width="380" role="img" aria-label="Nối các chữ chung của AGGTAB và GXTXAYB bằng các đường không cắt nhau">
+        <text class="label-sm" x="6" y="36">s</text>
+        <text class="label-sm" x="6" y="122">t</text>
+        <text x="40" y="36" text-anchor="middle">A</text>
+        <text x="90" y="36" text-anchor="middle">G</text>
+        <text x="140" y="36" text-anchor="middle">G</text>
+        <text x="190" y="36" text-anchor="middle">T</text>
+        <text x="240" y="36" text-anchor="middle">A</text>
+        <text x="290" y="36" text-anchor="middle">B</text>
+        <text x="40" y="122" text-anchor="middle">G</text>
+        <text x="90" y="122" text-anchor="middle">X</text>
+        <text x="140" y="122" text-anchor="middle">T</text>
+        <text x="190" y="122" text-anchor="middle">X</text>
+        <text x="240" y="122" text-anchor="middle">A</text>
+        <text x="290" y="122" text-anchor="middle">Y</text>
+        <text x="340" y="122" text-anchor="middle">B</text>
+        <line class="edge is-ok" x1="90" y1="44" x2="40" y2="106"/>
+        <line class="edge is-ok" x1="190" y1="44" x2="140" y2="106"/>
+        <line class="edge is-ok" x1="240" y1="44" x2="240" y2="106"/>
+        <line class="edge is-ok" x1="290" y1="44" x2="340" y2="106"/>
+        <line class="edge is-bad" x1="40" y1="44" x2="240" y2="106" stroke-dasharray="5 4"/>
+        <text class="label-pen" x="120" y="146">4 đường không cắt nhau: GTAB</text>
+      </svg>
+      <figcaption>Hình 1. Mỗi đường nối một ký tự chung. Đường đứt nét A–A cắt các đường khác nên không được dùng cùng lúc: dãy con phải giữ đúng thứ tự trong cả hai xâu.</figcaption>
+    </figure>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>Bài toán so sánh hai xâu xuất hiện ở rất nhiều nơi ngoài đời:</p>
+    <ul>
+      <li><strong>So sánh văn bản, mã nguồn (diff).</strong> Công cụ <code>diff</code> và git tìm các dòng chung của hai phiên bản tệp (một dạng LCS theo từng dòng), phần còn lại được đánh dấu là dòng bị xóa hoặc thêm mới.</li>
+      <li><strong>Sửa lỗi chính tả.</strong> Khi em gõ nhầm “thuạt toán”, phần mềm gợi ý những từ có khoảng cách sửa nhỏ nhất so với từ em gõ.</li>
+      <li><strong>Sinh học.</strong> Một đoạn ADN là một xâu gồm bốn chữ A, C, G, T. Các nhà khoa học so sánh hai đoạn ADN bằng những biến thể của LCS và khoảng cách sửa để đo mức “họ hàng” giữa hai loài.</li>
+      <li><strong>Trong đề thi.</strong> Bài “xâu con chung dài nhất”, “biến đổi xâu ít phép nhất”, “dãy con đối xứng dài nhất”, “thêm ít ký tự nhất để thành xâu đối xứng” đều là cùng một khuôn bảng hai chiều.</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề cho <strong>hai xâu (hoặc hai dãy số)</strong>, hỏi về phần <strong>chung</strong> giữ nguyên thứ tự, hoặc số phép <strong>chèn / xóa / thay</strong> ít nhất; độ dài mỗi xâu cỡ 10³ đến 5·10³. Khi đó gần như chắc chắn trạng thái là dp[i][j] trên <em>tiền tố</em> i ký tự của xâu thứ nhất và j ký tự của xâu thứ hai.</p></div>
+    <p>Bài này nối tiếp <a href="dp-intro.html">Quy hoạch động nhập môn</a> và <a href="dp-grid.html">QHĐ trên lưới</a>: bảng dp[i][j] của LCS cũng được điền từng hàng như bài đếm đường đi trên lưới. Em cũng nên ôn <a href="strings.html">Xâu ký tự</a> để quen chỉ số trong <code>string</code>, và so sánh với <a href="lis.html">Dãy con tăng dài nhất</a>, một bài “dãy con” trên một dãy.</p>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho hai xâu chữ in hoa, mỗi xâu dài tối đa 2000 ký tự (giống bài QBSTR trên VNOJ). Tìm độ dài dãy con chung dài nhất.</p>
+    <h3>Cách ngây thơ: thử mọi dãy con</h3>
+    <p>Mỗi ký tự của s có hai lựa chọn: giữ hoặc bỏ. Vì thế s có tới <span class="math">2<sup>n</sup></span> dãy con. Với từng dãy con, em kiểm tra nó có phải dãy con của t không bằng hai con trỏ, mất khoảng m bước. Tổng cộng khoảng <span class="math">2<sup>n</sup> · m</span> phép tính.</p>
+    <ul>
+      <li>n = m = 20: 2²⁰ · 20 ≈ 2·10⁷ phép, còn chạy kịp.</li>
+      <li>n = m = 30: 2³⁰ · 30 ≈ 3,2·10¹⁰ phép, mất cỡ nửa phút.</li>
+      <li>n = m = 2000: 2²⁰⁰⁰ là một số có hơn 600 chữ số. Không máy tính nào chạy nổi.</li>
+    </ul>
+    <h3>Quy hoạch động: chỉ cần (n + 1)(m + 1) ô</h3>
+    <p>Điều kỳ diệu là mọi dãy con chung của s và t đều có thể được “xây dần” từ dãy con chung của các <em>tiền tố</em> ngắn hơn. Chỉ có (n + 1)(m + 1) cặp tiền tố, mỗi cặp tính trong O(1). Với n = m = 2000, đó là khoảng 4·10⁶ ô, chạy chưa tới 0,05 giây.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Thử mọi dãy con</h4><p>Liệt kê 2<sup>n</sup> dãy con của s, kiểm tra từng cái trong t. Độ phức tạp <span class="bigo">O(2ⁿ · m)</span>. Với n = 30 đã cần khoảng 3·10¹⁰ phép tính, quá xa giới hạn 1 giây.</p></div>
+      <div class="good-side"><h4>Quy hoạch động</h4><p>Điền bảng dp[i][j] cho mọi cặp tiền tố. Độ phức tạp <span class="bigo">O(n · m)</span>. Với n = m = 2000 chỉ có 4·10⁶ ô; với n = m = 5000 là 2,5·10⁷ ô, vẫn dưới 1 giây.</p></div>
+    </div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <p>Ta làm đúng quy trình 4 bước của quy hoạch động: trạng thái, công thức chuyển, cơ sở, đáp án. Quy ước: s<sub>i</sub> là ký tự thứ i của s (đếm từ 1), “tiền tố i của s” là i ký tự đầu tiên s<sub>1</sub>s<sub>2</sub>…s<sub>i</sub>.</p>
+
+    <h3>Thuật toán 1: dãy con chung dài nhất (LCS)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> dp[i][j] = độ dài dãy con chung dài nhất của tiền tố i của s và tiền tố j của t.</div></li>
+      <li><div><strong>Cơ sở.</strong> dp[0][j] = 0 và dp[i][0] = 0, vì xâu rỗng không có ký tự chung với bất kỳ xâu nào.</div></li>
+      <li><div><strong>Công thức chuyển.</strong> Nhìn hai ký tự cuối s<sub>i</sub> và t<sub>j</sub>.
+        Nếu s<sub>i</sub> = t<sub>j</sub> thì dp[i][j] = dp[i−1][j−1] + 1 (ghép cặp hai ký tự đó vào cuối).
+        Nếu s<sub>i</sub> ≠ t<sub>j</sub> thì dp[i][j] = max(dp[i−1][j], dp[i][j−1]) (bỏ ký tự cuối của s, hoặc bỏ ký tự cuối của t).</div></li>
+      <li><div><strong>Thứ tự tính.</strong> i tăng từ 1 đến n, trong mỗi hàng j tăng từ 1 đến m. Khi tính ô (i, j) thì ba ô trên, trái, chéo trên trái đều đã có.</div></li>
+      <li><div><strong>Đáp án.</strong> dp[n][m]. Muốn in một LCS thì <em>truy vết</em> từ ô (n, m) ngược về hàng 0 hoặc cột 0.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> LCS(s[1..n], t[1..m]):
+    <b>với</b> mọi i, j: dp[i][0] ← 0, dp[0][j] ← 0
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> n:
+        <b>với</b> j <b>từ</b> 1 <b>đến</b> m:
+            <b>nếu</b> s[i] = t[j]:
+                dp[i][j] ← dp[i−1][j−1] + 1      <i>// ghép cặp</i>
+            <b>ngược lại</b>:
+                dp[i][j] ← max(dp[i−1][j], dp[i][j−1])
+    <b>trả về</b> dp[n][m]
+
+<b>hàm</b> TruyVet():
+    i ← n, j ← m, kq ← xâu rỗng
+    <b>khi</b> i &gt; 0 <b>và</b> j &gt; 0:
+        <b>nếu</b> s[i] = t[j]:   thêm s[i] vào kq;  i ← i−1;  j ← j−1
+        <b>ngược lại nếu</b> dp[i−1][j] ≥ dp[i][j−1]:   i ← i−1   <i>// đi lên</i>
+        <b>ngược lại</b>:   j ← j−1                          <i>// sang trái</i>
+    <b>trả về</b> đảo ngược(kq)</pre>
+
+    <h3>Thuật toán 2: khoảng cách sửa (edit distance)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> dp[i][j] = số phép ít nhất để biến tiền tố i của s thành tiền tố j của t.</div></li>
+      <li><div><strong>Cơ sở.</strong> dp[i][0] = i (xóa hết i ký tự), dp[0][j] = j (chèn đủ j ký tự). Khác LCS ở chỗ cơ sở <em>không</em> bằng 0.</div></li>
+      <li><div><strong>Công thức chuyển.</strong> Nếu s<sub>i</sub> = t<sub>j</sub> thì dp[i][j] = dp[i−1][j−1] (giữ nguyên, không tốn phép). Nếu khác thì dp[i][j] = 1 + min(dp[i−1][j−1], dp[i−1][j], dp[i][j−1]), lần lượt ứng với <em>thay</em> s<sub>i</sub> thành t<sub>j</sub>, <em>xóa</em> s<sub>i</sub>, <em>chèn</em> t<sub>j</sub>.</div></li>
+      <li><div><strong>Thứ tự tính và đáp án.</strong> Giống LCS: hàng trước, cột sau; đáp án ở dp[n][m].</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> EditDistance(s[1..n], t[1..m]):
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> n: dp[i][0] ← i
+    <b>với</b> j <b>từ</b> 0 <b>đến</b> m: dp[0][j] ← j
+    <b>với</b> i <b>từ</b> 1 <b>đến</b> n:
+        <b>với</b> j <b>từ</b> 1 <b>đến</b> m:
+            <b>nếu</b> s[i] = t[j]:  dp[i][j] ← dp[i−1][j−1]
+            <b>ngược lại</b>:     dp[i][j] ← 1 + min(dp[i−1][j−1],   <i>// thay</i>
+                                         dp[i−1][j],     <i>// xóa s[i]</i>
+                                         dp[i][j−1])     <i>// chèn t[j]</i>
+    <b>trả về</b> dp[n][m]</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <p>Mấu chốt của mọi bài QHĐ trên hai xâu là câu hỏi: <em>hai ký tự cuối s<sub>i</sub> và t<sub>j</sub> có thể đóng vai trò gì trong lời giải tốt nhất?</em> Chỉ có vài khả năng, và mỗi khả năng đưa ta về một ô nhỏ hơn của bảng.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 360 190" width="360" role="img" aria-label="Ô dp[i][j] được tính từ ba ô: chéo trên trái, trên và trái">
+        <rect class="node" x="40" y="20" width="90" height="60" rx="6"/>
+        <rect class="node" x="140" y="20" width="90" height="60" rx="6"/>
+        <rect class="node" x="40" y="90" width="90" height="60" rx="6"/>
+        <rect class="node is-active" x="140" y="90" width="90" height="60" rx="6"/>
+        <text x="85" y="55" text-anchor="middle">dp[i−1][j−1]</text>
+        <text x="185" y="55" text-anchor="middle">dp[i−1][j]</text>
+        <text x="85" y="125" text-anchor="middle">dp[i][j−1]</text>
+        <text x="185" y="125" text-anchor="middle">dp[i][j]</text>
+        <line class="edge is-ok" x1="120" y1="72" x2="150" y2="98"/>
+        <line class="edge is-cmp" x1="185" y1="80" x2="185" y2="90"/>
+        <line class="edge is-cmp" x1="130" y1="120" x2="140" y2="120"/>
+        <text class="label-pen" x="238" y="40">bỏ s<tspan baseline-shift="sub" font-size="9">i</tspan> (lên)</text>
+        <text class="label-pen" x="238" y="62">khác nhau: max</text>
+        <text class="label-pen" x="6" y="172">chéo: s<tspan baseline-shift="sub" font-size="9">i</tspan> = t<tspan baseline-shift="sub" font-size="9">j</tspan>, cộng 1</text>
+        <text class="label-pen" x="170" y="172">trái: bỏ t<tspan baseline-shift="sub" font-size="9">j</tspan></text>
+      </svg>
+      <figcaption>Hình 2. Ô (i, j) chỉ phụ thuộc ba ô hàng xóm đã tính trước: chéo trên trái, ngay trên và ngay trái.</figcaption>
+    </figure>
+
+    <h3>LCS: vì sao công thức đúng</h3>
+    <p>Gọi Z là một dãy con chung dài nhất của tiền tố i của s và tiền tố j của t, độ dài k. Khi đặt Z vào s và vào t, mỗi ký tự của Z được <em>ghép</em> với một ký tự của s và một ký tự của t, các đường ghép không cắt nhau như Hình 1. Trước hết em cần một nhận xét nhỏ:</p>
+    <div class="definition" data-label="Nhận xét">
+      <p>Thêm một ký tự vào cuối một xâu thì LCS tăng <strong>nhiều nhất 1</strong>. Nói cách khác dp[i][j] ≤ dp[i−1][j] + 1 và dp[i][j] ≤ dp[i][j−1] + 1. Lý do: nếu dãy chung tốt nhất có dùng ký tự mới thêm, bỏ ký tự đó đi vẫn còn một dãy chung ngắn hơn đúng 1 của hai xâu cũ.</p>
+    </div>
+    <p><strong>Trường hợp 1: s<sub>i</sub> = t<sub>j</sub>.</strong> Lấy một LCS của hai tiền tố ngắn hơn (độ dài dp[i−1][j−1]) rồi ghép thêm cặp (s<sub>i</sub>, t<sub>j</sub>) vào cuối, được một dãy chung dài dp[i−1][j−1] + 1. Vậy dp[i][j] ≥ dp[i−1][j−1] + 1. Ngược lại, xét Z:</p>
+    <ul>
+      <li>Nếu Z dùng cả s<sub>i</sub> lẫn t<sub>j</sub>, thì cả hai đều phải ghép với ký tự cuối của Z (chúng là ký tự cuối cùng của mỗi xâu). Bỏ ký tự cuối của Z ta có dãy chung của tiền tố i−1 và j−1, nên k − 1 ≤ dp[i−1][j−1].</li>
+      <li>Nếu Z không dùng s<sub>i</sub>, thì Z là dãy chung của tiền tố i−1 của s và tiền tố j của t, nên k ≤ dp[i−1][j] ≤ dp[i−1][j−1] + 1 (theo nhận xét). Trường hợp không dùng t<sub>j</sub> làm y hệt.</li>
+    </ul>
+    <p>Cả ba khả năng đều cho k ≤ dp[i−1][j−1] + 1. Vậy dp[i][j] = dp[i−1][j−1] + 1.</p>
+    <p><strong>Trường hợp 2: s<sub>i</sub> ≠ t<sub>j</sub>.</strong> Hai ký tự này khác nhau nên không thể cùng ghép với ký tự cuối của Z. Vậy Z bỏ qua ít nhất một trong hai: hoặc Z là dãy chung của (i−1, j), hoặc của (i, j−1). Do đó k ≤ max(dp[i−1][j], dp[i][j−1]). Chiều ngược lại hiển nhiên: một dãy chung của hai tiền tố ngắn hơn cũng là dãy chung của hai tiền tố dài hơn. Vậy dp[i][j] = max(dp[i−1][j], dp[i][j−1]).</p>
+
+    <h3>LCS: truy vết hoạt động thế nào</h3>
+    <p>Bảng dp chỉ cho độ dài. Để in ra xâu, em đi ngược từ ô (n, m) và mỗi bước tự hỏi “giá trị ô này đến từ đâu?”.</p>
+    <ul>
+      <li>Nếu s<sub>i</sub> = t<sub>j</sub>: ký tự này nằm trong LCS (theo trường hợp 1), ghi nó lại và đi chéo về (i−1, j−1).</li>
+      <li>Nếu khác: đi về phía ô lớn hơn trong hai ô trên và trái (nếu bằng nhau thì đi hướng nào cũng được, mỗi hướng có thể cho một LCS khác nhau).</li>
+    </ul>
+    <p>Mỗi bước giảm i hoặc j (hoặc cả hai), nên truy vết dừng sau tối đa n + m bước. Vì ta nhặt ký tự từ cuối lên đầu, kết quả cuối cùng phải <strong>đảo ngược</strong>.</p>
+
+    <h3>Khoảng cách sửa: vì sao công thức đúng</h3>
+    <p>Xét một cách biến đổi tốt nhất từ tiền tố i của s thành tiền tố j của t. Nhìn vào ký tự cuối s<sub>i</sub>, chỉ có ba số phận:</p>
+    <ul>
+      <li><strong>s<sub>i</sub> bị xóa.</strong> Khi đó phần còn lại phải biến tiền tố i−1 thành tiền tố j: tốn dp[i−1][j] + 1.</li>
+      <li><strong>t<sub>j</sub> được chèn vào cuối.</strong> Khi đó tiền tố i phải biến thành tiền tố j−1: tốn dp[i][j−1] + 1.</li>
+      <li><strong>s<sub>i</sub> trở thành t<sub>j</sub>.</strong> Nếu hai ký tự bằng nhau thì không tốn gì, nếu khác thì tốn 1 phép thay. Phần trước tốn dp[i−1][j−1].</li>
+    </ul>
+    <p>Lấy nhỏ nhất của ba khả năng là ra công thức. Khi s<sub>i</sub> = t<sub>j</sub>, đi chéo luôn tốt nhất, vì các ô kề nhau trong bảng chênh nhau không quá 1 (lập luận giống nhận xét ở trên), nên dp[i−1][j−1] ≤ dp[i−1][j] + 1 và ≤ dp[i][j−1] + 1.</p>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Bảng có (n + 1)(m + 1) ô. Mỗi ô chỉ cần một phép so sánh ký tự và một phép max (hoặc min của ba số), tức O(1). Tổng thời gian <span class="bigo">O(n · m)</span>. Thay vì xét lại 2<sup>n</sup> dãy con, ta nhận ra rằng mọi dãy con chung chỉ phụ thuộc vào “đang đứng ở đâu trong s và trong t”, tức là cặp (i, j), và mỗi cặp chỉ tính một lần rồi lưu lại.</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Trước khi code bài xâu nào, em viết ra giấy một câu “dp[i][j] là … của i ký tự đầu của s và j ký tự đầu của t”. Viết được câu đó là em đã xong một nửa bài.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p><strong>Ví dụ 1 (LCS).</strong> s = <code>ABCB</code> (theo hàng), t = <code>BDCB</code> (theo cột). Chỉ số nhỏ dưới mỗi chữ là vị trí của nó. Ô xanh đậm là ô đang tính, ô tô màu so sánh là ô được dùng để tính.</p>
+
+    <div class="stepper" data-title="Điền bảng LCS của ABCB và BDCB">
+<div class="frame" data-caption="&lt;b&gt;Bước 0.&lt;/b&gt; Bảng có (4 + 1) × (4 + 1) ô. Hàng ∅ và cột ∅ ứng với xâu rỗng nên đều bằng 0. Ta sẽ điền từng hàng, từ trái sang phải.">
+<div class="table-wrap"><table class="dp-table" aria-label="Bảng LCS của ABCB và BDCB">
+<thead><tr><th></th><th>∅</th><th>B₁</th><th>D₂</th><th>C₃</th><th>B₄</th></tr></thead><tbody>
+<tr><th>∅</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th>A₁</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+<tr><th>B₂</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+<tr><th>C₃</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+<tr><th>B₄</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+</tbody></table></div>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Hàng A₁.&lt;/b&gt; Chữ A không xuất hiện trong BDCB, nên mọi ô đều rơi vào trường hợp &lt;b&gt;khác nhau&lt;/b&gt;: lấy max(ô trên, ô trái) = 0. Cả hàng bằng 0.">
+<div class="table-wrap"><table class="dp-table" aria-label="Bảng LCS của ABCB và BDCB">
+<thead><tr><th></th><th>∅</th><th>B₁</th><th>D₂</th><th>C₃</th><th class="is-cmp">B₄</th></tr></thead><tbody>
+<tr><th>∅</th><td>0</td><td>0</td><td>0</td><td>0</td><td class="is-cmp">0</td></tr>
+<tr><th class="is-cmp">A₁</th><td>0</td><td>0</td><td>0</td><td class="is-cmp">0</td><td class="is-active">0</td></tr>
+<tr><th>B₂</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+<tr><th>C₃</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+<tr><th>B₄</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+</tbody></table></div>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Ô (2, 1).&lt;/b&gt; So B₂ với B₁: &lt;b&gt;bằng nhau&lt;/b&gt;. Lấy ô chéo trên trái (1, 0) = 0 rồi cộng 1, được 1. Dãy chung dài nhất của AB và B là B.">
+<div class="table-wrap"><table class="dp-table" aria-label="Bảng LCS của ABCB và BDCB">
+<thead><tr><th></th><th>∅</th><th class="is-cmp">B₁</th><th>D₂</th><th>C₃</th><th>B₄</th></tr></thead><tbody>
+<tr><th>∅</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th>A₁</th><td class="is-cmp">0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th class="is-cmp">B₂</th><td>0</td><td class="is-active">1</td><td></td><td></td><td></td></tr>
+<tr><th>C₃</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+<tr><th>B₄</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+</tbody></table></div>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Ô (2, 2).&lt;/b&gt; So B₂ với D₂: &lt;b&gt;khác nhau&lt;/b&gt;. Lấy max(ô trên (1, 2) = 0, ô trái (2, 1) = 1) = 1. Không ghép được gì mới, nhưng vẫn giữ được chữ B đã có.">
+<div class="table-wrap"><table class="dp-table" aria-label="Bảng LCS của ABCB và BDCB">
+<thead><tr><th></th><th>∅</th><th>B₁</th><th class="is-cmp">D₂</th><th>C₃</th><th>B₄</th></tr></thead><tbody>
+<tr><th>∅</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th>A₁</th><td>0</td><td>0</td><td class="is-cmp">0</td><td>0</td><td>0</td></tr>
+<tr><th class="is-cmp">B₂</th><td>0</td><td class="is-cmp">1</td><td class="is-active">1</td><td></td><td></td></tr>
+<tr><th>C₃</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+<tr><th>B₄</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+</tbody></table></div>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Hết hàng B₂.&lt;/b&gt; Ô (2, 3) = max(0, 1) = 1. Ô (2, 4): B₂ = B₄ &lt;b&gt;bằng nhau&lt;/b&gt;, nhưng ô chéo (1, 3) = 0 nên chỉ được 0 + 1 = 1. Em thấy không: bằng nhau chưa chắc đã tăng so với hàng trên, vì chữ B này đã được dùng rồi.">
+<div class="table-wrap"><table class="dp-table" aria-label="Bảng LCS của ABCB và BDCB">
+<thead><tr><th></th><th>∅</th><th>B₁</th><th>D₂</th><th>C₃</th><th class="is-cmp">B₄</th></tr></thead><tbody>
+<tr><th>∅</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th>A₁</th><td>0</td><td>0</td><td>0</td><td class="is-cmp">0</td><td>0</td></tr>
+<tr><th class="is-cmp">B₂</th><td>0</td><td>1</td><td>1</td><td>1</td><td class="is-active">1</td></tr>
+<tr><th>C₃</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+<tr><th>B₄</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+</tbody></table></div>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Hàng C₃.&lt;/b&gt; Ô (3, 3): C₃ = C₃ &lt;b&gt;bằng nhau&lt;/b&gt;, lấy ô chéo (2, 2) = 1 cộng 1 thành 2 (dãy BC). Các ô còn lại lấy max: (3, 1) = 1, (3, 2) = 1, (3, 4) = max(1, 2) = 2.">
+<div class="table-wrap"><table class="dp-table" aria-label="Bảng LCS của ABCB và BDCB">
+<thead><tr><th></th><th>∅</th><th>B₁</th><th>D₂</th><th class="is-cmp">C₃</th><th>B₄</th></tr></thead><tbody>
+<tr><th>∅</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th>A₁</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th>B₂</th><td>0</td><td>1</td><td class="is-cmp">1</td><td>1</td><td>1</td></tr>
+<tr><th class="is-cmp">C₃</th><td>0</td><td>1</td><td>1</td><td class="is-active">2</td><td>2</td></tr>
+<tr><th>B₄</th><td>0</td><td></td><td></td><td></td><td></td></tr>
+</tbody></table></div>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Hàng B₄.&lt;/b&gt; (4, 1): bằng nhau, 0 + 1 = 1. (4, 2) = max(1, 1) = 1. (4, 3) = max(2, 1) = 2. Ô cuối (4, 4): B₄ = B₄ &lt;b&gt;bằng nhau&lt;/b&gt;, lấy ô chéo (3, 3) = 2 cộng 1 thành &lt;b&gt;3&lt;/b&gt;. Đó là đáp án.">
+<div class="table-wrap"><table class="dp-table" aria-label="Bảng LCS của ABCB và BDCB">
+<thead><tr><th></th><th>∅</th><th>B₁</th><th>D₂</th><th>C₃</th><th class="is-cmp">B₄</th></tr></thead><tbody>
+<tr><th>∅</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th>A₁</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th>B₂</th><td>0</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><th>C₃</th><td>0</td><td>1</td><td>1</td><td class="is-cmp">2</td><td>2</td></tr>
+<tr><th class="is-cmp">B₄</th><td>0</td><td>1</td><td>1</td><td>2</td><td class="is-active">3</td></tr>
+</tbody></table></div>
+</div>
+<div class="frame" data-caption="&lt;b&gt;Truy vết.&lt;/b&gt; Từ (4, 4): B = B, lấy B, đi chéo tới (3, 3). C = C, lấy C, đi chéo tới (2, 2). B ≠ D, ô trên (1, 2) = 0 nhỏ hơn ô trái (2, 1) = 1 nên sang trái tới (2, 1). B = B, lấy B, đi chéo tới (1, 0) thì dừng. Đọc ngược các chữ đã lấy: &lt;b&gt;BCB&lt;/b&gt;.">
+<div class="table-wrap"><table class="dp-table" aria-label="Bảng LCS của ABCB và BDCB">
+<thead><tr><th></th><th>∅</th><th>B₁</th><th>D₂</th><th>C₃</th><th>B₄</th></tr></thead><tbody>
+<tr><th>∅</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th>A₁</th><td class="is-cmp">0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th>B₂</th><td>0</td><td class="is-ok">1</td><td class="is-cmp">1</td><td>1</td><td>1</td></tr>
+<tr><th>C₃</th><td>0</td><td>1</td><td>1</td><td class="is-ok">2</td><td>2</td></tr>
+<tr><th>B₄</th><td>0</td><td>1</td><td>1</td><td>2</td><td class="is-ok">3</td></tr>
+</tbody></table></div>
+</div>
+    </div>
+
+    <p><strong>Ví dụ 2 (khoảng cách sửa).</strong> Biến <code>LOVE</code> thành <code>MOVIE</code>. Hàng ∅ là 0, 1, 2, 3, 4, 5 (chèn dần), cột ∅ là 0, 1, 2, 3, 4 (xóa dần). Các ô tô màu là đường truy vết từ góc dưới phải về góc trên trái.</p>
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">Bảng khoảng cách sửa LOVE → MOVIE</p></div>
+      <div class="viz-body">
+<div class="table-wrap"><table class="dp-table" aria-label="Bảng khoảng cách sửa từ LOVE sang MOVIE">
+<thead><tr><th></th><th>∅</th><th>M₁</th><th>O₂</th><th>V₃</th><th>I₄</th><th>E₅</th></tr></thead><tbody>
+<tr><th>∅</th><td class="is-ok">0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+<tr><th>L₁</th><td>1</td><td class="is-ok">1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+<tr><th>O₂</th><td>2</td><td>2</td><td class="is-ok">1</td><td>2</td><td>3</td><td>4</td></tr>
+<tr><th>V₃</th><td>3</td><td>3</td><td>2</td><td class="is-ok">1</td><td class="is-ok">2</td><td>3</td></tr>
+<tr><th>E₄</th><td>4</td><td>4</td><td>3</td><td>2</td><td>2</td><td class="is-ok">2</td></tr>
+</tbody></table></div>
+      </div>
+      <div class="viz-legend"><span><i class="is-ok"></i>đường truy vết</span></div>
+      <div class="viz-caption"><p>Đáp án dp[4][5] = 2. Đi ngược: (4, 5) E = E đi chéo; (3, 4) V ≠ I, ô trái (3, 3) = 1 nên đây là phép <b>chèn I</b>; (3, 3) V = V đi chéo; (2, 2) O = O đi chéo; (1, 1) L ≠ M, ô chéo (0, 0) = 0 nên đây là phép <b>thay L thành M</b>. Vậy LOVE → MOVE → MOVIE.</p></div>
+    </div>
+
+    <table class="trace">
+      <thead><tr><th>Ô</th><th>So sánh</th><th>Ứng viên</th><th>Giá trị</th></tr></thead>
+      <tbody>
+        <tr><td>(1, 1)</td><td>L ≠ M</td><td>1 + min(0, 1, 1)</td><td>1</td></tr>
+        <tr><td>(2, 2)</td><td>O = O</td><td>dp[1][1]</td><td>1</td></tr>
+        <tr><td>(3, 3)</td><td>V = V</td><td>dp[2][2]</td><td>1</td></tr>
+        <tr><td>(3, 4)</td><td>V ≠ I</td><td>1 + min(dp[2][3] = 2, dp[2][4] = 3, dp[3][3] = 1)</td><td>2</td></tr>
+        <tr><td>(4, 4)</td><td>E ≠ I</td><td>1 + min(dp[3][3] = 1, dp[3][4] = 2, dp[4][3] = 2)</td><td>2</td></tr>
+        <tr class="hl"><td>(4, 5)</td><td>E = E</td><td>dp[3][4]</td><td>2</td></tr>
+      </tbody>
+    </table>
+
+    <div class="playground" id="viz-lcs">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: nhập hai xâu</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="lcs-s">Xâu s <input type="text" id="lcs-s" value="AGGTAB" maxlength="12" autocomplete="off" spellcheck="false"></label>
+          <label for="lcs-t">Xâu t <input type="text" id="lcs-t" value="GXTXAYB" maxlength="12" autocomplete="off" spellcheck="false"></label>
+          <label for="lcs-mode">Bài toán
+            <select id="lcs-mode">
+              <option value="lcs">LCS (dãy con chung)</option>
+              <option value="edit">Khoảng cách sửa</option>
+              <option value="sub">Xâu con chung liên tiếp</option>
+            </select>
+          </label>
+          <button type="button" data-act="run">Tính bảng</button>
+          <button type="button" class="ghost" data-act="anim">Điền từng ô</button>
+          <button type="button" class="ghost" data-act="swap">Đổi chỗ s, t</button>
+        </div>
+        <div data-out="table"></div>
+        <div class="out" data-out="msg" aria-live="polite">Bảng sẽ hiện ở đây. Bấm vào một ô để xem nó được tính thế nào.</div>
+      </div>
+    </div>
+    <p>Gợi ý thí nghiệm: nhập s = t để thấy LCS bằng độ dài xâu và khoảng cách sửa bằng 0; nhập s = <code>ABCA</code>, t = <code>ACBA</code> (xâu đảo ngược) để thấy dãy con đối xứng dài nhất; so sánh chế độ “dãy con” và “xâu con liên tiếp” với <code>ABCDE</code> và <code>XBCDY</code>.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Chương trình 1 đọc hai xâu, in độ dài LCS và một LCS. Lưu ý chỉ số: trong <code>string</code> của C++ ký tự đầu là <code>s[0]</code>, còn trong bảng ta đánh số từ 1, nên ký tự s<sub>i</sub> là <code>s[i - 1]</code>. Nhờ vậy hàng 0 và cột 0 của bảng dành cho xâu rỗng, không cần xét riêng.</p>
+    <figure class="code">
+      <figcaption><span class="fn">lcs.cpp</span> Độ dài và truy vết một dãy con chung dài nhất</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    string s, t;
+    cin &gt;&gt; s &gt;&gt; t;
+    int n = s.size(), m = t.size();
+
+    // dp[i][j] = độ dài LCS của i ký tự đầu của s và j ký tự đầu của t
+    // Hàng 0 và cột 0 bằng 0 (một xâu rỗng thì không có ký tự chung)
+    vector&lt;vector&lt;int&gt;&gt; dp(n + 1, vector&lt;int&gt;(m + 1, 0));
+
+    for (int i = 1; i &lt;= n; i++) {
+        for (int j = 1; j &lt;= m; j++) {
+            if (s[i - 1] == t[j - 1])                 // chỉ số trong xâu bắt đầu từ 0
+                dp[i][j] = dp[i - 1][j - 1] + 1;      // hai ký tự cuối bằng nhau: ghép vào
+            else
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1]);  // bỏ một trong hai ký tự cuối
+        }
+    }
+
+    // Truy vết từ ô (n, m) về hàng 0 hoặc cột 0
+    string res;
+    int i = n, j = m;
+    while (i &gt; 0 &amp;&amp; j &gt; 0) {
+        if (s[i - 1] == t[j - 1]) {        // ký tự này thuộc LCS
+            res += s[i - 1];
+            i--; j--;
+        } else if (dp[i - 1][j] &gt;= dp[i][j - 1]) {
+            i--;                            // giá trị đến từ ô phía trên
+        } else {
+            j--;                            // giá trị đến từ ô bên trái
+        }
+    }
+    reverse(res.begin(), res.end());       // ta nhặt ký tự từ cuối lên nên phải đảo lại
+
+    cout &lt;&lt; dp[n][m] &lt;&lt; '\n' &lt;&lt; res &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">AGGTAB
+GXTXAYB</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">4
+GTAB</code></pre></div>
+    </div>
+
+    <p>Chương trình 2 tính khoảng cách sửa và in luôn danh sách các phép biến đổi (truy vết bằng cách kiểm tra ô hiện tại bằng ô nào cộng bao nhiêu). Phần in phép biến đổi viết không dấu cho gọn.</p>
+    <figure class="code">
+      <figcaption><span class="fn">edit.cpp</span> Khoảng cách sửa và các phép biến đổi</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    string s, t;
+    cin &gt;&gt; s &gt;&gt; t;
+    int n = s.size(), m = t.size();
+
+    // dp[i][j] = số phép ít nhất để biến i ký tự đầu của s thành j ký tự đầu của t
+    vector&lt;vector&lt;int&gt;&gt; dp(n + 1, vector&lt;int&gt;(m + 1, 0));
+    for (int i = 0; i &lt;= n; i++) dp[i][0] = i;   // xóa hết i ký tự
+    for (int j = 0; j &lt;= m; j++) dp[0][j] = j;   // chèn đủ j ký tự
+
+    for (int i = 1; i &lt;= n; i++) {
+        for (int j = 1; j &lt;= m; j++) {
+            if (s[i - 1] == t[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1];               // giống nhau: không tốn phép nào
+            } else {
+                dp[i][j] = 1 + min({dp[i - 1][j - 1],      // thay s[i-1] thành t[j-1]
+                                    dp[i - 1][j],          // xóa s[i-1]
+                                    dp[i][j - 1]});        // chèn t[j-1] vào cuối
+            }
+        }
+    }
+
+    // Truy vết để in các phép biến đổi (theo thứ tự từ trái sang phải)
+    vector&lt;string&gt; ops;
+    int i = n, j = m;
+    while (i &gt; 0 || j &gt; 0) {
+        if (i &gt; 0 &amp;&amp; j &gt; 0 &amp;&amp; s[i - 1] == t[j - 1] &amp;&amp; dp[i][j] == dp[i - 1][j - 1]) {
+            i--; j--;                                       // giữ nguyên
+        } else if (i &gt; 0 &amp;&amp; j &gt; 0 &amp;&amp; dp[i][j] == dp[i - 1][j - 1] + 1) {
+            ops.push_back(string("Thay ") + s[i - 1] + " thanh " + t[j - 1]);
+            i--; j--;
+        } else if (i &gt; 0 &amp;&amp; dp[i][j] == dp[i - 1][j] + 1) {
+            ops.push_back(string("Xoa ") + s[i - 1]);
+            i--;
+        } else {
+            ops.push_back(string("Chen ") + t[j - 1]);
+            j--;
+        }
+    }
+    reverse(ops.begin(), ops.end());
+
+    cout &lt;&lt; dp[n][m] &lt;&lt; '\n';
+    for (auto &amp;op : ops) cout &lt;&lt; op &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">LOVE
+MOVIE</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">2
+Thay L thanh M
+Chen I</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">KITTEN
+SITTING</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">3
+Thay K thanh S
+Thay E thanh I
+Chen G</code></pre></div>
+    </div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Bài / cách làm</th><th>Thời gian</th><th>Bộ nhớ</th><th>In được lời giải?</th></tr></thead>
+      <tbody>
+        <tr><td>Thử mọi dãy con</td><td><span class="bigo">O(2ⁿ · m)</span></td><td><span class="bigo">O(n)</span></td><td>Có, nhưng chỉ chạy được n ≤ 20</td></tr>
+        <tr><td>LCS, bảng đầy đủ</td><td><span class="bigo">O(n · m)</span></td><td><span class="bigo">O(n · m)</span></td><td>Có (truy vết)</td></tr>
+        <tr><td>LCS, hai hàng</td><td><span class="bigo">O(n · m)</span></td><td><span class="bigo">O(m)</span></td><td>Không, chỉ có độ dài</td></tr>
+        <tr><td>Khoảng cách sửa</td><td><span class="bigo">O(n · m)</span></td><td><span class="bigo">O(n · m)</span> hoặc <span class="bigo">O(m)</span></td><td>Có khi giữ cả bảng</td></tr>
+        <tr><td>Truy vết</td><td><span class="bigo">O(n + m)</span></td><td>dùng lại bảng</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p>Với n = m = 5000, bảng có 5001 × 5001 ≈ 2,5·10⁷ ô. Mỗi ô vài phép tính đơn giản nên chạy khoảng 0,1 giây (chương trình <code>lcs.cpp</code> ở trên chạy hai xâu ADN ngẫu nhiên dài 5000 mất khoảng 0,1 giây). Nhưng <strong>bộ nhớ</strong> mới là vấn đề: 2,5·10⁷ số <code>int</code>, mỗi số 4 byte, là khoảng <strong>100 MB</strong>. Đề cho 256 MB thì vẫn qua, đề cho 64 MB thì không.</p>
+    <ul>
+      <li>Chỉ cần độ dài: dùng hai hàng, bộ nhớ còn 2 × 5001 số, khoảng 40 KB.</li>
+      <li>Cần truy vết mà bộ nhớ chặt: chỉ cần lưu <em>hướng đi</em> của mỗi ô (chéo, lên, trái) bằng kiểu <code>char</code>, 25 MB thay vì 100 MB.</li>
+      <li>n, m ≤ 10⁵ thì n · m = 10¹⁰, bảng O(n · m) không chạy kịp. Khi đó đề thường có cấu trúc đặc biệt (ví dụ hai hoán vị, LCS chuyển thành <a href="lis.html">LIS</a>).</li>
+    </ul>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>1. Dãy con đối xứng dài nhất</h3>
+    <p>Xâu đối xứng (palindrome) là xâu đọc xuôi hay ngược đều như nhau, ví dụ <code>ABA</code>, <code>MADAM</code>. Bài toán: tìm dãy con đối xứng dài nhất của s. Mẹo rất đẹp: <strong>dãy con đối xứng dài nhất của s = LCS(s, đảo ngược của s)</strong>.</p>
+    <p>Vì sao? Một dãy con đối xứng P của s đọc ngược vẫn là P, nên P cũng là dãy con của s đảo ngược. Vậy P là dãy con chung, độ dài LCS ≥ độ dài P. Chiều ngược lại cũng đúng (độ dài LCS(s, đảo s) luôn bằng độ dài dãy con đối xứng dài nhất), đây là kết quả quen thuộc, em có thể tin dùng. Ví dụ s = <code>ABCA</code>, đảo ngược là <code>ACBA</code>, LCS dài 3 (ví dụ <code>ACA</code> hoặc <code>ABA</code>).</p>
+    <div class="callout warn"><p class="callout-title">Cẩn thận khi in kết quả</p><p>Độ dài thì đúng, nhưng một LCS của s và đảo s <em>có thể không đối xứng</em> dù dài bằng đáp án. Ví dụ s = <code>ABCAB</code>, đảo ngược là <code>BACBA</code>: cả <code>ABA</code> lẫn <code>BCA</code> đều là dãy con chung dài 3, nhưng <code>BCA</code> không đối xứng. Nếu đề bắt in xâu (như NKPALIN), an toàn nhất là dùng QHĐ trên đoạn: f[l][r] = dãy con đối xứng dài nhất của đoạn s<sub>l</sub>…s<sub>r</sub>; nếu s<sub>l</sub> = s<sub>r</sub> thì f[l][r] = f[l+1][r−1] + 2, ngược lại f[l][r] = max(f[l+1][r], f[l][r−1]). Truy vết theo f sẽ dựng được hai nửa đối xứng.</p></div>
+
+    <h3>2. Chèn ít ký tự nhất để thành xâu đối xứng</h3>
+    <p>Giữ lại dãy con đối xứng dài nhất P, mỗi ký tự không thuộc P cần chèn thêm một “bản sao” ở phía đối diện. Vậy <strong>số ký tự ít nhất cần chèn = n − độ dài dãy con đối xứng dài nhất</strong>. Với <code>ABCA</code>: 4 − 3 = 1, chèn B sau C thành <code>ABCBA</code>. Với <code>BBABCBCAB</code> (n = 9): dãy con đối xứng dài nhất dài 7 (ví dụ <code>BABCBAB</code>) nên cần chèn 2 ký tự. Chương trình dưới đây làm đúng điều đó, và dùng luôn kỹ thuật hai hàng.</p>
+    <figure class="code">
+      <figcaption><span class="fn">palin.cpp</span> Dãy con đối xứng dài nhất và số ký tự cần chèn (hai hàng)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    string s;
+    cin &gt;&gt; s;
+    string t(s.rbegin(), s.rend());        // t = s đảo ngược
+    int n = s.size();
+
+    // LCS(s, t) chỉ với hai hàng: prv = hàng i-1, cur = hàng i
+    vector&lt;int&gt; prv(n + 1, 0), cur(n + 1, 0);
+    for (int i = 1; i &lt;= n; i++) {
+        cur[0] = 0;
+        for (int j = 1; j &lt;= n; j++) {
+            if (s[i - 1] == t[j - 1]) cur[j] = prv[j - 1] + 1;
+            else cur[j] = max(prv[j], cur[j - 1]);
+        }
+        swap(prv, cur);                     // hàng vừa tính thành "hàng trên"
+    }
+    int lps = prv[n];                       // dãy con đối xứng dài nhất
+    cout &lt;&lt; lps &lt;&lt; '\n' &lt;&lt; n - lps &lt;&lt; '\n'; // số ký tự ít nhất cần chèn
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">BBABCBCAB</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">7
+2</code></pre></div>
+    </div>
+
+    <h3>3. Tiết kiệm bộ nhớ bằng hai hàng</h3>
+    <p>Nhìn lại công thức: ô ở hàng i chỉ dùng ô của hàng i và hàng i − 1. Vậy chỉ cần giữ hai mảng một chiều <code>prv</code> (hàng trên) và <code>cur</code> (hàng đang tính); tính xong một hàng thì <code>swap</code> hai mảng. Bộ nhớ giảm từ O(n · m) xuống O(m). Cái giá phải trả: các hàng cũ bị ghi đè nên <strong>không truy vết được nữa</strong>. Với khoảng cách sửa nhớ đặt <code>cur[0] = i</code> ở đầu mỗi hàng (không phải 0).</p>
+
+    <h3>4. Xâu con chung liên tiếp dài nhất</h3>
+    <p>Nếu đề đòi phần chung phải <em>liền nhau</em> (xâu con, không phải dãy con), trạng thái đổi một chút: dp[i][j] = độ dài xâu con chung <strong>kết thúc đúng tại</strong> s<sub>i</sub> và t<sub>j</sub>. Khi s<sub>i</sub> = t<sub>j</sub> thì dp[i][j] = dp[i−1][j−1] + 1; khi khác thì đoạn chung bị đứt, <strong>dp[i][j] = 0</strong>. Đáp án là giá trị lớn nhất trong cả bảng, không phải dp[n][m]. Ví dụ <code>ABCDE</code> và <code>XBCDY</code> có xâu con chung dài nhất là <code>BCD</code> (dài 3); còn LCS của chúng cũng là 3 nhưng hai khái niệm khác nhau với <code>ABXCD</code> và <code>ABCD</code>: LCS = 4 (<code>ABCD</code>), xâu con chung liên tiếp chỉ dài 2.</p>
+    <figure class="code">
+      <figcaption><span class="fn">substr.cpp</span> Xâu con chung liên tiếp dài nhất</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    string s, t;
+    cin &gt;&gt; s &gt;&gt; t;
+    int n = s.size(), m = t.size();
+    // dp[i][j] = độ dài xâu con chung KẾT THÚC đúng tại s[i-1] và t[j-1]
+    vector&lt;vector&lt;int&gt;&gt; dp(n + 1, vector&lt;int&gt;(m + 1, 0));
+    int best = 0, endS = 0;
+    for (int i = 1; i &lt;= n; i++)
+        for (int j = 1; j &lt;= m; j++)
+            if (s[i - 1] == t[j - 1]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+                if (dp[i][j] &gt; best) { best = dp[i][j]; endS = i; }
+            }                               // khác nhau: dp[i][j] = 0 (đứt đoạn)
+    cout &lt;&lt; best &lt;&lt; '\n' &lt;&lt; s.substr(endS - best, best) &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+
+    <h3>5. Chỉ được chèn và xóa</h3>
+    <p>Nếu không có phép thay, cách tốt nhất là giữ lại một LCS, xóa mọi ký tự khác của s và chèn mọi ký tự khác của t. Số phép = <strong>n + m − 2 · LCS</strong>. Ví dụ <code>AGGTAB</code> → <code>GXTXAYB</code>: 6 + 7 − 2 · 4 = 5 phép (xóa A, G; chèn X, X, Y).</p>
+
+    <h3>6. Hai dãy số và các dạng nâng cao</h3>
+    <ul>
+      <li>LCS trên hai <strong>dãy số</strong> làm y hệt, chỉ so sánh số thay vì ký tự (bài CSES Longest Common Subsequence).</li>
+      <li>Thêm điều kiện cho dãy chung, ví dụ phần tử sau ít nhất gấp đôi phần tử trước (VOI 2014, LCS2X): trạng thái thường là “dãy chung kết thúc tại b<sub>j</sub>”, kết hợp ý của <a href="lis.html">LIS</a>.</li>
+      <li>Khoảng cách sửa có trọng số: mỗi phép chèn, xóa, thay có chi phí khác nhau. Chỉ cần thay số 1 trong công thức bằng chi phí tương ứng.</li>
+    </ul>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Lệch chỉ số giữa xâu và bảng</p><p>Bảng đánh số từ 1 nhưng <code>string</code> đánh số từ 0. Viết <code>s[i] == t[j]</code> thay vì <code>s[i - 1] == t[j - 1]</code> sẽ so sai ký tự và đọc ra ngoài xâu. Cách khác: thêm một ký tự giả vào đầu, <code>s = " " + s;</code>, rồi dùng <code>s[i]</code> thoải mái.</p></div>
+    <div class="callout danger"><p class="callout-title">Quên cơ sở của khoảng cách sửa</p><p>Khai báo bảng toàn 0 rồi quên gán dp[i][0] = i và dp[0][j] = j. Khi đó biến <code>ABC</code> thành xâu rỗng ra 0 phép, sai. LCS có cơ sở bằng 0, khoảng cách sửa thì không.</p></div>
+    <div class="callout danger"><p class="callout-title">Nhầm dãy con với xâu con</p><p>Đề nói “xâu con” (liên tiếp) mà em dùng công thức LCS (lấy max khi khác nhau) thì kết quả lớn hơn đáp án. Đọc kỹ đề: có cho bỏ qua ký tự xen giữa không? Xâu con liên tiếp phải đặt dp = 0 khi khác nhau và lấy max cả bảng.</p></div>
+    <div class="callout warn"><p class="callout-title">Khai báo mảng tĩnh quá lớn trong hàm</p><p><code>int dp[5005][5005];</code> đặt trong <code>main</code> nằm trên ngăn xếp (stack), dễ bị lỗi chạy (tràn stack). Hãy khai báo toàn cục hoặc dùng <code>vector</code>. Đồng thời tính trước bộ nhớ: 5005² số <code>int</code> là khoảng 100 MB.</p></div>
+    <div class="callout warn"><p class="callout-title">Truy vết quên đảo ngược, hoặc truy vết sau khi dùng hai hàng</p><p>Truy vết nhặt ký tự từ cuối về đầu, phải <code>reverse</code> trước khi in. Và nếu đã tiết kiệm bộ nhớ bằng hai hàng thì bảng cũ không còn, không truy vết được: muốn in lời giải thì giữ bảng đầy đủ (hoặc bảng hướng đi).</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo kiểm tra nhanh</p><p>Viết thêm một chương trình thử mọi dãy con (n ≤ 15) và so sánh kết quả với bảng QHĐ trên vài trăm cặp xâu ngẫu nhiên. Các tính chất dễ kiểm: LCS(s, s) = n; khoảng cách sửa từ s tới chính nó bằng 0; khoảng cách sửa luôn nằm giữa |n − m| và max(n, m).</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Xâu nào là <em>dãy con</em> nhưng <em>không</em> là xâu con của <code>ABCDE</code>?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. BCD</button>
+        <button type="button" class="quiz-opt" data-correct>B. ACE</button>
+        <button type="button" class="quiz-opt">C. AEC</button>
+        <button type="button" class="quiz-opt">D. ABCDE</button>
+      </div>
+      <p class="quiz-explain">ACE giữ đúng thứ tự A trước C trước E nên là dãy con, nhưng không liền nhau nên không là xâu con. BCD và ABCDE vừa là dãy con vừa là xâu con. AEC sai thứ tự nên không là dãy con.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. LCS của <code>ABC</code> và <code>BAC</code> dài bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 1</button>
+        <button type="button" class="quiz-opt" data-correct>B. 2</button>
+        <button type="button" class="quiz-opt">C. 3</button>
+      </div>
+      <p class="quiz-explain">AC và BC đều là dãy con chung dài 2. ABC không phải dãy con của BAC vì trong BAC chữ B đứng trước A. Vậy đáp án là 2.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Trong bài LCS, khi s<sub>i</sub> ≠ t<sub>j</sub> thì dp[i][j] bằng gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. dp[i−1][j−1]</button>
+        <button type="button" class="quiz-opt">B. 0</button>
+        <button type="button" class="quiz-opt" data-correct>C. max(dp[i−1][j], dp[i][j−1])</button>
+        <button type="button" class="quiz-opt">D. dp[i−1][j−1] + 1</button>
+      </div>
+      <p class="quiz-explain">Hai ký tự cuối khác nhau nên ít nhất một ký tự bị bỏ qua: lấy kết quả tốt hơn giữa “bỏ s<sub>i</sub>” và “bỏ t<sub>j</sub>”. Đáp án B là công thức của xâu con chung liên tiếp, không phải LCS.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Trong bài khoảng cách sửa, dp[3][0] bằng bao nhiêu?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 0</button>
+        <button type="button" class="quiz-opt" data-correct>B. 3</button>
+        <button type="button" class="quiz-opt">C. 1</button>
+      </div>
+      <p class="quiz-explain">Biến 3 ký tự đầu của s thành xâu rỗng thì phải xóa cả 3 ký tự, nên dp[3][0] = 3.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 5. Dùng hai hàng để tính LCS thì mất khả năng nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Tính độ dài LCS</button>
+        <button type="button" class="quiz-opt" data-correct>B. Truy vết in ra một LCS</button>
+        <button type="button" class="quiz-opt">C. Chạy trong O(n · m)</button>
+      </div>
+      <p class="quiz-explain">Độ dài vẫn nằm ở ô cuối và thời gian không đổi, nhưng các hàng cũ đã bị ghi đè nên không đi ngược được để tìm các ký tự.</p>
+    </div>
+
+    <p><strong>Câu 6.</strong> Tính khoảng cách sửa từ <code>SUNDAY</code> sang <code>SATURDAY</code> và chỉ ra một dãy phép biến đổi.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Đáp án là 3. Một cách: SUNDAY → chèn A sau S: SAUNDAY → chèn T: SATUNDAY → thay N thành R: SATURDAY. Không thể ít hơn 3 vì t dài hơn s 2 ký tự (cần ít nhất 2 phép chèn) và sau hai phép chèn vẫn còn N ≠ R. Chương trình <code>edit.cpp</code> cũng in ra 3.</p></details>
+
+    <p><strong>Câu 7.</strong> Cần chèn ít nhất mấy ký tự vào <code>ABCD</code> để được xâu đối xứng? Còn <code>ABCA</code>?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p><code>ABCD</code> có 4 chữ khác nhau nên dãy con đối xứng dài nhất chỉ dài 1. Cần chèn 4 − 1 = 3 ký tự, ví dụ <code>ABCDCBA</code>. <code>ABCA</code> có dãy con đối xứng <code>ACA</code> dài 3, nên chỉ cần chèn 4 − 3 = 1 ký tự: <code>ABCBA</code>.</p></details>
+
+    <p><strong>Câu 8.</strong> Hai xâu dài n = m = 4000, giới hạn bộ nhớ 64 MB, đề chỉ hỏi độ dài LCS. Khai báo <code>vector&lt;vector&lt;int&gt;&gt;</code> đầy đủ có được không?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>Bảng có 4001² ≈ 1,6·10⁷ số <code>int</code>, khoảng 64 MB, chưa kể phần phụ của vector: gần như chắc chắn vượt bộ nhớ. Vì đề chỉ hỏi độ dài, hãy dùng hai hàng, chỉ tốn khoảng 32 KB.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Các bài VNOJ có đề tiếng Việt; bài tiếng Anh có tóm tắt tiếng Việt.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qbstr">QBSTR – Xâu con chung dài nhất</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho hai xâu A, B dài không quá 2000. In độ dài dãy con chung dài nhất (đề gọi là “xâu con” nhưng được phép xóa ký tự bất kỳ).</p>
+        <p class="ex-skill"><b>Luyện:</b> bảng dp[i][j] của LCS.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đúng công thức trong bài. 2001² ô <code>int</code> chỉ khoảng 16 MB; muốn gọn hơn thì dùng hai hàng.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/atcoder_dp_f">Atcoder Educational DP Contest F – LCS</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho hai xâu chữ thường dài không quá 3000. In ra <em>một</em> dãy con chung dài nhất (bản gốc: <a href="https://atcoder.jp/contests/dp/tasks/dp_f">AtCoder DP F</a>).</p>
+        <p class="ex-skill"><b>Luyện:</b> truy vết bảng LCS.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giữ cả bảng (3001² ô, khoảng 36 MB) rồi đi ngược từ ô cuối như chương trình <code>lcs.cpp</code>. Nhớ đảo ngược xâu trước khi in.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/3403">Longest Common Subsequence</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho hai dãy số nguyên dài n, m ≤ 1000. In độ dài dãy con chung dài nhất và một dãy như vậy.</p>
+        <p class="ex-skill"><b>Luyện:</b> LCS trên dãy số, truy vết.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Thay so sánh ký tự bằng so sánh số. Giá trị tới 10⁹ nhưng chỉ cần so sánh bằng nhau, không cần nén số.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1639">Edit Distance</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho hai xâu chữ in hoa dài tới 5000. Tìm số phép chèn, xóa, thay ít nhất để biến xâu thứ nhất thành xâu thứ hai.</p>
+        <p class="ex-skill"><b>Luyện:</b> khoảng cách sửa, cơ sở dp[i][0] = i.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Bảng 5001² số <code>int</code> khoảng 100 MB, giới hạn 512 MB vẫn qua; dùng hai hàng thì an toàn hơn và nhanh hơn nhờ ít truy cập bộ nhớ.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://www.spoj.com/problems/EDIST/">EDIST – Edit distance</a>
+          <span class="judge">SPOJ</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Nhiều bộ test, mỗi bộ gồm hai xâu; in khoảng cách sửa của từng cặp.</p>
+        <p class="ex-skill"><b>Luyện:</b> cài đặt hai hàng, xử lý nhiều test.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Khởi tạo lại mảng cho mỗi test. Với hai hàng, nhớ đặt <code>cur[0] = i</code> ở đầu mỗi hàng.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nkpalin">NKPALIN – Chuỗi đối xứng</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho xâu chữ thường dài không quá 2000. In ra một dãy con đối xứng dài nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> dãy con đối xứng, truy vết ra xâu đối xứng.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Độ dài bằng LCS(s, đảo s). Để chắc chắn in ra xâu đối xứng, dùng QHĐ đoạn f[l][r] rồi truy vết: khi s<sub>l</sub> = s<sub>r</sub> thì lấy cả hai đầu, dựng nửa trái rồi ghép với nửa phải lật ngược.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://atcoder.jp/contests/abc185/tasks/abc185_e">ABC185 E – Sequence Matching</a>
+          <span class="judge">AtCoder</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho hai dãy A, B (dài ≤ 1000). Xóa một số phần tử ở mỗi dãy sao cho hai dãy còn lại dài bằng nhau; chi phí = số phần tử bị xóa + số vị trí mà hai dãy còn lại khác nhau. Tìm chi phí nhỏ nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> nhận ra khoảng cách sửa trong một đề “ngụy trang”.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Xóa ở A giống “xóa”, xóa ở B giống “chèn”, vị trí khác nhau giống “thay”. Công thức giống hệt edit distance.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/lcs2x">LCS2X – Dãy con chung bội hai dài nhất (VOI 2014)</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho hai dãy A, B (dài ≤ 1500). Tìm dãy con chung dài nhất mà mỗi phần tử ít nhất gấp đôi phần tử đứng trước nó.</p>
+        <p class="ex-skill"><b>Luyện:</b> kết hợp LCS với LIS, giảm từ O(n²m²) xuống O(n · m).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Gọi f[j] = độ dài dãy tốt nhất kết thúc tại b<sub>j</sub>. Duyệt từng a<sub>i</sub>; trong lúc quét j từ trái sang phải, giữ biến best = max f[k] với k &lt; j và 2·b<sub>k</sub> ≤ a<sub>i</sub>. Khi a<sub>i</sub> = b<sub>j</sub> thì cập nhật f[j] = max(f[j], best + 1).</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qbpal">QBPAL – Đếm chuỗi đối xứng</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Cho một từ dài không quá 120 chữ in hoa. Đếm số cách xóa một số chữ để phần còn lại là xâu đối xứng (ví dụ IOICAMP có 9 cách).</p>
+        <p class="ex-skill"><b>Luyện:</b> QHĐ trên đoạn cho dãy con đối xứng, đếm thay vì tìm max.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>g[l][r] = số dãy con đối xứng (khác rỗng) của đoạn [l, r]: g[l][r] = g[l+1][r] + g[l][r−1] − g[l+1][r−1], và nếu s<sub>l</sub> = s<sub>r</sub> thì cộng thêm g[l+1][r−1] + 1. Đáp án có thể tới cỡ 2¹²⁰, vượt <code>long long</code>, nên cần <a href="big-numbers.html">số lớn</a>.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/dp/basic-problems">VNOI Wiki – Một số bài toán quy hoạch động điển hình</a> (tiếng Việt, có LCS và biến đổi xâu)</li>
+      <li><a href="https://wiki.vnoi.info/algo/dp/basic-dynamic-programming-2">VNOI Wiki – Quy hoạch động cơ bản (Phần 2)</a> (tiếng Việt)</li>
+      <li><a href="https://wiki.vnoi.info/algo/dp/palindrome-problems">VNOI Wiki – Một vài bài tập về Palindrome</a> (tiếng Việt, các bài chèn ký tự để đối xứng)</li>
+      <li><a href="https://cses.fi/book/book.pdf">Antti Laaksonen – Competitive Programmer’s Handbook</a>, chương Dynamic programming, mục Edit distance (tiếng Anh)</li>
+      <li><a href="https://en.wikipedia.org/wiki/Longest_common_subsequence">Wikipedia – Longest common subsequence</a> (tiếng Anh, có phần ứng dụng trong diff)</li>
+      <li><a href="https://en.wikipedia.org/wiki/Edit_distance">Wikipedia – Edit distance</a> (tiếng Anh)</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Dãy con giữ thứ tự, được bỏ ký tự xen giữa; xâu con phải liền nhau. Thử mọi dãy con mất O(2ⁿ).</li>
+        <li>LCS: dp[i][j] trên hai tiền tố; bằng nhau thì dp[i−1][j−1] + 1, khác thì max(dp[i−1][j], dp[i][j−1]); hàng 0, cột 0 bằng 0; đáp án dp[n][m].</li>
+        <li>Truy vết từ (n, m): bằng nhau thì lấy ký tự và đi chéo, khác thì đi về ô lớn hơn; cuối cùng đảo ngược.</li>
+        <li>Khoảng cách sửa: dp[i][0] = i, dp[0][j] = j; bằng nhau thì dp[i−1][j−1], khác thì 1 + min(chéo, trên, trái) cho thay, xóa, chèn.</li>
+        <li>Dãy con đối xứng dài nhất = LCS(s, đảo s); số ký tự ít nhất cần chèn = n − con số đó.</li>
+        <li>Xâu con chung liên tiếp: khác nhau thì dp = 0, đáp án là max cả bảng.</li>
+        <li>Thời gian O(n · m); n = m = 5000 là 2,5·10⁷ ô, chạy nhanh nhưng bảng int tốn 100 MB. Chỉ cần độ dài thì dùng hai hàng (mất truy vết).</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/lcs.js"></script>
+</body>
+</html>

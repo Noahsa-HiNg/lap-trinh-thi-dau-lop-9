@@ -3,10 +3,10 @@
   "agent": "topic-dijkstra",
   "task": "Soạn chủ đề dijkstra",
   "topic": "dijkstra",
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-11-08T06:38:14Z",
-  "heartbeat_at": "2026-11-08T06:52:53Z",
-  "ended_at": null,
-  "summary": null
+  "heartbeat_at": "2026-11-08T07:03:34Z",
+  "ended_at": "2026-11-08T07:03:34Z",
+  "summary": "10 bài tập (6 VI, 4 EN), 7646 từ, 2 stepper (9+5 khung), widget có"
 }
