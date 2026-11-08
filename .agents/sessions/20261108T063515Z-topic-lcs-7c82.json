@@ -1,0 +1,12 @@
+{
+  "id": "20261108T063515Z-topic-lcs-7c82",
+  "agent": "topic-lcs",
+  "task": "Soạn chủ đề lcs",
+  "topic": "lcs",
+  "status": "active",
+  "host": "MyPC",
+  "started_at": "2026-11-08T06:35:15Z",
+  "heartbeat_at": "2026-11-08T06:37:48Z",
+  "ended_at": null,
+  "summary": null
+}

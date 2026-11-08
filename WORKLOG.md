@@ -61,7 +61,7 @@
 | `20261108T062723Z-topic-dp-grid-6035` | topic-dp-grid | dp-grid | done | 2026-11-08T06:27:23Z | 2026-11-08T06:29:06Z | Widget dp-grid.js xong; trang 9 bài tập (5 VI), 7555 từ, widget có; validate đạt |
 | `20261108T062724Z-topic-backtracking-16b3` | topic-backtracking | backtracking | done | 2026-11-08T06:27:24Z | 2026-11-08T06:29:46Z | Widget N hậu (4–8) assets/js/viz/backtracking.js; validate OK; 11 bài tập (7 VI), 7711 từ |
 | `20261108T062724Z-topic-binary-search-answer-4817` | topic-binary-search-answer | binary-search-answer | done | 2026-11-08T06:27:24Z | 2026-11-08T06:34:16Z | 9 bài tập (7 VI), 7540 từ, 8 câu tự kiểm tra, widget có |
-| `20261108T062727Z-topic-lis-af33` | topic-lis | lis | active | 2026-11-08T06:27:27Z | — |  |
+| `20261108T062727Z-topic-lis-af33` | topic-lis | lis | done | 2026-11-08T06:27:27Z | 2026-11-08T06:37:27Z | 7 bài tập (4 VI), ~6000 từ, 2 stepper (17 khung), SVG, widget lis.js |
 | `20261108T062729Z-topic-knapsack-cf1f` | topic-knapsack | knapsack | active | 2026-11-08T06:27:29Z | — |  |
 | `20261108T062729Z-topic-bfs-955c` | topic-bfs | bfs | active | 2026-11-08T06:27:29Z | — |  |
 | `20261108T062735Z-topic-flood-fill-2aed` | topic-flood-fill | flood-fill | active | 2026-11-08T06:27:35Z | — |  |
@@ -70,6 +70,7 @@
 | `20261108T062927Z-topic-stack-queue-3731` | topic-stack-queue | stack-queue | active | 2026-11-08T06:29:27Z | — |  |
 | `20261108T062935Z-topic-strings-d55b` | topic-strings | strings | active | 2026-11-08T06:29:35Z | — |  |
 | `20261108T063014Z-topic-big-numbers-aaeb` | topic-big-numbers | big-numbers | active | 2026-11-08T06:30:14Z | — |  |
+| `20261108T063515Z-topic-lcs-7c82` | topic-lcs | lcs | active | 2026-11-08T06:35:15Z | — |  |
 
 ## Dòng thời gian
 
@@ -344,3 +345,25 @@
 - `06:34:16` **topic-binary-search-answer** · `binary-search-answer` · _hoàn thành_: Đóng phiên (done): 9 bài tập (7 VI), 7540 từ, 8 câu tự kiểm tra, widget có
 - `06:34:28` **topic-stl** · `stl` · _tiến độ_: Viết xong mục tiêu + section 1-5 (lý thuyết)
 - `06:34:33` **orchestrator** · _commit_: Commit binary-search-answer
+- `06:34:37` **topic-knapsack** · `knapsack` · _tiến độ_: Viết xong section truc-quan (2 stepper 8 khung, SVG, bảng đếm)
+- `06:35:01` **topic-lis** · `lis` · _tiến độ_: Viết xong cài đặt, độ phức tạp, biến thể, lỗi thường gặp
+- `06:35:12` **topic-graph-dfs** · `graph-dfs` · _tiến độ_: Viết xong truc-quan (stepper 11 khung) và cai-dat
+- `06:35:15` **topic-lcs** · `lcs` · _bắt đầu_: Mở phiên: Soạn chủ đề lcs
+- `06:35:26` **topic-strings** · `strings` · _tiến độ_: Viết xong phần lý thuyết: mô tả, ý nghĩa, tại sao, std::string, các bước, cách hoạt động
+- `06:35:38` **topic-knapsack** · `knapsack` · _tiến độ_: Viết xong cai-dat, do-phuc-tap, bien-the, loi-thuong-gap
+- `06:35:44` **topic-stl** · `stl` · _tiến độ_: Viết xong Minh họa trực quan: stepper set 10 khung, stepper heap 9 khung, SVG cây tìm kiếm, bảng vết map
+- `06:35:53` **topic-stack-queue** · `stack-queue` · _tiến độ_: Viết xong mục tiêu và section 1-5; code C++ đã biên dịch, kiểm thử
+- `06:36:14` **topic-bfs** · `bfs` · _tiến độ_: Viết xong section 1-5 (mô tả, ý nghĩa, vì sao, các bước, cách hoạt động)
+- `06:36:27` **topic-big-numbers** · `big-numbers` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `06:36:36` **topic-graph-dfs** · `graph-dfs` · _tiến độ_: Viết xong do-phuc-tap, bien-the, loi-thuong-gap
+- `06:36:53` **topic-flood-fill** · `flood-fill` · _tiến độ_: Viết xong mục tiêu + section 1-5
+- `06:36:59` **topic-stack-queue** · `stack-queue` · _tiến độ_: Viết xong section Minh họa trực quan (3 stepper, bảng vết, SVG, khung widget)
+- `06:37:01` **topic-lis** · `lis` · _tiến độ_: Viết xong toàn bộ, widget lis.js, qua validate
+- `06:37:02` **topic-stl** · `stl` · _tiến độ_: Viết xong Cài đặt (2 chương trình đã chạy thử), Độ phức tạp, Biến thể
+- `06:37:02` **topic-knapsack** · `knapsack` · _tiến độ_: Viết xong toàn bộ 14 section, bỏ dấu @@TIEP@@
+- `06:37:08` **topic-strings** · `strings` · _tiến độ_: Viết xong minh họa (2 stepper, bảng vết, SVG UTF-8), cài đặt, độ phức tạp
+- `06:37:27` **topic-lis** · `lis` · _hoàn thành_: Đóng phiên (done): 7 bài tập (4 VI), ~6000 từ, 2 stepper (17 khung), SVG, widget lis.js
+- `06:37:35` **topic-stack-queue** · `stack-queue` · _tiến độ_: Viết xong Cài đặt C++ (4 chương trình) và Độ phức tạp
+- `06:37:43` **topic-graph-dfs** · `graph-dfs` · _tiến độ_: Viết xong kiem-tra, bai-tap, tham-khao, tom-tat; đã xóa @@TIEP@@
+- `06:37:48` **topic-lcs** · `lcs` · _tiến độ_: Đã tìm xong 9 bài tập (5 VI), lưu exercises.md
+- `06:37:53` **orchestrator** · _commit_: Sửa khoảng cách giữa các hàng .arr để nhãn data-ptr/data-i không đè nhau; commit lis — assets/css/style.css

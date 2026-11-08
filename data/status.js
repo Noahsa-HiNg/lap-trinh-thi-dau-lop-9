@@ -1,5 +1,5 @@
 /* data/status.js — SINH TỰ ĐỘNG bởi scripts/validate.py --write-status. Đừng sửa tay. */
-/* 2026-11-08T06:34:33Z */
+/* 2026-11-08T06:37:53Z */
 window.TOPIC_STATUS = {
   "complexity": {
     "ok": true,
@@ -162,51 +162,76 @@ window.TOPIC_STATUS = {
     "interactive": true
   },
   "lis": {
-    "ok": false,
-    "exercises": 0,
-    "vi": 0,
-    "words": 2982,
+    "ok": true,
+    "exercises": 7,
+    "vi": 4,
+    "words": 5998,
     "frames": 17,
     "interactive": true
   },
   "knapsack": {
-    "ok": false,
-    "exercises": 0,
-    "vi": 0,
-    "words": 2484,
-    "frames": 0,
-    "interactive": false
+    "ok": true,
+    "exercises": 9,
+    "vi": 4,
+    "words": 6305,
+    "frames": 16,
+    "interactive": true
   },
   "graph-dfs": {
     "ok": false,
+    "exercises": 8,
+    "vi": 3,
+    "words": 7624,
+    "frames": 11,
+    "interactive": true
+  },
+  "bfs": {
+    "ok": false,
     "exercises": 0,
     "vi": 0,
-    "words": 3417,
+    "words": 2625,
     "frames": 0,
     "interactive": false
   },
-  "bfs": {
-    "ok": false
-  },
   "flood-fill": {
-    "ok": false
+    "ok": false,
+    "exercises": 0,
+    "vi": 0,
+    "words": 2821,
+    "frames": 0,
+    "interactive": false
   },
   "stl": {
     "ok": false,
     "exercises": 0,
     "vi": 0,
-    "words": 3037,
-    "frames": 0,
-    "interactive": false
+    "words": 4970,
+    "frames": 19,
+    "interactive": true
   },
   "stack-queue": {
-    "ok": false
+    "ok": false,
+    "exercises": 0,
+    "vi": 0,
+    "words": 4087,
+    "frames": 27,
+    "interactive": true
   },
   "strings": {
-    "ok": false
+    "ok": false,
+    "exercises": 0,
+    "vi": 0,
+    "words": 4057,
+    "frames": 12,
+    "interactive": true
   },
   "big-numbers": {
-    "ok": false
+    "ok": false,
+    "exercises": 0,
+    "vi": 0,
+    "words": 2571,
+    "frames": 0,
+    "interactive": false
   },
   "lcs": {
     "ok": false

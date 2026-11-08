@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dãy con tăng dài nhất · Thi đấu lớp 9</title>
+<meta name="description" content="Dãy con tăng dài nhất (LIS): quy hoạch động O(n²), cải tiến O(n log n) bằng mảng tails và lower_bound, truy vết, dãy không giảm, đếm số LIS và bài xếp búp bê.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>#lesson .arr + .arr{margin-top:1.1rem}</style>
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body data-page="topic" data-topic="lis">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Phân biệt được dãy con với đoạn con, và giải thích được vì sao không thể thử hết 2ⁿ dãy con.</li>
+      <li>Xây dựng được quy hoạch động O(n²) với trạng thái “dãy con tăng dài nhất kết thúc tại i”, và truy vết ra một dãy đáp án.</li>
+      <li>Cài đặt được thuật toán O(n log n) bằng mảng <code>tails</code> và <code>lower_bound</code>, giải thích được vì sao nó đúng.</li>
+      <li>Biết đổi sang dãy không giảm (<code>upper_bound</code>), dãy giảm, đếm số dãy con tăng dài nhất và bài xếp hộp, xếp búp bê.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Cho một dãy số. Em được xóa đi một số phần tử, giữ nguyên thứ tự những phần tử còn lại, sao cho dãy còn lại <strong>tăng dần</strong>. Hỏi giữ lại được nhiều nhất bao nhiêu phần tử? Đó là bài toán <strong>dãy con tăng dài nhất</strong> (Longest Increasing Subsequence, viết tắt LIS), một trong những bài quy hoạch động kinh điển nhất.</p>
+
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> cả lớp xếp một hàng dọc theo thứ tự điểm danh, mỗi bạn một chiều cao. Thầy giáo muốn chọn ra một nhóm bạn đứng chụp ảnh, <em>không được đổi chỗ</em> ai cả, chỉ được mời một số bạn bước ra khỏi hàng. Nhóm còn lại phải cao dần từ đầu hàng đến cuối hàng. Hỏi nhóm chụp ảnh đông nhất có bao nhiêu bạn?</p></div>
+    </div>
+
+    <p>Ví dụ với dãy <span class="math">a = (5, 2, 8, 6, 3, 6, 9, 7)</span>:</p>
+    <ul>
+      <li><span class="math">(2, 3, 6, 9)</span> là một dãy con tăng độ dài 4: lấy các phần tử ở vị trí 1, 4, 5, 6 (đánh số từ 0).</li>
+      <li><span class="math">(2, 3, 6, 7)</span> cũng là một dãy con tăng độ dài 4.</li>
+      <li><span class="math">(5, 6, 9)</span> tăng nhưng chỉ dài 3. <span class="math">(2, 6, 3)</span> không tăng. <span class="math">(8, 9, 6)</span> không phải dãy con vì cả hai số 6 (vị trí 3 và 5) đều đứng trước số 9 (vị trí 6), không thể lấy 6 sau 9.</li>
+    </ul>
+    <p>Không có dãy con tăng nào dài 5, nên đáp án là 4. Lát nữa em sẽ thấy cách chứng minh điều này bằng máy, không cần đoán.</p>
+
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>Dãy con</strong> (subsequence) của dãy <span class="math">a[0..n−1]</span> là dãy <span class="math">a[i₁], a[i₂], …, a[iₖ]</span> với <span class="math">i₁ &lt; i₂ &lt; … &lt; iₖ</span>. Các chỉ số phải tăng (giữ thứ tự) nhưng <em>không cần liên tiếp</em>.</p>
+      <p>Dãy con đó <strong>tăng chặt</strong> nếu <span class="math">a[i₁] &lt; a[i₂] &lt; … &lt; a[iₖ]</span>, và <strong>không giảm</strong> nếu dùng dấu <span class="math">≤</span>. Bài toán LIS: tìm <span class="math">k</span> lớn nhất (và nếu cần, chỉ ra một dãy con như vậy).</p>
+    </div>
+
+    <div class="callout note"><p class="callout-title">Dãy con khác đoạn con</p><p><strong>Đoạn con</strong> (subarray) phải gồm các phần tử <em>liền nhau</em>, ví dụ <span class="math">(8, 6, 3)</span>. <strong>Dãy con</strong> được phép bỏ cách quãng, ví dụ <span class="math">(5, 8, 9)</span>. Một dãy n phần tử chỉ có <span class="math">n(n+1)/2</span> đoạn con, nhưng có tới <span class="math">2ⁿ</span> dãy con (mỗi phần tử chọn hoặc không chọn). Vì thế bài dãy con khó hơn nhiều.</p></div>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <p>LIS xuất hiện trong đề thi dưới rất nhiều “lớp áo”. Bản chất chung: có một dãy phần tử theo một thứ tự cố định, em cần chọn càng nhiều phần tử càng tốt sao cho mỗi phần tử sau “lớn hơn” phần tử trước theo một nghĩa nào đó.</p>
+    <ul>
+      <li><strong>Trực tiếp:</strong> tìm độ dài dãy con tăng, không giảm, giảm dài nhất (bài LIQ, LIS trên VNOJ).</li>
+      <li><strong>Xóa ít nhất để dãy tăng:</strong> số phần tử phải xóa ít nhất bằng <span class="math">n − LIS</span>.</li>
+      <li><strong>Xếp hộp, xếp búp bê, xếp phong bì:</strong> mỗi đồ vật có hai kích thước, vật nhỏ lồng được vào vật lớn. Sắp xếp theo một chiều rồi tìm LIS theo chiều còn lại.</li>
+      <li><strong>Chia dãy thành ít dãy con nhất:</strong> số dãy con không giảm ít nhất để phủ hết dãy bằng độ dài dãy con <em>giảm chặt</em> dài nhất (bài Chia dãy, bài Towers).</li>
+      <li><strong>Nối cầu không cắt nhau:</strong> hai bờ sông có các thành phố, nối cặp (x, y) sao cho không có hai cầu cắt nhau. Sắp theo x rồi tìm LIS theo y.</li>
+      <li><strong>Dãy con chung dài nhất</strong> của hai hoán vị cũng quy về LIS (xem bài <a href="lcs.html">Dãy con chung dài nhất</a>).</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề nói “chọn ra một số phần tử, <em>giữ nguyên thứ tự</em>”, “dãy con”, “xóa ít nhất để…”, “lồng vào nhau”, “không cắt nhau”, kèm yêu cầu “dài nhất / nhiều nhất”. Với <span class="math">n ≤ 5000</span> em dùng O(n²); với <span class="math">n</span> cỡ <span class="math">10⁵</span> đến <span class="math">2·10⁵</span> phải dùng O(n log n).</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <p><strong>Bài toán mở đầu.</strong> Cho dãy n số nguyên, tìm độ dài dãy con tăng chặt dài nhất. Thử ba cách và đếm số phép tính.</p>
+
+    <h3>Cách 1: thử mọi dãy con</h3>
+    <p>Mỗi phần tử có hai lựa chọn: lấy hoặc bỏ. Vậy có <span class="math">2ⁿ</span> dãy con, mỗi dãy kiểm tra mất tới n bước. Với <span class="math">n = 20</span> là khoảng <span class="math">2²⁰ ≈ 10⁶</span> dãy, vẫn chạy được. Nhưng với <span class="math">n = 40</span> đã là <span class="math">2⁴⁰ ≈ 1,1·10¹²</span> dãy, máy chạy hàng giờ. Với <span class="math">n = 1000</span> như bài LIQ thì <span class="math">2¹⁰⁰⁰</span> là con số có hơn 300 chữ số. Không thể.</p>
+
+    <h3>Cách 2: quy hoạch động O(n²)</h3>
+    <p>Với mỗi vị trí i, em tính độ dài dãy con tăng dài nhất <em>kết thúc tại</em> a[i] bằng cách nhìn lại mọi j &lt; i. Tổng số lần so sánh là <span class="math">0 + 1 + … + (n−1) = n(n−1)/2</span>. Với <span class="math">n = 1000</span>: 499 500 phép so sánh, chạy trong chớp mắt. Với <span class="math">n = 10⁵</span>: khoảng <span class="math">5·10⁹</span> phép, mất vài giây, quá thời gian.</p>
+
+    <h3>Cách 3: mảng tails và tìm kiếm nhị phân O(n log n)</h3>
+    <p>Với mỗi phần tử, em chỉ cần một lần <a href="binary-search.html">tìm kiếm nhị phân</a> trên một mảng tăng dần. Với <span class="math">n = 10⁵</span>: khoảng <span class="math">10⁵ × 17 ≈ 1,7·10⁶</span> phép. Với <span class="math">n = 2·10⁵</span> (bài CSES): khoảng <span class="math">3,6·10⁶</span> phép.</p>
+
+    <div class="versus">
+      <div class="bad-side"><h4>Quy hoạch động thường</h4><p>Mỗi i nhìn lại toàn bộ phía trước. <span class="bigo">O(n²)</span>. Với n = 10⁵ là khoảng 5·10⁹ phép so sánh, quá 1 giây. Chỉ hợp với n ≤ 5000.</p></div>
+      <div class="good-side"><h4>Mảng tails + lower_bound</h4><p>Mỗi phần tử một lần chặt nhị phân. <span class="bigo">O(n log n)</span>. Với n = 10⁵ chỉ khoảng 1,7·10⁶ phép, nhanh gấp khoảng 3 000 lần.</p></div>
+    </div>
+    <p>Em nên học <strong>cả hai</strong>. Cách O(n²) dễ hiểu, dễ sửa cho các biến thể (đếm số dãy, LIS có trọng số, so sánh hai chiều). Cách O(n log n) là vũ khí khi n lớn.</p>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+
+    <h3>Thuật toán 1: quy hoạch động O(n²)</h3>
+    <p>Theo bốn bước của <a href="dp-intro.html">quy hoạch động</a>: trạng thái, công thức, cơ sở, đáp án.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Trạng thái.</strong> <span class="math">dp[i]</span> = độ dài dãy con tăng dài nhất <em>kết thúc đúng tại</em> phần tử a[i] (bắt buộc lấy a[i] làm phần tử cuối).</div></li>
+      <li><div><strong>Cơ sở.</strong> Mọi <span class="math">dp[i] = 1</span>: riêng a[i] đã là một dãy tăng độ dài 1.</div></li>
+      <li><div><strong>Công thức.</strong> Duyệt i từ trái sang phải. Với mỗi <span class="math">j &lt; i</span> mà <span class="math">a[j] &lt; a[i]</span>, a[i] nối được vào sau dãy kết thúc tại a[j]: <span class="math">dp[i] = max(dp[i], dp[j] + 1)</span>. Ghi lại <span class="math">par[i] = j</span> nếu dp[i] vừa tăng.</div></li>
+      <li><div><strong>Đáp án.</strong> LIS có thể kết thúc ở bất kỳ đâu, nên đáp án là <span class="math">max(dp[0], …, dp[n−1])</span>.</div></li>
+      <li><div><strong>Truy vết.</strong> Bắt đầu từ vị trí có dp lớn nhất, đi ngược theo par cho tới −1, rồi đảo ngược dãy thu được.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> LIS_n2(a, n):
+    <b>với</b> i <b>từ</b> 0 <b>đến</b> n−1:
+        dp[i] ← 1;  par[i] ← −1
+        <b>với</b> j <b>từ</b> 0 <b>đến</b> i−1:
+            <b>nếu</b> a[j] &lt; a[i] <b>và</b> dp[j] + 1 &gt; dp[i]:
+                dp[i] ← dp[j] + 1;  par[i] ← j     <i>// a[i] nối sau a[j]</i>
+    best ← vị trí có dp lớn nhất
+    <i>// truy vết</i>
+    i ← best
+    <b>khi</b> i ≠ −1:  ghi a[i];  i ← par[i]
+    <b>trả về</b> dp[best] và dãy đã ghi (đảo ngược)</pre>
+
+    <h3>Thuật toán 2: mảng tails + lower_bound, O(n log n)</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Ý tưởng mảng.</strong> <span class="math">tails[k]</span> = giá trị cuối <em>nhỏ nhất</em> có thể của một dãy con tăng độ dài <span class="math">k+1</span>, trong phần dãy đã duyệt. Ban đầu tails rỗng.</div></li>
+      <li><div><strong>Tìm chỗ.</strong> Với phần tử x = a[i], tìm vị trí <span class="math">k</span> đầu tiên có <span class="math">tails[k] ≥ x</span> bằng <code>lower_bound</code>.</div></li>
+      <li><div><strong>Nối dài.</strong> Nếu không có vị trí nào (x lớn hơn mọi phần tử của tails), thêm x vào cuối: LIS dài thêm 1.</div></li>
+      <li><div><strong>Thay thế.</strong> Ngược lại gán <span class="math">tails[k] = x</span>: em vừa tìm được một dãy độ dài k+1 có đuôi nhỏ hơn (hoặc bằng).</div></li>
+      <li><div><strong>Đáp án.</strong> Duyệt hết dãy, độ dài LIS bằng <span class="math">tails.size()</span>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> LIS_nlogn(a, n):
+    tails ← rỗng
+    <b>với</b> mỗi x <b>trong</b> a:
+        k ← vị trí đầu tiên có tails[k] ≥ x     <i>// lower_bound, O(log n)</i>
+        <b>nếu</b> k = độ dài tails:
+            thêm x vào cuối tails             <i>// nối dài</i>
+        <b>ngược lại</b>:
+            tails[k] ← x                      <i>// thay đuôi nhỏ hơn</i>
+    <b>trả về</b> độ dài tails</pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+
+    <h3>Vì sao chọn trạng thái “kết thúc tại i”</h3>
+    <p>Hãy thử trạng thái tự nhiên hơn: <span class="math">f[i]</span> = độ dài LIS trong đoạn đầu <span class="math">a[0..i]</span>. Khi gặp a[i+1], em muốn biết “a[i+1] có nối được vào dãy tốt nhất đó không?”. Nhưng f[i] chỉ cho biết <em>độ dài</em>, không cho biết dãy đó kết thúc bằng số nào. Mà muốn nối a[i+1] vào thì phải biết phần tử cuối có nhỏ hơn a[i+1] không.</p>
+    <p>Câu hỏi của quy hoạch động là: “để quyết định bước cuối, ta cần biết gì về phần trước?”. Ở LIS, bước cuối là “nối a[i] vào sau một phần tử nhỏ hơn”, nên cần biết <strong>phần tử cuối</strong> của dãy trước. Trạng thái “dãy kết thúc tại j” trả lời đúng câu hỏi đó: phần tử cuối chính là a[j].</p>
+
+    <h3>Vì sao thuật toán O(n²) đúng</h3>
+    <p>Xét một dãy con tăng dài nhất kết thúc tại a[i]. Nếu nó chỉ có một phần tử thì độ dài là 1. Nếu không, phần tử đứng ngay trước a[i] là một a[j] nào đó với <span class="math">j &lt; i</span>, <span class="math">a[j] &lt; a[i]</span>. Bỏ a[i] đi, phần còn lại là một dãy tăng kết thúc tại a[j], nên dài không quá dp[j]. Ngược lại, dãy dài dp[j] kết thúc tại a[j] nối thêm a[i] luôn hợp lệ. Vì vậy:</p>
+    <div class="math-block">dp[i] = 1 + max{ dp[j] : j &lt; i, a[j] &lt; a[i] }   (lấy max của tập rỗng là 0)</div>
+    <p>Đây chính là <strong>cấu trúc con tối ưu</strong>: dãy tốt nhất kết thúc tại i được ghép từ dãy tốt nhất kết thúc tại một j nào đó. Vì j &lt; i, khi tính dp[i] mọi dp[j] đã có sẵn, thứ tự tính từ trái sang phải là đúng.</p>
+
+    <h3>Vì sao truy vết được</h3>
+    <p>Mỗi lần dp[i] được cập nhật từ dp[j], em ghi <span class="math">par[i] = j</span>: “a[i] đứng ngay sau a[j]”. Từ vị trí kết thúc tốt nhất, đi theo par ngược về sẽ gặp lần lượt phần tử áp chót, phần tử trước nữa… cho tới đầu dãy (par = −1). Các chỉ số gặp được giảm dần, nên đảo lại em có dãy con theo đúng thứ tự.</p>
+
+    <h3>Thuật toán O(n log n): tails tăng chặt</h3>
+    <p><strong>Nhận xét 1: tails luôn tăng chặt.</strong> Giả sử có một dãy tăng độ dài k+2 kết thúc bằng <span class="math">tails[k+1]</span>. Bỏ phần tử cuối, em còn một dãy tăng độ dài k+1 kết thúc bằng một số <em>nhỏ hơn</em> tails[k+1]. Vì tails[k] là đuôi nhỏ nhất của mọi dãy độ dài k+1, nên <span class="math">tails[k] &lt; tails[k+1]</span>. Mảng tăng thì em được dùng <a href="binary-search.html">tìm kiếm nhị phân</a>.</p>
+    <p><strong>Nhận xét 2: vì sao thay thế không sai.</strong> Khi phần tử x đến, gọi k là vị trí <code>lower_bound</code> (tails[k] đầu tiên ≥ x). Khi đó:</p>
+    <ul>
+      <li><span class="math">tails[k−1] &lt; x</span>, nên x nối được vào sau dãy độ dài k có đuôi tails[k−1] (nếu k = 0 thì x tự làm một dãy độ dài 1). Em có dãy độ dài k+1 đuôi x. Vì <span class="math">x ≤ tails[k]</span>, đuôi mới tốt hơn hoặc bằng, nên gán tails[k] = x là đúng định nghĩa.</li>
+      <li>Với độ dài dài hơn (vị trí &gt; k): muốn x làm đuôi thì phải nối sau đuôi tails[k] ≥ x, không được. Không có gì thay đổi.</li>
+      <li>Với độ dài ngắn hơn (vị trí &lt; k): x lớn hơn các tails đó, đuôi x không nhỏ hơn đuôi cũ, nên không cần sửa.</li>
+    </ul>
+    <p>Vậy sau mỗi bước, tails vẫn đúng định nghĩa. Cuối cùng có dãy tăng độ dài <span class="math">tails.size()</span> và không có dãy dài hơn (nếu có, nó đã tạo ra tails[size]). Đó là đáp án.</p>
+    <p>Trực giác: <strong>đuôi càng nhỏ càng dễ nối thêm</strong>. Giữa hai dãy cùng độ dài 3, dãy kết thúc bằng 4 luôn “tiềm năng” hơn dãy kết thúc bằng 8, vì số nào nối được sau 8 cũng nối được sau 4. Thay 8 bằng 4 không làm mất cơ hội nào.</p>
+
+    <div class="callout warn"><p class="callout-title">tails không phải là dãy đáp án</p><p>Với a = (3, 4, 5, 1): sau ba số đầu tails = (3, 4, 5); số 1 thay tails[0], được tails = (1, 4, 5). Độ dài 3 là đúng, nhưng (1, 4, 5) <em>không</em> phải dãy con, vì 1 đứng sau 4 và 5. Mỗi ô của tails ghi một “kỷ lục” riêng cho từng độ dài; muốn in dãy em phải truy vết bằng mảng pos và par (mục Cài đặt).</p></div>
+
+    <h3>Vì sao nhanh</h3>
+    <p>Cách O(n²) mất nhiều thời gian vì với mỗi i em hỏi lại <em>mọi</em> j phía trước. Cách O(n log n) nén toàn bộ thông tin cần thiết vào tails: với mỗi độ dài chỉ giữ <em>một</em> đại diện tốt nhất (đuôi nhỏ nhất). Mảng có không quá n ô và tăng dần, nên mỗi lần tìm chỗ chỉ mất khoảng <span class="math">log₂ n</span> bước.</p>
+
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Khi đi thi, hãy viết O(n²) trước nếu n nhỏ, vì nó khó sai. Chỉ khi n lớn mới dùng tails. Và nhớ câu: “dp[i] là dãy kết thúc <em>tại</em> i, đáp án là max của dp”.</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <p>Cả hai minh họa dùng chung dãy <span class="math">a = (5, 2, 8, 6, 3, 6, 9, 7)</span>, đánh số từ 0. Em bấm nút để đi từng bước.</p>
+
+    <h3>Chạy tay quy hoạch động O(n²)</h3>
+    <p>Hàng trên là a, hàng dưới là dp. Ô tím (đánh dấu <code>i</code>) là phần tử đang tính. Ô vàng là các j phía trước có <span class="math">a[j] &lt; a[i]</span>, tức a[i] nối được vào sau. Ô xanh lá (đánh dấu <code>j</code>) là j được chọn (dp[j] lớn nhất). Ô đỏ là các j có <span class="math">a[j] ≥ a[i]</span>, không nối được.</p>
+<div class="stepper" data-title="Stepper 1: tính dp[i] bằng quy hoạch động O(n²)">
+  <div class="frame" data-caption="&lt;b&gt;i = 0, a[i] = 5.&lt;/b&gt; Chưa có phần tử nào phía trước. Vậy dp[0] = 1: a[0] tự đứng một mình.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell is-active" data-i="0" data-ptr="i">5</span><span class="cell is-dim" data-i="1">2</span><span class="cell is-dim" data-i="2">8</span><span class="cell is-dim" data-i="3">6</span><span class="cell is-dim" data-i="4">3</span><span class="cell is-dim" data-i="5">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">dp</span><span class="cell is-active" data-i="0">1</span><span class="cell is-dim" data-i="1">?</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;i = 1, a[i] = 2.&lt;/b&gt; Không có a[j] nào nhỏ hơn 2 ở phía trước (các ô đỏ đều ≥ 2). Vậy dp[1] = 1: a[1] tự đứng một mình.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell is-bad" data-i="0">5</span><span class="cell is-active" data-i="1" data-ptr="i">2</span><span class="cell is-dim" data-i="2">8</span><span class="cell is-dim" data-i="3">6</span><span class="cell is-dim" data-i="4">3</span><span class="cell is-dim" data-i="5">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">1</span><span class="cell is-active" data-i="1">1</span><span class="cell is-dim" data-i="2">?</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;i = 2, a[i] = 8.&lt;/b&gt; Các j có a[j] &amp;lt; 8: a[0]=5 (dp 1), a[1]=2 (dp 1). Lớn nhất là dp[0] = 1, nên dp[2] = 1 + 1 = 2, par[2] = 0.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell is-ok" data-i="0" data-ptr="j">5</span><span class="cell is-cmp" data-i="1">2</span><span class="cell is-active" data-i="2" data-ptr="i">8</span><span class="cell is-dim" data-i="3">6</span><span class="cell is-dim" data-i="4">3</span><span class="cell is-dim" data-i="5">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">dp</span><span class="cell is-ok" data-i="0">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell is-active" data-i="2">2</span><span class="cell is-dim" data-i="3">?</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;i = 3, a[i] = 6.&lt;/b&gt; Các j có a[j] &amp;lt; 6: a[0]=5 (dp 1), a[1]=2 (dp 1). Lớn nhất là dp[0] = 1, nên dp[3] = 1 + 1 = 2, par[3] = 0.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell is-ok" data-i="0" data-ptr="j">5</span><span class="cell is-cmp" data-i="1">2</span><span class="cell is-bad" data-i="2">8</span><span class="cell is-active" data-i="3" data-ptr="i">6</span><span class="cell is-dim" data-i="4">3</span><span class="cell is-dim" data-i="5">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">dp</span><span class="cell is-ok" data-i="0">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell is-active" data-i="3">2</span><span class="cell is-dim" data-i="4">?</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;i = 4, a[i] = 3.&lt;/b&gt; Các j có a[j] &amp;lt; 3: a[1]=2 (dp 1). Lớn nhất là dp[1] = 1, nên dp[4] = 1 + 1 = 2, par[4] = 1.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell is-bad" data-i="0">5</span><span class="cell is-ok" data-i="1" data-ptr="j">2</span><span class="cell is-bad" data-i="2">8</span><span class="cell is-bad" data-i="3">6</span><span class="cell is-active" data-i="4" data-ptr="i">3</span><span class="cell is-dim" data-i="5">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">1</span><span class="cell is-ok" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell" data-i="3">2</span><span class="cell is-active" data-i="4">2</span><span class="cell is-dim" data-i="5">?</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;i = 5, a[i] = 6.&lt;/b&gt; Các j có a[j] &amp;lt; 6: a[0]=5 (dp 1), a[1]=2 (dp 1), a[4]=3 (dp 2). Lớn nhất là dp[4] = 2, nên dp[5] = 2 + 1 = 3, par[5] = 4.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell is-cmp" data-i="0">5</span><span class="cell is-cmp" data-i="1">2</span><span class="cell is-bad" data-i="2">8</span><span class="cell is-bad" data-i="3">6</span><span class="cell is-ok" data-i="4" data-ptr="j">3</span><span class="cell is-active" data-i="5" data-ptr="i">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">dp</span><span class="cell is-cmp" data-i="0">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell" data-i="3">2</span><span class="cell is-ok" data-i="4">2</span><span class="cell is-active" data-i="5">3</span><span class="cell is-dim" data-i="6">?</span><span class="cell is-dim" data-i="7">?</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;i = 6, a[i] = 9.&lt;/b&gt; Các j có a[j] &amp;lt; 9: a[0]=5 (dp 1), a[1]=2 (dp 1), a[2]=8 (dp 2), a[3]=6 (dp 2), a[4]=3 (dp 2), a[5]=6 (dp 3). Lớn nhất là dp[5] = 3, nên dp[6] = 3 + 1 = 4, par[6] = 5.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell is-cmp" data-i="0">5</span><span class="cell is-cmp" data-i="1">2</span><span class="cell is-cmp" data-i="2">8</span><span class="cell is-cmp" data-i="3">6</span><span class="cell is-cmp" data-i="4">3</span><span class="cell is-ok" data-i="5" data-ptr="j">6</span><span class="cell is-active" data-i="6" data-ptr="i">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">dp</span><span class="cell is-cmp" data-i="0">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell is-cmp" data-i="2">2</span><span class="cell is-cmp" data-i="3">2</span><span class="cell is-cmp" data-i="4">2</span><span class="cell is-ok" data-i="5">3</span><span class="cell is-active" data-i="6">4</span><span class="cell is-dim" data-i="7">?</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;i = 7, a[i] = 7.&lt;/b&gt; Các j có a[j] &amp;lt; 7: a[0]=5 (dp 1), a[1]=2 (dp 1), a[3]=6 (dp 2), a[4]=3 (dp 2), a[5]=6 (dp 3). Lớn nhất là dp[5] = 3, nên dp[7] = 3 + 1 = 4, par[7] = 5.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell is-cmp" data-i="0">5</span><span class="cell is-cmp" data-i="1">2</span><span class="cell is-bad" data-i="2">8</span><span class="cell is-cmp" data-i="3">6</span><span class="cell is-cmp" data-i="4">3</span><span class="cell is-ok" data-i="5" data-ptr="j">6</span><span class="cell is-bad" data-i="6">9</span><span class="cell is-active" data-i="7" data-ptr="i">7</span></div>
+    <div class="arr"><span class="arr-label">dp</span><span class="cell is-cmp" data-i="0">1</span><span class="cell is-cmp" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell is-cmp" data-i="3">2</span><span class="cell is-cmp" data-i="4">2</span><span class="cell is-ok" data-i="5">3</span><span class="cell" data-i="6">4</span><span class="cell is-active" data-i="7">4</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;Đáp án và truy vết.&lt;/b&gt; max dp = dp[6] = 4. Đi ngược theo par: chỉ số 6 → 5 → 4 → 1 → −1. Đảo lại được dãy 2, 3, 6, 9.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell is-dim" data-i="0">5</span><span class="cell is-ok" data-i="1">2</span><span class="cell is-dim" data-i="2">8</span><span class="cell is-dim" data-i="3">6</span><span class="cell is-ok" data-i="4">3</span><span class="cell is-ok" data-i="5">6</span><span class="cell is-ok" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">dp</span><span class="cell" data-i="0">1</span><span class="cell is-ok" data-i="1">1</span><span class="cell" data-i="2">2</span><span class="cell" data-i="3">2</span><span class="cell is-ok" data-i="4">2</span><span class="cell is-ok" data-i="5">3</span><span class="cell is-ok" data-i="6">4</span><span class="cell" data-i="7">4</span></div>
+    <div class="arr"><span class="arr-label">par</span><span class="cell" data-i="0">-1</span><span class="cell is-ok" data-i="1">-1</span><span class="cell" data-i="2">0</span><span class="cell" data-i="3">0</span><span class="cell is-ok" data-i="4">1</span><span class="cell is-ok" data-i="5">4</span><span class="cell is-ok" data-i="6">5</span><span class="cell" data-i="7">5</span></div>
+  </div>
+</div>
+
+    <table class="trace">
+      <thead><tr><th>i</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead>
+      <tbody>
+        <tr><td>a[i]</td><td>5</td><td>2</td><td>8</td><td>6</td><td>3</td><td>6</td><td>9</td><td>7</td></tr>
+        <tr class="hl"><td>dp[i]</td><td>1</td><td>1</td><td>2</td><td>2</td><td>2</td><td>3</td><td>4</td><td>4</td></tr>
+        <tr><td>par[i]</td><td>−1</td><td>−1</td><td>0</td><td>0</td><td>1</td><td>4</td><td>5</td><td>5</td></tr>
+      </tbody>
+    </table>
+    <p>Chú ý dp[3] = 2 (dãy 5, 6) nhưng dp[5] = 3 (dãy 2, 3, 6) dù a[3] = a[5] = 6: cùng giá trị, khác vị trí, khác dp. Và dp[n−1] = dp[7] = 4 ở đây chỉ tình cờ bằng đáp án; nhiều dãy khác thì không (thử a = (1, 2, 3, 0) xem).</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 560 250" width="560" role="img" aria-label="Dãy 5 2 8 6 3 6 9 7 vẽ theo chiều cao, nối các phần tử của dãy con tăng 2 3 6 9 và nhánh 2 3 6 7">
+<line class="edge is-ok" x1="114" y1="170" x2="306" y2="150"/>
+<line class="edge is-ok" x1="306" y1="150" x2="370" y2="90"/>
+<line class="edge is-ok" x1="370" y1="90" x2="434" y2="30"/>
+<line class="edge is-cmp" x1="370" y1="90" x2="498" y2="70"/>
+<circle class="node is-dim" cx="50" cy="110" r="16"/><text x="50" y="115" text-anchor="middle">5</text>
+<text class="label-sm" x="50" y="240" text-anchor="middle">i=0</text>
+<circle class="node is-ok" cx="114" cy="170" r="16"/><text x="114" y="175" text-anchor="middle">2</text>
+<text class="label-sm" x="114" y="240" text-anchor="middle">i=1</text>
+<circle class="node is-dim" cx="178" cy="50" r="16"/><text x="178" y="55" text-anchor="middle">8</text>
+<text class="label-sm" x="178" y="240" text-anchor="middle">i=2</text>
+<circle class="node is-dim" cx="242" cy="90" r="16"/><text x="242" y="95" text-anchor="middle">6</text>
+<text class="label-sm" x="242" y="240" text-anchor="middle">i=3</text>
+<circle class="node is-ok" cx="306" cy="150" r="16"/><text x="306" y="155" text-anchor="middle">3</text>
+<text class="label-sm" x="306" y="240" text-anchor="middle">i=4</text>
+<circle class="node is-ok" cx="370" cy="90" r="16"/><text x="370" y="95" text-anchor="middle">6</text>
+<text class="label-sm" x="370" y="240" text-anchor="middle">i=5</text>
+<circle class="node is-ok" cx="434" cy="30" r="16"/><text x="434" y="35" text-anchor="middle">9</text>
+<text class="label-sm" x="434" y="240" text-anchor="middle">i=6</text>
+<circle class="node is-cmp" cx="498" cy="70" r="16"/><text x="498" y="75" text-anchor="middle">7</text>
+<text class="label-sm" x="498" y="240" text-anchor="middle">i=7</text>
+<text class="label-pen" x="16" y="22">2 → 3 → 6 → 9 (hoặc → 7)</text>
+</svg>
+      <figcaption>Hình 1. Mỗi phần tử vẽ ở độ cao bằng giá trị của nó. Dãy con tăng là đường đi luôn sang phải và lên cao. Đường xanh lá là 2 → 3 → 6 → 9 do truy vết O(n²) tìm ra; nhánh 6 → 7 cho dãy 2, 3, 6, 7 cũng dài 4.</figcaption>
+    </figure>
+
+    <h3>Chạy tay mảng tails (xếp bài thành chồng)</h3>
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Trò xếp bài:</strong> em lật từng lá bài theo thứ tự. Mỗi lá được đặt lên <em>chồng đầu tiên từ trái sang</em> có lá trên cùng lớn hơn hoặc bằng nó. Không có chồng nào như vậy thì mở chồng mới bên phải. Lá trên cùng của các chồng chính là mảng tails, và <strong>số chồng</strong> là độ dài LIS.</p></div>
+    </div>
+    <p>Hàng trên là a, ô tím (đánh dấu <code>x</code>) là phần tử đang xét. Hàng dưới là tails sau khi xử lý x: ô tím là ô vừa bị thay, ô xanh lá là ô vừa được nối thêm.</p>
+<div class="stepper" data-title="Stepper 2: cập nhật mảng tails bằng lower_bound">
+  <div class="frame" data-caption="&lt;b&gt;x = 5.&lt;/b&gt; tails đang rỗng, lower_bound trả về 0 = độ dài tails. Nối 5 vào cuối: chồng bài thứ 1 được mở. Độ dài LIS hiện tại là 1.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell is-active" data-i="0" data-ptr="x">5</span><span class="cell is-dim" data-i="1">2</span><span class="cell is-dim" data-i="2">8</span><span class="cell is-dim" data-i="3">6</span><span class="cell is-dim" data-i="4">3</span><span class="cell is-dim" data-i="5">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">tails</span><span class="cell is-ok" data-i="0">5</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;x = 2.&lt;/b&gt; tails cũ = (5). Ô đầu tiên ≥ 2 là tails[0] = 5. Thay bằng 2: vẫn có dãy độ dài 1, nhưng đuôi nhỏ hơn hoặc bằng nên dễ nối tiếp hơn. Độ dài không đổi: 1.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">5</span><span class="cell is-active" data-i="1" data-ptr="x">2</span><span class="cell is-dim" data-i="2">8</span><span class="cell is-dim" data-i="3">6</span><span class="cell is-dim" data-i="4">3</span><span class="cell is-dim" data-i="5">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">tails</span><span class="cell is-active" data-i="0">2</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;x = 8.&lt;/b&gt; tails cũ = (2). Mọi ô đều nhỏ hơn 8, lower_bound trả về 1 = độ dài tails. Nối 8 vào cuối: chồng bài thứ 2 được mở. Độ dài LIS hiện tại là 2.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">2</span><span class="cell is-active" data-i="2" data-ptr="x">8</span><span class="cell is-dim" data-i="3">6</span><span class="cell is-dim" data-i="4">3</span><span class="cell is-dim" data-i="5">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">tails</span><span class="cell" data-i="0">2</span><span class="cell is-ok" data-i="1">8</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;x = 6.&lt;/b&gt; tails cũ = (2, 8). Ô đầu tiên ≥ 6 là tails[1] = 8. Thay bằng 6: vẫn có dãy độ dài 2, nhưng đuôi nhỏ hơn hoặc bằng nên dễ nối tiếp hơn. Độ dài không đổi: 2.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">8</span><span class="cell is-active" data-i="3" data-ptr="x">6</span><span class="cell is-dim" data-i="4">3</span><span class="cell is-dim" data-i="5">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">tails</span><span class="cell" data-i="0">2</span><span class="cell is-active" data-i="1">6</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;x = 3.&lt;/b&gt; tails cũ = (2, 6). Ô đầu tiên ≥ 3 là tails[1] = 6. Thay bằng 3: vẫn có dãy độ dài 2, nhưng đuôi nhỏ hơn hoặc bằng nên dễ nối tiếp hơn. Độ dài không đổi: 2.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">8</span><span class="cell" data-i="3">6</span><span class="cell is-active" data-i="4" data-ptr="x">3</span><span class="cell is-dim" data-i="5">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">tails</span><span class="cell" data-i="0">2</span><span class="cell is-active" data-i="1">3</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;x = 6.&lt;/b&gt; tails cũ = (2, 3). Mọi ô đều nhỏ hơn 6, lower_bound trả về 2 = độ dài tails. Nối 6 vào cuối: chồng bài thứ 3 được mở. Độ dài LIS hiện tại là 3.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">8</span><span class="cell" data-i="3">6</span><span class="cell" data-i="4">3</span><span class="cell is-active" data-i="5" data-ptr="x">6</span><span class="cell is-dim" data-i="6">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">tails</span><span class="cell" data-i="0">2</span><span class="cell" data-i="1">3</span><span class="cell is-ok" data-i="2">6</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;x = 9.&lt;/b&gt; tails cũ = (2, 3, 6). Mọi ô đều nhỏ hơn 9, lower_bound trả về 3 = độ dài tails. Nối 9 vào cuối: chồng bài thứ 4 được mở. Độ dài LIS hiện tại là 4.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">8</span><span class="cell" data-i="3">6</span><span class="cell" data-i="4">3</span><span class="cell" data-i="5">6</span><span class="cell is-active" data-i="6" data-ptr="x">9</span><span class="cell is-dim" data-i="7">7</span></div>
+    <div class="arr"><span class="arr-label">tails</span><span class="cell" data-i="0">2</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">6</span><span class="cell is-ok" data-i="3">9</span></div>
+  </div>
+  <div class="frame" data-caption="&lt;b&gt;x = 7.&lt;/b&gt; tails cũ = (2, 3, 6, 9). Ô đầu tiên ≥ 7 là tails[3] = 9. Thay bằng 7: vẫn có dãy độ dài 4, nhưng đuôi nhỏ hơn hoặc bằng nên dễ nối tiếp hơn. Độ dài không đổi: 4.">
+    <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">5</span><span class="cell" data-i="1">2</span><span class="cell" data-i="2">8</span><span class="cell" data-i="3">6</span><span class="cell" data-i="4">3</span><span class="cell" data-i="5">6</span><span class="cell" data-i="6">9</span><span class="cell is-active" data-i="7" data-ptr="x">7</span></div>
+    <div class="arr"><span class="arr-label">tails</span><span class="cell" data-i="0">2</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">6</span><span class="cell is-active" data-i="3">7</span></div>
+  </div>
+</div>
+
+    <div class="viz">
+      <div class="viz-head"><p class="viz-title">tails chỉ cho độ dài, không cho dãy</p></div>
+      <div class="viz-body">
+        <div class="arr"><span class="arr-label">a</span><span class="cell" data-i="0">3</span><span class="cell" data-i="1">4</span><span class="cell" data-i="2">5</span><span class="cell is-active" data-i="3">1</span></div>
+        <div class="arr"><span class="arr-label">tails</span><span class="cell is-bad" data-i="0">1</span><span class="cell" data-i="1">4</span><span class="cell" data-i="2">5</span></div>
+      </div>
+      <div class="viz-legend"><span><i class="is-active"></i>phần tử vừa xét</span><span><i class="is-bad"></i>ô làm tails không còn là dãy con</span></div>
+      <div class="viz-caption"><p>Sau khi xử lý (3, 4, 5, 1), tails = (1, 4, 5): độ dài 3 đúng, nhưng 1 đứng sau 4 và 5 nên (1, 4, 5) không phải dãy con. Dãy đúng là (3, 4, 5).</p></div>
+    </div>
+
+    <div class="playground" id="viz-lis">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: dp, tails và dãy con tìm được</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="lis-input">Dãy số (tối đa 30 số nguyên) <input type="text" id="lis-input" value="5 2 8 6 3 6 9 7"></label>
+          <label for="lis-mode">Loại dãy <select id="lis-mode">
+            <option value="inc">tăng chặt (&lt;)</option>
+            <option value="nondec">không giảm (≤)</option>
+            <option value="dec">giảm chặt (&gt;)</option>
+          </select></label>
+          <button type="button" data-act="run">Chạy từng bước</button>
+          <button type="button" data-act="all">Hiện ngay</button>
+        </div>
+        <div class="lis-view" aria-hidden="true"></div>
+        <div class="out" aria-live="polite">Nhập dãy rồi bấm “Chạy từng bước”.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <p>Hai chương trình cùng đọc n và dãy a, in ra độ dài LIS (tăng chặt) ở dòng 1 và một dãy con tăng dài nhất ở dòng 2. Giá trị dùng <code>long long</code> để chịu được số âm và số tới <span class="math">10⁹</span> hay lớn hơn.</p>
+
+    <h3>Phiên bản O(n²): dp + par</h3>
+    <p>Dùng khi <span class="math">n ≤ 5000</span>. Đây là lời giải cho bài LIQ.</p>
+    <figure class="code">
+      <figcaption><span class="fn">lis_n2.cpp</span> Quy hoạch động O(n²) có truy vết</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;long long&gt; a(n);
+    for (auto &amp;x : a) cin &gt;&gt; x;
+
+    // dp[i] = độ dài dãy con tăng dài nhất KẾT THÚC tại a[i]
+    // par[i] = chỉ số phần tử đứng ngay trước a[i] trong dãy đó (-1 nếu không có)
+    vector&lt;int&gt; dp(n, 1), par(n, -1);
+    for (int i = 0; i &lt; n; i++)
+        for (int j = 0; j &lt; i; j++)
+            if (a[j] &lt; a[i] &amp;&amp; dp[j] + 1 &gt; dp[i]) {   // a[i] nối được sau a[j]
+                dp[i] = dp[j] + 1;
+                par[i] = j;
+            }
+
+    // Đáp án là max dp[i], không phải dp[n-1]
+    int best = 0;
+    for (int i = 1; i &lt; n; i++)
+        if (dp[i] &gt; dp[best]) best = i;
+
+    // Truy vết: đi ngược theo par rồi đảo lại
+    vector&lt;long long&gt; seq;
+    for (int i = best; i != -1; i = par[i]) seq.push_back(a[i]);
+    reverse(seq.begin(), seq.end());
+
+    cout &lt;&lt; dp[best] &lt;&lt; '\n';
+    for (size_t k = 0; k &lt; seq.size(); k++)
+        cout &lt;&lt; seq[k] &lt;&lt; (k + 1 &lt; seq.size() ? ' ' : '\n');
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8
+5 2 8 6 3 6 9 7</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">4
+2 3 6 9</code></pre></div>
+    </div>
+
+    <h3>Phiên bản O(n log n): tails + lower_bound, có truy vết</h3>
+    <p>Muốn in dãy, ngoài giá trị tails[k] em lưu thêm <span class="math">pos[k]</span>: <em>chỉ số</em> của phần tử đang làm đuôi độ dài k+1. Khi a[i] được đặt vào vị trí k, phần tử đứng ngay trước nó trong dãy là đuôi hiện tại của độ dài k, tức <span class="math">par[i] = pos[k−1]</span>. Cuối cùng đi ngược từ <span class="math">pos[len−1]</span>.</p>
+    <figure class="code">
+      <figcaption><span class="fn">lis_nlogn.cpp</span> Dãy con tăng dài nhất O(n log n) có truy vết</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;long long&gt; a(n);
+    for (auto &amp;x : a) cin &gt;&gt; x;
+
+    // tails[k] = giá trị cuối NHỎ NHẤT của một dãy con tăng độ dài k+1
+    // pos[k]   = chỉ số trong a của phần tử đang nằm ở tails[k]
+    // par[i]   = chỉ số phần tử đứng trước a[i] (để truy vết)
+    vector&lt;long long&gt; tails;
+    vector&lt;int&gt; pos, par(n, -1);
+    for (int i = 0; i &lt; n; i++) {
+        // vị trí đầu tiên có tails[k] &gt;= a[i]
+        int k = lower_bound(tails.begin(), tails.end(), a[i]) - tails.begin();
+        if (k == (int)tails.size()) {      // a[i] lớn hơn mọi phần tử: nối dài
+            tails.push_back(a[i]);
+            pos.push_back(i);
+        } else {                           // thay thế để đuôi nhỏ hơn
+            tails[k] = a[i];
+            pos[k] = i;
+        }
+        if (k &gt; 0) par[i] = pos[k - 1];    // đứng trước a[i] là đuôi của độ dài k
+    }
+
+    int len = tails.size();
+    vector&lt;long long&gt; seq;
+    for (int i = pos[len - 1]; i != -1; i = par[i]) seq.push_back(a[i]);
+    reverse(seq.begin(), seq.end());
+
+    cout &lt;&lt; len &lt;&lt; '\n';
+    for (int k = 0; k &lt; len; k++)
+        cout &lt;&lt; seq[k] &lt;&lt; (k + 1 &lt; len ? ' ' : '\n');
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8
+5 2 8 6 3 6 9 7</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">4
+2 3 6 7</code></pre></div>
+    </div>
+    <p>Hai chương trình in hai dãy khác nhau (2 3 6 9 và 2 3 6 7) nhưng đều đúng, vì dãy này có hai LIS. Đề bài thường cho in một dãy bất kỳ. Thử thêm: với <code>6</code> / <code>1 2 5 4 6 2</code> (ví dụ của LIQ), cả hai đều in 4 và một dãy như 1 2 4 6.</p>
+    <div class="callout tip"><p class="callout-title">Vì sao par[i] = pos[k−1] đúng</p><p>Lúc a[i] đến, pos[k−1] là phần tử kết thúc một dãy tăng độ dài k có đuôi tails[k−1] &lt; a[i]. Nối a[i] vào sau dãy đó được độ dài k+1. Sau này pos[k−1] có thể bị thay bởi chỉ số khác, nhưng par[i] đã ghi lại <em>đúng lúc đó</em>, nên chuỗi par luôn là một dãy con thật.</p></div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <table>
+      <thead><tr><th>Cách làm</th><th>Thời gian</th><th>Bộ nhớ</th><th>n chạy kịp 1 giây</th></tr></thead>
+      <tbody>
+        <tr><td>Thử mọi dãy con</td><td><span class="bigo">O(2ⁿ · n)</span></td><td><span class="bigo">O(n)</span></td><td>n ≤ 20</td></tr>
+        <tr><td>Quy hoạch động dp + par</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n)</span></td><td>n ≤ 5000 (khoảng 1,25·10⁷ phép so sánh)</td></tr>
+        <tr><td>tails + lower_bound</td><td><span class="bigo">O(n log n)</span></td><td><span class="bigo">O(n)</span></td><td>n ≤ 10⁶</td></tr>
+        <tr><td>Truy vết (cả hai cách)</td><td><span class="bigo">O(LIS) ≤ O(n)</span></td><td><span class="bigo">O(n)</span></td><td>—</td></tr>
+        <tr><td>Đếm số LIS (dp + cnt)</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n)</span></td><td>n ≤ 5000</td></tr>
+      </tbody>
+    </table>
+    <p>Ví dụ cụ thể: với <span class="math">n = 30 000</span> (bài LIS trên VNOJ, giới hạn 0,3 giây), cách O(n²) cần khoảng <span class="math">4,5·10⁸</span> phép so sánh, không kịp. Cách tails cần khoảng <span class="math">30 000 × 15 = 4,5·10⁵</span> phép, nhanh gấp 1 000 lần. Với <span class="math">n = 2·10⁵</span> (CSES), O(n log n) chỉ khoảng <span class="math">3,6·10⁶</span> phép.</p>
+    <p>Bộ nhớ của cả hai cách đều là vài mảng n phần tử, rất nhỏ. Lưu ý: dp lưu độ dài nên dùng <code>int</code> là đủ; còn số lượng LIS (biến thể đếm) có thể lớn theo hàm mũ, cần <code>long long</code> hoặc lấy phần dư theo đề.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+
+    <h3>Dãy con không giảm dài nhất: dùng upper_bound</h3>
+    <p>Nếu đề cho phép các phần tử bằng nhau (<span class="math">≤</span>), một số x được đặt <em>sau</em> các số bằng nó. Em đổi <code>lower_bound</code> (ô đầu tiên ≥ x) thành <code>upper_bound</code> (ô đầu tiên &gt; x). Trong O(n²) thì đổi <span class="math">a[j] &lt; a[i]</span> thành <span class="math">a[j] ≤ a[i]</span>.</p>
+    <p>Ví dụ a = (2, 2, 2): tăng chặt thì LIS = 1, tails luôn là (2). Không giảm thì dùng upper_bound: tails lần lượt là (2), (2, 2), (2, 2, 2), độ dài 3.</p>
+    <table>
+      <thead><tr><th>Loại dãy</th><th>Điều kiện trong O(n²)</th><th>Trong O(n log n)</th></tr></thead>
+      <tbody>
+        <tr><td>Tăng chặt</td><td>a[j] &lt; a[i]</td><td><code>lower_bound(x)</code></td></tr>
+        <tr><td>Không giảm</td><td>a[j] ≤ a[i]</td><td><code>upper_bound(x)</code></td></tr>
+        <tr><td>Giảm chặt</td><td>a[j] &gt; a[i]</td><td>đổi dấu: chạy tăng chặt trên −a</td></tr>
+        <tr><td>Không tăng</td><td>a[j] ≥ a[i]</td><td>đổi dấu: chạy không giảm trên −a</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Dãy con giảm dài nhất</h3>
+    <p>Dãy <span class="math">a</span> giảm khi và chỉ khi dãy <span class="math">−a</span> tăng. Vì vậy em chỉ cần đổi dấu mọi phần tử rồi chạy đúng code cũ. Hoặc duyệt dãy từ phải sang trái và tìm dãy tăng. Cách đổi dấu ít sai nhất. Với a = (5, 2, 8, 6, 3, 6, 9, 7), có các dãy giảm như (5, 2), (8, 7), (8, 6, 3); dãy giảm chặt dài nhất có độ dài 3, chẳng hạn (8, 6, 3).</p>
+
+    <h3>Xóa ít nhất để dãy tăng</h3>
+    <p>Giữ lại nhiều nhất là LIS phần tử, nên phải xóa ít nhất <span class="math">n − LIS</span>. Với dãy ví dụ: <span class="math">8 − 4 = 4</span> phần tử.</p>
+
+    <h3>Chia dãy thành ít dãy con nhất</h3>
+    <p>Bài Towers (CSES) và Chia dãy (VNOJ) hỏi: cần ít nhất bao nhiêu dãy con (mỗi phần tử thuộc đúng một dãy) để phủ hết dãy? Thuật toán xếp bài thành chồng trả lời luôn: số chồng ít nhất bằng độ dài dãy con dài nhất mà <em>không thể</em> nằm chung một chồng. Cụ thể:</p>
+    <ul>
+      <li>Chia thành các dãy <em>giảm chặt</em> (mỗi tháp, khối trên nhỏ hơn khối dưới): số dãy ít nhất = độ dài dãy con <em>không giảm</em> dài nhất.</li>
+      <li>Chia thành các dãy <em>không giảm</em>: số dãy ít nhất = độ dài dãy con <em>giảm chặt</em> dài nhất.</li>
+    </ul>
+    <p>Lý do (định lý Dilworth, phát biểu đơn giản): hai phần tử thuộc một dãy “xấu” thì không thể chung một chồng, nên cần ít nhất chừng ấy chồng; thuật toán tham lam đặt lên chồng phù hợp đầu tiên đạt đúng con số đó.</p>
+
+    <h3>Xếp hộp, xếp búp bê, xếp phong bì</h3>
+    <p>Mỗi đồ vật có chiều rộng w và chiều cao h. Vật A lồng vào vật B nếu <span class="math">w_A &lt; w_B</span> và <span class="math">h_A &lt; h_B</span>. Tìm chuỗi lồng nhau dài nhất.</p>
+    <ol class="algo-steps">
+      <li><div><strong>Sắp xếp một chiều.</strong> Sắp theo w tăng dần (dùng <a href="sorting.html">sắp xếp</a>), để mọi chuỗi lồng nhau đều đi từ trái sang phải.</div></li>
+      <li><div><strong>Xử lý bằng nhau.</strong> Nếu w bằng nhau thì sắp h <em>giảm dần</em>. Như vậy hai vật cùng w không thể cùng nằm trong một dãy tăng theo h, đúng với việc chúng không lồng được vào nhau.</div></li>
+      <li><div><strong>LIS chiều kia.</strong> Tìm dãy con tăng chặt dài nhất của h.</div></li>
+    </ol>
+    <p>Ví dụ: (5, 4), (6, 4), (6, 7), (2, 3). Sau khi sắp: (2, 3), (5, 4), (6, 7), (6, 4). Dãy h = (3, 4, 7, 4), LIS = 3 ứng với (2, 3) → (5, 4) → (6, 7). Nếu quên bước 2 và sắp h tăng thì h = (3, 4, 4, 7), em sẽ nhầm lấy cả (6, 4) và (6, 7), hai vật cùng rộng 6.</p>
+    <figure class="code">
+      <figcaption><span class="fn">bup_be.cpp</span> Chuỗi lồng nhau dài nhất bằng sắp xếp + LIS</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;pair&lt;int, int&gt;&gt; e(n);              // (rộng, cao)
+    for (auto &amp;p : e) cin &gt;&gt; p.first &gt;&gt; p.second;
+
+    // Rộng tăng dần; rộng bằng nhau thì cao GIẢM dần
+    sort(e.begin(), e.end(), [](const pair&lt;int, int&gt; &amp;x, const pair&lt;int, int&gt; &amp;y) {
+        if (x.first != y.first) return x.first &lt; y.first;
+        return x.second &gt; y.second;
+    });
+
+    vector&lt;int&gt; tails;                        // LIS tăng chặt theo chiều cao
+    for (auto &amp;p : e) {
+        auto it = lower_bound(tails.begin(), tails.end(), p.second);
+        if (it == tails.end()) tails.push_back(p.second);
+        else *it = p.second;
+    }
+    cout &lt;&lt; tails.size() &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">4
+5 4
+6 4
+6 7
+2 3</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">3</code></pre></div>
+    </div>
+
+    <h3>Đếm số dãy con tăng dài nhất (nâng cao)</h3>
+    <p>Thêm mảng <span class="math">cnt[i]</span> = số dãy con tăng độ dài dp[i] kết thúc tại i. Khi xét j hợp lệ:</p>
+    <ul>
+      <li>Nếu <span class="math">dp[j] + 1 &gt; dp[i]</span>: tìm được độ dài mới tốt hơn, các cách cũ bỏ đi, <span class="math">cnt[i] = cnt[j]</span>.</li>
+      <li>Nếu <span class="math">dp[j] + 1 = dp[i]</span>: thêm các cách mới, <span class="math">cnt[i] += cnt[j]</span>.</li>
+    </ul>
+    <p>Đáp án là tổng cnt[i] của mọi i có dp[i] bằng độ dài lớn nhất. Với dãy ví dụ: dp = (1, 1, 2, 2, 2, 3, 4, 4), cnt = (1, 1, 2, 2, 1, 1, 1, 1). Hai vị trí 6 và 7 có dp = 4, nên có <span class="math">1 + 1 = 2</span> dãy: (2, 3, 6, 9) và (2, 3, 6, 7). Ở đây hai dãy khác nhau khi khác <em>vị trí</em> được chọn.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dem_lis.cpp</span> Độ dài và số lượng dãy con tăng dài nhất, O(n²)</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n;
+    cin &gt;&gt; n;
+    vector&lt;long long&gt; a(n);
+    for (auto &amp;x : a) cin &gt;&gt; x;
+
+    // dp[i]  = độ dài LIS kết thúc tại i
+    // cnt[i] = số dãy con tăng có độ dài dp[i] kết thúc tại i
+    vector&lt;int&gt; dp(n, 1);
+    vector&lt;long long&gt; cnt(n, 1);
+    for (int i = 0; i &lt; n; i++)
+        for (int j = 0; j &lt; i; j++) {
+            if (a[j] &gt;= a[i]) continue;
+            if (dp[j] + 1 &gt; dp[i]) {          // tìm được độ dài mới tốt hơn: đếm lại từ đầu
+                dp[i] = dp[j] + 1;
+                cnt[i] = cnt[j];
+            } else if (dp[j] + 1 == dp[i]) {  // thêm một cách đạt cùng độ dài
+                cnt[i] += cnt[j];
+            }
+        }
+
+    int len = *max_element(dp.begin(), dp.end());
+    long long total = 0;
+    for (int i = 0; i &lt; n; i++)
+        if (dp[i] == len) total += cnt[i];  // cộng mọi vị trí kết thúc tốt nhất
+    cout &lt;&lt; len &lt;&lt; ' ' &lt;&lt; total &lt;&lt; '\n';
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">8
+5 2 8 6 3 6 9 7</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">4 2</code></pre></div>
+    </div>
+
+    <h3>LIS có trọng số và LIS cho n lớn hơn nữa</h3>
+    <p>Nếu mỗi phần tử có một “giá trị” và em cần tổng giá trị lớn nhất (bài Flowers trên AtCoder), mẹo tails không dùng được nữa. Em quay về công thức <span class="math">dp[i] = w[i] + max dp[j]</span> với <span class="math">a[j] &lt; a[i]</span>, rồi dùng cây chỉ số nhị phân (Fenwick) hoặc cây phân đoạn để lấy max nhanh theo giá trị, đạt O(n log n). Đó là kiến thức của các chuyên đề sau.</p>
+    <p>Bài <a href="lcs.html">dãy con chung dài nhất</a> của hai hoán vị cũng quy về LIS: đổi mỗi số trong dãy thứ hai thành vị trí của nó trong dãy thứ nhất, rồi tìm LIS.</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">In dp[n−1] thay vì max dp</p><p>dp[n−1] chỉ là LIS <em>kết thúc tại phần tử cuối</em>. Với a = (1, 2, 3, 0) thì dp[3] = 1 nhưng đáp án là 3. Luôn lấy max của cả mảng dp.</p></div>
+    <div class="callout danger"><p class="callout-title">Nhầm lower_bound với upper_bound</p><p>Tăng chặt dùng <code>lower_bound</code>, không giảm dùng <code>upper_bound</code>. Dùng nhầm upper_bound cho bài tăng chặt, dãy (2, 2, 2) sẽ cho 3 thay vì 1. Hãy đọc kỹ đề: “tăng” hay “không giảm”, rồi thử ngay một dãy có số trùng.</p></div>
+    <div class="callout warn"><p class="callout-title">In mảng tails làm dãy đáp án</p><p>tails chỉ đúng về độ dài. Với (3, 4, 5, 1), tails = (1, 4, 5) không phải dãy con. Muốn in dãy phải dùng pos và par như mục Cài đặt.</p></div>
+    <div class="callout warn"><p class="callout-title">Khởi tạo dp bằng 0</p><p>Mỗi phần tử tự nó là một dãy độ dài 1, nên dp[i] bắt đầu bằng 1. Khởi tạo 0 làm mọi đáp án nhỏ đi 1, và phần tử đầu tiên có dp = 0 vô lý.</p></div>
+    <div class="callout warn"><p class="callout-title">Sắp xếp sai khi xếp búp bê, phong bì</p><p>Khi chiều rộng bằng nhau mà sắp chiều cao tăng dần, LIS sẽ ghép hai vật cùng rộng vào một chuỗi. Phải sắp chiều cao <em>giảm dần</em> khi rộng bằng nhau (với yêu cầu lồng chặt cả hai chiều).</p></div>
+    <div class="callout warn"><p class="callout-title">Dùng O(n²) khi n = 10⁵</p><p>Nhìn giới hạn trước khi code. n ≤ 5000 thì O(n²) an toàn; n từ khoảng 10⁴ trở lên thì nên dùng tails.</p></div>
+    <div class="callout tip"><p class="callout-title">Mẹo kiểm tra</p><p>Luôn thử bốn dãy nhỏ: dãy tăng (1 2 3 → 3), dãy giảm (3 2 1 → 1), dãy bằng nhau (2 2 2 → 1 hoặc 3 tùy chặt hay không), và dãy có LIS không kết thúc ở cuối (1 2 3 0 → 3).</p></div>
+  </section>
+
+<section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Với a = (4, 1, 3, 2, 5), mảng dp (LIS tăng chặt kết thúc tại i) là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. (1, 1, 2, 3, 4)</button>
+        <button type="button" class="quiz-opt" data-correct>B. (1, 1, 2, 2, 3)</button>
+        <button type="button" class="quiz-opt">C. (1, 2, 2, 2, 3)</button>
+        <button type="button" class="quiz-opt">D. (1, 1, 1, 1, 3)</button>
+      </div>
+      <p class="quiz-explain">dp[0] = dp[1] = 1. Số 3 nối sau 1 nên dp[2] = 2. Số 2 chỉ nối sau 1 (không nối sau 3) nên dp[3] = 2. Số 5 nối sau 3 hoặc 2, nên dp[4] = 2 + 1 = 3.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Chạy thuật toán tails (lower_bound) trên a = (4, 1, 3, 2, 5). Mảng tails cuối cùng là gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. (1, 3, 5)</button>
+        <button type="button" class="quiz-opt">B. (4, 3, 5)</button>
+        <button type="button" class="quiz-opt" data-correct>C. (1, 2, 5)</button>
+        <button type="button" class="quiz-opt">D. (1, 2, 3, 5)</button>
+      </div>
+      <p class="quiz-explain">(4) → 1 thay 4: (1) → 3 nối: (1, 3) → 2 thay 3: (1, 2) → 5 nối: (1, 2, 5). Độ dài 3 đúng bằng max dp ở câu 1.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Đề yêu cầu dãy con <em>không giảm</em> dài nhất với n = 2·10⁵. Em dùng gì?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. tails với lower_bound</button>
+        <button type="button" class="quiz-opt" data-correct>B. tails với upper_bound</button>
+        <button type="button" class="quiz-opt">C. Quy hoạch động O(n²) với a[j] ≤ a[i]</button>
+      </div>
+      <p class="quiz-explain">Cho phép bằng nhau thì số x phải đặt sau các số bằng nó, nên tìm ô đầu tiên lớn hơn hẳn x: upper_bound. O(n²) đúng nhưng cần khoảng 2·10¹⁰ phép, quá chậm.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 4. Bài xếp phong bì (lồng chặt cả hai chiều): sắp theo chiều rộng tăng dần. Khi hai phong bì cùng chiều rộng, phải sắp chiều cao thế nào?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Tăng dần</button>
+        <button type="button" class="quiz-opt" data-correct>B. Giảm dần</button>
+        <button type="button" class="quiz-opt">C. Không quan trọng</button>
+      </div>
+      <p class="quiz-explain">Sắp giảm dần thì hai phong bì cùng rộng không thể cùng nằm trong một dãy tăng chặt theo chiều cao, đúng với việc chúng không lồng vào nhau được.</p>
+    </div>
+
+    <p><strong>Câu 5.</strong> Dãy (3, 1, 2, 1, 3) cần xóa ít nhất bao nhiêu phần tử để phần còn lại tăng chặt?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>LIS tăng chặt là (1, 2, 3), lấy các vị trí 1, 2, 4, độ dài 3. Vậy xóa ít nhất <span class="math">5 − 3 = 2</span> phần tử (số 3 đầu và số 1 thứ hai).</p></details>
+
+    <p><strong>Câu 6.</strong> Đếm số dãy con tăng dài nhất của (1, 3, 2, 4) bằng mảng dp và cnt.</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>dp = (1, 2, 2, 3). cnt[0] = 1; cnt[1] = cnt[0] = 1; cnt[2] = cnt[0] = 1. Với i = 3: j = 1 cho dp 3 nên cnt = 1; j = 2 cũng cho dp 3 nên cnt += 1, thành 2. Có 2 dãy: (1, 3, 4) và (1, 2, 4).</p></details>
+
+    <p><strong>Câu 7.</strong> Vì sao không được dùng trạng thái “f[i] = LIS trong đoạn a[0..i]” để tính truy hồi?</p>
+    <details class="solution"><summary>Xem lời giải</summary><p>f[i] chỉ cho độ dài, không cho biết dãy tốt nhất kết thúc bằng số nào. Muốn biết a[i+1] có nối được vào không thì phải biết phần tử cuối. Ví dụ (1, 5, 2, 3): f[1] = 2 với dãy (1, 5), nhưng 3 không nối được vào sau 5; dãy đúng (1, 2, 3) lại đi qua một dãy độ dài 2 khác. Trạng thái “kết thúc tại i” giữ đúng thông tin phần tử cuối.</p></details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Làm LIQ bằng O(n²) trước, rồi làm LIS của VNOJ bằng tails để thấy sự khác biệt về tốc độ.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/liq">LIQ – Dãy con tăng dài nhất (bản dễ)</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Cho dãy N ≤ 1000 số nguyên dương (≤ 10⁴), tìm độ dài dãy con tăng chặt dài nhất. Bài mở đầu kinh điển, có trang hướng dẫn giải trên VNOJ.</p>
+        <p class="ex-skill"><b>Luyện:</b> QHĐ O(n²) với dp[i] kết thúc tại i.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>N ≤ 1000 nên hai vòng lặp chỉ khoảng 5·10⁵ phép. Nhớ in max dp, không phải dp[N].</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/lis">LIS – Dãy con tăng dài nhất (bản khó)</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Giống LIQ nhưng N ≤ 30 000 và giới hạn thời gian chỉ 0,3 giây; giá trị trong phạm vi số nguyên 32 bit.</p>
+        <p class="ex-skill"><b>Luyện:</b> Mảng tails + lower_bound, O(n log n).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>O(n²) cần khoảng 4,5·10⁸ phép, không kịp. Dùng đúng đoạn code tails, chỉ in tails.size().</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1145">Increasing Subsequence</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Cho n ≤ 2·10⁵ số (≤ 10⁹), tìm độ dài dãy con tăng chặt dài nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> Cài tails chuẩn, kiểm tra với n lớn.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giống bài LIS của VNOJ; nhớ dùng lower_bound vì đề yêu cầu tăng chặt.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1073">Towers</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Có n khối lập phương đến theo thứ tự; mỗi khối đặt lên một tháp có khối trên cùng lớn hơn nó, hoặc mở tháp mới. Hỏi số tháp ít nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> Trò xếp bài thành chồng; upper_bound cho dãy không giảm.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tham lam: đặt khối k lên tháp có đỉnh nhỏ nhất mà vẫn lớn hơn k. Lưu các đỉnh tháp trong một mảng tăng, đó chính là tails với upper_bound. Số tháp bằng độ dài dãy con không giảm dài nhất.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qbdivseq">QBDIVSEQ – Chia dãy</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Chia dãy N ≤ 10⁵ số thành ít dãy con không giảm nhất, mỗi phần tử thuộc đúng một dãy.</p>
+        <p class="ex-skill"><b>Luyện:</b> Quy bài phủ dãy về LIS (định lý Dilworth).</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Hai phần tử của một dãy giảm chặt không thể cùng một dãy không giảm. Đáp án là độ dài dãy con giảm chặt dài nhất: đổi dấu rồi chạy LIS tăng chặt.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/mdolls">MDOLLS – Nested Dolls</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">Mỗi búp bê có rộng w và cao h (≤ 10⁴); búp bê lồng vào nhau khi cả hai chiều nhỏ hơn hẳn. Tìm số chuỗi lồng nhau ít nhất để chứa hết m ≤ 20 000 búp bê, nhiều bộ test.</p>
+        <p class="ex-skill"><b>Luyện:</b> Sắp xếp một chiều, LIS chiều kia; xử lý chiều bằng nhau.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Sắp w giảm dần, w bằng nhau thì h tăng dần. Số chuỗi ít nhất bằng độ dài dãy con không giảm dài nhất của h (upper_bound). Hãy tự kiểm tra lại vì sao thứ tự khi w bằng nhau phải như vậy.</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://atcoder.jp/contests/dp/tasks/dp_q">Q – Flowers</a>
+          <span class="judge">AtCoder</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">N ≤ 2·10⁵ bông hoa, chiều cao là một hoán vị, mỗi bông có độ đẹp. Giữ lại các bông có chiều cao tăng từ trái sang phải sao cho tổng độ đẹp lớn nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> LIS có trọng số, cấu trúc dữ liệu lấy max tiền tố.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>dp[h] = độ đẹp + max dp của các chiều cao nhỏ hơn h đã gặp. Lấy max tiền tố bằng cây Fenwick, nhớ dùng long long.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/dp/basic-problems">VNOI Wiki – Một số bài toán quy hoạch động điển hình</a> (tiếng Việt, có mục dãy con đơn điệu tăng dài nhất)</li>
+      <li><a href="https://oj.vnoi.info/problem/liq/editorial">VNOJ – Hướng dẫn giải bài LIQ</a> (tiếng Việt)</li>
+      <li><a href="https://viblo.asia/p/bai-toan-lis-nang-cao-va-mot-so-ung-dung-cua-lis-924lJgd65PM">Viblo – Bài toán LIS nâng cao và một số ứng dụng của LIS</a> (tiếng Việt)</li>
+      <li><a href="https://cp-algorithms.com/dynamic_programming/longest_increasing_subsequence.html">cp-algorithms – Longest increasing subsequence</a> (tiếng Anh, có chứng minh và truy vết)</li>
+      <li>Bài liên quan trong lộ trình: <a href="dp-intro.html">Nhập môn quy hoạch động</a>, <a href="binary-search.html">Tìm kiếm nhị phân</a>, <a href="sorting.html">Sắp xếp</a>, <a href="lcs.html">Dãy con chung dài nhất</a>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>Dãy con giữ thứ tự, không cần liền nhau; có 2ⁿ dãy con nên không thử hết được.</li>
+        <li>QHĐ: dp[i] = 1 + max dp[j] với j &lt; i, a[j] &lt; a[i]; khởi tạo dp[i] = 1; đáp án là <strong>max dp</strong>. O(n²), hợp với n ≤ 5000.</li>
+        <li>Truy vết: lưu par[i] = j tốt nhất, đi ngược từ vị trí có dp lớn nhất rồi đảo lại.</li>
+        <li>O(n log n): tails[k] = đuôi nhỏ nhất của dãy tăng dài k+1; tails tăng chặt; mỗi x thay ô lower_bound hoặc nối vào cuối; đáp án là tails.size().</li>
+        <li>tails không phải dãy đáp án; truy vết bằng pos[k] và par[i] = pos[k−1].</li>
+        <li>Không giảm: upper_bound (hoặc a[j] ≤ a[i]). Giảm: đổi dấu. Xóa ít nhất: n − LIS.</li>
+        <li>Xếp búp bê, phong bì: sắp w tăng, w bằng nhau thì h giảm, rồi LIS tăng chặt theo h.</li>
+        <li>Đếm số LIS: thêm cnt[i], cộng khi bằng, gán lại khi lớn hơn.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/lis.js"></script>
+</body>
+</html>

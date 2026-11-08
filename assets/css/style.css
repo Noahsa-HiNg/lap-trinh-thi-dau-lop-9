@@ -732,6 +732,10 @@ table.dp-table td, table.dp-table th { text-align: center; font-family: var(--f-
 /* Mảng: <div class="arr"><span class="cell" data-i="0">5</span>…</div> */
 .arr { display: flex; flex-wrap: nowrap; gap: 0; width: max-content; margin: 1.6rem auto 1.9rem; }
 .arr + .arr { margin-top: 0.4rem; }
+/* hàng trên có nhãn con trỏ, hàng dưới có chỉ số: chừa chỗ để hai nhãn không đè nhau */
+.arr:has(.cell[data-ptr]) + .arr:has(.cell[data-i]) { margin-top: 3.2rem; }
+.arr:has(.cell[data-ptr]) + .arr:not(:has(.cell[data-i])) { margin-top: 2rem; }
+.arr + .arr:has(.cell[data-i]):not(.arr:has(.cell[data-ptr]) + .arr) { margin-top: 1.7rem; }
 .arr-label { font: 600 0.78rem/1 var(--f-mono); color: var(--ink-3); align-self: center; margin-right: 0.6rem; white-space: nowrap; }
 .cell {
   position: relative;
