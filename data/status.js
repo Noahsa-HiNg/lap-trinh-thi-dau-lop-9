@@ -1,5 +1,5 @@
 /* data/status.js — SINH TỰ ĐỘNG bởi scripts/validate.py --write-status. Đừng sửa tay. */
-/* 2026-11-08T09:09:35Z */
+/* 2026-11-08T09:11:56Z */
 window.TOPIC_STATUS = {
   "complexity": {
     "ok": true,
@@ -253,7 +253,7 @@ window.TOPIC_STATUS = {
     "ok": true,
     "exercises": 8,
     "vi": 4,
-    "words": 7001,
+    "words": 6697,
     "frames": 18,
     "interactive": true
   }

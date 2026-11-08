@@ -56,7 +56,7 @@
 | `20261008T032652Z-topic-backtracking-daec` | topic-backtracking | backtracking | aborted | 2026-10-08T03:26:52Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T03:36:44Z (agent dừng do hết hạn mức API (HTTP 429)) |
 | `20261008T032653Z-topic-dp-grid-1160` | topic-dp-grid | dp-grid | aborted | 2026-10-08T03:26:53Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T08:02:32Z (agent dừng do hết hạn mức API (HTTP 429)) |
 | `20261008T032728Z-topic-difference-array-2095` | topic-difference-array | difference-array | aborted | 2026-10-08T03:27:28Z | 2026-11-08T06:26:36Z | Tự động đóng bởi orchestrator: không có tín hiệu từ 2026-10-08T08:02:50Z (agent dừng do hết hạn mức API (HTTP 429)) |
-| `20261108T062630Z-orchestrator-0165` | orchestrator | — | active | 2026-11-08T06:26:30Z | — |  |
+| `20261108T062630Z-orchestrator-0165` | orchestrator | — | done | 2026-11-08T06:26:30Z | 2026-11-08T09:12:17Z | Hoàn tất 32/32 chủ đề, 303 bài tập (211 VI), 32 widget |
 | `20261108T062723Z-topic-difference-array-ae9c` | topic-difference-array | difference-array | done | 2026-11-08T06:27:23Z | 2026-11-08T06:28:55Z | Bổ sung widget assets/js/viz/difference-array.js (thêm thao tác l,r,x; tô D[l], D[r+1]; cộng dồn ra mảng cuối); validate đạt |
 | `20261108T062723Z-topic-dp-grid-6035` | topic-dp-grid | dp-grid | done | 2026-11-08T06:27:23Z | 2026-11-08T06:29:06Z | Widget dp-grid.js xong; trang 9 bài tập (5 VI), 7555 từ, widget có; validate đạt |
 | `20261108T062724Z-topic-backtracking-16b3` | topic-backtracking | backtracking | done | 2026-11-08T06:27:24Z | 2026-11-08T06:29:46Z | Widget N hậu (4–8) assets/js/viz/backtracking.js; validate OK; 11 bài tập (7 VI), 7711 từ |
@@ -72,7 +72,7 @@
 | `20261108T063014Z-topic-big-numbers-aaeb` | topic-big-numbers | big-numbers | done | 2026-11-08T06:30:14Z | 2026-11-08T06:55:09Z | 6 bài tập (2 VI), 6016 từ, 4 stepper/29 khung, widget có |
 | `20261108T063515Z-topic-lcs-7c82` | topic-lcs | lcs | done | 2026-11-08T06:35:15Z | 2026-11-08T06:58:52Z | 9 bài tập (5 VI, 4 EN), 6002 từ, stepper 8 khung, widget có (LCS/edit distance/xâu con liên tiếp) |
 | `20261108T063814Z-topic-dijkstra-223f` | topic-dijkstra | dijkstra | done | 2026-11-08T06:38:14Z | 2026-11-08T07:03:34Z | 10 bài tập (6 VI, 4 EN), 7646 từ, 2 stepper (9+5 khung), widget có |
-| `20261108T065148Z-topic-dsu-mst-6efb` | topic-dsu-mst | dsu-mst | active | 2026-11-08T06:51:48Z | — |  |
+| `20261108T065148Z-topic-dsu-mst-6efb` | topic-dsu-mst | dsu-mst | done | 2026-11-08T06:51:48Z | 2026-11-08T09:11:35Z | 8 bài tập (4 VI), khoảng 6000 từ văn xuôi, 2 stepper 18 khung, widget có |
 
 ## Dòng thời gian
 
@@ -421,3 +421,8 @@
 - `07:03:34` **topic-dijkstra** · `dijkstra` · _hoàn thành_: Qua validate: 10 bài tập (6 VI), 7646 từ, 2 stepper (14 khung), widget Dijkstra từng bước
 - `07:03:34` **topic-dijkstra** · `dijkstra` · _hoàn thành_: Đóng phiên (done): 10 bài tập (6 VI, 4 EN), 7646 từ, 2 stepper (9+5 khung), widget có
 - `09:09:35` **orchestrator** · _commit_: Commit bfs flood-fill lcs dijkstra
+- `09:09:48` **topic-dsu-mst** · `dsu-mst` · _tiến độ_: Tiếp tục sau khi bị ngắt: lấy lại khóa, hoàn thiện widget
+- `09:11:35` **topic-dsu-mst** · `dsu-mst` · _tiến độ_: Hoàn thiện widget, qua validate, code trích từ HTML chạy đúng
+- `09:11:35` **topic-dsu-mst** · `dsu-mst` · _hoàn thành_: Đóng phiên (done): 8 bài tập (4 VI), khoảng 6000 từ văn xuôi, 2 stepper 18 khung, widget có
+- `09:12:17` **orchestrator** · _commit_: Hoàn tất 32/32 chủ đề: 303 bài tập (211 VI), 431 khung hình, 32 widget; thêm token màu tường cho nền tối — README.md, assets/css/style.css
+- `09:12:17` **orchestrator** · _hoàn thành_: Đóng phiên (done): Hoàn tất 32/32 chủ đề, 303 bài tập (211 VI), 32 widget

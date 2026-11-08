@@ -3,10 +3,10 @@
   "agent": "topic-dsu-mst",
   "task": "Soạn chủ đề dsu-mst",
   "topic": "dsu-mst",
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-11-08T06:51:48Z",
-  "heartbeat_at": "2026-11-08T07:03:20Z",
-  "ended_at": null,
-  "summary": null
+  "heartbeat_at": "2026-11-08T09:11:35Z",
+  "ended_at": "2026-11-08T09:11:35Z",
+  "summary": "8 bài tập (4 VI), khoảng 6000 từ văn xuôi, 2 stepper 18 khung, widget có"
 }

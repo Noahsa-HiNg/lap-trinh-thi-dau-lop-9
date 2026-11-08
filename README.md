@@ -9,6 +9,8 @@ Tám chuyên đề đầu bám theo giáo án 16 tuần trong file
 [`Giáo án Toán & Thuật toán cho học sinh THCS thi Lập trình thi đấu.md`](Giáo%20án%20Toán%20&%20Thuật%20toán%20cho%20học%20sinh%20THCS%20thi%20Lập%20trình%20thi%20đấu.md);
 hai chuyên đề cuối mở rộng cho học sinh ôn thi vào lớp 10 chuyên Tin.
 
+**Hiện trạng:** đủ 32/32 chủ đề, đều qua bộ kiểm tra `validate.py`. Tổng cộng 303 bài tập có đường dẫn (211 bài đề tiếng Việt, mỗi chủ đề ít nhất 6 bài), 431 khung hình minh họa từng bước, 32 widget tương tác.
+
 Nội dung được soạn bởi nhiều agent chạy song song (mỗi chủ đề một agent), phối hợp qua cơ chế **phiên – khóa – nhật ký** mô tả ở [mục 6](#6-kiến-trúc-cho-nhiều-agent).
 
 ---
@@ -111,7 +113,8 @@ thidaulaptrinh/
 │   ├── sessions/               Mỗi phiên làm việc một file JSON
 │   ├── worklog/                Nhật ký chỉ-nối-thêm theo ngày (JSONL)
 │   ├── locks/                  Khóa đang giữ (không commit)
-│   └── inbox/                  Yêu cầu sửa file dùng chung
+│   ├── tasks/                  Bảng việc: quy trình chung + đề bài từng chủ đề
+│   └── inbox/                  Yêu cầu sửa file dùng chung (đã xử lý thì chuyển vào done/)
 ├── WORKLOG.md                  SINH TỰ ĐỘNG từ .agents/worklog
 ├── AGENTS.md                   Quy trình bắt buộc cho mọi agent
 ├── CLAUDE.md                   Trỏ tới AGENTS.md cho Claude Code
@@ -180,11 +183,24 @@ python3 scripts/agentctl.py worklog render        # sinh WORKLOG.md
 Nhật ký là JSONL **chỉ nối thêm** (`O_APPEND`), mỗi sự kiện ghi bằng một lệnh `write()`, nên nhiều tiến trình ghi cùng lúc không bị xen dòng.
 `WORKLOG.md` là bản dễ đọc được sinh lại trước mỗi commit.
 
-### 6.5 Hộp thư yêu cầu
+### 6.5 Bảng việc và phục hồi khi bị ngắt
+
+Đề bài từng chủ đề nằm ở [`.agents/tasks/<slug>.md`](.agents/tasks/), quy trình chung ở [`_common.md`](.agents/tasks/_common.md), nên giao việc chỉ cần một câu. Agent ghi trang theo từng phần (dòng đánh dấu `<!-- @@TIEP@@ -->`) và lưu danh sách bài tập ngay khi tìm xong, nên nếu bị ngắt thì agent sau đọc phần đã có và viết tiếp.
+
+Khi agent chết giữa chừng, phiên của nó còn `active` và khóa giữ tới khi hết hạn. Điều phối dọn bằng:
+
+```bash
+python3 scripts/agentctl.py session reap --idle 30 --keep <phiên-điều-phối> --reason "…"
+python3 scripts/agentctl.py lock gc
+```
+
+Mỗi lệnh `log --session …` đồng thời là heartbeat, nên phiên đang chạy thật không bị thu hồi. Cơ chế này đã được dùng thật: dự án bị ngắt nhiều lần do hết hạn mức API mà không có file nào bị kẹt khóa hay ghi đè.
+
+### 6.6 Hộp thư yêu cầu
 
 Agent cần đổi file dùng chung (thêm class CSS, sửa runtime) thì tạo `.agents/inbox/<UTC>-<agent>.md` mô tả thay đổi, rồi ghi nhật ký `--kind handoff`. Điều phối xử lý và commit.
 
-### 6.6 Tổng quan
+### 6.7 Tổng quan
 
 ```bash
 python3 scripts/agentctl.py status

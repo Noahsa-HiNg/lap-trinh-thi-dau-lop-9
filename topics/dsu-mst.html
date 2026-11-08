@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DSU &amp; cây khung nhỏ nhất · Thi đấu lớp 9</title>
+<meta name="description" content="Cấu trúc các tập rời nhau (DSU) với nén đường và hợp theo kích thước; cây khung nhỏ nhất và thuật toán Kruskal, kèm chứng minh, minh họa từng bước và code C++.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=JetBrains+Mono:wght@400;500;600;700&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="../assets/css/style.css">
+<script>try{var t=JSON.parse(localStorage.getItem('cp9:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+  .dsu-svg { display:block; max-width:100%; height:auto; margin:0.5rem auto; }
+  .dsu-svg .w { font-size:13px; font-weight:600; fill:var(--ink-2); }
+</style>
+</head>
+<body data-page="topic" data-topic="dsu-mst">
+
+<main id="lesson" class="lesson">
+
+  <section class="objectives" id="muc-tieu">
+    <h2>Học xong bài này, em sẽ</h2>
+    <ul>
+      <li>Giải thích được cấu trúc các tập rời nhau (DSU): mỗi nhóm là một cây, gốc là đại diện, mảng <code>parent[]</code> lưu cha.</li>
+      <li>Cài đặt được <code>find</code> và <code>unite</code> với nén đường và hợp theo kích thước, cả kiểu đệ quy lẫn vòng lặp.</li>
+      <li>Giải thích được vì sao hợp theo kích thước giữ cây cao không quá log₂ n, và vì sao hai mẹo cộng lại cho mỗi thao tác gần như O(1).</li>
+      <li>Dùng DSU để đếm thành phần liên thông khi thêm cạnh dần, phát hiện chu trình, tìm nhóm đông nhất.</li>
+      <li>Phát biểu được bài toán cây khung nhỏ nhất, cài đặt Kruskal trong O(m log m) và chứng minh được nó đúng bằng lập luận hoán đổi cạnh.</li>
+      <li>Nhận ra khi nào đồ thị không liên thông và in <code>IMPOSSIBLE</code>.</li>
+    </ul>
+  </section>
+
+  <section id="gioi-thieu">
+    <h2>Mô tả</h2>
+    <p class="lead">Bài này có hai nhân vật chính. Nhân vật thứ nhất là <strong>DSU</strong> (Disjoint Set Union, còn gọi là Union-Find): một cấu trúc dữ liệu nhỏ gọn trả lời rất nhanh câu hỏi “hai người này có cùng nhóm không?” trong khi các nhóm liên tục được gộp lại. Nhân vật thứ hai là <strong>cây khung nhỏ nhất</strong> và thuật toán <strong>Kruskal</strong>, một thuật toán tham lam dùng DSU làm “trọng tài” để chọn cạnh.</p>
+
+    <h3>DSU: quản lý các nhóm rời nhau</h3>
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> đầu năm học, lớp em có 40 bạn, chưa ai quen ai. Mỗi khi hai bạn kết thân, hai <em>nhóm bạn</em> của họ nhập làm một. Mỗi nhóm cử một <strong>trưởng nhóm</strong>. Mỗi bạn chỉ cần nhớ một điều: “người dẫn mình vào nhóm là ai”. Muốn biết mình thuộc nhóm nào, em hỏi người dẫn mình, người đó lại hỏi người dẫn họ… cho tới khi gặp trưởng nhóm. Hai bạn cùng nhóm khi và chỉ khi họ lần ra <em>cùng một trưởng nhóm</em>. Khi hai nhóm nhập lại, chỉ cần một trưởng nhóm nhận trưởng nhóm kia làm “người dẫn”, cả nhóm kia không ai phải đổi gì.</p></div>
+    </div>
+    <p>Trong máy tính, “người dẫn” được lưu trong mảng <code>parent[]</code>. Bạn <code>x</code> có <code>parent[x]</code> là người dẫn mình; trưởng nhóm có <code>parent[x] = x</code> (tự dẫn chính mình). Nếu vẽ mũi tên từ mỗi bạn tới <code>parent</code> của bạn đó, mỗi nhóm thành một <strong>cây</strong> có gốc là trưởng nhóm. Cả lớp là một <strong>rừng</strong> (nhiều cây).</p>
+    <div class="definition" data-label="Định nghĩa">
+      <p><strong>DSU</strong> quản lý n phần tử 1, 2, …, n được chia thành các nhóm rời nhau (mỗi phần tử thuộc đúng một nhóm), hỗ trợ hai thao tác:</p>
+      <ul>
+        <li><code>find(x)</code>: trả về <em>đại diện</em> (gốc cây) của nhóm chứa x. Hai phần tử cùng nhóm khi và chỉ khi <code>find(a) == find(b)</code>.</li>
+        <li><code>unite(a, b)</code>: gộp nhóm chứa a và nhóm chứa b thành một nhóm.</li>
+      </ul>
+      <p>Ban đầu mỗi phần tử là một nhóm riêng. DSU <em>chỉ gộp, không tách</em>.</p>
+    </div>
+
+    <h3>Cây khung và cây khung nhỏ nhất</h3>
+    <div class="analogy">
+      <span class="analogy-icon" aria-hidden="true">?</span>
+      <div><p><strong>Hình dung:</strong> huyện miền núi có 6 làng chưa có điện. Kỹ sư khảo sát được một số cặp làng có thể kéo dây điện, mỗi cặp có chi phí riêng (đường đèo dài thì đắt). Cần chọn một số đoạn dây sao cho <em>làng nào cũng có điện từ mọi làng khác</em> (đi qua làng trung gian cũng được), và <em>tổng chi phí ít nhất</em>. Không ai dại gì kéo thừa một đoạn tạo thành vòng kín, vì bỏ một đoạn trong vòng thì các làng vẫn thông nhau mà lại rẻ hơn.</p></div>
+    </div>
+    <div class="definition" data-label="Định nghĩa">
+      <p>Cho đồ thị vô hướng liên thông G có n đỉnh, m cạnh, mỗi cạnh có trọng số (chi phí).</p>
+      <ul>
+        <li>Một <strong>cây khung</strong> (spanning tree) của G là một tập cạnh của G nối <em>tất cả</em> n đỉnh và <em>không có chu trình</em>. Mọi cây khung có đúng <strong>n − 1</strong> cạnh.</li>
+        <li><strong>Cây khung nhỏ nhất</strong> (minimum spanning tree, MST) là cây khung có tổng trọng số nhỏ nhất.</li>
+      </ul>
+      <p>Nếu G không liên thông thì không có cây khung nào; đề bài thường yêu cầu in <code>IMPOSSIBLE</code>.</p>
+    </div>
+    <p>Vì sao đúng n − 1 cạnh? Bắt đầu với n đỉnh rời nhau, tức n nhóm. Mỗi cạnh không tạo chu trình nối hai nhóm khác nhau, làm số nhóm giảm đúng 1. Muốn còn 1 nhóm thì cần đúng n − 1 cạnh như thế. Chính lập luận “mỗi cạnh tốt gộp hai nhóm” là cầu nối giữa DSU và cây khung.</p>
+  </section>
+
+  <section id="y-nghia">
+    <h2>Ý nghĩa và ứng dụng</h2>
+    <h3>DSU dùng để làm gì</h3>
+    <ul>
+      <li><strong>Liên thông khi thêm cạnh dần</strong> (online): đề cho lần lượt các thao tác “nối a với b” xen kẽ câu hỏi “a và b có thông nhau không?”. Đây là việc DSU làm giỏi nhất.</li>
+      <li><strong>Đếm số thành phần liên thông</strong> sau mỗi lần thêm cạnh: ban đầu có n thành phần, mỗi lần <code>unite</code> thành công thì bớt 1.</li>
+      <li><strong>Phát hiện chu trình</strong> trong đồ thị vô hướng: thêm cạnh (u, v) mà <code>find(u) == find(v)</code> thì u, v đã thông nhau từ trước, cạnh này khép kín một chu trình.</li>
+      <li><strong>Nhóm đông nhất</strong>, tổng/giá trị nhỏ nhất của mỗi nhóm: lưu thêm thông tin ở gốc và cộng dồn khi gộp.</li>
+      <li><strong>Kruskal</strong>: kiểm tra một cạnh có tạo chu trình với các cạnh đã chọn hay không.</li>
+    </ul>
+    <h3>Cây khung nhỏ nhất dùng để làm gì</h3>
+    <ul>
+      <li>Thiết kế mạng rẻ nhất: kéo điện, cáp quang, ống nước, làm đường nối các làng, các máy tính.</li>
+      <li>Bài “chọn tập cạnh nối mọi đỉnh sao cho cạnh lớn nhất là nhỏ nhất”: MST cũng là lời giải (xem phần Biến thể).</li>
+    </ul>
+    <div class="callout note"><p class="callout-title">Dấu hiệu nhận biết</p><p>Đề có các cụm “nhóm”, “liên minh”, “kết bạn”, “mở van/nối ống”, “có thông nhau không”, “số vùng sau mỗi lần nối” với n, q tới 10⁵–10⁶: nghĩ tới <strong>DSU</strong>. Đề có “nối tất cả”, “chi phí ít nhất”, “mạng lưới”, “xây đường giữa các thành phố” trên đồ thị có trọng số, m tới 2·10⁵: nghĩ tới <strong>cây khung nhỏ nhất</strong>. Nếu đề chỉ có thêm cạnh, không xóa cạnh, gần như chắc chắn là DSU.</p></div>
+  </section>
+
+  <section id="tai-sao">
+    <h2>Vì sao cần thuật toán này</h2>
+    <h3>Bài toán mở đầu cho DSU</h3>
+    <p>Có n = 10⁵ thùng nước, lúc đầu không thùng nào nối với thùng nào. Có q = 2·10⁵ thao tác, mỗi thao tác là “mở van giữa thùng a và thùng b” hoặc “hỏi thùng a và thùng b có thông nhau không”. Hãy trả lời mọi câu hỏi.</p>
+    <p><strong>Cách ngây thơ 1: gán nhãn.</strong> Giữ mảng <code>comp[x]</code> là số hiệu nhóm của thùng x. Câu hỏi chỉ cần so <code>comp[a] == comp[b]</code>, rất nhanh. Nhưng khi gộp, em phải duyệt cả n thùng để đổi nhãn của nhóm b sang nhãn của nhóm a: tốn n bước. Với 10⁵ lần gộp, tổng là 10⁵ × 10⁵ = <strong>10¹⁰</strong> bước, chạy mất cỡ một trăm giây.</p>
+    <p><strong>Cách ngây thơ 2: DFS lại.</strong> Lưu đồ thị bằng danh sách kề; mỗi câu hỏi chạy <a href="graph-dfs.html">DFS</a> từ a xem có tới b không. Nếu một nửa số thao tác là mở van và một nửa là câu hỏi thì m = 10⁵, mỗi lần DFS tốn tới n + m = 2·10⁵ bước. Với 10⁵ câu hỏi là khoảng <strong>2·10¹⁰</strong> bước, còn tệ hơn.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Cách ngây thơ</h4><p>Gán nhãn lại: gộp <span class="bigo">O(n)</span>, hỏi <span class="bigo">O(1)</span>. DFS lại: hỏi <span class="bigo">O(n + m)</span>. Với n = 10⁵, q = 2·10⁵ đều cỡ <strong>10¹⁰</strong> phép tính, quá giới hạn 1 giây (máy chấm làm cỡ 10⁸ phép/giây).</p></div>
+      <div class="good-side"><h4>Dùng DSU</h4><p>Nén đường + hợp theo kích thước: mỗi thao tác gần như <span class="bigo">O(1)</span> (đúng ra là O(α(n)), với α(n) ≤ 4). Tổng cỡ 2·10⁵ × 4 ≈ <strong>10⁶</strong> phép tính, chạy trong vài mili giây.</p></div>
+    </div>
+    <h3>Bài toán mở đầu cho cây khung nhỏ nhất</h3>
+    <p>Cách ngây thơ nhất là thử mọi cây khung rồi lấy cây rẻ nhất. Nhưng số cây khung tăng khủng khiếp: đồ thị đầy đủ n đỉnh có n<sup>n−2</sup> cây khung (công thức Cayley). Với n = 10 đã là 10⁸ cây, với n = 20 là 20¹⁸ ≈ 2,6·10²³ cây. Không máy nào duyệt nổi.</p>
+    <div class="versus">
+      <div class="bad-side"><h4>Thử mọi cây khung</h4><p>Số cây khung tới <span class="bigo">n<sup>n−2</sup></span>. Với n = 20 đã khoảng 2,6·10²³ cây, máy chạy hàng triệu năm.</p></div>
+      <div class="good-side"><h4>Kruskal + DSU</h4><p>Sắp xếp m cạnh rồi duyệt một lượt: <span class="bigo">O(m log m)</span>. Với m = 2·10⁵, log₂ m ≈ 18, chỉ khoảng <strong>3,6·10⁶</strong> phép tính.</p></div>
+    </div>
+  </section>
+
+  <section id="thuat-toan">
+    <h2>Các bước thuật toán</h2>
+    <h3>DSU</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Khởi tạo.</strong> Với mọi x từ 1 tới n: <code>parent[x] = x</code> (mỗi phần tử tự làm gốc), <code>sz[x] = 1</code> (cây chỉ có 1 nút).</div></li>
+      <li><div><strong>find(x).</strong> Đi theo <code>parent</code> từ x lên cho tới nút r có <code>parent[r] = r</code>; r là gốc. <em>Nén đường</em>: trên đường quay về, cho mọi nút vừa đi qua trỏ thẳng vào r.</div></li>
+      <li><div><strong>unite(a, b).</strong> Tìm hai gốc <code>ra = find(a)</code>, <code>rb = find(b)</code>. Nếu <code>ra == rb</code> thì a, b đã cùng nhóm, không làm gì (trả về “thất bại”).</div></li>
+      <li><div><strong>Hợp theo kích thước.</strong> Nếu cây của ra nhỏ hơn cây của rb thì đổi chỗ ra, rb. Treo cây nhỏ vào cây lớn: <code>parent[rb] = ra</code>, rồi <code>sz[ra] += sz[rb]</code>.</div></li>
+      <li><div><strong>Hỏi cùng nhóm.</strong> a và b cùng nhóm khi và chỉ khi <code>find(a) == find(b)</code>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> find(x):
+    <b>nếu</b> parent[x] = x: <b>trả về</b> x          <i>// x là gốc</i>
+    parent[x] ← find(parent[x])            <i>// nén đường: trỏ thẳng lên gốc</i>
+    <b>trả về</b> parent[x]
+
+<b>hàm</b> unite(a, b):
+    a ← find(a);  b ← find(b)
+    <b>nếu</b> a = b: <b>trả về</b> sai              <i>// đã cùng nhóm</i>
+    <b>nếu</b> sz[a] &lt; sz[b]: đổi chỗ a, b      <i>// a là gốc cây lớn hơn</i>
+    parent[b] ← a                        <i>// treo cây nhỏ vào cây lớn</i>
+    sz[a] ← sz[a] + sz[b]
+    <b>trả về</b> đúng</pre>
+
+    <h3>Kruskal</h3>
+    <ol class="algo-steps">
+      <li><div><strong>Sắp xếp.</strong> Sắp m cạnh theo trọng số tăng dần (<a href="sorting.html">sắp xếp</a>).</div></li>
+      <li><div><strong>Khởi tạo DSU</strong> với n đỉnh, mỗi đỉnh một nhóm. Tổng = 0, số cạnh đã lấy = 0.</div></li>
+      <li><div><strong>Duyệt cạnh.</strong> Lần lượt xét cạnh (u, v, w) từ nhẹ tới nặng. Nếu <code>unite(u, v)</code> thành công (u, v đang khác nhóm) thì <em>lấy</em> cạnh: cộng w vào tổng, tăng số cạnh đã lấy. Ngược lại <em>bỏ</em> cạnh, vì nó tạo chu trình.</div></li>
+      <li><div><strong>Dừng sớm.</strong> Khi đã lấy đủ n − 1 cạnh thì dừng, không cần xét tiếp.</div></li>
+      <li><div><strong>Kết luận.</strong> Lấy đủ n − 1 cạnh thì in tổng. Duyệt hết mà chưa đủ thì đồ thị không liên thông: in <code>IMPOSSIBLE</code>.</div></li>
+    </ol>
+    <pre class="pseudo"><b>hàm</b> Kruskal(n, cạnh):
+    sắp xếp cạnh theo w tăng dần
+    khởi tạo DSU n phần tử
+    tổng ← 0;  lấy ← 0
+    <b>với mỗi</b> (u, v, w) <b>trong</b> cạnh:
+        <b>nếu</b> unite(u, v):                <i>// u, v khác nhóm: không tạo chu trình</i>
+            tổng ← tổng + w;  lấy ← lấy + 1
+            <b>nếu</b> lấy = n − 1: <b>dừng</b>
+    <b>nếu</b> lấy = n − 1: <b>trả về</b> tổng
+    <b>trả về</b> IMPOSSIBLE                    <i>// đồ thị không liên thông</i></pre>
+  </section>
+
+  <section id="hoat-dong">
+    <h2>Cách hoạt động</h2>
+    <h3>DSU: vì sao đúng</h3>
+    <p>Mọi thao tác của DSU giữ nguyên một <strong>bất biến</strong>: <em>mỗi nhóm là đúng một cây, và cây đó có đúng một gốc</em> (nút duy nhất có <code>parent[r] = r</code>).</p>
+    <ul>
+      <li>Lúc khởi tạo: n cây một nút, mỗi nút là gốc của chính nó. Bất biến đúng.</li>
+      <li><code>find(x)</code> đi theo <code>parent</code>. Vì cây không có vòng và mỗi bước đi lên một tầng, x chắc chắn tới được gốc của cây chứa nó. Gốc này là duy nhất cho cả nhóm, nên nó là “tên” của nhóm.</li>
+      <li><code>unite</code> chỉ sửa <code>parent</code> của <em>một gốc</em> rb thành ra. Cây của rb trở thành một nhánh con của cây ra. Kết quả vẫn là một cây (không có vòng, vì ra và rb ở hai cây khác nhau), gốc duy nhất là ra. Mọi nút của hai nhóm cũ giờ cùng lần ra gốc ra: hai nhóm đã thành một.</li>
+      <li>Nén đường đổi <code>parent[y]</code> của các nút y trên đường đi thành chính gốc r. Gốc của y không đổi (vẫn là r), nên nhóm của mọi nút giữ nguyên. Cây chỉ “thấp” đi.</li>
+    </ul>
+
+    <h3>DSU: vì sao nhanh</h3>
+    <p>Thời gian của <code>find(x)</code> bằng độ sâu của x trong cây. Nếu gộp bừa, cây có thể thành một <strong>chuỗi dài</strong>: ví dụ luôn treo gốc của a dưới gốc của b, rồi gọi <code>unite(1,2)</code>, <code>unite(1,3)</code>, …, <code>unite(1,n)</code> sẽ tạo chuỗi 1 → 2 → 3 → … → n. Khi đó mỗi <code>find(1)</code> đi n bước, q câu hỏi tốn q·n bước, không hơn gì cách ngây thơ. Hai mẹo dưới đây sửa việc này.</p>
+    <p><strong>Mẹo 1: hợp theo kích thước (union by size).</strong> Luôn treo cây ít nút hơn vào cây nhiều nút hơn. Ta chứng minh: <em>với mẹo này, mọi cây k nút có chiều cao không quá log₂ k</em>.</p>
+    <ul>
+      <li>Xét một nút x bất kỳ. Độ sâu của x chỉ tăng (thêm 1) khi gốc cây chứa x bị treo vào gốc cây khác.</li>
+      <li>Điều đó chỉ xảy ra khi cây của x <em>không lớn hơn</em> cây kia. Sau khi gộp, cây mới chứa x có ít nhất gấp đôi số nút của cây cũ chứa x.</li>
+      <li>Cây chứa x lúc đầu có 1 nút và không bao giờ vượt quá n nút. Số lần “gấp đôi” từ 1 lên tối đa n là không quá log₂ n lần. Vậy độ sâu của x không quá log₂ n.</li>
+    </ul>
+    <p>Với n = 10⁶, log₂ n ≈ 20: mỗi <code>find</code> đi tối đa 20 bước thay vì một triệu bước.</p>
+    <p><strong>Mẹo 2: nén đường (path compression).</strong> Sau khi <code>find(x)</code> đã tìm ra gốc r, ta cho mọi nút trên đường từ x tới r trỏ thẳng vào r. Lần sau hỏi bất kỳ nút nào trên đường đó chỉ tốn 1 bước. Công đi đường dài được “trả trước” một lần, các lần sau được hưởng.</p>
+    <p><strong>Cả hai mẹo cùng nhau</strong>: người ta chứng minh được (phần này khó, em chỉ cần nhớ kết quả) rằng m thao tác tốn tổng cộng O(m·α(n)), trong đó α là <em>hàm Ackermann ngược</em>. Hàm này tăng chậm tới mức α(n) ≤ 4 với mọi n nhỏ hơn cả số nguyên tử trong vũ trụ. Vì vậy trong thực tế em coi mỗi thao tác DSU là <strong>O(1)</strong>.</p>
+    <div class="callout tip"><p class="callout-title">Nên dùng mẹo nào?</p><p>Chỉ nén đường thôi đã đủ nhanh cho hầu hết bài (trung bình O(log n) mỗi thao tác). Nhưng cài cả hai chỉ thêm 3 dòng, lại giúp cây không bao giờ cao quá log₂ n, nên <code>find</code> đệ quy không bao giờ bị tràn ngăn xếp. Hãy luôn cài cả hai.</p></div>
+
+    <h3>Kruskal: vì sao đúng</h3>
+    <p>Kruskal là một thuật toán <a href="greedy.html">tham lam</a>: ở mỗi bước nó lấy cạnh rẻ nhất “còn lấy được”, không bao giờ quay lại sửa. Tham lam thường dễ sai, nên ta phải chứng minh cẩn thận. Chìa khóa là <strong>tính chất lát cắt</strong>.</p>
+    <div class="definition" data-label="Tính chất lát cắt">
+      <p>Chia tập đỉnh thành hai phần khác rỗng S và phần còn lại. Gọi e là cạnh <em>nhẹ nhất</em> trong số các cạnh có một đầu trong S, một đầu ngoài S. Khi đó có một cây khung nhỏ nhất chứa e.</p>
+    </div>
+    <p><strong>Chứng minh bằng hoán đổi cạnh.</strong> Lấy một cây khung nhỏ nhất T bất kỳ. Nếu T chứa e thì xong. Nếu không, thêm e = (u, v) vào T. Vì T đã nối mọi đỉnh, trong T có sẵn một đường từ u tới v, nên thêm e tạo ra đúng một chu trình. Chu trình này đi từ u (trong S) sang v (ngoài S) bằng e, rồi phải quay về u, nên nó phải băng qua ranh giới S ít nhất một lần nữa bằng một cạnh f ≠ e. Vì e nhẹ nhất trong các cạnh băng qua ranh giới, w(e) ≤ w(f). Bỏ f đi: chu trình bị cắt, ta được T′ = T + e − f vẫn là cây khung (n − 1 cạnh, vẫn liên thông). Tổng trọng số của T′ bằng tổng của T cộng w(e) trừ w(f), nên không lớn hơn tổng của T. T đã nhỏ nhất, nên T′ cũng là cây khung nhỏ nhất, và T′ chứa e.</p>
+    <p><strong>Áp vào Kruskal.</strong> Giả sử Kruskal đang lấy cạnh e = (u, v), lúc này u và v ở hai nhóm khác nhau. Gọi S là nhóm đang chứa u. Mọi cạnh nhẹ hơn e đã được xét trước. Nếu có một cạnh nhẹ hơn e nối S ra ngoài, lúc xét nó hai đầu phải khác nhóm (nhóm chỉ gộp chứ không tách, nên lúc đó chúng đã khác nhóm) và nó đã được lấy, kéo đầu kia vào S. Điều này mâu thuẫn với việc đầu kia giờ ở ngoài S. Vậy e là cạnh nhẹ nhất băng qua ranh giới của S, và theo tính chất lát cắt, lấy e là “an toàn”: luôn còn một cây khung nhỏ nhất chứa mọi cạnh đã chọn. Còn cạnh bị bỏ thì hai đầu đã cùng nhóm; lấy nó sẽ tạo chu trình, mà cây khung không có chu trình. Đến khi lấy đủ n − 1 cạnh, tập cạnh đã chọn chính là một cây khung nhỏ nhất.</p>
+    <h3>Kruskal: vì sao nhanh</h3>
+    <p>Sắp xếp m cạnh tốn O(m log m). Sau đó mỗi cạnh tốn hai lần <code>find</code> gần như O(1), cộng lại O(m·α(n)). Phần sắp xếp chiếm ưu thế: tổng là <strong>O(m log m)</strong>.</p>
+    <div class="callout teacher"><p class="callout-title">Lời thầy cô</p><p>Hãy nhớ câu: “Kruskal = sắp xếp cạnh + DSU”. Phần khó của bài thi thường không nằm ở Kruskal, mà ở việc nhìn ra đề đang hỏi cây khung, và dựng đúng đồ thị (đỉnh là gì, cạnh là gì, trọng số là gì).</p></div>
+  </section>
+
+  <section id="truc-quan">
+    <h2>Minh họa trực quan</h2>
+    <h3>Ví dụ 1: rừng DSU thay đổi qua từng thao tác</h3>
+    <p>Lớp có 7 bạn đánh số 1 tới 7. Ta lần lượt thực hiện: <code>unite(1,2)</code>, <code>unite(3,4)</code>, <code>unite(4,5)</code>, <code>unite(2,4)</code>, <code>find(2)</code>, <code>unite(6,7)</code>, hỏi 5 và 7, <code>unite(7,2)</code>. DSU dùng cả hợp theo kích thước (khi hai cây bằng nhau thì treo cây của b vào cây của a) và nén đường. Mũi tên đi từ một nút tới <code>parent</code> của nó. Nút xanh lá là gốc, nút tím là nút vừa đổi <code>parent</code>, nút vàng là nút nằm trên đường <code>find</code> đi qua. Bên dưới mỗi hình là mảng <code>parent</code> (ô vừa đổi được tô màu) và <code>sz</code> (chỉ có ý nghĩa ở gốc).</p>
+    <div class="stepper" data-title="Ví dụ 1: DSU qua 8 thao tác (n = 7)">
+      <div class="frame" data-caption="&lt;b&gt;Khởi tạo.&lt;/b&gt; 7 bạn, mỗi bạn một nhóm: parent[x] = x, sz[x] = 1. Có 7 cây một nút, nút xanh là gốc (đại diện).">
+        <svg class="dsu-svg" viewBox="0 0 380 200" width="380" role="img" aria-label="Rừng DSU, khung 1"><defs><marker id="dsu-a0" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><circle class="node is-ok" cx="40.0" cy="28.0" r="16"/><text x="40.0" y="33.0" text-anchor="middle">1</text><circle class="node is-ok" cx="90.0" cy="28.0" r="16"/><text x="90.0" y="33.0" text-anchor="middle">2</text><circle class="node is-ok" cx="140.0" cy="28.0" r="16"/><text x="140.0" y="33.0" text-anchor="middle">3</text><circle class="node is-ok" cx="190.0" cy="28.0" r="16"/><text x="190.0" y="33.0" text-anchor="middle">4</text><circle class="node is-ok" cx="240.0" cy="28.0" r="16"/><text x="240.0" y="33.0" text-anchor="middle">5</text><circle class="node is-ok" cx="290.0" cy="28.0" r="16"/><text x="290.0" y="33.0" text-anchor="middle">6</text><circle class="node is-ok" cx="340.0" cy="28.0" r="16"/><text x="340.0" y="33.0" text-anchor="middle">7</text></svg>
+        <div class="arr"><span class="arr-label">parent</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-ok" data-i="2">2</span><span class="cell is-ok" data-i="3">3</span><span class="cell is-ok" data-i="4">4</span><span class="cell is-ok" data-i="5">5</span><span class="cell is-ok" data-i="6">6</span><span class="cell is-ok" data-i="7">7</span></div><div class="arr"><span class="arr-label">sz</span><span class="cell">1</span><span class="cell">1</span><span class="cell">1</span><span class="cell">1</span><span class="cell">1</span><span class="cell">1</span><span class="cell">1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;unite(1, 2).&lt;/b&gt; find(1) = 1, find(2) = 2, hai cây cùng 1 nút: treo 2 vào 1. parent[2] = 1, sz[1] = 2. Còn 6 nhóm.">
+        <svg class="dsu-svg" viewBox="0 0 380 200" width="380" role="img" aria-label="Rừng DSU, khung 2"><defs><marker id="dsu-a1" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><line class="edge is-active" x1="65.0" y1="70.0" x2="65.0" y2="46.0" marker-end="url(#dsu-a1)"/><circle class="node is-ok" cx="65.0" cy="28.0" r="16"/><text x="65.0" y="33.0" text-anchor="middle">1</text><circle class="node is-active" cx="65.0" cy="86.0" r="16"/><text x="65.0" y="91.0" text-anchor="middle">2</text><circle class="node is-ok" cx="115.0" cy="28.0" r="16"/><text x="115.0" y="33.0" text-anchor="middle">3</text><circle class="node is-ok" cx="165.0" cy="28.0" r="16"/><text x="165.0" y="33.0" text-anchor="middle">4</text><circle class="node is-ok" cx="215.0" cy="28.0" r="16"/><text x="215.0" y="33.0" text-anchor="middle">5</text><circle class="node is-ok" cx="265.0" cy="28.0" r="16"/><text x="265.0" y="33.0" text-anchor="middle">6</text><circle class="node is-ok" cx="315.0" cy="28.0" r="16"/><text x="315.0" y="33.0" text-anchor="middle">7</text></svg>
+        <div class="arr"><span class="arr-label">parent</span><span class="cell is-ok" data-i="1">1</span><span class="cell is-active" data-i="2">1</span><span class="cell is-ok" data-i="3">3</span><span class="cell is-ok" data-i="4">4</span><span class="cell is-ok" data-i="5">5</span><span class="cell is-ok" data-i="6">6</span><span class="cell is-ok" data-i="7">7</span></div><div class="arr"><span class="arr-label">sz</span><span class="cell">2</span><span class="cell is-dim">·</span><span class="cell">1</span><span class="cell">1</span><span class="cell">1</span><span class="cell">1</span><span class="cell">1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;unite(3, 4).&lt;/b&gt; Tương tự, treo 4 vào 3: parent[4] = 3, sz[3] = 2. Còn 5 nhóm.">
+        <svg class="dsu-svg" viewBox="0 0 380 200" width="380" role="img" aria-label="Rừng DSU, khung 3"><defs><marker id="dsu-a2" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><line class="edge" x1="90.0" y1="70.0" x2="90.0" y2="46.0" marker-end="url(#dsu-a2)"/><line class="edge is-active" x1="140.0" y1="70.0" x2="140.0" y2="46.0" marker-end="url(#dsu-a2)"/><circle class="node is-ok" cx="90.0" cy="28.0" r="16"/><text x="90.0" y="33.0" text-anchor="middle">1</text><circle class="node" cx="90.0" cy="86.0" r="16"/><text x="90.0" y="91.0" text-anchor="middle">2</text><circle class="node is-ok" cx="140.0" cy="28.0" r="16"/><text x="140.0" y="33.0" text-anchor="middle">3</text><circle class="node is-active" cx="140.0" cy="86.0" r="16"/><text x="140.0" y="91.0" text-anchor="middle">4</text><circle class="node is-ok" cx="190.0" cy="28.0" r="16"/><text x="190.0" y="33.0" text-anchor="middle">5</text><circle class="node is-ok" cx="240.0" cy="28.0" r="16"/><text x="240.0" y="33.0" text-anchor="middle">6</text><circle class="node is-ok" cx="290.0" cy="28.0" r="16"/><text x="290.0" y="33.0" text-anchor="middle">7</text></svg>
+        <div class="arr"><span class="arr-label">parent</span><span class="cell is-ok" data-i="1">1</span><span class="cell" data-i="2">1</span><span class="cell is-ok" data-i="3">3</span><span class="cell is-active" data-i="4">3</span><span class="cell is-ok" data-i="5">5</span><span class="cell is-ok" data-i="6">6</span><span class="cell is-ok" data-i="7">7</span></div><div class="arr"><span class="arr-label">sz</span><span class="cell">2</span><span class="cell is-dim">·</span><span class="cell">2</span><span class="cell is-dim">·</span><span class="cell">1</span><span class="cell">1</span><span class="cell">1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;unite(4, 5).&lt;/b&gt; find(4): 4 → 3, gốc là 3 (sz = 2). find(5) = 5 (sz = 1). Cây của 5 nhỏ hơn nên treo 5 vào gốc 3, &lt;i&gt;không&lt;/i&gt; treo vào 4. parent[5] = 3, sz[3] = 3.">
+        <svg class="dsu-svg" viewBox="0 0 380 200" width="380" role="img" aria-label="Rừng DSU, khung 4"><defs><marker id="dsu-a3" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><line class="edge" x1="90.0" y1="70.0" x2="90.0" y2="46.0" marker-end="url(#dsu-a3)"/><line class="edge" x1="146.3" y1="71.3" x2="157.9" y2="44.5" marker-end="url(#dsu-a3)"/><line class="edge is-active" x1="183.7" y1="71.3" x2="172.1" y2="44.5" marker-end="url(#dsu-a3)"/><circle class="node is-ok" cx="90.0" cy="28.0" r="16"/><text x="90.0" y="33.0" text-anchor="middle">1</text><circle class="node" cx="90.0" cy="86.0" r="16"/><text x="90.0" y="91.0" text-anchor="middle">2</text><circle class="node is-ok" cx="165.0" cy="28.0" r="16"/><text x="165.0" y="33.0" text-anchor="middle">3</text><circle class="node" cx="140.0" cy="86.0" r="16"/><text x="140.0" y="91.0" text-anchor="middle">4</text><circle class="node is-active" cx="190.0" cy="86.0" r="16"/><text x="190.0" y="91.0" text-anchor="middle">5</text><circle class="node is-ok" cx="240.0" cy="28.0" r="16"/><text x="240.0" y="33.0" text-anchor="middle">6</text><circle class="node is-ok" cx="290.0" cy="28.0" r="16"/><text x="290.0" y="33.0" text-anchor="middle">7</text></svg>
+        <div class="arr"><span class="arr-label">parent</span><span class="cell is-ok" data-i="1">1</span><span class="cell" data-i="2">1</span><span class="cell is-ok" data-i="3">3</span><span class="cell" data-i="4">3</span><span class="cell is-active" data-i="5">3</span><span class="cell is-ok" data-i="6">6</span><span class="cell is-ok" data-i="7">7</span></div><div class="arr"><span class="arr-label">sz</span><span class="cell">2</span><span class="cell is-dim">·</span><span class="cell">3</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">1</span><span class="cell">1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;unite(2, 4).&lt;/b&gt; find(2): 2 → 1, gốc 1 (sz = 2). find(4): 4 → 3, gốc 3 (sz = 3). Vì 2 &amp;lt; 3, treo &lt;i&gt;gốc&lt;/i&gt; 1 vào gốc 3: parent[1] = 3, sz[3] = 5. Cây cao 2 tầng.">
+        <svg class="dsu-svg" viewBox="0 0 380 200" width="380" role="img" aria-label="Rừng DSU, khung 5"><defs><marker id="dsu-a4" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><line class="edge is-active" x1="100.4" y1="73.9" x2="128.2" y2="41.6" marker-end="url(#dsu-a4)"/><line class="edge" x1="90.0" y1="128.0" x2="90.0" y2="104.0" marker-end="url(#dsu-a4)"/><line class="edge" x1="140.0" y1="70.0" x2="140.0" y2="46.0" marker-end="url(#dsu-a4)"/><line class="edge" x1="179.6" y1="73.9" x2="151.8" y2="41.6" marker-end="url(#dsu-a4)"/><circle class="node is-active" cx="90.0" cy="86.0" r="16"/><text x="90.0" y="91.0" text-anchor="middle">1</text><circle class="node" cx="90.0" cy="144.0" r="16"/><text x="90.0" y="149.0" text-anchor="middle">2</text><circle class="node is-ok" cx="140.0" cy="28.0" r="16"/><text x="140.0" y="33.0" text-anchor="middle">3</text><circle class="node" cx="140.0" cy="86.0" r="16"/><text x="140.0" y="91.0" text-anchor="middle">4</text><circle class="node" cx="190.0" cy="86.0" r="16"/><text x="190.0" y="91.0" text-anchor="middle">5</text><circle class="node is-ok" cx="240.0" cy="28.0" r="16"/><text x="240.0" y="33.0" text-anchor="middle">6</text><circle class="node is-ok" cx="290.0" cy="28.0" r="16"/><text x="290.0" y="33.0" text-anchor="middle">7</text></svg>
+        <div class="arr"><span class="arr-label">parent</span><span class="cell is-active" data-i="1">3</span><span class="cell" data-i="2">1</span><span class="cell is-ok" data-i="3">3</span><span class="cell" data-i="4">3</span><span class="cell" data-i="5">3</span><span class="cell is-ok" data-i="6">6</span><span class="cell is-ok" data-i="7">7</span></div><div class="arr"><span class="arr-label">sz</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">5</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">1</span><span class="cell">1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;find(2), lượt đi lên.&lt;/b&gt; 2 → 1 → 3, và parent[3] = 3 nên gốc là 3. Đường đi dài 2 bước (các nút vàng).">
+        <svg class="dsu-svg" viewBox="0 0 380 200" width="380" role="img" aria-label="Rừng DSU, khung 6"><defs><marker id="dsu-a5" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><line class="edge is-active" x1="100.4" y1="73.9" x2="128.2" y2="41.6" marker-end="url(#dsu-a5)"/><line class="edge is-active" x1="90.0" y1="128.0" x2="90.0" y2="104.0" marker-end="url(#dsu-a5)"/><line class="edge" x1="140.0" y1="70.0" x2="140.0" y2="46.0" marker-end="url(#dsu-a5)"/><line class="edge" x1="179.6" y1="73.9" x2="151.8" y2="41.6" marker-end="url(#dsu-a5)"/><circle class="node is-cmp" cx="90.0" cy="86.0" r="16"/><text x="90.0" y="91.0" text-anchor="middle">1</text><circle class="node is-cmp" cx="90.0" cy="144.0" r="16"/><text x="90.0" y="149.0" text-anchor="middle">2</text><circle class="node is-cmp" cx="140.0" cy="28.0" r="16"/><text x="140.0" y="33.0" text-anchor="middle">3</text><circle class="node" cx="140.0" cy="86.0" r="16"/><text x="140.0" y="91.0" text-anchor="middle">4</text><circle class="node" cx="190.0" cy="86.0" r="16"/><text x="190.0" y="91.0" text-anchor="middle">5</text><circle class="node is-ok" cx="240.0" cy="28.0" r="16"/><text x="240.0" y="33.0" text-anchor="middle">6</text><circle class="node is-ok" cx="290.0" cy="28.0" r="16"/><text x="290.0" y="33.0" text-anchor="middle">7</text></svg>
+        <div class="arr"><span class="arr-label">parent</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">1</span><span class="cell is-ok" data-i="3">3</span><span class="cell" data-i="4">3</span><span class="cell" data-i="5">3</span><span class="cell is-ok" data-i="6">6</span><span class="cell is-ok" data-i="7">7</span></div><div class="arr"><span class="arr-label">sz</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">5</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">1</span><span class="cell">1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;find(2), nén đường.&lt;/b&gt; Trên đường về, cho 2 trỏ thẳng vào gốc: parent[2] = 3. Lần sau find(2) chỉ tốn 1 bước. Nhóm không đổi, cây thấp đi.">
+        <svg class="dsu-svg" viewBox="0 0 380 200" width="380" role="img" aria-label="Rừng DSU, khung 7"><defs><marker id="dsu-a6" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><line class="edge" x1="77.7" y1="76.2" x2="125.8" y2="39.0" marker-end="url(#dsu-a6)"/><line class="edge is-active" x1="121.3" y1="71.3" x2="132.9" y2="44.5" marker-end="url(#dsu-a6)"/><line class="edge" x1="158.7" y1="71.3" x2="147.1" y2="44.5" marker-end="url(#dsu-a6)"/><line class="edge" x1="202.3" y1="76.2" x2="154.2" y2="39.0" marker-end="url(#dsu-a6)"/><circle class="node" cx="65.0" cy="86.0" r="16"/><text x="65.0" y="91.0" text-anchor="middle">1</text><circle class="node is-active" cx="115.0" cy="86.0" r="16"/><text x="115.0" y="91.0" text-anchor="middle">2</text><circle class="node is-ok" cx="140.0" cy="28.0" r="16"/><text x="140.0" y="33.0" text-anchor="middle">3</text><circle class="node" cx="165.0" cy="86.0" r="16"/><text x="165.0" y="91.0" text-anchor="middle">4</text><circle class="node" cx="215.0" cy="86.0" r="16"/><text x="215.0" y="91.0" text-anchor="middle">5</text><circle class="node is-ok" cx="265.0" cy="28.0" r="16"/><text x="265.0" y="33.0" text-anchor="middle">6</text><circle class="node is-ok" cx="315.0" cy="28.0" r="16"/><text x="315.0" y="33.0" text-anchor="middle">7</text></svg>
+        <div class="arr"><span class="arr-label">parent</span><span class="cell" data-i="1">3</span><span class="cell is-active" data-i="2">3</span><span class="cell is-ok" data-i="3">3</span><span class="cell" data-i="4">3</span><span class="cell" data-i="5">3</span><span class="cell is-ok" data-i="6">6</span><span class="cell is-ok" data-i="7">7</span></div><div class="arr"><span class="arr-label">sz</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">5</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">1</span><span class="cell">1</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;unite(6, 7).&lt;/b&gt; Treo 7 vào 6: parent[7] = 6, sz[6] = 2. Còn 2 nhóm: {1, 2, 3, 4, 5} và {6, 7}.">
+        <svg class="dsu-svg" viewBox="0 0 380 200" width="380" role="img" aria-label="Rừng DSU, khung 8"><defs><marker id="dsu-a7" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><line class="edge" x1="102.7" y1="76.2" x2="150.8" y2="39.0" marker-end="url(#dsu-a7)"/><line class="edge" x1="146.3" y1="71.3" x2="157.9" y2="44.5" marker-end="url(#dsu-a7)"/><line class="edge" x1="183.7" y1="71.3" x2="172.1" y2="44.5" marker-end="url(#dsu-a7)"/><line class="edge" x1="227.3" y1="76.2" x2="179.2" y2="39.0" marker-end="url(#dsu-a7)"/><line class="edge is-active" x1="290.0" y1="70.0" x2="290.0" y2="46.0" marker-end="url(#dsu-a7)"/><circle class="node" cx="90.0" cy="86.0" r="16"/><text x="90.0" y="91.0" text-anchor="middle">1</text><circle class="node" cx="140.0" cy="86.0" r="16"/><text x="140.0" y="91.0" text-anchor="middle">2</text><circle class="node is-ok" cx="165.0" cy="28.0" r="16"/><text x="165.0" y="33.0" text-anchor="middle">3</text><circle class="node" cx="190.0" cy="86.0" r="16"/><text x="190.0" y="91.0" text-anchor="middle">4</text><circle class="node" cx="240.0" cy="86.0" r="16"/><text x="240.0" y="91.0" text-anchor="middle">5</text><circle class="node is-ok" cx="290.0" cy="28.0" r="16"/><text x="290.0" y="33.0" text-anchor="middle">6</text><circle class="node is-active" cx="290.0" cy="86.0" r="16"/><text x="290.0" y="91.0" text-anchor="middle">7</text></svg>
+        <div class="arr"><span class="arr-label">parent</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">3</span><span class="cell is-ok" data-i="3">3</span><span class="cell" data-i="4">3</span><span class="cell" data-i="5">3</span><span class="cell is-ok" data-i="6">6</span><span class="cell is-active" data-i="7">6</span></div><div class="arr"><span class="arr-label">sz</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">5</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">2</span><span class="cell is-dim">·</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Hỏi: 5 và 7 cùng nhóm không?&lt;/b&gt; find(5) = 3, find(7) = 6. Hai gốc khác nhau nên &lt;b&gt;không&lt;/b&gt; cùng nhóm. Câu hỏi không làm thay đổi cấu trúc.">
+        <svg class="dsu-svg" viewBox="0 0 380 200" width="380" role="img" aria-label="Rừng DSU, khung 9"><defs><marker id="dsu-a8" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><line class="edge" x1="102.7" y1="76.2" x2="150.8" y2="39.0" marker-end="url(#dsu-a8)"/><line class="edge" x1="146.3" y1="71.3" x2="157.9" y2="44.5" marker-end="url(#dsu-a8)"/><line class="edge" x1="183.7" y1="71.3" x2="172.1" y2="44.5" marker-end="url(#dsu-a8)"/><line class="edge is-active" x1="227.3" y1="76.2" x2="179.2" y2="39.0" marker-end="url(#dsu-a8)"/><line class="edge is-active" x1="290.0" y1="70.0" x2="290.0" y2="46.0" marker-end="url(#dsu-a8)"/><circle class="node" cx="90.0" cy="86.0" r="16"/><text x="90.0" y="91.0" text-anchor="middle">1</text><circle class="node" cx="140.0" cy="86.0" r="16"/><text x="140.0" y="91.0" text-anchor="middle">2</text><circle class="node is-cmp" cx="165.0" cy="28.0" r="16"/><text x="165.0" y="33.0" text-anchor="middle">3</text><circle class="node" cx="190.0" cy="86.0" r="16"/><text x="190.0" y="91.0" text-anchor="middle">4</text><circle class="node is-cmp" cx="240.0" cy="86.0" r="16"/><text x="240.0" y="91.0" text-anchor="middle">5</text><circle class="node is-cmp" cx="290.0" cy="28.0" r="16"/><text x="290.0" y="33.0" text-anchor="middle">6</text><circle class="node is-cmp" cx="290.0" cy="86.0" r="16"/><text x="290.0" y="91.0" text-anchor="middle">7</text></svg>
+        <div class="arr"><span class="arr-label">parent</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">3</span><span class="cell is-ok" data-i="3">3</span><span class="cell" data-i="4">3</span><span class="cell" data-i="5">3</span><span class="cell is-ok" data-i="6">6</span><span class="cell" data-i="7">6</span></div><div class="arr"><span class="arr-label">sz</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">5</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">2</span><span class="cell is-dim">·</span></div>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;unite(7, 2).&lt;/b&gt; find(7): 7 → 6, gốc 6 (sz = 2). find(2): 2 → 3, gốc 3 (sz = 5). Treo gốc 6 vào gốc 3: parent[6] = 3, sz[3] = 7. Cả lớp thành một nhóm, cây cao nhất chỉ 2 tầng.">
+        <svg class="dsu-svg" viewBox="0 0 380 200" width="380" role="img" aria-label="Rừng DSU, khung 10"><defs><marker id="dsu-a9" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><line class="edge" x1="103.8" y1="78.0" x2="174.4" y2="37.0" marker-end="url(#dsu-a9)"/><line class="edge" x1="150.4" y1="73.9" x2="178.2" y2="41.6" marker-end="url(#dsu-a9)"/><line class="edge" x1="190.0" y1="70.0" x2="190.0" y2="46.0" marker-end="url(#dsu-a9)"/><line class="edge" x1="229.6" y1="73.9" x2="201.8" y2="41.6" marker-end="url(#dsu-a9)"/><line class="edge is-active" x1="276.2" y1="78.0" x2="205.6" y2="37.0" marker-end="url(#dsu-a9)"/><line class="edge" x1="290.0" y1="128.0" x2="290.0" y2="104.0" marker-end="url(#dsu-a9)"/><circle class="node" cx="90.0" cy="86.0" r="16"/><text x="90.0" y="91.0" text-anchor="middle">1</text><circle class="node" cx="140.0" cy="86.0" r="16"/><text x="140.0" y="91.0" text-anchor="middle">2</text><circle class="node is-ok" cx="190.0" cy="28.0" r="16"/><text x="190.0" y="33.0" text-anchor="middle">3</text><circle class="node" cx="190.0" cy="86.0" r="16"/><text x="190.0" y="91.0" text-anchor="middle">4</text><circle class="node" cx="240.0" cy="86.0" r="16"/><text x="240.0" y="91.0" text-anchor="middle">5</text><circle class="node is-active" cx="290.0" cy="86.0" r="16"/><text x="290.0" y="91.0" text-anchor="middle">6</text><circle class="node" cx="290.0" cy="144.0" r="16"/><text x="290.0" y="149.0" text-anchor="middle">7</text></svg>
+        <div class="arr"><span class="arr-label">parent</span><span class="cell" data-i="1">3</span><span class="cell" data-i="2">3</span><span class="cell is-ok" data-i="3">3</span><span class="cell" data-i="4">3</span><span class="cell" data-i="5">3</span><span class="cell is-active" data-i="6">3</span><span class="cell" data-i="7">6</span></div><div class="arr"><span class="arr-label">sz</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell">7</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span><span class="cell is-dim">·</span></div>
+      </div>
+    </div>
+    <p>Em để ý khung <code>unite(4, 5)</code>: 5 được treo vào <em>gốc</em> 3 chứ không vào 4, và ở khung <code>unite(2, 4)</code> cây 2 nút được treo dưới cây 3 nút, không phải ngược lại. Nhờ vậy sau 6 lần gộp, cây cao nhất vẫn chỉ 2 tầng.</p>
+
+    <h3>Vì sao phải nén đường: chuỗi dài bị “ép dẹt”</h3>
+    <figure class="diagram">
+      <svg class="dsu-svg" viewBox="0 0 460 300" width="460" role="img" aria-label="Chuỗi 5 nút trước và sau khi nén đường"><defs><marker id="dsu-chain" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink-3)"/></marker></defs><line class="edge is-active" x1="90.0" y1="244.0" x2="90.0" y2="223.0" marker-end="url(#dsu-chain)"/><line class="edge is-active" x1="90.0" y1="189.0" x2="90.0" y2="168.0" marker-end="url(#dsu-chain)"/><line class="edge is-active" x1="90.0" y1="134.0" x2="90.0" y2="113.0" marker-end="url(#dsu-chain)"/><line class="edge is-active" x1="90.0" y1="79.0" x2="90.0" y2="58.0" marker-end="url(#dsu-chain)"/><circle class="node is-active" cx="90" cy="260" r="16"/><text x="90" y="265" text-anchor="middle">1</text><circle class="node is-cmp" cx="90" cy="205" r="16"/><text x="90" y="210" text-anchor="middle">2</text><circle class="node is-cmp" cx="90" cy="150" r="16"/><text x="90" y="155" text-anchor="middle">3</text><circle class="node is-cmp" cx="90" cy="95" r="16"/><text x="90" y="100" text-anchor="middle">4</text><circle class="node is-ok" cx="90" cy="40" r="16"/><text x="90" y="45" text-anchor="middle">5</text><text class="label-sm" x="150" y="155">find(1): 4 bước</text><text class="label-pen" x="200" y="115">nén đường</text><line class="edge" x1="205" y1="125" x2="265" y2="125" marker-end="url(#dsu-chain)"/><line class="edge is-active" x1="306.7" y1="175.5" x2="352.5" y2="76.3" marker-end="url(#dsu-chain)"/><line class="edge is-active" x1="342.4" y1="174.2" x2="357.3" y2="77.8" marker-end="url(#dsu-chain)"/><line class="edge is-active" x1="377.6" y1="174.2" x2="362.7" y2="77.8" marker-end="url(#dsu-chain)"/><line class="edge" x1="413.3" y1="175.5" x2="367.5" y2="76.3" marker-end="url(#dsu-chain)"/><circle class="node is-ok" cx="360" cy="60" r="16"/><text x="360" y="65" text-anchor="middle">5</text><circle class="node" cx="300" cy="190" r="16"/><text x="300" y="195" text-anchor="middle">1</text><circle class="node" cx="340" cy="190" r="16"/><text x="340" y="195" text-anchor="middle">2</text><circle class="node" cx="380" cy="190" r="16"/><text x="380" y="195" text-anchor="middle">3</text><circle class="node" cx="420" cy="190" r="16"/><text x="420" y="195" text-anchor="middle">4</text><text class="label-sm" x="295" y="240">mọi nút cách gốc 1 bước</text></svg>
+      <figcaption>Hình 1. Nếu gộp bừa bằng <code>parent[find(a)] = find(b)</code> với dãy <code>unite(1,2)</code>, <code>unite(1,3)</code>, <code>unite(1,4)</code>, <code>unite(1,5)</code>, ta được chuỗi 1 → 2 → 3 → 4 → 5 (bên trái), find(1) phải đi 4 bước. Sau một lần find(1) có nén đường, mọi nút trên đường đi trỏ thẳng vào gốc 5 (bên phải).</figcaption>
+    </figure>
+
+    <h3>Ví dụ 2: Kruskal trên đồ thị 6 làng</h3>
+    <p>Đồ thị có 6 làng và 9 đoạn dây có thể kéo, số trên mỗi cạnh là chi phí. Cạnh xanh là cạnh đã lấy, cạnh đỏ là cạnh vừa bị bỏ vì tạo chu trình (sau đó mờ đi), hai đỉnh tím là hai đầu cạnh đang xét. Bảng bên dưới là danh sách cạnh đã sắp xếp, dòng tô đậm là cạnh đang xét.</p>
+    <div class="stepper" data-title="Ví dụ 2: Kruskal nối điện 6 làng">
+      <div class="frame" data-caption="&lt;b&gt;Chuẩn bị.&lt;/b&gt; Sắp 9 cạnh theo trọng số tăng dần (bảng bên dưới). Mỗi làng một nhóm: {1} {2} {3} {4} {5} {6}. Tổng = 0, đã lấy 0 cạnh.">
+        <svg class="dsu-svg" viewBox="0 0 420 240" width="420" role="img" aria-label="Đồ thị 6 làng, bước 0 của Kruskal"><line class="edge" x1="70" y1="190" x2="210" y2="200"/><line class="edge" x1="70" y1="50" x2="70" y2="190"/><line class="edge" x1="210" y1="40" x2="210" y2="200"/><line class="edge" x1="70" y1="50" x2="210" y2="40"/><line class="edge" x1="350" y1="50" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="70" y2="190"/><line class="edge" x1="210" y1="200" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="350" y2="50"/><line class="edge" x1="210" y1="40" x2="350" y2="190"/><rect class="fill-paper" x="130.1" y="199.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="212.5" text-anchor="middle">1</text><rect class="fill-paper" x="48.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="57.0" y="124.5" text-anchor="middle">2</text><rect class="fill-paper" x="214.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="223.0" y="124.5" text-anchor="middle">3</text><rect class="fill-paper" x="130.1" y="23.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="36.5" text-anchor="middle">4</text><rect class="fill-paper" x="354.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="363.0" y="124.5" text-anchor="middle">5</text><rect class="fill-paper" x="121.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="130.5" y="110.6" text-anchor="middle">6</text><rect class="fill-paper" x="271.9" y="199.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="212.5" text-anchor="middle">7</text><rect class="fill-paper" x="271.9" y="23.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="36.5" text-anchor="middle">8</text><rect class="fill-paper" x="280.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="289.5" y="110.6" text-anchor="middle">9</text><circle class="node" cx="70" cy="50" r="17"/><text x="70" y="55" text-anchor="middle">1</text><circle class="node" cx="210" cy="40" r="17"/><text x="210" y="45" text-anchor="middle">2</text><circle class="node" cx="350" cy="50" r="17"/><text x="350" y="55" text-anchor="middle">3</text><circle class="node" cx="70" cy="190" r="17"/><text x="70" y="195" text-anchor="middle">4</text><circle class="node" cx="210" cy="200" r="17"/><text x="210" y="205" text-anchor="middle">5</text><circle class="node" cx="350" cy="190" r="17"/><text x="350" y="195" text-anchor="middle">6</text></svg>
+        <table class="trace"><thead><tr><th>#</th><th>Cạnh</th><th>w</th><th>Quyết định</th></tr></thead><tbody><tr><td>1</td><td>4–5</td><td>1</td><td>—</td></tr><tr><td>2</td><td>1–4</td><td>2</td><td>—</td></tr><tr><td>3</td><td>2–5</td><td>3</td><td>—</td></tr><tr><td>4</td><td>1–2</td><td>4</td><td>—</td></tr><tr><td>5</td><td>3–6</td><td>5</td><td>—</td></tr><tr><td>6</td><td>2–4</td><td>6</td><td>—</td></tr><tr><td>7</td><td>5–6</td><td>7</td><td>—</td></tr><tr><td>8</td><td>2–3</td><td>8</td><td>—</td></tr><tr><td>9</td><td>2–6</td><td>9</td><td>—</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cạnh 4–5 (w = 1).&lt;/b&gt; find(4) = 4, find(5) = 5, khác nhóm: &lt;b&gt;lấy&lt;/b&gt;. Tổng = 1. Nhóm: {1} {2} {3} {4, 5} {6}.">
+        <svg class="dsu-svg" viewBox="0 0 420 240" width="420" role="img" aria-label="Đồ thị 6 làng, bước 1 của Kruskal"><line class="edge is-ok" x1="70" y1="190" x2="210" y2="200"/><line class="edge" x1="70" y1="50" x2="70" y2="190"/><line class="edge" x1="210" y1="40" x2="210" y2="200"/><line class="edge" x1="70" y1="50" x2="210" y2="40"/><line class="edge" x1="350" y1="50" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="70" y2="190"/><line class="edge" x1="210" y1="200" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="350" y2="50"/><line class="edge" x1="210" y1="40" x2="350" y2="190"/><rect class="fill-paper" x="130.1" y="199.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="212.5" text-anchor="middle">1</text><rect class="fill-paper" x="48.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="57.0" y="124.5" text-anchor="middle">2</text><rect class="fill-paper" x="214.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="223.0" y="124.5" text-anchor="middle">3</text><rect class="fill-paper" x="130.1" y="23.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="36.5" text-anchor="middle">4</text><rect class="fill-paper" x="354.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="363.0" y="124.5" text-anchor="middle">5</text><rect class="fill-paper" x="121.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="130.5" y="110.6" text-anchor="middle">6</text><rect class="fill-paper" x="271.9" y="199.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="212.5" text-anchor="middle">7</text><rect class="fill-paper" x="271.9" y="23.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="36.5" text-anchor="middle">8</text><rect class="fill-paper" x="280.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="289.5" y="110.6" text-anchor="middle">9</text><circle class="node" cx="70" cy="50" r="17"/><text x="70" y="55" text-anchor="middle">1</text><circle class="node" cx="210" cy="40" r="17"/><text x="210" y="45" text-anchor="middle">2</text><circle class="node" cx="350" cy="50" r="17"/><text x="350" y="55" text-anchor="middle">3</text><circle class="node is-active" cx="70" cy="190" r="17"/><text x="70" y="195" text-anchor="middle">4</text><circle class="node is-active" cx="210" cy="200" r="17"/><text x="210" y="205" text-anchor="middle">5</text><circle class="node" cx="350" cy="190" r="17"/><text x="350" y="195" text-anchor="middle">6</text></svg>
+        <table class="trace"><thead><tr><th>#</th><th>Cạnh</th><th>w</th><th>Quyết định</th></tr></thead><tbody><tr class="hl"><td>1</td><td>4–5</td><td>1</td><td>lấy</td></tr><tr><td>2</td><td>1–4</td><td>2</td><td>—</td></tr><tr><td>3</td><td>2–5</td><td>3</td><td>—</td></tr><tr><td>4</td><td>1–2</td><td>4</td><td>—</td></tr><tr><td>5</td><td>3–6</td><td>5</td><td>—</td></tr><tr><td>6</td><td>2–4</td><td>6</td><td>—</td></tr><tr><td>7</td><td>5–6</td><td>7</td><td>—</td></tr><tr><td>8</td><td>2–3</td><td>8</td><td>—</td></tr><tr><td>9</td><td>2–6</td><td>9</td><td>—</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cạnh 1–4 (w = 2).&lt;/b&gt; 1 và 4 khác nhóm: &lt;b&gt;lấy&lt;/b&gt;. Tổng = 3. Nhóm: {1, 4, 5} {2} {3} {6}.">
+        <svg class="dsu-svg" viewBox="0 0 420 240" width="420" role="img" aria-label="Đồ thị 6 làng, bước 2 của Kruskal"><line class="edge is-ok" x1="70" y1="190" x2="210" y2="200"/><line class="edge is-ok" x1="70" y1="50" x2="70" y2="190"/><line class="edge" x1="210" y1="40" x2="210" y2="200"/><line class="edge" x1="70" y1="50" x2="210" y2="40"/><line class="edge" x1="350" y1="50" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="70" y2="190"/><line class="edge" x1="210" y1="200" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="350" y2="50"/><line class="edge" x1="210" y1="40" x2="350" y2="190"/><rect class="fill-paper" x="130.1" y="199.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="212.5" text-anchor="middle">1</text><rect class="fill-paper" x="48.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="57.0" y="124.5" text-anchor="middle">2</text><rect class="fill-paper" x="214.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="223.0" y="124.5" text-anchor="middle">3</text><rect class="fill-paper" x="130.1" y="23.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="36.5" text-anchor="middle">4</text><rect class="fill-paper" x="354.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="363.0" y="124.5" text-anchor="middle">5</text><rect class="fill-paper" x="121.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="130.5" y="110.6" text-anchor="middle">6</text><rect class="fill-paper" x="271.9" y="199.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="212.5" text-anchor="middle">7</text><rect class="fill-paper" x="271.9" y="23.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="36.5" text-anchor="middle">8</text><rect class="fill-paper" x="280.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="289.5" y="110.6" text-anchor="middle">9</text><circle class="node is-active" cx="70" cy="50" r="17"/><text x="70" y="55" text-anchor="middle">1</text><circle class="node" cx="210" cy="40" r="17"/><text x="210" y="45" text-anchor="middle">2</text><circle class="node" cx="350" cy="50" r="17"/><text x="350" y="55" text-anchor="middle">3</text><circle class="node is-active" cx="70" cy="190" r="17"/><text x="70" y="195" text-anchor="middle">4</text><circle class="node" cx="210" cy="200" r="17"/><text x="210" y="205" text-anchor="middle">5</text><circle class="node" cx="350" cy="190" r="17"/><text x="350" y="195" text-anchor="middle">6</text></svg>
+        <table class="trace"><thead><tr><th>#</th><th>Cạnh</th><th>w</th><th>Quyết định</th></tr></thead><tbody><tr><td>1</td><td>4–5</td><td>1</td><td>lấy</td></tr><tr class="hl"><td>2</td><td>1–4</td><td>2</td><td>lấy</td></tr><tr><td>3</td><td>2–5</td><td>3</td><td>—</td></tr><tr><td>4</td><td>1–2</td><td>4</td><td>—</td></tr><tr><td>5</td><td>3–6</td><td>5</td><td>—</td></tr><tr><td>6</td><td>2–4</td><td>6</td><td>—</td></tr><tr><td>7</td><td>5–6</td><td>7</td><td>—</td></tr><tr><td>8</td><td>2–3</td><td>8</td><td>—</td></tr><tr><td>9</td><td>2–6</td><td>9</td><td>—</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cạnh 2–5 (w = 3).&lt;/b&gt; 2 và 5 khác nhóm: &lt;b&gt;lấy&lt;/b&gt;. Tổng = 6. Nhóm: {1, 2, 4, 5} {3} {6}.">
+        <svg class="dsu-svg" viewBox="0 0 420 240" width="420" role="img" aria-label="Đồ thị 6 làng, bước 3 của Kruskal"><line class="edge is-ok" x1="70" y1="190" x2="210" y2="200"/><line class="edge is-ok" x1="70" y1="50" x2="70" y2="190"/><line class="edge is-ok" x1="210" y1="40" x2="210" y2="200"/><line class="edge" x1="70" y1="50" x2="210" y2="40"/><line class="edge" x1="350" y1="50" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="70" y2="190"/><line class="edge" x1="210" y1="200" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="350" y2="50"/><line class="edge" x1="210" y1="40" x2="350" y2="190"/><rect class="fill-paper" x="130.1" y="199.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="212.5" text-anchor="middle">1</text><rect class="fill-paper" x="48.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="57.0" y="124.5" text-anchor="middle">2</text><rect class="fill-paper" x="214.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="223.0" y="124.5" text-anchor="middle">3</text><rect class="fill-paper" x="130.1" y="23.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="36.5" text-anchor="middle">4</text><rect class="fill-paper" x="354.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="363.0" y="124.5" text-anchor="middle">5</text><rect class="fill-paper" x="121.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="130.5" y="110.6" text-anchor="middle">6</text><rect class="fill-paper" x="271.9" y="199.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="212.5" text-anchor="middle">7</text><rect class="fill-paper" x="271.9" y="23.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="36.5" text-anchor="middle">8</text><rect class="fill-paper" x="280.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="289.5" y="110.6" text-anchor="middle">9</text><circle class="node" cx="70" cy="50" r="17"/><text x="70" y="55" text-anchor="middle">1</text><circle class="node is-active" cx="210" cy="40" r="17"/><text x="210" y="45" text-anchor="middle">2</text><circle class="node" cx="350" cy="50" r="17"/><text x="350" y="55" text-anchor="middle">3</text><circle class="node" cx="70" cy="190" r="17"/><text x="70" y="195" text-anchor="middle">4</text><circle class="node is-active" cx="210" cy="200" r="17"/><text x="210" y="205" text-anchor="middle">5</text><circle class="node" cx="350" cy="190" r="17"/><text x="350" y="195" text-anchor="middle">6</text></svg>
+        <table class="trace"><thead><tr><th>#</th><th>Cạnh</th><th>w</th><th>Quyết định</th></tr></thead><tbody><tr><td>1</td><td>4–5</td><td>1</td><td>lấy</td></tr><tr><td>2</td><td>1–4</td><td>2</td><td>lấy</td></tr><tr class="hl"><td>3</td><td>2–5</td><td>3</td><td>lấy</td></tr><tr><td>4</td><td>1–2</td><td>4</td><td>—</td></tr><tr><td>5</td><td>3–6</td><td>5</td><td>—</td></tr><tr><td>6</td><td>2–4</td><td>6</td><td>—</td></tr><tr><td>7</td><td>5–6</td><td>7</td><td>—</td></tr><tr><td>8</td><td>2–3</td><td>8</td><td>—</td></tr><tr><td>9</td><td>2–6</td><td>9</td><td>—</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cạnh 1–2 (w = 4).&lt;/b&gt; find(1) = find(2): 1 và 2 đã thông nhau qua 1–4–5–2. Lấy cạnh này sẽ tạo chu trình 1–2–5–4–1: &lt;b&gt;bỏ&lt;/b&gt;.">
+        <svg class="dsu-svg" viewBox="0 0 420 240" width="420" role="img" aria-label="Đồ thị 6 làng, bước 4 của Kruskal"><line class="edge is-ok" x1="70" y1="190" x2="210" y2="200"/><line class="edge is-ok" x1="70" y1="50" x2="70" y2="190"/><line class="edge is-ok" x1="210" y1="40" x2="210" y2="200"/><line class="edge is-bad" x1="70" y1="50" x2="210" y2="40"/><line class="edge" x1="350" y1="50" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="70" y2="190"/><line class="edge" x1="210" y1="200" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="350" y2="50"/><line class="edge" x1="210" y1="40" x2="350" y2="190"/><rect class="fill-paper" x="130.1" y="199.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="212.5" text-anchor="middle">1</text><rect class="fill-paper" x="48.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="57.0" y="124.5" text-anchor="middle">2</text><rect class="fill-paper" x="214.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="223.0" y="124.5" text-anchor="middle">3</text><rect class="fill-paper" x="130.1" y="23.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="36.5" text-anchor="middle">4</text><rect class="fill-paper" x="354.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="363.0" y="124.5" text-anchor="middle">5</text><rect class="fill-paper" x="121.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="130.5" y="110.6" text-anchor="middle">6</text><rect class="fill-paper" x="271.9" y="199.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="212.5" text-anchor="middle">7</text><rect class="fill-paper" x="271.9" y="23.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="36.5" text-anchor="middle">8</text><rect class="fill-paper" x="280.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="289.5" y="110.6" text-anchor="middle">9</text><circle class="node is-active" cx="70" cy="50" r="17"/><text x="70" y="55" text-anchor="middle">1</text><circle class="node is-active" cx="210" cy="40" r="17"/><text x="210" y="45" text-anchor="middle">2</text><circle class="node" cx="350" cy="50" r="17"/><text x="350" y="55" text-anchor="middle">3</text><circle class="node" cx="70" cy="190" r="17"/><text x="70" y="195" text-anchor="middle">4</text><circle class="node" cx="210" cy="200" r="17"/><text x="210" y="205" text-anchor="middle">5</text><circle class="node" cx="350" cy="190" r="17"/><text x="350" y="195" text-anchor="middle">6</text></svg>
+        <table class="trace"><thead><tr><th>#</th><th>Cạnh</th><th>w</th><th>Quyết định</th></tr></thead><tbody><tr><td>1</td><td>4–5</td><td>1</td><td>lấy</td></tr><tr><td>2</td><td>1–4</td><td>2</td><td>lấy</td></tr><tr><td>3</td><td>2–5</td><td>3</td><td>lấy</td></tr><tr class="hl"><td>4</td><td>1–2</td><td>4</td><td>bỏ (chu trình)</td></tr><tr><td>5</td><td>3–6</td><td>5</td><td>—</td></tr><tr><td>6</td><td>2–4</td><td>6</td><td>—</td></tr><tr><td>7</td><td>5–6</td><td>7</td><td>—</td></tr><tr><td>8</td><td>2–3</td><td>8</td><td>—</td></tr><tr><td>9</td><td>2–6</td><td>9</td><td>—</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cạnh 3–6 (w = 5).&lt;/b&gt; 3 và 6 khác nhóm: &lt;b&gt;lấy&lt;/b&gt;. Tổng = 11. Nhóm: {1, 2, 4, 5} {3, 6}.">
+        <svg class="dsu-svg" viewBox="0 0 420 240" width="420" role="img" aria-label="Đồ thị 6 làng, bước 5 của Kruskal"><line class="edge is-ok" x1="70" y1="190" x2="210" y2="200"/><line class="edge is-ok" x1="70" y1="50" x2="70" y2="190"/><line class="edge is-ok" x1="210" y1="40" x2="210" y2="200"/><line class="edge is-dim" x1="70" y1="50" x2="210" y2="40"/><line class="edge is-ok" x1="350" y1="50" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="70" y2="190"/><line class="edge" x1="210" y1="200" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="350" y2="50"/><line class="edge" x1="210" y1="40" x2="350" y2="190"/><rect class="fill-paper" x="130.1" y="199.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="212.5" text-anchor="middle">1</text><rect class="fill-paper" x="48.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="57.0" y="124.5" text-anchor="middle">2</text><rect class="fill-paper" x="214.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="223.0" y="124.5" text-anchor="middle">3</text><rect class="fill-paper" x="130.1" y="23.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="36.5" text-anchor="middle">4</text><rect class="fill-paper" x="354.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="363.0" y="124.5" text-anchor="middle">5</text><rect class="fill-paper" x="121.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="130.5" y="110.6" text-anchor="middle">6</text><rect class="fill-paper" x="271.9" y="199.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="212.5" text-anchor="middle">7</text><rect class="fill-paper" x="271.9" y="23.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="36.5" text-anchor="middle">8</text><rect class="fill-paper" x="280.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="289.5" y="110.6" text-anchor="middle">9</text><circle class="node" cx="70" cy="50" r="17"/><text x="70" y="55" text-anchor="middle">1</text><circle class="node" cx="210" cy="40" r="17"/><text x="210" y="45" text-anchor="middle">2</text><circle class="node is-active" cx="350" cy="50" r="17"/><text x="350" y="55" text-anchor="middle">3</text><circle class="node" cx="70" cy="190" r="17"/><text x="70" y="195" text-anchor="middle">4</text><circle class="node" cx="210" cy="200" r="17"/><text x="210" y="205" text-anchor="middle">5</text><circle class="node is-active" cx="350" cy="190" r="17"/><text x="350" y="195" text-anchor="middle">6</text></svg>
+        <table class="trace"><thead><tr><th>#</th><th>Cạnh</th><th>w</th><th>Quyết định</th></tr></thead><tbody><tr><td>1</td><td>4–5</td><td>1</td><td>lấy</td></tr><tr><td>2</td><td>1–4</td><td>2</td><td>lấy</td></tr><tr><td>3</td><td>2–5</td><td>3</td><td>lấy</td></tr><tr><td>4</td><td>1–2</td><td>4</td><td>bỏ (chu trình)</td></tr><tr class="hl"><td>5</td><td>3–6</td><td>5</td><td>lấy</td></tr><tr><td>6</td><td>2–4</td><td>6</td><td>—</td></tr><tr><td>7</td><td>5–6</td><td>7</td><td>—</td></tr><tr><td>8</td><td>2–3</td><td>8</td><td>—</td></tr><tr><td>9</td><td>2–6</td><td>9</td><td>—</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cạnh 2–4 (w = 6).&lt;/b&gt; 2 và 4 đã cùng nhóm, cạnh tạo chu trình 2–4–5–2: &lt;b&gt;bỏ&lt;/b&gt;.">
+        <svg class="dsu-svg" viewBox="0 0 420 240" width="420" role="img" aria-label="Đồ thị 6 làng, bước 6 của Kruskal"><line class="edge is-ok" x1="70" y1="190" x2="210" y2="200"/><line class="edge is-ok" x1="70" y1="50" x2="70" y2="190"/><line class="edge is-ok" x1="210" y1="40" x2="210" y2="200"/><line class="edge is-dim" x1="70" y1="50" x2="210" y2="40"/><line class="edge is-ok" x1="350" y1="50" x2="350" y2="190"/><line class="edge is-bad" x1="210" y1="40" x2="70" y2="190"/><line class="edge" x1="210" y1="200" x2="350" y2="190"/><line class="edge" x1="210" y1="40" x2="350" y2="50"/><line class="edge" x1="210" y1="40" x2="350" y2="190"/><rect class="fill-paper" x="130.1" y="199.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="212.5" text-anchor="middle">1</text><rect class="fill-paper" x="48.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="57.0" y="124.5" text-anchor="middle">2</text><rect class="fill-paper" x="214.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="223.0" y="124.5" text-anchor="middle">3</text><rect class="fill-paper" x="130.1" y="23.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="36.5" text-anchor="middle">4</text><rect class="fill-paper" x="354.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="363.0" y="124.5" text-anchor="middle">5</text><rect class="fill-paper" x="121.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="130.5" y="110.6" text-anchor="middle">6</text><rect class="fill-paper" x="271.9" y="199.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="212.5" text-anchor="middle">7</text><rect class="fill-paper" x="271.9" y="23.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="36.5" text-anchor="middle">8</text><rect class="fill-paper" x="280.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="289.5" y="110.6" text-anchor="middle">9</text><circle class="node" cx="70" cy="50" r="17"/><text x="70" y="55" text-anchor="middle">1</text><circle class="node is-active" cx="210" cy="40" r="17"/><text x="210" y="45" text-anchor="middle">2</text><circle class="node" cx="350" cy="50" r="17"/><text x="350" y="55" text-anchor="middle">3</text><circle class="node is-active" cx="70" cy="190" r="17"/><text x="70" y="195" text-anchor="middle">4</text><circle class="node" cx="210" cy="200" r="17"/><text x="210" y="205" text-anchor="middle">5</text><circle class="node" cx="350" cy="190" r="17"/><text x="350" y="195" text-anchor="middle">6</text></svg>
+        <table class="trace"><thead><tr><th>#</th><th>Cạnh</th><th>w</th><th>Quyết định</th></tr></thead><tbody><tr><td>1</td><td>4–5</td><td>1</td><td>lấy</td></tr><tr><td>2</td><td>1–4</td><td>2</td><td>lấy</td></tr><tr><td>3</td><td>2–5</td><td>3</td><td>lấy</td></tr><tr><td>4</td><td>1–2</td><td>4</td><td>bỏ (chu trình)</td></tr><tr><td>5</td><td>3–6</td><td>5</td><td>lấy</td></tr><tr class="hl"><td>6</td><td>2–4</td><td>6</td><td>bỏ (chu trình)</td></tr><tr><td>7</td><td>5–6</td><td>7</td><td>—</td></tr><tr><td>8</td><td>2–3</td><td>8</td><td>—</td></tr><tr><td>9</td><td>2–6</td><td>9</td><td>—</td></tr></tbody></table>
+      </div>
+      <div class="frame" data-caption="&lt;b&gt;Cạnh 5–6 (w = 7).&lt;/b&gt; 5 thuộc {1, 2, 4, 5}, 6 thuộc {3, 6}: khác nhóm, &lt;b&gt;lấy&lt;/b&gt;. Tổng = 18. Đã đủ n − 1 = 5 cạnh nên &lt;b&gt;dừng&lt;/b&gt;; hai cạnh 2–3 và 2–6 không cần xét. Cây khung nhỏ nhất có tổng 18.">
+        <svg class="dsu-svg" viewBox="0 0 420 240" width="420" role="img" aria-label="Đồ thị 6 làng, bước 7 của Kruskal"><line class="edge is-ok" x1="70" y1="190" x2="210" y2="200"/><line class="edge is-ok" x1="70" y1="50" x2="70" y2="190"/><line class="edge is-ok" x1="210" y1="40" x2="210" y2="200"/><line class="edge is-dim" x1="70" y1="50" x2="210" y2="40"/><line class="edge is-ok" x1="350" y1="50" x2="350" y2="190"/><line class="edge is-dim" x1="210" y1="40" x2="70" y2="190"/><line class="edge is-ok" x1="210" y1="200" x2="350" y2="190"/><line class="edge is-dim" x1="210" y1="40" x2="350" y2="50"/><line class="edge is-dim" x1="210" y1="40" x2="350" y2="190"/><rect class="fill-paper" x="130.1" y="199.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="212.5" text-anchor="middle">1</text><rect class="fill-paper" x="48.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="57.0" y="124.5" text-anchor="middle">2</text><rect class="fill-paper" x="214.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="223.0" y="124.5" text-anchor="middle">3</text><rect class="fill-paper" x="130.1" y="23.0" width="18" height="17" rx="4"/><text class="w" x="139.1" y="36.5" text-anchor="middle">4</text><rect class="fill-paper" x="354.0" y="111.0" width="18" height="17" rx="4"/><text class="w" x="363.0" y="124.5" text-anchor="middle">5</text><rect class="fill-paper" x="121.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="130.5" y="110.6" text-anchor="middle">6</text><rect class="fill-paper" x="271.9" y="199.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="212.5" text-anchor="middle">7</text><rect class="fill-paper" x="271.9" y="23.0" width="18" height="17" rx="4"/><text class="w" x="280.9" y="36.5" text-anchor="middle">8</text><rect class="fill-paper" x="280.5" y="97.1" width="18" height="17" rx="4"/><text class="w" x="289.5" y="110.6" text-anchor="middle">9</text><circle class="node" cx="70" cy="50" r="17"/><text x="70" y="55" text-anchor="middle">1</text><circle class="node" cx="210" cy="40" r="17"/><text x="210" y="45" text-anchor="middle">2</text><circle class="node" cx="350" cy="50" r="17"/><text x="350" y="55" text-anchor="middle">3</text><circle class="node" cx="70" cy="190" r="17"/><text x="70" y="195" text-anchor="middle">4</text><circle class="node is-active" cx="210" cy="200" r="17"/><text x="210" y="205" text-anchor="middle">5</text><circle class="node is-active" cx="350" cy="190" r="17"/><text x="350" y="195" text-anchor="middle">6</text></svg>
+        <table class="trace"><thead><tr><th>#</th><th>Cạnh</th><th>w</th><th>Quyết định</th></tr></thead><tbody><tr><td>1</td><td>4–5</td><td>1</td><td>lấy</td></tr><tr><td>2</td><td>1–4</td><td>2</td><td>lấy</td></tr><tr><td>3</td><td>2–5</td><td>3</td><td>lấy</td></tr><tr><td>4</td><td>1–2</td><td>4</td><td>bỏ (chu trình)</td></tr><tr><td>5</td><td>3–6</td><td>5</td><td>lấy</td></tr><tr><td>6</td><td>2–4</td><td>6</td><td>bỏ (chu trình)</td></tr><tr class="hl"><td>7</td><td>5–6</td><td>7</td><td>lấy</td></tr><tr><td>8</td><td>2–3</td><td>8</td><td>không xét</td></tr><tr><td>9</td><td>2–6</td><td>9</td><td>không xét</td></tr></tbody></table>
+      </div>
+    </div>
+    <p>Kết quả: 5 cạnh 4–5, 1–4, 2–5, 3–6, 5–6 với tổng chi phí 1 + 2 + 3 + 5 + 7 = 18. Em có thể tự kiểm tra: muốn nối nhóm {3, 6} với phần còn lại, ba cạnh băng qua ranh giới là 5–6 (7), 2–3 (8), 2–6 (9); Kruskal đã chọn cạnh rẻ nhất trong ba cạnh, đúng như tính chất lát cắt.</p>
+
+    <h3>Tự tay thử</h3>
+    <div class="playground" id="viz-dsu-mst">
+      <div class="viz-head"><p class="viz-title">Tự tay thử: rừng DSU theo lệnh của em</p></div>
+      <div class="playground-body">
+        <div class="controls">
+          <label for="dsu-n">Số phần tử n (1–12) <input type="number" id="dsu-n" min="1" max="12" value="8"></label>
+          <label><input type="checkbox" id="dsu-size" checked> Hợp theo kích thước</label>
+          <label><input type="checkbox" id="dsu-comp" checked> Nén đường</label>
+        </div>
+        <div class="controls">
+          <label for="dsu-cmds">Các lệnh <input type="text" id="dsu-cmds" size="46" value="union 1 2, union 3 4, union 4 5, union 2 4, find 2, union 6 7, same 5 7, union 7 2"></label>
+        </div>
+        <div class="controls">
+          <button type="button" data-act="reset">Đặt lại</button>
+          <button type="button" class="ghost" data-act="step">Lệnh tiếp</button>
+          <button type="button" class="ghost" data-act="all">Chạy hết</button>
+          <button type="button" class="ghost" data-act="chain">Ví dụ chuỗi xấu</button>
+        </div>
+        <div data-role="stage"></div>
+        <div class="out" data-role="out">Nhập lệnh rồi bấm “Lệnh tiếp” hoặc “Chạy hết”.</div>
+      </div>
+    </div>
+    <p>Mỗi lệnh có dạng <code>union a b</code>, <code>find a</code> hoặc <code>same a b</code> (viết tắt <code>u</code>, <code>f</code>, <code>s</code> cũng được), các lệnh cách nhau bởi dấu phẩy. Bấm “Ví dụ chuỗi xấu” (nút này tự tắt cả hai mẹo) rồi “Chạy hết”: em sẽ thấy một chuỗi dài và find đi rất nhiều bước. Sau đó bật lại từng mẹo một, bấm “Chạy hết” và so sánh chiều cao cây, tổng số bước find.</p>
+  </section>
+
+  <section id="cai-dat">
+    <h2>Cài đặt C++</h2>
+    <h3>Chương trình 1: DSU đếm thành phần và nhóm đông nhất</h3>
+    <p>Chương trình giải bài kiểu “Road Construction”: có n thành phố, lần lượt xây m con đường; sau mỗi con đường, in số thành phần liên thông và số thành phố của thành phần đông nhất. DSU được gói trong một <code>struct</code>. Hàm <code>find</code> viết bằng vòng lặp hai lượt: lượt 1 đi lên tìm gốc, lượt 2 đi lại từ đầu và cho mọi nút trỏ thẳng vào gốc. Cách này không dùng đệ quy nên không bao giờ tràn ngăn xếp.</p>
+    <figure class="code">
+      <figcaption><span class="fn">dsu.cpp</span> DSU nén đường + hợp theo kích thước</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+// Cấu trúc DSU: nén đường + hợp theo kích thước
+struct DSU {
+    vector&lt;int&gt; parent, sz;
+    DSU(int n) : parent(n + 1), sz(n + 1, 1) {
+        for (int i = 0; i &lt;= n; i++) parent[i] = i;   // mỗi người tự làm gốc
+    }
+    // Tìm gốc (cài bằng vòng lặp, không sợ tràn ngăn xếp)
+    int find(int x) {
+        int r = x;
+        while (parent[r] != r) r = parent[r];          // lượt 1: đi lên tới gốc
+        while (parent[x] != r) {                       // lượt 2: nén đường
+            int nxt = parent[x];
+            parent[x] = r;
+            x = nxt;
+        }
+        return r;
+    }
+    // Gộp hai nhóm; trả về false nếu a, b vốn đã cùng nhóm
+    bool unite(int a, int b) {
+        a = find(a); b = find(b);
+        if (a == b) return false;
+        if (sz[a] &lt; sz[b]) swap(a, b);                 // a là gốc của cây lớn hơn
+        parent[b] = a;                                 // treo cây nhỏ vào cây lớn
+        sz[a] += sz[b];
+        return true;
+    }
+};
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    DSU d(n);
+    int comps = n, biggest = 1;                        // số nhóm, nhóm đông nhất
+    for (int i = 0; i &lt; m; i++) {
+        int a, b;
+        cin &gt;&gt; a &gt;&gt; b;
+        if (d.unite(a, b)) {
+            comps--;                                   // hai nhóm thành một
+            biggest = max(biggest, d.sz[d.find(a)]);
+        }
+        cout &lt;&lt; comps &lt;&lt; ' ' &lt;&lt; biggest &lt;&lt; '\n';
+    }
+    return 0;
+}</code></pre>
+    </figure>
+    <div class="io">
+      <div><div class="io-k">Input</div><pre><code class="language-text">7 7
+1 2
+3 4
+4 5
+2 4
+1 5
+6 7
+7 2</code></pre></div>
+      <div><div class="io-k">Output</div><pre><code class="language-text">6 2
+5 2
+4 3
+3 5
+3 5
+2 5
+1 7</code></pre></div>
+    </div>
+    <p>Dòng thứ năm: cạnh 1–5 nối hai thành phố đã cùng nhóm (<code>unite</code> trả về <code>false</code>), nên số thành phần vẫn là 3. Nếu đề hỏi “đồ thị có chu trình không”, đó chính là lúc em phát hiện ra chu trình. Vì nhóm chỉ lớn lên, <code>biggest</code> chỉ cần cập nhật bằng <code>max</code> sau mỗi lần gộp.</p>
+
+    <h3>Chương trình 2: Kruskal tìm cây khung nhỏ nhất</h3>
+    <p>Đề kiểu “Road Reparation”: n thành phố, m con đường hai chiều, sửa đường thứ i tốn c tiền. In chi phí nhỏ nhất để mọi thành phố đi được tới nhau, hoặc <code>IMPOSSIBLE</code>. Mỗi cạnh được lưu dạng <code>{w, u, v}</code> để <code>sort</code> mặc định so trọng số trước. Lần này <code>find</code> viết đệ quy cho gọn: nhờ hợp theo kích thước, độ sâu đệ quy không quá log₂ n ≈ 17.</p>
+    <figure class="code">
+      <figcaption><span class="fn">kruskal.cpp</span> Cây khung nhỏ nhất bằng Kruskal + DSU</figcaption>
+<pre><code class="language-cpp">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+vector&lt;int&gt; parent, sz;
+
+// Tìm gốc, cài đệ quy + nén đường (an toàn vì có hợp theo kích thước)
+int findRoot(int x) {
+    if (parent[x] == x) return x;
+    return parent[x] = findRoot(parent[x]);
+}
+
+bool unite(int a, int b) {
+    a = findRoot(a); b = findRoot(b);
+    if (a == b) return false;                          // cùng nhóm: cạnh tạo chu trình
+    if (sz[a] &lt; sz[b]) swap(a, b);
+    parent[b] = a;
+    sz[a] += sz[b];
+    return true;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, m;
+    cin &gt;&gt; n &gt;&gt; m;
+    // Lưu cạnh dạng (w, u, v) để sort theo trọng số trước
+    vector&lt;array&lt;long long, 3&gt;&gt; edges(m);
+    for (auto &amp;e : edges) cin &gt;&gt; e[1] &gt;&gt; e[2] &gt;&gt; e[0];
+    sort(edges.begin(), edges.end());                  // trọng số tăng dần
+
+    parent.resize(n + 1);
+    sz.assign(n + 1, 1);
+    for (int i = 1; i &lt;= n; i++) parent[i] = i;
+
+    long long total = 0;                               // tổng có thể tới (n - 1) * 1e9
+    int taken = 0;                                     // số cạnh đã lấy
+    for (auto &amp;e : edges) {
+        if (unite((int)e[1], (int)e[2])) {
+            total += e[0];
+            taken++;
+            if (taken == n - 1) break;                 // đủ cây khung, dừng sớm
+        }
+    }
+    if (taken == n - 1) cout &lt;&lt; total &lt;&lt; '\n';
+    else cout &lt;&lt; "IMPOSSIBLE\n";                       // đồ thị không liên thông
+    return 0;
+}</code></pre>
+    </figure>
+    <p>Ví dụ 1 là đồ thị 6 làng ở phần Minh họa (cạnh nhập theo thứ tự lộn xộn, chương trình tự sắp xếp). Ví dụ 2 có 5 thành phố nhưng {1, 2, 3} và {4, 5} không nối với nhau.</p>
+    <div class="io">
+      <div><div class="io-k">Input 1</div><pre><code class="language-text">6 9
+1 2 4
+2 3 8
+1 4 2
+2 4 6
+2 5 3
+2 6 9
+3 6 5
+4 5 1
+5 6 7</code></pre></div>
+      <div><div class="io-k">Output 1</div><pre><code class="language-text">18</code></pre></div>
+    </div>
+    <div class="io">
+      <div><div class="io-k">Input 2</div><pre><code class="language-text">5 3
+1 2 4
+2 3 1
+4 5 2</code></pre></div>
+      <div><div class="io-k">Output 2</div><pre><code class="language-text">IMPOSSIBLE</code></pre></div>
+    </div>
+  </section>
+
+  <section id="do-phuc-tap">
+    <h2>Độ phức tạp</h2>
+    <p>Gọi n là số phần tử (số đỉnh), q là số thao tác, m là số cạnh.</p>
+    <table>
+      <thead><tr><th>Cách làm</th><th>Mỗi thao tác find / unite</th><th>Với n = q = 2·10⁵</th></tr></thead>
+      <tbody>
+        <tr><td>Gán nhãn lại khi gộp</td><td>hỏi <span class="bigo">O(1)</span>, gộp <span class="bigo">O(n)</span></td><td>cỡ 4·10¹⁰, quá chậm</td></tr>
+        <tr><td>DSU gộp bừa, không nén</td><td><span class="bigo">O(n)</span> trường hợp xấu (chuỗi)</td><td>cỡ 4·10¹⁰, quá chậm</td></tr>
+        <tr><td>Chỉ hợp theo kích thước</td><td><span class="bigo">O(log n)</span></td><td>2·10⁵ × 18 ≈ 3,6·10⁶</td></tr>
+        <tr><td>Chỉ nén đường</td><td><span class="bigo">O(log n)</span> trung bình</td><td>vài triệu</td></tr>
+        <tr><td>Cả hai mẹo</td><td><span class="bigo">O(α(n))</span>, coi như O(1)</td><td>dưới 10⁶</td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Thuật toán cây khung</th><th>Thời gian</th><th>Bộ nhớ</th></tr></thead>
+      <tbody>
+        <tr><td>Kruskal (sắp xếp + DSU)</td><td><span class="bigo">O(m log m)</span></td><td><span class="bigo">O(n + m)</span></td></tr>
+        <tr><td>Prim dùng hàng đợi ưu tiên</td><td><span class="bigo">O(m log n)</span></td><td><span class="bigo">O(n + m)</span></td></tr>
+        <tr><td>Prim dạng mảng (đồ thị dày)</td><td><span class="bigo">O(n²)</span></td><td><span class="bigo">O(n²)</span></td></tr>
+      </tbody>
+    </table>
+    <p>DSU chỉ cần hai mảng n + 1 phần tử: <code>parent</code> và <code>sz</code>, tức bộ nhớ <span class="bigo">O(n)</span>. Với n = 10⁶ là 8 MB, rất nhẹ.</p>
+    <p>Với m = 2·10⁵ cạnh, Kruskal tốn khoảng m·log₂ m ≈ 2·10⁵ × 18 = 3,6·10⁶ phép so sánh khi sắp xếp, cộng 2m = 4·10⁵ lần <code>find</code>. Kruskal thoải mái với m tới khoảng 10⁶–2·10⁶ cạnh trong 1 giây.</p>
+  </section>
+
+  <section id="bien-the">
+    <h2>Biến thể và mở rộng</h2>
+    <h3>Thuật toán Prim</h3>
+    <p>Prim là cách thứ hai tìm cây khung nhỏ nhất, giống <a href="dijkstra.html">Dijkstra</a> về hình thức. Bắt đầu từ một đỉnh bất kỳ, “cây đang lớn” chỉ có đỉnh đó. Mỗi bước, chọn cạnh rẻ nhất nối một đỉnh <em>trong cây</em> với một đỉnh <em>ngoài cây</em>, kéo đỉnh đó vào. Lặp n − 1 lần. Prim đúng cũng nhờ tính chất lát cắt (S chính là tập đỉnh trong cây).</p>
+    <pre class="pseudo"><b>hàm</b> Prim(n, đồ thị):
+    dist[mọi v] ← ∞;  dist[1] ← 0;  trongCây[mọi v] ← sai;  tổng ← 0
+    hàng đợi ưu tiên Q ← {(0, 1)}
+    <b>khi</b> Q khác rỗng:
+        lấy (d, u) có d nhỏ nhất ra khỏi Q
+        <b>nếu</b> trongCây[u]: <b>bỏ qua</b>
+        trongCây[u] ← đúng;  tổng ← tổng + d
+        <b>với mỗi</b> cạnh (u, v, w):
+            <b>nếu không</b> trongCây[v] <b>và</b> w &lt; dist[v]:
+                dist[v] ← w;  đưa (w, v) vào Q      <i>// khác Dijkstra: w chứ không phải d + w</i></pre>
+    <p>Khi đồ thị cho dạng danh sách cạnh, Kruskal ngắn và dễ cài hơn. Khi đồ thị dày (gần như mọi cặp đỉnh đều có cạnh, ví dụ n = 2000 điểm trên mặt phẳng, khoảng cách là trọng số), Prim dạng mảng O(n²) = 4·10⁶ thắng Kruskal phải sắp xếp gần 2·10⁶ cạnh.</p>
+
+    <h3>Cây khung lớn nhất</h3>
+    <p>Muốn tổng trọng số <em>lớn nhất</em>, chỉ cần sắp cạnh <strong>giảm dần</strong>, phần còn lại giữ nguyên. Chứng minh y hệt, chỉ đổi chiều bất đẳng thức.</p>
+
+    <h3>Cây khung cổ chai: cạnh lớn nhất nhỏ nhất</h3>
+    <p>Đề: “chọn tập cạnh nối mọi đỉnh sao cho cạnh nặng nhất được chọn là nhỏ nhất” (như bài NKCITY). Cây khung nhỏ nhất cũng giải luôn bài này: đáp án là trọng số của cạnh <em>cuối cùng</em> Kruskal lấy vào. Lý do: Kruskal chỉ dùng các cạnh có trọng số ≤ w và dừng ngay khi đồ thị vừa liên thông, nên không thể nối mọi đỉnh mà chỉ dùng cạnh nhỏ hơn w. Bài này cũng giải được bằng <a href="binary-search-answer.html">chặt nhị phân trên kết quả</a> + DSU, nhưng Kruskal gọn hơn.</p>
+
+    <h3>Đỉnh ảo</h3>
+    <p>Bài “tưới nước”: mỗi đồng cỏ có thể tự đào giếng (giá W<sub>i</sub>) hoặc nối ống từ đồng cỏ khác. Mẹo: thêm một <strong>đỉnh ảo 0</strong> tượng trưng cho “nguồn nước ngầm”, nối 0 với mỗi đồng cỏ i bằng cạnh trọng số W<sub>i</sub>. Đào giếng ở i chính là chọn cạnh 0–i. Đáp án là cây khung nhỏ nhất của đồ thị n + 1 đỉnh.</p>
+
+    <h3>DSU giữ thêm thông tin ở gốc</h3>
+    <p>Ngoài <code>sz</code>, gốc có thể giữ tổng giá trị, giá trị nhỏ nhất, số cạnh của nhóm… Khi <code>parent[b] = a</code>, gộp thông tin của b vào a: <code>sum[a] += sum[b]</code>, <code>mn[a] = min(mn[a], mn[b])</code>. Ví dụ đếm cạnh mỗi nhóm giúp biết nhóm nào có chu trình (số cạnh ≥ số đỉnh).</p>
+  </section>
+
+  <section id="loi-thuong-gap">
+    <h2>Lỗi thường gặp</h2>
+    <div class="callout danger"><p class="callout-title">Nối hai phần tử thay vì nối hai gốc</p><p>Viết <code>parent[a] = b</code> trong <code>unite</code> là sai: a có thể không phải gốc, và cả phần cây phía trên a không được gộp. Luôn <code>a = find(a); b = find(b);</code> trước, rồi mới <code>parent[b] = a</code>.</p></div>
+    <div class="callout danger"><p class="callout-title">Quên khởi tạo parent[i] = i</p><p>Mảng toàn cục mặc định là 0, nên mọi nút “trỏ về 0” và <code>find</code> trả 0 cho tất cả, hoặc lặp vô hạn nếu <code>parent[0]</code> không phải 0. Khởi tạo cho mọi i từ 0 (hoặc 1) tới n, và chú ý đỉnh đánh số từ 0 hay từ 1.</p></div>
+    <div class="callout danger"><p class="callout-title">Tràn số khi cộng trọng số</p><p>Tổng cây khung có thể tới 10¹⁴. Dùng <code>long long</code> cho tổng (và cho trọng số nếu cần). Một lỗi khác: lưu cạnh dạng <code>{u, v, w}</code> rồi <code>sort</code>, thế là cạnh được sắp theo u chứ không theo w. Đặt w lên đầu, hoặc viết hàm so sánh.</p></div>
+    <div class="callout warn"><p class="callout-title">Không kiểm tra đồ thị liên thông</p><p>Nếu đồ thị không liên thông, Kruskal vẫn chạy và in ra tổng của một “rừng khung”, kết quả sai. Đếm số cạnh đã lấy: khác n − 1 thì in <code>IMPOSSIBLE</code>. Trường hợp n = 1: cây khung không có cạnh nào, tổng là 0.</p></div>
+    <div class="callout warn"><p class="callout-title">find đệ quy tràn ngăn xếp</p><p>Chỉ nén đường mà không hợp theo kích thước, cây có thể thành chuỗi dài 10⁶ nút trước lần <code>find</code> đầu tiên, và đệ quy sâu 10⁶ tầng làm chương trình chết. Cài thêm hợp theo kích thước, hoặc dùng <code>find</code> bằng vòng lặp.</p></div>
+    <div class="callout warn"><p class="callout-title">Cập nhật sz ở nút không phải gốc</p><p><code>sz[x]</code> chỉ đúng khi x là gốc. Muốn biết nhóm của x có bao nhiêu phần tử, phải đọc <code>sz[find(x)]</code>, không phải <code>sz[x]</code>.</p></div>
+  </section>
+
+  <section id="kiem-tra">
+    <h2>Tự kiểm tra</h2>
+    <div class="quiz">
+      <p class="quiz-q">Câu 1. Dùng DSU có hợp theo kích thước (chưa cần nén đường) cho n = 1000 phần tử. Một cây trong rừng có thể cao tối đa bao nhiêu tầng (tính số cạnh từ nút sâu nhất tới gốc)?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. 999</button>
+        <button type="button" class="quiz-opt">B. 500</button>
+        <button type="button" class="quiz-opt" data-correct>C. 9</button>
+        <button type="button" class="quiz-opt">D. 1</button>
+      </div>
+      <p class="quiz-explain">Mỗi lần độ sâu của một nút tăng 1, cây chứa nó ít nhất gấp đôi. Từ 1 nút lên tối đa 1000 nút chỉ gấp đôi được 9 lần (2⁹ = 512 ≤ 1000 &lt; 1024 = 2¹⁰). Vậy chiều cao không quá 9.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 2. Chạy Kruskal trên đồ thị n = 5 đỉnh, duyệt hết mọi cạnh nhưng chỉ lấy được 3 cạnh. Kết luận nào đúng?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Cây khung nhỏ nhất có 3 cạnh.</button>
+        <button type="button" class="quiz-opt" data-correct>B. Đồ thị không liên thông (còn 2 thành phần), phải in IMPOSSIBLE.</button>
+        <button type="button" class="quiz-opt">C. Đồ thị có chu trình nên Kruskal không áp dụng được.</button>
+        <button type="button" class="quiz-opt">D. Cần sắp cạnh giảm dần rồi chạy lại.</button>
+      </div>
+      <p class="quiz-explain">Cây khung của 5 đỉnh phải có đúng 4 cạnh. Mỗi cạnh lấy được làm số nhóm giảm 1: từ 5 nhóm, lấy 3 cạnh còn 2 nhóm. Không còn cạnh nào nối hai nhóm đó, nên đồ thị không liên thông.</p>
+    </div>
+    <div class="quiz">
+      <p class="quiz-q">Câu 3. Trong một chu trình của đồ thị, có một cạnh e nặng hơn hẳn mọi cạnh khác trên chu trình. Cạnh e có thể nằm trong cây khung nhỏ nhất không?</p>
+      <div class="quiz-options">
+        <button type="button" class="quiz-opt">A. Có, nếu e là cạnh duy nhất nối hai đỉnh của nó.</button>
+        <button type="button" class="quiz-opt">B. Có, Kruskal luôn lấy e vì nó tạo chu trình.</button>
+        <button type="button" class="quiz-opt" data-correct>C. Không bao giờ.</button>
+      </div>
+      <p class="quiz-explain">Khi Kruskal xét e, mọi cạnh khác của chu trình nhẹ hơn nên đã được xét trước; chúng nối hai đầu của e lại với nhau (đã lấy, hoặc bị bỏ vì hai đầu đã cùng nhóm). Vậy hai đầu e đã cùng nhóm và e bị bỏ. Nói theo hoán đổi: nếu một cây khung chứa e, bỏ e rồi thêm một cạnh nhẹ hơn trên chu trình sẽ được cây rẻ hơn.</p>
+    </div>
+    <p><strong>Câu 4.</strong> DSU 5 phần tử, hợp theo kích thước (bằng nhau thì treo cây của b vào cây của a) và nén đường. Thực hiện <code>unite(1,2)</code>, <code>unite(3,4)</code>, <code>unite(3,5)</code>, <code>unite(5,1)</code>. Viết mảng <code>parent[1..5]</code> sau mỗi thao tác. Sau đó gọi <code>find(2)</code> thì mảng đổi thế nào?</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p><code>unite(1,2)</code>: parent = [1, 1, 3, 4, 5], sz[1] = 2. <code>unite(3,4)</code>: parent = [1, 1, 3, 3, 5], sz[3] = 2. <code>unite(3,5)</code>: gốc 3 (sz 2) lớn hơn gốc 5 (sz 1), parent = [1, 1, 3, 3, 3], sz[3] = 3. <code>unite(5,1)</code>: find(5) = 3 (sz 3), find(1) = 1 (sz 2), treo 1 vào 3: parent = [3, 1, 3, 3, 3], sz[3] = 5.</p>
+      <p><code>find(2)</code> đi 2 → 1 → 3, trả về 3 và nén đường: parent[2] = 3. Mảng thành [3, 3, 3, 3, 3], cả 5 phần tử trỏ thẳng vào gốc 3.</p>
+    </details>
+    <p><strong>Câu 5.</strong> Đồ thị 4 đỉnh có các cạnh 1–2 (3), 2–3 (1), 3–4 (4), 4–1 (2), 1–3 (5), 2–4 (6). Chạy Kruskal bằng tay, cho biết các cạnh được chọn và tổng trọng số.</p>
+    <details class="solution"><summary>Xem lời giải</summary>
+      <p>Sắp xếp: 2–3 (1), 4–1 (2), 1–2 (3), 3–4 (4), 1–3 (5), 2–4 (6). Lấy 2–3: nhóm {2, 3}. Lấy 4–1: nhóm {1, 4}. Xét 1–2: 1 và 2 khác nhóm, lấy, cả 4 đỉnh thành một nhóm. Đã đủ n − 1 = 3 cạnh, dừng. Tổng = 1 + 2 + 3 = 6.</p>
+    </details>
+  </section>
+
+  <section id="bai-tap">
+    <h2>Bài tập luyện tập</h2>
+    <p>Xếp từ dễ đến khó. Bốn bài đầu chỉ cần DSU, các bài sau dùng Kruskal. Đề tiếng Anh có tóm tắt tiếng Việt.</p>
+    <ol class="exercises">
+      <li class="exercise" data-level="1" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/ioibin">IOIBIN – Các thùng nước</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">N ≤ 10⁴ thùng nước, P ≤ 5·10⁴ thao tác: mở van nối hai thùng, hoặc hỏi hai thùng có thông nhau không (in 1 hoặc 0).</p>
+        <p class="ex-skill"><b>Luyện:</b> cài DSU cơ bản, đúng bài toán mở đầu.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Thao tác mở van là <code>unite(x, y)</code>, câu hỏi là so <code>find(x) == find(y)</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://atcoder.jp/contests/practice2/tasks/practice2_a">A – Disjoint Set Union</a>
+          <span class="judge">AtCoder</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">Đồ thị N ≤ 2·10⁵ đỉnh ban đầu không có cạnh; Q ≤ 2·10⁵ truy vấn: thêm cạnh (u, v), hoặc hỏi u và v có cùng thành phần liên thông không. Đỉnh đánh số từ 0.</p>
+        <p class="ex-skill"><b>Luyện:</b> DSU đủ cả hai mẹo với dữ liệu lớn; đánh số từ 0.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Giống IOIBIN nhưng giới hạn lớn hơn, nên cần cả nén đường và hợp theo kích thước.</p></details>
+      </li>
+      <li class="exercise" data-level="1" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1666">Building Roads</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-1">Cơ bản</span>
+        </div>
+        <p class="ex-desc">n ≤ 10⁵ thành phố, m ≤ 2·10⁵ con đường có sẵn. Tìm số con đường ít nhất cần xây thêm để mọi thành phố đi được tới nhau, và in ra các đường đó.</p>
+        <p class="ex-skill"><b>Luyện:</b> đếm thành phần liên thông bằng DSU, lấy đại diện mỗi nhóm.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Đáp án là (số thành phần − 1). Duyệt i từ 2 tới n: nếu i khác nhóm với 1 thì in đường 1–i và gộp.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1676">Road Construction</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">n ≤ 10⁵ thành phố, lần lượt xây m ≤ 2·10⁵ con đường. Sau mỗi ngày in số thành phần liên thông và kích thước thành phần lớn nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> DSU giữ <code>sz</code> ở gốc, đếm thành phần khi thêm cạnh dần.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chính là Chương trình 1 trong bài. Kích thước lớn nhất chỉ tăng, nên cập nhật bằng <code>max</code>.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/qbmst">QBMST – Cây khung nhỏ nhất (HEAP)</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">Đồ thị vô hướng liên thông n ≤ 10⁴ đỉnh, m ≤ 15000 cạnh, trọng số từ 0 tới 10⁴. In tổng trọng số cây khung nhỏ nhất.</p>
+        <p class="ex-skill"><b>Luyện:</b> cài Kruskal hoàn chỉnh lần đầu.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Tên bài gợi ý Prim dùng heap, nhưng Kruskal + DSU cũng qua thoải mái. Lưu cạnh dạng (w, u, v) rồi sắp xếp.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="en">
+        <div class="ex-head">
+          <a class="ex-title" href="https://cses.fi/problemset/task/1675">Road Reparation</a>
+          <span class="judge">CSES</span>
+          <span class="lang-tag">EN</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">n ≤ 10⁵ thành phố, m ≤ 2·10⁵ con đường, sửa mỗi đường tốn c ≤ 10⁹. Tìm chi phí nhỏ nhất để mọi thành phố thông nhau, không được thì in IMPOSSIBLE.</p>
+        <p class="ex-skill"><b>Luyện:</b> Kruskal với <code>long long</code> và kiểm tra liên thông.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chính là Chương trình 2. Đếm số cạnh đã lấy; khác n − 1 thì in IMPOSSIBLE.</p></details>
+      </li>
+      <li class="exercise" data-level="2" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/nkcity">NKCITY – Xây dựng thành phố</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-2">Vận dụng</span>
+        </div>
+        <p class="ex-desc">N ≤ 1000 nút giao, M ≤ 10⁴ con đường có chi phí. Chọn một số đường nối được mọi nút giao sao cho chi phí của đường đắt nhất được chọn là nhỏ nhất; in chi phí đó.</p>
+        <p class="ex-skill"><b>Luyện:</b> cây khung cổ chai: cạnh lớn nhất của MST.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Chạy Kruskal; đáp án là trọng số của cạnh cuối cùng được lấy (xem phần Biến thể).</p></details>
+      </li>
+      <li class="exercise" data-level="3" data-lang="vi">
+        <div class="ex-head">
+          <a class="ex-title" href="https://oj.vnoi.info/problem/fwater">FWATER – Tưới nước đồng cỏ</a>
+          <span class="judge">VNOJ</span>
+          <span class="lang-tag vi">VI</span>
+          <span class="chip level level-3">Nâng cao</span>
+        </div>
+        <p class="ex-desc">N ≤ 300 đồng cỏ. Đồng cỏ i có thể đào giếng với giá W<sub>i</sub>, hoặc nối ống với đồng cỏ j giá P<sub>ij</sub>. Tìm chi phí nhỏ nhất để mọi đồng cỏ đều có nước.</p>
+        <p class="ex-skill"><b>Luyện:</b> dựng đồ thị bằng đỉnh ảo rồi áp dụng MST.</p>
+        <details class="hint"><summary>Gợi ý</summary><p>Thêm đỉnh 0 nối với mỗi đồng cỏ i bằng cạnh trọng số W<sub>i</sub>. Tìm cây khung nhỏ nhất của đồ thị N + 1 đỉnh. Chỉ lấy các cặp i &lt; j để không trùng cạnh.</p></details>
+      </li>
+    </ol>
+  </section>
+
+  <section id="tham-khao">
+    <h2>Tài liệu tham khảo</h2>
+    <ul class="refs">
+      <li><a href="https://wiki.vnoi.info/algo/data-structures/disjoint-set-union">VNOI Wiki – Disjoint Set Union</a> (tiếng Việt)</li>
+      <li><a href="https://wiki.vnoi.info/algo/graph-theory/minimum-spanning-tree">VNOI Wiki – Bài toán tìm cây khung nhỏ nhất trong đồ thị</a> (tiếng Việt, có Kruskal và Prim)</li>
+      <li><a href="https://cp-algorithms.com/data_structures/disjoint_set_union.html">CP-Algorithms – Disjoint Set Union</a> (tiếng Anh)</li>
+      <li><a href="https://cp-algorithms.com/graph/mst_kruskal_with_dsu.html">CP-Algorithms – Minimum Spanning Tree: Kruskal with Disjoint Set Union</a> (tiếng Anh)</li>
+      <li><a href="https://cp-algorithms.com/graph/mst_prim.html">CP-Algorithms – Minimum Spanning Tree: Prim's Algorithm</a> (tiếng Anh)</li>
+      <li>Bài liên quan trong lộ trình: <a href="graph-dfs.html">DFS và thành phần liên thông</a>, <a href="sorting.html">Sắp xếp</a>, <a href="greedy.html">Tham lam</a>, <a href="dijkstra.html">Dijkstra</a>.</li>
+    </ul>
+  </section>
+
+  <section id="tom-tat">
+    <h2>Tóm tắt</h2>
+    <div class="cheatsheet">
+      <ul>
+        <li>DSU: mỗi nhóm là một cây, gốc là đại diện, <code>parent[gốc] = gốc</code>. Cùng nhóm khi và chỉ khi <code>find(a) == find(b)</code>.</li>
+        <li><code>unite</code> luôn nối <strong>hai gốc</strong>; treo cây nhỏ vào cây lớn (cây cao ≤ log₂ n) và nén đường khi <code>find</code>. Cả hai mẹo: mỗi thao tác coi như O(1), đúng ra là O(α(n)).</li>
+        <li>Ứng dụng: liên thông khi thêm cạnh dần, đếm thành phần (mỗi lần gộp thành công bớt 1), phát hiện chu trình (<code>unite</code> trả về false), nhóm đông nhất.</li>
+        <li>Cây khung: n − 1 cạnh, nối mọi đỉnh, không chu trình. Cây khung nhỏ nhất: tổng trọng số nhỏ nhất.</li>
+        <li>Kruskal: sắp cạnh tăng dần, lấy cạnh nếu hai đầu khác nhóm (DSU), dừng khi đủ n − 1 cạnh. O(m log m).</li>
+        <li>Đúng nhờ tính chất lát cắt: cạnh nhẹ nhất băng qua một lát cắt luôn thuộc một MST (chứng minh bằng hoán đổi cạnh).</li>
+        <li>Lấy chưa đủ n − 1 cạnh: đồ thị không liên thông, in IMPOSSIBLE. Tổng dùng <code>long long</code>.</li>
+        <li>Biến thể: cây khung lớn nhất (sắp giảm dần), cạnh lớn nhất nhỏ nhất (cạnh cuối Kruskal lấy), đỉnh ảo, Prim cho đồ thị dày.</li>
+      </ul>
+    </div>
+  </section>
+
+
+</main>
+
+<script src="../data/roadmap.js"></script>
+<script src="../assets/vendor/highlight.min.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/viz/dsu-mst.js"></script>
+</body>
+</html>

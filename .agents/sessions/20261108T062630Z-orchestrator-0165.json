@@ -3,10 +3,10 @@
   "agent": "orchestrator",
   "task": "Điều phối phần còn lại: hoàn thiện 4 trang dở, soạn 12 chủ đề còn lại",
   "topic": null,
-  "status": "active",
+  "status": "done",
   "host": "MyPC",
   "started_at": "2026-11-08T06:26:30Z",
-  "heartbeat_at": "2026-11-08T09:09:35Z",
-  "ended_at": null,
-  "summary": null
+  "heartbeat_at": "2026-11-08T09:12:17Z",
+  "ended_at": "2026-11-08T09:12:17Z",
+  "summary": "Hoàn tất 32/32 chủ đề, 303 bài tập (211 VI), 32 widget"
 }
