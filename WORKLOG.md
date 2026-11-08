@@ -73,6 +73,7 @@
 | `20261108T063515Z-topic-lcs-7c82` | topic-lcs | lcs | done | 2026-11-08T06:35:15Z | 2026-11-08T06:58:52Z | 9 bài tập (5 VI, 4 EN), 6002 từ, stepper 8 khung, widget có (LCS/edit distance/xâu con liên tiếp) |
 | `20261108T063814Z-topic-dijkstra-223f` | topic-dijkstra | dijkstra | done | 2026-11-08T06:38:14Z | 2026-11-08T07:03:34Z | 10 bài tập (6 VI, 4 EN), 7646 từ, 2 stepper (9+5 khung), widget có |
 | `20261108T065148Z-topic-dsu-mst-6efb` | topic-dsu-mst | dsu-mst | done | 2026-11-08T06:51:48Z | 2026-11-08T09:11:35Z | 8 bài tập (4 VI), khoảng 6000 từ văn xuôi, 2 stepper 18 khung, widget có |
+| `20261108T093535Z-orchestrator-3751` | orchestrator | — | done | 2026-11-08T09:35:35Z | 2026-11-08T09:35:49Z | Thêm favicon cho 34 file HTML |
 
 ## Dòng thời gian
 
@@ -426,3 +427,6 @@
 - `09:11:35` **topic-dsu-mst** · `dsu-mst` · _hoàn thành_: Đóng phiên (done): 8 bài tập (4 VI), khoảng 6000 từ văn xuôi, 2 stepper 18 khung, widget có
 - `09:12:17` **orchestrator** · _commit_: Hoàn tất 32/32 chủ đề: 303 bài tập (211 VI), 431 khung hình, 32 widget; thêm token màu tường cho nền tối — README.md, assets/css/style.css
 - `09:12:17` **orchestrator** · _hoàn thành_: Đóng phiên (done): Hoàn tất 32/32 chủ đề, 303 bài tập (211 VI), 32 widget
+- `09:35:35` **orchestrator** · _bắt đầu_: Mở phiên: Thêm favicon cho toàn bộ trang
+- `09:35:49` **orchestrator** · _commit_: Thêm favicon vở ô li số 9 cho trang chủ, 32 trang chủ đề và mẫu — assets/icons, index.html, templates/topic-template.html, topics
+- `09:35:49` **orchestrator** · _hoàn thành_: Đóng phiên (done): Thêm favicon cho 34 file HTML

@@ -128,3 +128,6 @@
 {"ts": "2026-11-08T09:11:35Z", "agent": "topic-dsu-mst", "kind": "done", "msg": "Đóng phiên (done): 8 bài tập (4 VI), khoảng 6000 từ văn xuôi, 2 stepper 18 khung, widget có", "session": "20261108T065148Z-topic-dsu-mst-6efb", "topic": "dsu-mst"}
 {"ts": "2026-11-08T09:12:17Z", "agent": "orchestrator", "kind": "commit", "msg": "Hoàn tất 32/32 chủ đề: 303 bài tập (211 VI), 431 khung hình, 32 widget; thêm token màu tường cho nền tối", "session": "20261108T062630Z-orchestrator-0165", "files": ["README.md", "assets/css/style.css"]}
 {"ts": "2026-11-08T09:12:17Z", "agent": "orchestrator", "kind": "done", "msg": "Đóng phiên (done): Hoàn tất 32/32 chủ đề, 303 bài tập (211 VI), 32 widget", "session": "20261108T062630Z-orchestrator-0165"}
+{"ts": "2026-11-08T09:35:35Z", "agent": "orchestrator", "kind": "start", "msg": "Mở phiên: Thêm favicon cho toàn bộ trang", "session": "20261108T093535Z-orchestrator-3751"}
+{"ts": "2026-11-08T09:35:49Z", "agent": "orchestrator", "kind": "commit", "msg": "Thêm favicon vở ô li số 9 cho trang chủ, 32 trang chủ đề và mẫu", "session": "20261108T093535Z-orchestrator-3751", "files": ["assets/icons", "index.html", "templates/topic-template.html", "topics"]}
+{"ts": "2026-11-08T09:35:49Z", "agent": "orchestrator", "kind": "done", "msg": "Đóng phiên (done): Thêm favicon cho 34 file HTML", "session": "20261108T093535Z-orchestrator-3751"}
